@@ -11,11 +11,14 @@ import (
 	"github.com/fatih/color"
 )
 
+type LoggerWriter func(level LogLevel, prefix, traceback string, message []any)
+
 type Logger struct {
 	prefix         string
 	level          LogLevel
 	printTraceback bool
 	printTime      bool
+	writers        []LoggerWriter
 
 	f *os.File
 }
@@ -24,6 +27,10 @@ type LogLevel struct {
 	n uint8
 	t string
 	c color.Attribute
+}
+
+func (l *LogLevel) GetName() string {
+	return l.t
 }
 
 type MethodTraceback struct {
@@ -36,11 +43,11 @@ type MethodTraceback struct {
 }
 
 var (
-	INFO  LogLevel = LogLevel{n: 0, t: "info", c: color.FgWhite}
-	WARN  LogLevel = LogLevel{n: 1, t: "warn", c: color.FgHiYellow}
-	ERROR LogLevel = LogLevel{n: 2, t: "error", c: color.FgHiRed}
-	FATAL LogLevel = LogLevel{n: 3, t: "fatal", c: color.FgRed}
-	DEBUG LogLevel = LogLevel{n: 4, t: "debug", c: color.FgGreen}
+	INFO  = LogLevel{n: 0, t: "info", c: color.FgWhite}
+	WARN  = LogLevel{n: 1, t: "warn", c: color.FgHiYellow}
+	ERROR = LogLevel{n: 2, t: "error", c: color.FgHiRed}
+	FATAL = LogLevel{n: 3, t: "fatal", c: color.FgRed}
+	DEBUG = LogLevel{n: 4, t: "debug", c: color.FgGreen}
 )
 
 func CreateLogger() *Logger {
@@ -74,6 +81,14 @@ func (l *Logger) Level(level LogLevel) *Logger {
 }
 func (l *Logger) PrintTraceback(b bool) *Logger {
 	l.printTraceback = b
+	return l
+}
+func (l *Logger) PrintTime(b bool) *Logger {
+	l.printTime = b
+	return l
+}
+func (l *Logger) AddWriters(writers []LoggerWriter) *Logger {
+	l.writers = append(l.writers, writers...)
 	return l
 }
 
@@ -152,7 +167,15 @@ func (l *Logger) print(level LogLevel, m []any) {
 	if l.level.n < level.n {
 		return
 	}
-	color.New(level.c).Println(l.buildString(level, m))
+	_, err := color.New(level.c).Println(l.buildString(level, m))
+	if err != nil {
+		l.Fatal(err)
+		return
+	}
+
+	for _, writer := range l.writers {
+		writer(level, l.prefix, l.formatTraceback(l.getTraceback()), m)
+	}
 
 	if l.f != nil {
 		if _, err := l.f.Write([]byte(l.buildString(level, m) + "\n")); err != nil {

@@ -100,6 +100,7 @@ func NewBot(settings *BotSettings) *Bot {
 		level = DEBUG
 	}
 	bot.logger = CreateLogger().Level(level).OpenFile(fmt.Sprintf("%s/main.log", strings.TrimRight(settings.LoggerBasePath, "/")))
+	bot.logger = bot.logger.PrintTraceback(true)
 	if settings.UseRequestLogger {
 		bot.requestLogger = CreateLogger().Level(level).Prefix("REQUESTS").OpenFile(fmt.Sprintf("%s/requests.log", strings.TrimRight(settings.LoggerBasePath, "/")))
 	}
@@ -118,6 +119,14 @@ func (b *Bot) Close() {
 
 func (b *Bot) InitDatabaseContext(ctx *DatabaseContext) *Bot {
 	b.dbContext = ctx
+	return b
+}
+func (b *Bot) AddDatabaseLogger(writer func(db *DatabaseContext) LoggerWriter) *Bot {
+	w := []LoggerWriter{writer(b.dbContext)}
+	b.logger.AddWriters(w)
+	if b.requestLogger != nil {
+		b.requestLogger.AddWriters(w)
+	}
 	return b
 }
 
@@ -283,7 +292,8 @@ func (b *Bot) handleCallback(update *Update) {
 
 	for _, plugin := range b.plugins {
 		if plugin.UpdateListener != nil {
-			(*plugin.UpdateListener)(ctx, b.dbContext)
+			lis := *plugin.UpdateListener
+			lis(ctx, b.dbContext)
 		}
 	}
 
@@ -310,7 +320,7 @@ func (ctx *MsgContext) Answer(text string) {
 	_, err := ctx.Bot.SendMessage(&SendMessageP{
 		ChatID:    ctx.Msg.Chat.ID,
 		Text:      text,
-		ParseMode: "markdown",
+		ParseMode: ParseMD,
 	})
 	if err != nil {
 		ctx.Bot.logger.Error(err)
