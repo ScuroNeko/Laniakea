@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
@@ -142,6 +143,47 @@ func (l *Logger) formatTraceback(mt *MethodTraceback) string {
 	return fmt.Sprintf("%s:%s:%d", mt.filename, mt.Method, mt.line)
 }
 
+func (l *Logger) getFullTraceback(skip int) []*MethodTraceback {
+	pc := make([]uintptr, 15)
+	runtime.Callers(skip, pc)
+	list := make([]*MethodTraceback, 0)
+	frames := runtime.CallersFrames(pc)
+	for {
+		frame, more := frames.Next()
+		if !more {
+			break
+		}
+		details := runtime.FuncForPC(frame.PC)
+		signature := details.Name()
+		path, line := details.FileLine(frame.PC)
+		splitPath := strings.Split(path, "/")
+
+		splitSignature := strings.Split(signature, ".")
+		pkg, method := splitSignature[0], splitSignature[len(splitSignature)-1]
+
+		tb := &MethodTraceback{
+			filename:  splitPath[len(splitPath)-1],
+			fullPath:  path,
+			line:      line,
+			signature: signature,
+			Package:   pkg,
+			Method:    method,
+		}
+		list = append(list, tb)
+	}
+	sort.Slice(list, func(i, j int) bool {
+		return j < i
+	})
+	return list
+}
+func (l *Logger) formatFullTraceback(tracebacks []*MethodTraceback) string {
+	formatted := make([]string, 0)
+	for _, tb := range tracebacks {
+		formatted = append(formatted, l.formatTraceback(tb))
+	}
+	return strings.Join(formatted, "->")
+}
+
 func (l *Logger) buildString(level LogLevel, m []any) string {
 	args := []string{
 		fmt.Sprintf("[%s]", l.prefix),
@@ -174,7 +216,7 @@ func (l *Logger) print(level LogLevel, m []any) {
 	}
 
 	for _, writer := range l.writers {
-		writer(level, l.prefix, l.formatTraceback(l.getTraceback()), m)
+		writer(level, l.prefix, l.formatFullTraceback(l.getFullTraceback(4)), m)
 	}
 
 	if l.f != nil {

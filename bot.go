@@ -217,32 +217,31 @@ func (b *Bot) Run() {
 		}
 
 		u := queue.Dequeue()
+		ctx := &MsgContext{
+			Bot:    b,
+			Update: u,
+		}
+		for _, middleware := range b.middlewares {
+			middleware.Execute(ctx, b.dbContext)
+		}
+
+		for _, plugin := range b.plugins {
+			if plugin.UpdateListener != nil {
+				(*plugin.UpdateListener)(ctx, b.dbContext)
+			}
+		}
+
 		if u.CallbackQuery != nil {
-			b.handleCallback(u)
+			b.handleCallback(u, ctx)
 		} else {
-			b.handleMessage(u)
+			b.handleMessage(u, ctx)
 		}
 	}
 }
 
 // {"callback_query":{"chat_instance":"6202057960757700762","data":"aboba","from":{"first_name":"scuroneko","id":314834933,"is_bot":false,"language_code":"ru","username":"scuroneko"},"id":"1352205741990111553","message":{"chat":{"first_name":"scuroneko","id":314834933,"type":"private","username":"scuroneko"},"date":1734338107,"from":{"first_name":"Kurumi","id":7718900880,"is_bot":true,"username":"kurumi_game_bot"},"message_id":19,"reply_markup":{"inline_keyboard":[[{"callback_data":"aboba","text":"Test"},{"callback_data":"another","text":"Another"}]]},"text":"Aboba"}},"update_id":350979488}
 
-func (b *Bot) handleMessage(update *Update) {
-	ctx := &MsgContext{
-		Bot:    b,
-		Update: update,
-	}
-
-	for _, middleware := range b.middlewares {
-		middleware.Execute(ctx, b.dbContext)
-	}
-
-	for _, plugin := range b.plugins {
-		if plugin.UpdateListener != nil {
-			(*plugin.UpdateListener)(ctx, b.dbContext)
-		}
-	}
-
+func (b *Bot) handleMessage(update *Update, ctx *MsgContext) {
 	var text string
 	if update.Message == nil {
 		return
@@ -265,7 +264,6 @@ func (b *Bot) handleMessage(update *Update) {
 	text = strings.TrimSpace(text[len(prefix):])
 
 	for _, plugin := range b.plugins {
-
 		// Check every command
 		for cmd := range plugin.Commands {
 			if !strings.HasPrefix(text, cmd) {
@@ -280,23 +278,7 @@ func (b *Bot) handleMessage(update *Update) {
 	}
 }
 
-func (b *Bot) handleCallback(update *Update) {
-	ctx := &MsgContext{
-		Bot:    b,
-		Update: update,
-	}
-
-	for _, m := range b.middlewares {
-		m.Execute(ctx, b.dbContext)
-	}
-
-	for _, plugin := range b.plugins {
-		if plugin.UpdateListener != nil {
-			lis := *plugin.UpdateListener
-			lis(ctx, b.dbContext)
-		}
-	}
-
+func (b *Bot) handleCallback(update *Update, ctx *MsgContext) {
 	for _, plugin := range b.plugins {
 		for payload := range plugin.Payloads {
 			if !strings.HasPrefix(update.CallbackQuery.Data, payload) {
