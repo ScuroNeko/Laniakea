@@ -7,7 +7,12 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
+
+	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"gorm.io/gorm"
 )
 
 type ParseMode string
@@ -26,8 +31,11 @@ type Bot struct {
 	logger        *Logger
 	requestLogger *Logger
 
-	plugins  []*Plugin
-	prefixes []string
+	plugins     []*Plugin
+	middlewares []*Middleware
+	prefixes    []string
+
+	dbContext *DatabaseContext
 
 	updateOffset int
 	updateTypes  []string
@@ -45,7 +53,14 @@ type BotSettings struct {
 }
 
 func LoadSettingsFromEnv() *BotSettings {
-
+	return &BotSettings{
+		Token:            os.Getenv("TG_TOKEN"),
+		Debug:            os.Getenv("DEBUG") == "true",
+		ErrorTemplate:    os.Getenv("ERROR_TEMPLATE"),
+		Prefixes:         LoadPrefixesFromEnv(),
+		UpdateTypes:      strings.Split(os.Getenv("UPDATE_TYPES"), ";"),
+		UseRequestLogger: os.Getenv("USE_REQ_LOG") == "true",
+	}
 }
 
 type MsgContext struct {
@@ -56,6 +71,12 @@ type MsgContext struct {
 	Prefix string
 	Text   string
 	Args   []string
+}
+
+type DatabaseContext struct {
+	PostgresSQL *gorm.DB
+	MongoDB     *mongo.Client
+	Redis       *redis.Client
 }
 
 func NewBot(settings *BotSettings) *Bot {
@@ -95,6 +116,11 @@ func (b *Bot) Close() {
 	}
 }
 
+func (b *Bot) InitDatabaseContext(ctx *DatabaseContext) *Bot {
+	b.dbContext = ctx
+	return b
+}
+
 func (b *Bot) UpdateTypes(t ...string) *Bot {
 	b.updateTypes = make([]string, 0)
 	b.updateTypes = append(b.updateTypes, t...)
@@ -132,6 +158,23 @@ func (b *Bot) AddPlugins(plugin ...*Plugin) *Bot {
 	b.plugins = append(b.plugins, plugin...)
 	for _, p := range plugin {
 		b.logger.Debug(fmt.Sprintf("plugins with name \"%s\" was registered", p.Name))
+	}
+	return b
+}
+
+func (b *Bot) AddMiddleware(middleware ...*Middleware) *Bot {
+	sort.Slice(middleware, func(a, b int) bool {
+		first := middleware[a]
+		second := middleware[b]
+		if first.Order == second.Order {
+			return first.Name < second.Name
+		}
+		return middleware[a].Order < middleware[b].Order
+	})
+
+	b.middlewares = append(b.middlewares, middleware...)
+	for _, m := range middleware {
+		b.logger.Debug(fmt.Sprintf("middleware with name \"%s\" was registered", m.Name))
 	}
 	return b
 }
@@ -181,9 +224,13 @@ func (b *Bot) handleMessage(update *Update) {
 		Update: update,
 	}
 
+	for _, middleware := range b.middlewares {
+		middleware.Execute(ctx, b.dbContext)
+	}
+
 	for _, plugin := range b.plugins {
 		if plugin.UpdateListener != nil {
-			(*plugin.UpdateListener)(ctx)
+			(*plugin.UpdateListener)(ctx, b.dbContext)
 		}
 	}
 
@@ -219,7 +266,7 @@ func (b *Bot) handleMessage(update *Update) {
 			ctx.Text = strings.TrimSpace(text[len(cmd):])
 			ctx.Args = strings.Split(ctx.Text, " ")
 
-			go plugin.Execute(cmd, ctx)
+			go plugin.Execute(cmd, ctx, b.dbContext)
 		}
 	}
 }
@@ -230,9 +277,13 @@ func (b *Bot) handleCallback(update *Update) {
 		Update: update,
 	}
 
+	for _, m := range b.middlewares {
+		m.Execute(ctx, b.dbContext)
+	}
+
 	for _, plugin := range b.plugins {
 		if plugin.UpdateListener != nil {
-			(*plugin.UpdateListener)(ctx)
+			(*plugin.UpdateListener)(ctx, b.dbContext)
 		}
 	}
 
@@ -241,7 +292,7 @@ func (b *Bot) handleCallback(update *Update) {
 			if !strings.HasPrefix(update.CallbackQuery.Data, payload) {
 				continue
 			}
-			go plugin.ExecutePayload(payload, ctx)
+			go plugin.ExecutePayload(payload, ctx, b.dbContext)
 		}
 	}
 }

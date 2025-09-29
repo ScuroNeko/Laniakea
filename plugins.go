@@ -1,6 +1,6 @@
 package laniakea
 
-type CommandExecutor func(ctx *MsgContext)
+type CommandExecutor func(ctx *MsgContext, dbContext *DatabaseContext)
 
 type PluginBuilder struct {
 	name           string
@@ -56,10 +56,59 @@ func (p *PluginBuilder) Build() *Plugin {
 	return plugin
 }
 
-func (p *Plugin) Execute(cmd string, ctx *MsgContext) {
-	(*p.Commands[cmd])(ctx)
+func (p *Plugin) Execute(cmd string, ctx *MsgContext, dbContext *DatabaseContext) {
+	(*p.Commands[cmd])(ctx, dbContext)
 }
 
-func (p *Plugin) ExecutePayload(payload string, ctx *MsgContext) {
-	(*p.Payloads[payload])(ctx)
+func (p *Plugin) ExecutePayload(payload string, ctx *MsgContext, dbContext *DatabaseContext) {
+	(*p.Payloads[payload])(ctx, dbContext)
+}
+
+type Middleware struct {
+	Name     string
+	Executor *CommandExecutor
+	Order    int
+	Async    bool
+}
+type MiddlewareBuilder struct {
+	name     string
+	executor *CommandExecutor
+	order    int
+	async    bool
+}
+
+func NewMiddleware(name string) *MiddlewareBuilder {
+	return &MiddlewareBuilder{name: name, async: false}
+}
+func (m *MiddlewareBuilder) SetName(name string) *MiddlewareBuilder {
+	m.name = name
+	return m
+}
+func (m *MiddlewareBuilder) SetExecutor(executor CommandExecutor) *MiddlewareBuilder {
+	m.executor = &executor
+	return m
+}
+func (m *MiddlewareBuilder) SetOrder(order int) *MiddlewareBuilder {
+	m.order = order
+	return m
+}
+func (m *MiddlewareBuilder) SetAsync(async bool) *MiddlewareBuilder {
+	m.async = async
+	return m
+}
+func (m *MiddlewareBuilder) Build() *Middleware {
+	return &Middleware{
+		Name:     m.name,
+		Executor: m.executor,
+		Order:    m.order,
+		Async:    m.async,
+	}
+}
+func (m *Middleware) Execute(ctx *MsgContext, db *DatabaseContext) {
+	exec := *m.Executor
+	if m.Async {
+		go exec(ctx, db)
+	} else {
+		exec(ctx, db)
+	}
 }
