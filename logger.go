@@ -5,17 +5,21 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/fatih/color"
 )
 
+type LoggerWriter func(level LogLevel, prefix, traceback string, message []any)
+
 type Logger struct {
 	prefix         string
 	level          LogLevel
 	printTraceback bool
 	printTime      bool
+	writers        []LoggerWriter
 
 	f *os.File
 }
@@ -24,6 +28,10 @@ type LogLevel struct {
 	n uint8
 	t string
 	c color.Attribute
+}
+
+func (l *LogLevel) GetName() string {
+	return l.t
 }
 
 type MethodTraceback struct {
@@ -36,11 +44,11 @@ type MethodTraceback struct {
 }
 
 var (
-	INFO  LogLevel = LogLevel{n: 0, t: "info", c: color.FgWhite}
-	WARN  LogLevel = LogLevel{n: 1, t: "warn", c: color.FgHiYellow}
-	ERROR LogLevel = LogLevel{n: 2, t: "error", c: color.FgHiRed}
-	FATAL LogLevel = LogLevel{n: 3, t: "fatal", c: color.FgRed}
-	DEBUG LogLevel = LogLevel{n: 4, t: "debug", c: color.FgGreen}
+	INFO  = LogLevel{n: 0, t: "info", c: color.FgWhite}
+	WARN  = LogLevel{n: 1, t: "warn", c: color.FgHiYellow}
+	ERROR = LogLevel{n: 2, t: "error", c: color.FgHiRed}
+	FATAL = LogLevel{n: 3, t: "fatal", c: color.FgRed}
+	DEBUG = LogLevel{n: 4, t: "debug", c: color.FgGreen}
 )
 
 func CreateLogger() *Logger {
@@ -74,6 +82,14 @@ func (l *Logger) Level(level LogLevel) *Logger {
 }
 func (l *Logger) PrintTraceback(b bool) *Logger {
 	l.printTraceback = b
+	return l
+}
+func (l *Logger) PrintTime(b bool) *Logger {
+	l.printTime = b
+	return l
+}
+func (l *Logger) AddWriters(writers []LoggerWriter) *Logger {
+	l.writers = append(l.writers, writers...)
 	return l
 }
 
@@ -127,6 +143,47 @@ func (l *Logger) formatTraceback(mt *MethodTraceback) string {
 	return fmt.Sprintf("%s:%s:%d", mt.filename, mt.Method, mt.line)
 }
 
+func (l *Logger) getFullTraceback(skip int) []*MethodTraceback {
+	pc := make([]uintptr, 15)
+	runtime.Callers(skip, pc)
+	list := make([]*MethodTraceback, 0)
+	frames := runtime.CallersFrames(pc)
+	for {
+		frame, more := frames.Next()
+		if !more {
+			break
+		}
+		details := runtime.FuncForPC(frame.PC)
+		signature := details.Name()
+		path, line := details.FileLine(frame.PC)
+		splitPath := strings.Split(path, "/")
+
+		splitSignature := strings.Split(signature, ".")
+		pkg, method := splitSignature[0], splitSignature[len(splitSignature)-1]
+
+		tb := &MethodTraceback{
+			filename:  splitPath[len(splitPath)-1],
+			fullPath:  path,
+			line:      line,
+			signature: signature,
+			Package:   pkg,
+			Method:    method,
+		}
+		list = append(list, tb)
+	}
+	sort.Slice(list, func(i, j int) bool {
+		return j < i
+	})
+	return list
+}
+func (l *Logger) formatFullTraceback(tracebacks []*MethodTraceback) string {
+	formatted := make([]string, 0)
+	for _, tb := range tracebacks {
+		formatted = append(formatted, l.formatTraceback(tb))
+	}
+	return strings.Join(formatted, "->")
+}
+
 func (l *Logger) buildString(level LogLevel, m []any) string {
 	args := []string{
 		fmt.Sprintf("[%s]", l.prefix),
@@ -152,11 +209,22 @@ func (l *Logger) print(level LogLevel, m []any) {
 	if l.level.n < level.n {
 		return
 	}
-	color.New(level.c).Println(l.buildString(level, m))
+	_, err := color.New(level.c).Println(l.buildString(level, m))
+	if err != nil {
+		l.Fatal(err)
+		return
+	}
+
+	for _, writer := range l.writers {
+		writer(level, l.prefix, l.formatFullTraceback(l.getFullTraceback(4)), m)
+	}
 
 	if l.f != nil {
-		if _, err := l.f.Write([]byte(l.buildString(level, m) + "\n")); err != nil {
-			l.Fatal(err)
+		writeToFiles := os.Getenv("WRITE_TO_FILE")
+		if writeToFiles != "false" {
+			if _, err := l.f.Write([]byte(l.buildString(level, m) + "\n")); err != nil {
+				l.Fatal(err)
+			}
 		}
 	}
 }

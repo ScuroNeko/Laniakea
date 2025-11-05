@@ -7,7 +7,12 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
+
+	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"gorm.io/gorm"
 )
 
 type ParseMode string
@@ -26,8 +31,11 @@ type Bot struct {
 	logger        *Logger
 	requestLogger *Logger
 
-	plugins  []*Plugin
-	prefixes []string
+	plugins     []*Plugin
+	middlewares []*Middleware
+	prefixes    []string
+
+	dbContext *DatabaseContext
 
 	updateOffset int
 	updateTypes  []string
@@ -45,7 +53,14 @@ type BotSettings struct {
 }
 
 func LoadSettingsFromEnv() *BotSettings {
-
+	return &BotSettings{
+		Token:            os.Getenv("TG_TOKEN"),
+		Debug:            os.Getenv("DEBUG") == "true",
+		ErrorTemplate:    os.Getenv("ERROR_TEMPLATE"),
+		Prefixes:         LoadPrefixesFromEnv(),
+		UpdateTypes:      strings.Split(os.Getenv("UPDATE_TYPES"), ";"),
+		UseRequestLogger: os.Getenv("USE_REQ_LOG") == "true",
+	}
 }
 
 type MsgContext struct {
@@ -56,6 +71,12 @@ type MsgContext struct {
 	Prefix string
 	Text   string
 	Args   []string
+}
+
+type DatabaseContext struct {
+	PostgresSQL *gorm.DB
+	MongoDB     *mongo.Client
+	Redis       *redis.Client
 }
 
 func NewBot(settings *BotSettings) *Bot {
@@ -79,6 +100,7 @@ func NewBot(settings *BotSettings) *Bot {
 		level = DEBUG
 	}
 	bot.logger = CreateLogger().Level(level).OpenFile(fmt.Sprintf("%s/main.log", strings.TrimRight(settings.LoggerBasePath, "/")))
+	bot.logger = bot.logger.PrintTraceback(true)
 	if settings.UseRequestLogger {
 		bot.requestLogger = CreateLogger().Level(level).Prefix("REQUESTS").OpenFile(fmt.Sprintf("%s/requests.log", strings.TrimRight(settings.LoggerBasePath, "/")))
 	}
@@ -93,6 +115,19 @@ func (b *Bot) Close() {
 	} else {
 		fmt.Println("log closed")
 	}
+}
+
+func (b *Bot) InitDatabaseContext(ctx *DatabaseContext) *Bot {
+	b.dbContext = ctx
+	return b
+}
+func (b *Bot) AddDatabaseLogger(writer func(db *DatabaseContext) LoggerWriter) *Bot {
+	w := []LoggerWriter{writer(b.dbContext)}
+	b.logger.AddWriters(w)
+	if b.requestLogger != nil {
+		b.requestLogger.AddWriters(w)
+	}
+	return b
 }
 
 func (b *Bot) UpdateTypes(t ...string) *Bot {
@@ -111,11 +146,11 @@ func (b *Bot) AddPrefixes(prefixes ...string) *Bot {
 }
 
 func LoadPrefixesFromEnv() []string {
-	prefixesS, exists := os.LookupEnv("PREFIXES")
+	prefixes, exists := os.LookupEnv("PREFIXES")
 	if !exists {
 		return []string{"!"}
 	}
-	return strings.Split(prefixesS, ";")
+	return strings.Split(prefixes, ";")
 }
 
 func (b *Bot) ErrorTemplate(s string) *Bot {
@@ -132,6 +167,23 @@ func (b *Bot) AddPlugins(plugin ...*Plugin) *Bot {
 	b.plugins = append(b.plugins, plugin...)
 	for _, p := range plugin {
 		b.logger.Debug(fmt.Sprintf("plugins with name \"%s\" was registered", p.Name))
+	}
+	return b
+}
+
+func (b *Bot) AddMiddleware(middleware ...*Middleware) *Bot {
+	sort.Slice(middleware, func(a, b int) bool {
+		first := middleware[a]
+		second := middleware[b]
+		if first.Order == second.Order {
+			return first.Name < second.Name
+		}
+		return middleware[a].Order < middleware[b].Order
+	})
+
+	b.middlewares = append(b.middlewares, middleware...)
+	for _, m := range middleware {
+		b.logger.Debug(fmt.Sprintf("middleware with name \"%s\" was registered", m.Name))
 	}
 	return b
 }
@@ -165,28 +217,31 @@ func (b *Bot) Run() {
 		}
 
 		u := queue.Dequeue()
+		ctx := &MsgContext{
+			Bot:    b,
+			Update: u,
+		}
+		for _, middleware := range b.middlewares {
+			middleware.Execute(ctx, b.dbContext)
+		}
+
+		for _, plugin := range b.plugins {
+			if plugin.UpdateListener != nil {
+				(*plugin.UpdateListener)(ctx, b.dbContext)
+			}
+		}
+
 		if u.CallbackQuery != nil {
-			b.handleCallback(u)
+			b.handleCallback(u, ctx)
 		} else {
-			b.handleMessage(u)
+			b.handleMessage(u, ctx)
 		}
 	}
 }
 
 // {"callback_query":{"chat_instance":"6202057960757700762","data":"aboba","from":{"first_name":"scuroneko","id":314834933,"is_bot":false,"language_code":"ru","username":"scuroneko"},"id":"1352205741990111553","message":{"chat":{"first_name":"scuroneko","id":314834933,"type":"private","username":"scuroneko"},"date":1734338107,"from":{"first_name":"Kurumi","id":7718900880,"is_bot":true,"username":"kurumi_game_bot"},"message_id":19,"reply_markup":{"inline_keyboard":[[{"callback_data":"aboba","text":"Test"},{"callback_data":"another","text":"Another"}]]},"text":"Aboba"}},"update_id":350979488}
 
-func (b *Bot) handleMessage(update *Update) {
-	ctx := &MsgContext{
-		Bot:    b,
-		Update: update,
-	}
-
-	for _, plugin := range b.plugins {
-		if plugin.UpdateListener != nil {
-			(*plugin.UpdateListener)(ctx)
-		}
-	}
-
+func (b *Bot) handleMessage(update *Update, ctx *MsgContext) {
 	var text string
 	if update.Message == nil {
 		return
@@ -209,7 +264,6 @@ func (b *Bot) handleMessage(update *Update) {
 	text = strings.TrimSpace(text[len(prefix):])
 
 	for _, plugin := range b.plugins {
-
 		// Check every command
 		for cmd := range plugin.Commands {
 			if !strings.HasPrefix(text, cmd) {
@@ -219,29 +273,18 @@ func (b *Bot) handleMessage(update *Update) {
 			ctx.Text = strings.TrimSpace(text[len(cmd):])
 			ctx.Args = strings.Split(ctx.Text, " ")
 
-			go plugin.Execute(cmd, ctx)
+			go plugin.Execute(cmd, ctx, b.dbContext)
 		}
 	}
 }
 
-func (b *Bot) handleCallback(update *Update) {
-	ctx := &MsgContext{
-		Bot:    b,
-		Update: update,
-	}
-
-	for _, plugin := range b.plugins {
-		if plugin.UpdateListener != nil {
-			(*plugin.UpdateListener)(ctx)
-		}
-	}
-
+func (b *Bot) handleCallback(update *Update, ctx *MsgContext) {
 	for _, plugin := range b.plugins {
 		for payload := range plugin.Payloads {
 			if !strings.HasPrefix(update.CallbackQuery.Data, payload) {
 				continue
 			}
-			go plugin.ExecutePayload(payload, ctx)
+			go plugin.ExecutePayload(payload, ctx, b.dbContext)
 		}
 	}
 }
@@ -259,7 +302,7 @@ func (ctx *MsgContext) Answer(text string) {
 	_, err := ctx.Bot.SendMessage(&SendMessageP{
 		ChatID:    ctx.Msg.Chat.ID,
 		Text:      text,
-		ParseMode: "markdown",
+		ParseMode: ParseMD,
 	})
 	if err != nil {
 		ctx.Bot.logger.Error(err)
@@ -294,21 +337,21 @@ func (b *Bot) Logger() *Logger {
 }
 
 type ApiResponse struct {
-	Ok          bool                   `json:"ok"`
-	Result      map[string]interface{} `json:"result,omitempty"`
-	Description string                 `json:"description,omitempty"`
-	ErrorCode   int                    `json:"error_code,omitempty"`
+	Ok          bool           `json:"ok"`
+	Result      map[string]any `json:"result,omitempty"`
+	Description string         `json:"description,omitempty"`
+	ErrorCode   int            `json:"error_code,omitempty"`
 }
 
 type ApiResponseA struct {
-	Ok          bool          `json:"ok"`
-	Result      []interface{} `json:"result,omitempty"`
-	Description string        `json:"description,omitempty"`
-	ErrorCode   int           `json:"error_code,omitempty"`
+	Ok          bool   `json:"ok"`
+	Result      []any  `json:"result,omitempty"`
+	Description string `json:"description,omitempty"`
+	ErrorCode   int    `json:"error_code,omitempty"`
 }
 
 // request is a low-level call to api.
-func (b *Bot) request(methodName string, params map[string]interface{}) (map[string]interface{}, error) {
+func (b *Bot) request(methodName string, params map[string]any) (map[string]any, error) {
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(params)
 	if err != nil {
@@ -333,7 +376,7 @@ func (b *Bot) request(methodName string, params map[string]interface{}) (map[str
 	}
 	response := new(ApiResponse)
 
-	var result map[string]interface{}
+	var result map[string]any
 
 	err = json.Unmarshal(data, &response)
 	if err != nil {
