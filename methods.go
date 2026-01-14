@@ -2,7 +2,7 @@ package laniakea
 
 import "fmt"
 
-var NO_PARAMS = make(map[string]interface{})
+var NoParams = make(map[string]interface{})
 
 func (b *Bot) Updates() ([]*Update, error) {
 	params := make(map[string]interface{})
@@ -40,7 +40,7 @@ func (b *Bot) Updates() ([]*Update, error) {
 }
 
 func (b *Bot) GetMe() (*User, error) {
-	data, err := b.request("getMe", NO_PARAMS)
+	data, err := b.request("getMe", NoParams)
 	if err != nil {
 		return nil, err
 	}
@@ -53,8 +53,8 @@ type SendMessageP struct {
 	BusinessConnectionID string                `json:"business_connection_id,omitempty"`
 	ChatID               int                   `json:"chat_id"`
 	MessageThreadID      int                   `json:"message_thread_id,omitempty"`
-	Text                 string                `json:"text"`
 	ParseMode            ParseMode             `json:"parse_mode,omitempty"`
+	Text                 string                `json:"text"`
 	Entities             []*MessageEntity      `json:"entities,omitempty"`
 	LinkPreviewOptions   *LinkPreviewOptions   `json:"link_preview_options,omitempty"`
 	DisableNotifications bool                  `json:"disable_notifications,omitempty"`
@@ -67,11 +67,7 @@ type SendMessageP struct {
 }
 
 func (b *Bot) SendMessage(params *SendMessageP) (*Message, error) {
-	dataP, err := StructToMap(params)
-	if err != nil {
-		return nil, err
-	}
-	data, err := b.request("sendMessage", dataP)
+	data, err := b.request("sendMessage", params)
 	if err != nil {
 		return nil, err
 	}
@@ -84,9 +80,9 @@ type SendPhotoP struct {
 	BusinessConnectionID  string           `json:"business_connection_id,omitempty"`
 	ChatID                int              `json:"chat_id"`
 	MessageThreadID       int              `json:"message_thread_id,omitempty"`
+	ParseMode             ParseMode        `json:"parse_mode,omitempty"`
 	Photo                 string           `json:"photo"`
 	Caption               string           `json:"caption,omitempty"`
-	ParseMode             ParseMode        `json:"parse_mode,omitempty"`
 	CaptionEntities       []*MessageEntity `json:"caption_entities,omitempty"`
 	ShowCaptionAboveMedia bool             `json:"show_caption_above_media"`
 	HasSpoiler            bool             `json:"has_spoiler"`
@@ -97,11 +93,60 @@ type SendPhotoP struct {
 }
 
 func (b *Bot) SendPhoto(params *SendPhotoP) (*Message, error) {
-	dataP, err := StructToMap(params)
+	data, err := b.request("sendPhoto", params)
 	if err != nil {
 		return nil, err
 	}
-	data, err := b.request("sendPhoto", dataP)
+	message := new(Message)
+	err = MapToStruct(data, message)
+	return message, err
+}
+
+type EditMessageTextP struct {
+	BusinessConnectionID string    `json:"business_connection_id,omitempty"`
+	ChatID               int       `json:"chat_id,omitempty"`
+	MessageID            int       `json:"message_id,omitempty"`
+	InlineMessageID      string    `json:"inline_message_id,omitempty"`
+	Text                 string    `json:"text"`
+	ParseMode            ParseMode `json:"parse_mode,omitempty"`
+}
+
+func (b *Bot) EditMessageText(params *EditMessageTextP) (*Message, error) {
+	data, err := b.request("editMessageText", params)
+	if err != nil {
+		return nil, err
+	}
+	message := new(Message)
+	err = MapToStruct(data, message)
+	return message, err
+}
+
+type EditMessageCaptionP struct {
+	BusinessConnectionID string    `json:"business_connection_id,omitempty"`
+	ChatID               int       `json:"chat_id,omitempty"`
+	MessageID            int       `json:"message_id,omitempty"`
+	InlineMessageID      string    `json:"inline_message_id,omitempty"`
+	Caption              string    `json:"caption"`
+	ParseMode            ParseMode `json:"parse_mode,omitempty"`
+}
+
+func (b *Bot) EditMessageCaption(params *EditMessageCaptionP) (*Message, error) {
+	data, err := b.request("editMessageCaption", params)
+	if err != nil {
+		return nil, err
+	}
+	message := new(Message)
+	err = MapToStruct(data, message)
+	return message, err
+}
+
+type DeleteMessageP struct {
+	ChatID    int `json:"chat_id"`
+	MessageID int `json:"message_id"`
+}
+
+func (b *Bot) DeleteMessage(params *DeleteMessageP) (*Message, error) {
+	data, err := b.request("deleteMessage", params)
 	if err != nil {
 		return nil, err
 	}

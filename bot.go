@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/vinovest/sqlx"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"gorm.io/gorm"
 )
 
 type ParseMode string
@@ -74,7 +74,7 @@ type MsgContext struct {
 }
 
 type DatabaseContext struct {
-	PostgresSQL *gorm.DB
+	PostgresSQL *sqlx.DB
 	MongoDB     *mongo.Client
 	Redis       *redis.Client
 }
@@ -217,6 +217,10 @@ func (b *Bot) Run() {
 		}
 
 		u := queue.Dequeue()
+		if u == nil {
+			b.logger.Error("update is nil")
+			continue
+		}
 		ctx := &MsgContext{
 			Bot:    b,
 			Update: u,
@@ -298,18 +302,28 @@ func (b *Bot) checkPrefixes(text string) (string, bool) {
 	return "", false
 }
 
-func (ctx *MsgContext) Answer(text string) {
-	_, err := ctx.Bot.SendMessage(&SendMessageP{
+type AnswerMessage struct {
+	MessageID int
+	IsMedia   bool
+	ctx       *MsgContext
+}
+
+func (ctx *MsgContext) Answer(text string) *AnswerMessage {
+	msg, err := ctx.Bot.SendMessage(&SendMessageP{
 		ChatID:    ctx.Msg.Chat.ID,
 		Text:      text,
 		ParseMode: ParseMD,
 	})
 	if err != nil {
 		ctx.Bot.logger.Error(err)
+		return nil
+	}
+	return &AnswerMessage{
+		MessageID: msg.MessageID, ctx: ctx, IsMedia: false,
 	}
 }
 
-func (ctx *MsgContext) AnswerPhoto(photoId string, text string) {
+func (ctx *MsgContext) AnswerPhoto(photoId string, text string) *AnswerMessage {
 	_, err := ctx.Bot.SendPhoto(&SendPhotoP{
 		ChatID:    ctx.Msg.Chat.ID,
 		Caption:   text,
@@ -318,6 +332,41 @@ func (ctx *MsgContext) AnswerPhoto(photoId string, text string) {
 	})
 	if err != nil {
 		ctx.Bot.logger.Error(err)
+	}
+	return &AnswerMessage{
+		MessageID: ctx.Msg.MessageID, ctx: ctx, IsMedia: true,
+	}
+}
+
+func (m *AnswerMessage) Edit(text string) *AnswerMessage {
+	var msg *Message
+	var err error
+	if m.IsMedia {
+		msg, err = m.ctx.Bot.EditMessageCaption(&EditMessageCaptionP{
+			MessageID: m.MessageID,
+			ChatID:    m.ctx.Msg.Chat.ID,
+			Caption:   text,
+			ParseMode: ParseMD,
+		})
+	} else {
+		msg, err = m.ctx.Bot.EditMessageText(&EditMessageTextP{
+			MessageID: m.MessageID,
+			ChatID:    m.ctx.Msg.Chat.ID,
+			Text:      text,
+			ParseMode: ParseMD,
+		})
+	}
+	if err != nil {
+		m.ctx.Bot.logger.Error(err)
+	}
+	m.MessageID = msg.MessageID
+	return m
+}
+
+func (m *AnswerMessage) Delete() {
+	_, err := m.ctx.Bot.DeleteMessage(&DeleteMessageP{MessageID: m.MessageID, ChatID: m.ctx.Msg.Chat.ID})
+	if err != nil {
+		m.ctx.Bot.logger.Error(err)
 	}
 }
 
@@ -351,7 +400,7 @@ type ApiResponseA struct {
 }
 
 // request is a low-level call to api.
-func (b *Bot) request(methodName string, params map[string]interface{}) (map[string]interface{}, error) {
+func (b *Bot) request(methodName string, params any) (map[string]interface{}, error) {
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(params)
 	if err != nil {
@@ -370,6 +419,7 @@ func (b *Bot) request(methodName string, params map[string]interface{}) (map[str
 	if err != nil {
 		return nil, err
 	}
+	defer r.Body.Close()
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, err

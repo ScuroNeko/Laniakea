@@ -1,6 +1,10 @@
 package laniakea
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
 
 func MapToStruct(m map[string]interface{}, s interface{}) error {
 	data, err := json.Marshal(m)
@@ -32,4 +36,19 @@ func Map[T, V any](ts []T, fn func(T) V) []V {
 		result[i] = fn(t)
 	}
 	return result
+}
+
+func EscapeMarkdown(s string) string {
+	s = strings.ReplaceAll(s, "_", "\\_")
+	s = strings.ReplaceAll(s, "*", "\\*")
+	s = strings.ReplaceAll(s, "[", "\\[")
+	return strings.ReplaceAll(s, "`", "\\`")
+}
+
+func EscapeMarkdownV2(s string) string {
+	symbols := []string{"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!"}
+	for _, symbol := range symbols {
+		s = strings.ReplaceAll(s, symbol, fmt.Sprintf("\\%s", symbol))
+	}
+	return s
 }
