@@ -50,6 +50,7 @@ type BotSettings struct {
 	UpdateTypes      []string
 	LoggerBasePath   string
 	UseRequestLogger bool
+	WriteToFile      bool
 }
 
 func LoadSettingsFromEnv() *BotSettings {
@@ -60,6 +61,7 @@ func LoadSettingsFromEnv() *BotSettings {
 		Prefixes:         LoadPrefixesFromEnv(),
 		UpdateTypes:      strings.Split(os.Getenv("UPDATE_TYPES"), ";"),
 		UseRequestLogger: os.Getenv("USE_REQ_LOG") == "true",
+		WriteToFile:      os.Getenv("WRITE_TO_FILE") == "true",
 	}
 }
 
@@ -99,10 +101,16 @@ func NewBot(settings *BotSettings) *Bot {
 	if settings.Debug {
 		level = DEBUG
 	}
-	bot.logger = CreateLogger().Level(level).OpenFile(fmt.Sprintf("%s/main.log", strings.TrimRight(settings.LoggerBasePath, "/")))
+	bot.logger = CreateLogger().Level(level)
+	if settings.WriteToFile {
+		bot.logger = bot.logger.OpenFile(fmt.Sprintf("%s/main.log", strings.TrimRight(settings.LoggerBasePath, "/")))
+	}
 	bot.logger = bot.logger.PrintTraceback(true)
 	if settings.UseRequestLogger {
-		bot.requestLogger = CreateLogger().Level(level).Prefix("REQUESTS").OpenFile(fmt.Sprintf("%s/requests.log", strings.TrimRight(settings.LoggerBasePath, "/")))
+		bot.requestLogger = CreateLogger().Level(level).Prefix("REQUESTS")
+		if settings.WriteToFile {
+			bot.requestLogger = bot.requestLogger.OpenFile(fmt.Sprintf("%s/requests.log", strings.TrimRight(settings.LoggerBasePath, "/")))
+		}
 	}
 
 	return bot
@@ -375,6 +383,7 @@ func (ctx *MsgContext) Error(err error) {
 		ChatID: ctx.Msg.Chat.ID,
 		Text:   fmt.Sprintf(ctx.Bot.errorTemplate, err.Error()),
 	})
+	ctx.Bot.logger.Error(err)
 
 	if sendErr != nil {
 		ctx.Bot.logger.Error(sendErr)
