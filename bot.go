@@ -330,6 +330,10 @@ func (ctx *MsgContext) Answer(text string) *AnswerMessage {
 		MessageID: msg.MessageID, ctx: ctx, IsMedia: false,
 	}
 }
+func (ctx *MsgContext) Answerf(template string, args ...any) *AnswerMessage {
+	test := fmt.Sprintf(template, args...)
+	return ctx.Answer(test)
+}
 
 func (ctx *MsgContext) AnswerPhoto(photoId string, text string) *AnswerMessage {
 	_, err := ctx.Bot.SendPhoto(&SendPhotoP{
@@ -372,7 +376,9 @@ func (m *AnswerMessage) Edit(text string) *AnswerMessage {
 }
 
 func (m *AnswerMessage) Delete() {
-	_, err := m.ctx.Bot.DeleteMessage(&DeleteMessageP{MessageID: m.MessageID, ChatID: m.ctx.Msg.Chat.ID})
+	_, err := m.ctx.Bot.DeleteMessage(&DeleteMessageP{
+		MessageID: m.MessageID, ChatID: m.ctx.Msg.Chat.ID,
+	})
 	if err != nil {
 		m.ctx.Bot.logger.Error(err)
 	}
@@ -381,7 +387,7 @@ func (m *AnswerMessage) Delete() {
 func (ctx *MsgContext) Error(err error) {
 	_, sendErr := ctx.Bot.SendMessage(&SendMessageP{
 		ChatID: ctx.Msg.Chat.ID,
-		Text:   fmt.Sprintf(ctx.Bot.errorTemplate, err.Error()),
+		Text:   fmt.Sprintf(ctx.Bot.errorTemplate, EscapeMarkdown(err.Error())),
 	})
 	ctx.Bot.logger.Error(err)
 
