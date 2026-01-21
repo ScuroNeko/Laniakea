@@ -43,6 +43,10 @@ type Chat struct {
 	IsForum   bool   `json:"is_forum,omitempty"`
 }
 
+type MessageReplyMarkup struct {
+	InlineKeyboard *InlineKeyboardMarkup `json:"inline_keyboard"`
+}
+
 type Message struct {
 	MessageID       int    `json:"message_id"`
 	MessageThreadID int    `json:"message_thread_id,omitempty"`
@@ -53,6 +57,8 @@ type Message struct {
 	Photo          []*PhotoSize `json:"photo,omitempty"`
 	Caption        string       `json:"caption,omitempty"`
 	ReplyToMessage *Message     `json:"reply_to_message"`
+
+	ReplyMarkup *MessageReplyMarkup `json:"reply_markup,omitempty"`
 }
 
 type InaccessableMessage struct {
@@ -103,7 +109,7 @@ type LinkPreviewOptions struct {
 }
 
 type InlineKeyboardMarkup struct {
-	InlineKeyboard [][]*InlineKeyboardButton `json:"inline_keyboard"`
+	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard"`
 }
 
 type InlineKeyboardButton struct {

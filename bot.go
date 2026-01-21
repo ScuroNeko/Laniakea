@@ -291,13 +291,20 @@ func (b *Bot) handleMessage(update *Update, ctx *MsgContext) {
 }
 
 func (b *Bot) handleCallback(update *Update, ctx *MsgContext) {
+	data := new(CallbackData)
+	err := json.Unmarshal([]byte(update.CallbackQuery.Data), data)
+	if err != nil {
+		b.logger.Error(err)
+		return
+	}
+
 	for _, plugin := range b.plugins {
-		for payload := range plugin.Payloads {
-			if !strings.HasPrefix(update.CallbackQuery.Data, payload) {
-				continue
-			}
-			go plugin.ExecutePayload(payload, ctx, b.dbContext)
+		_, ok := plugin.Payloads[data.Command]
+		if !ok {
+			continue
 		}
+		go plugin.ExecutePayload(data.Command, ctx, b.dbContext)
+		break
 	}
 }
 
@@ -312,27 +319,39 @@ func (b *Bot) checkPrefixes(text string) (string, bool) {
 
 type AnswerMessage struct {
 	MessageID int
+	Text      string
 	IsMedia   bool
+	Keyboard  *InlineKeyboard
 	ctx       *MsgContext
 }
 
-func (ctx *MsgContext) Answer(text string) *AnswerMessage {
-	msg, err := ctx.Bot.SendMessage(&SendMessageP{
+func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard) *AnswerMessage {
+	params := &SendMessageP{
 		ChatID:    ctx.Msg.Chat.ID,
 		Text:      text,
 		ParseMode: ParseMD,
-	})
+	}
+	if keyboard != nil {
+		params.ReplyMarkup = keyboard.Get()
+	}
+
+	msg, err := ctx.Bot.SendMessage(params)
 	if err != nil {
 		ctx.Bot.logger.Error(err)
 		return nil
 	}
 	return &AnswerMessage{
-		MessageID: msg.MessageID, ctx: ctx, IsMedia: false,
+		MessageID: msg.MessageID, ctx: ctx, IsMedia: false, Text: text,
 	}
 }
+func (ctx *MsgContext) Answer(text string) *AnswerMessage {
+	return ctx.answer(text, nil)
+}
 func (ctx *MsgContext) Answerf(template string, args ...any) *AnswerMessage {
-	test := fmt.Sprintf(template, args...)
-	return ctx.Answer(test)
+	return ctx.answer(fmt.Sprintf(template, args...), nil)
+}
+func (ctx *MsgContext) Keyboard(text string, kb *InlineKeyboard) *AnswerMessage {
+	return ctx.answer(text, kb)
 }
 
 func (ctx *MsgContext) AnswerPhoto(photoId string, text string) *AnswerMessage {
@@ -346,7 +365,7 @@ func (ctx *MsgContext) AnswerPhoto(photoId string, text string) *AnswerMessage {
 		ctx.Bot.logger.Error(err)
 	}
 	return &AnswerMessage{
-		MessageID: ctx.Msg.MessageID, ctx: ctx, IsMedia: true,
+		MessageID: ctx.Msg.MessageID, ctx: ctx, IsMedia: true, Text: text,
 	}
 }
 
