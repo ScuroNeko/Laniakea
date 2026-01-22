@@ -87,19 +87,20 @@ func (b *Bot) SendMessage(params *SendMessageP) (*Message, error) {
 }
 
 type SendPhotoP struct {
-	BusinessConnectionID  string           `json:"business_connection_id,omitempty"`
-	ChatID                int              `json:"chat_id"`
-	MessageThreadID       int              `json:"message_thread_id,omitempty"`
-	ParseMode             ParseMode        `json:"parse_mode,omitempty"`
-	Photo                 string           `json:"photo"`
-	Caption               string           `json:"caption,omitempty"`
-	CaptionEntities       []*MessageEntity `json:"caption_entities,omitempty"`
-	ShowCaptionAboveMedia bool             `json:"show_caption_above_media"`
-	HasSpoiler            bool             `json:"has_spoiler"`
-	DisableNotifications  bool             `json:"disable_notifications,omitempty"`
-	ProtectContent        bool             `json:"protect_content,omitempty"`
-	AllowPaidBroadcast    bool             `json:"allow_paid_broadcast,omitempty"`
-	MessageEffectID       string           `json:"message_effect_id,omitempty"`
+	BusinessConnectionID  string               `json:"business_connection_id,omitempty"`
+	ChatID                int                  `json:"chat_id"`
+	MessageThreadID       int                  `json:"message_thread_id,omitempty"`
+	ParseMode             ParseMode            `json:"parse_mode,omitempty"`
+	Photo                 string               `json:"photo"`
+	Caption               string               `json:"caption,omitempty"`
+	CaptionEntities       []*MessageEntity     `json:"caption_entities,omitempty"`
+	ShowCaptionAboveMedia bool                 `json:"show_caption_above_media"`
+	HasSpoiler            bool                 `json:"has_spoiler"`
+	DisableNotifications  bool                 `json:"disable_notifications,omitempty"`
+	ProtectContent        bool                 `json:"protect_content,omitempty"`
+	AllowPaidBroadcast    bool                 `json:"allow_paid_broadcast,omitempty"`
+	MessageEffectID       string               `json:"message_effect_id,omitempty"`
+	ReplyMarkup           InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
 func (b *Bot) SendPhoto(params *SendPhotoP) (*Message, error) {
@@ -133,12 +134,13 @@ func (b *Bot) EditMessageText(params *EditMessageTextP) (*Message, error) {
 }
 
 type EditMessageCaptionP struct {
-	BusinessConnectionID string    `json:"business_connection_id,omitempty"`
-	ChatID               int       `json:"chat_id,omitempty"`
-	MessageID            int       `json:"message_id,omitempty"`
-	InlineMessageID      string    `json:"inline_message_id,omitempty"`
-	Caption              string    `json:"caption"`
-	ParseMode            ParseMode `json:"parse_mode,omitempty"`
+	BusinessConnectionID string               `json:"business_connection_id,omitempty"`
+	ChatID               int                  `json:"chat_id,omitempty"`
+	MessageID            int                  `json:"message_id,omitempty"`
+	InlineMessageID      string               `json:"inline_message_id,omitempty"`
+	Caption              string               `json:"caption"`
+	ParseMode            ParseMode            `json:"parse_mode,omitempty"`
+	ReplyMarkup          InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
 func (b *Bot) EditMessageCaption(params *EditMessageCaptionP) (*Message, error) {

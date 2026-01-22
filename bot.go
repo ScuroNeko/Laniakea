@@ -370,6 +370,31 @@ func (ctx *MsgContext) EditCallbackf(format string, keyboard *InlineKeyboard, ar
 	return ctx.EditCallback(fmt.Sprintf(format, args...), keyboard)
 }
 
+func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeyboard) *AnswerMessage {
+	params := &EditMessageCaptionP{
+		ChatID:    ctx.Msg.Chat.ID,
+		MessageID: messageId,
+		Caption:   text,
+		ParseMode: ParseMD,
+	}
+	if kb != nil {
+		params.ReplyMarkup = kb.Get()
+	}
+	msg, err := ctx.Bot.EditMessageCaption(params)
+	if err != nil {
+		ctx.Bot.logger.Error(err)
+	}
+	return &AnswerMessage{
+		MessageID: msg.MessageID, ctx: ctx, Text: text, IsMedia: true,
+	}
+}
+func (m *AnswerMessage) EditCaption(text string) *AnswerMessage {
+	return m.ctx.editPhotoText(m.MessageID, text, nil)
+}
+func (m *AnswerMessage) EditCaptionKeyboard(text string, kb *InlineKeyboard) *AnswerMessage {
+	return m.ctx.editPhotoText(m.MessageID, text, kb)
+}
+
 func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard) *AnswerMessage {
 	params := &SendMessageP{
 		ChatID:    ctx.Msg.Chat.ID,
@@ -399,19 +424,29 @@ func (ctx *MsgContext) Keyboard(text string, kb *InlineKeyboard) *AnswerMessage 
 	return ctx.answer(text, kb)
 }
 
-func (ctx *MsgContext) AnswerPhoto(photoId string, text string) *AnswerMessage {
-	_, err := ctx.Bot.SendPhoto(&SendPhotoP{
+func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard) *AnswerMessage {
+	params := &SendPhotoP{
 		ChatID:    ctx.Msg.Chat.ID,
 		Caption:   text,
 		Photo:     photoId,
 		ParseMode: ParseMD,
-	})
+	}
+	if kb != nil {
+		params.ReplyMarkup = kb.Get()
+	}
+	msg, err := ctx.Bot.SendPhoto(params)
 	if err != nil {
 		ctx.Bot.logger.Error(err)
 	}
 	return &AnswerMessage{
-		MessageID: ctx.Msg.MessageID, ctx: ctx, IsMedia: true, Text: text,
+		MessageID: msg.MessageID, ctx: ctx, Text: text, IsMedia: true,
 	}
+}
+func (ctx *MsgContext) AnswerPhoto(photoId, text string) *AnswerMessage {
+	return ctx.answerPhoto(photoId, text, nil)
+}
+func (ctx *MsgContext) AnswerPhotoKeyboard(photoId, text string, kb *InlineKeyboard) *AnswerMessage {
+	return ctx.answerPhoto(photoId, text, kb)
 }
 
 func (ctx *MsgContext) delete(messageId int) {
