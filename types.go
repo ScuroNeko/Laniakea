@@ -12,9 +12,9 @@ type Update struct {
 	DeletedBusinessMessage *Message                     `json:"deleted_business_messages,omitempty"`
 	MessageReaction        *MessageReactionUpdated      `json:"message_reaction,omitempty"`
 	MessageReactionCount   *MessageReactionCountUpdated `json:"message_reaction_count,omitempty"`
+	CallbackQuery          *CallbackQuery               `json:"callback_query,omitempty"`
 	InlineQuery            int
 	ChosenInlineResult     int
-	CallbackQuery          *CallbackQuery `json:"callback_query,omitempty"`
 }
 
 type User struct {
@@ -44,7 +44,7 @@ type Chat struct {
 }
 
 type MessageReplyMarkup struct {
-	InlineKeyboard *InlineKeyboardMarkup `json:"inline_keyboard"`
+	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard"`
 }
 
 type Message struct {
@@ -68,8 +68,6 @@ type InaccessableMessage struct {
 }
 
 type MaybeInaccessibleMessage struct {
-	Message
-	InaccessableMessage
 }
 
 type MessageEntity struct {
@@ -109,7 +107,7 @@ type LinkPreviewOptions struct {
 }
 
 type InlineKeyboardMarkup struct {
-	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard"`
+	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard,omitempty"`
 }
 
 type InlineKeyboardButton struct {
@@ -123,9 +121,9 @@ type ReplyKeyboardMarkup struct {
 }
 
 type CallbackQuery struct {
-	ID      string                    `json:"id"`
-	From    *User                     `json:"user"`
-	Message *MaybeInaccessibleMessage `json:"message"`
+	ID      string   `json:"id"`
+	From    *User    `json:"from"`
+	Message *Message `json:"message"`
 
 	Data string `json:"data"`
 }

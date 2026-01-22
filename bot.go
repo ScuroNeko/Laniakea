@@ -9,6 +9,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/vinovest/sqlx"
@@ -66,13 +67,15 @@ func LoadSettingsFromEnv() *BotSettings {
 }
 
 type MsgContext struct {
-	Bot    *Bot
-	Msg    *Message
-	Update *Update
-	FromID int
-	Prefix string
-	Text   string
-	Args   []string
+	Bot           *Bot
+	Msg           *Message
+	Update        *Update
+	From          *User
+	CallbackMsgId int
+	FromID        int
+	Prefix        string
+	Text          string
+	Args          []string
 }
 
 type DatabaseContext struct {
@@ -221,6 +224,7 @@ func (b *Bot) Run() {
 	for {
 		queue := b.updateQueue
 		if queue.IsEmpty() {
+			time.Sleep(time.Millisecond * 25)
 			continue
 		}
 
@@ -265,6 +269,7 @@ func (b *Bot) handleMessage(update *Update, ctx *MsgContext) {
 	}
 
 	ctx.FromID = update.Message.From.ID
+	ctx.From = update.Message.From
 	ctx.Msg = update.Message
 	text = strings.TrimSpace(text)
 	prefix, hasPrefix := b.checkPrefixes(text)
@@ -298,6 +303,12 @@ func (b *Bot) handleCallback(update *Update, ctx *MsgContext) {
 		return
 	}
 
+	ctx.FromID = update.CallbackQuery.From.ID
+	ctx.From = update.CallbackQuery.From
+	ctx.Msg = update.CallbackQuery.Message
+	ctx.CallbackMsgId = update.CallbackQuery.Message.MessageID
+	ctx.Args = data.Args
+
 	for _, plugin := range b.plugins {
 		_, ok := plugin.Payloads[data.Command]
 		if !ok {
@@ -323,6 +334,40 @@ type AnswerMessage struct {
 	IsMedia   bool
 	Keyboard  *InlineKeyboard
 	ctx       *MsgContext
+}
+
+func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard) *AnswerMessage {
+	params := &EditMessageTextP{
+		MessageID: messageId,
+		ChatID:    ctx.Msg.Chat.ID,
+		Text:      text,
+		ParseMode: ParseMD,
+	}
+	if keyboard != nil {
+		params.ReplyMarkup = keyboard.Get()
+	}
+	msg, err := ctx.Bot.EditMessageText(params)
+	if err != nil {
+		ctx.Bot.logger.Error(err)
+		return nil
+	}
+	return &AnswerMessage{
+		MessageID: msg.MessageID, ctx: ctx, Text: text, IsMedia: false,
+	}
+}
+func (m *AnswerMessage) Edit(text string) *AnswerMessage {
+	return m.ctx.edit(m.MessageID, text, nil)
+}
+func (ctx *MsgContext) EditCallback(text string, keyboard *InlineKeyboard) *AnswerMessage {
+	if ctx.CallbackMsgId == 0 {
+		ctx.Bot.logger.Error("Can't edit non-callback update message")
+		return nil
+	}
+
+	return ctx.edit(ctx.CallbackMsgId, text, keyboard)
+}
+func (ctx *MsgContext) EditCallbackf(format string, keyboard *InlineKeyboard, args ...any) *AnswerMessage {
+	return ctx.EditCallback(fmt.Sprintf(format, args...), keyboard)
 }
 
 func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard) *AnswerMessage {
@@ -369,31 +414,6 @@ func (ctx *MsgContext) AnswerPhoto(photoId string, text string) *AnswerMessage {
 	}
 }
 
-func (m *AnswerMessage) Edit(text string) *AnswerMessage {
-	var msg *Message
-	var err error
-	if m.IsMedia {
-		msg, err = m.ctx.Bot.EditMessageCaption(&EditMessageCaptionP{
-			MessageID: m.MessageID,
-			ChatID:    m.ctx.Msg.Chat.ID,
-			Caption:   text,
-			ParseMode: ParseMD,
-		})
-	} else {
-		msg, err = m.ctx.Bot.EditMessageText(&EditMessageTextP{
-			MessageID: m.MessageID,
-			ChatID:    m.ctx.Msg.Chat.ID,
-			Text:      text,
-			ParseMode: ParseMD,
-		})
-	}
-	if err != nil {
-		m.ctx.Bot.logger.Error(err)
-	}
-	m.MessageID = msg.MessageID
-	return m
-}
-
 func (m *AnswerMessage) Delete() {
 	_, err := m.ctx.Bot.DeleteMessage(&DeleteMessageP{
 		MessageID: m.MessageID, ChatID: m.ctx.Msg.Chat.ID,
@@ -420,17 +440,17 @@ func (b *Bot) Logger() *Logger {
 }
 
 type ApiResponse struct {
-	Ok          bool                   `json:"ok"`
-	Result      map[string]interface{} `json:"result,omitempty"`
-	Description string                 `json:"description,omitempty"`
-	ErrorCode   int                    `json:"error_code,omitempty"`
+	Ok          bool           `json:"ok"`
+	Result      map[string]any `json:"result,omitempty"`
+	Description string         `json:"description,omitempty"`
+	ErrorCode   int            `json:"error_code,omitempty"`
 }
 
 type ApiResponseA struct {
-	Ok          bool          `json:"ok"`
-	Result      []interface{} `json:"result,omitempty"`
-	Description string        `json:"description,omitempty"`
-	ErrorCode   int           `json:"error_code,omitempty"`
+	Ok          bool   `json:"ok"`
+	Result      []any  `json:"result,omitempty"`
+	Description string `json:"description,omitempty"`
+	ErrorCode   int    `json:"error_code,omitempty"`
 }
 
 // request is a low-level call to api.
@@ -458,9 +478,10 @@ func (b *Bot) request(methodName string, params any) (map[string]interface{}, er
 	if err != nil {
 		return nil, err
 	}
+	b.requestLogger.Debug(fmt.Sprintf("RES %s %s", methodName, string(data)))
 	response := new(ApiResponse)
 
-	var result map[string]interface{}
+	var result map[string]any
 
 	err = json.Unmarshal(data, &response)
 	if err != nil {

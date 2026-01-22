@@ -1,11 +1,14 @@
 package laniakea
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
-var NoParams = make(map[string]interface{})
+var NoParams = make(map[string]any)
 
 func (b *Bot) Updates() ([]*Update, error) {
-	params := make(map[string]interface{})
+	params := make(map[string]any)
 	params["offset"] = b.updateOffset
 	params["timeout"] = 30
 	params["allowed_updates"] = b.updateTypes
@@ -15,12 +18,20 @@ func (b *Bot) Updates() ([]*Update, error) {
 		return nil, err
 	}
 	res := make([]*Update, 0)
-	for _, u := range data["data"].([]interface{}) {
+	for _, u := range data["data"].([]any) {
 		updateObj := new(Update)
-		err = MapToStruct(u.(map[string]interface{}), updateObj)
+		data, err := json.Marshal(u)
 		if err != nil {
 			return res, err
 		}
+		err = json.Unmarshal(data, updateObj)
+		if err != nil {
+			return res, err
+		}
+		//err = MapToStruct(u.(map[string]any), updateObj)
+		//if err != nil {
+		//	return res, err
+		//}
 		b.updateOffset = updateObj.UpdateID + 1
 		err = b.updateQueue.Enqueue(updateObj)
 		if err != nil {
@@ -50,20 +61,19 @@ func (b *Bot) GetMe() (*User, error) {
 }
 
 type SendMessageP struct {
-	BusinessConnectionID string                `json:"business_connection_id,omitempty"`
-	ChatID               int                   `json:"chat_id"`
-	MessageThreadID      int                   `json:"message_thread_id,omitempty"`
-	ParseMode            ParseMode             `json:"parse_mode,omitempty"`
-	Text                 string                `json:"text"`
-	Entities             []*MessageEntity      `json:"entities,omitempty"`
-	LinkPreviewOptions   *LinkPreviewOptions   `json:"link_preview_options,omitempty"`
-	DisableNotifications bool                  `json:"disable_notifications,omitempty"`
-	ProtectContent       bool                  `json:"protect_content,omitempty"`
-	AllowPaidBroadcast   bool                  `json:"allow_paid_broadcast,omitempty"`
-	MessageEffectID      string                `json:"message_effect_id,omitempty"`
-	ReplyParameters      *ReplyParameters      `json:"reply_parameters,omitempty"`
-	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
-	// ReplyKeyboardMarkup  *ReplyKeyboardMarkup  `json:"reply_markup,omitempty"`
+	BusinessConnectionID string               `json:"business_connection_id,omitempty"`
+	ChatID               int                  `json:"chat_id"`
+	MessageThreadID      int                  `json:"message_thread_id,omitempty"`
+	ParseMode            ParseMode            `json:"parse_mode,omitempty"`
+	Text                 string               `json:"text"`
+	Entities             []*MessageEntity     `json:"entities,omitempty"`
+	LinkPreviewOptions   *LinkPreviewOptions  `json:"link_preview_options,omitempty"`
+	DisableNotifications bool                 `json:"disable_notifications,omitempty"`
+	ProtectContent       bool                 `json:"protect_content,omitempty"`
+	AllowPaidBroadcast   bool                 `json:"allow_paid_broadcast,omitempty"`
+	MessageEffectID      string               `json:"message_effect_id,omitempty"`
+	ReplyParameters      *ReplyParameters     `json:"reply_parameters,omitempty"`
+	ReplyMarkup          InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
 func (b *Bot) SendMessage(params *SendMessageP) (*Message, error) {
@@ -103,12 +113,13 @@ func (b *Bot) SendPhoto(params *SendPhotoP) (*Message, error) {
 }
 
 type EditMessageTextP struct {
-	BusinessConnectionID string    `json:"business_connection_id,omitempty"`
-	ChatID               int       `json:"chat_id,omitempty"`
-	MessageID            int       `json:"message_id,omitempty"`
-	InlineMessageID      string    `json:"inline_message_id,omitempty"`
-	Text                 string    `json:"text"`
-	ParseMode            ParseMode `json:"parse_mode,omitempty"`
+	BusinessConnectionID string               `json:"business_connection_id,omitempty"`
+	ChatID               int                  `json:"chat_id,omitempty"`
+	MessageID            int                  `json:"message_id,omitempty"`
+	InlineMessageID      string               `json:"inline_message_id,omitempty"`
+	Text                 string               `json:"text"`
+	ParseMode            ParseMode            `json:"parse_mode,omitempty"`
+	ReplyMarkup          InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
 func (b *Bot) EditMessageText(params *EditMessageTextP) (*Message, error) {
