@@ -414,13 +414,20 @@ func (ctx *MsgContext) AnswerPhoto(photoId string, text string) *AnswerMessage {
 	}
 }
 
-func (m *AnswerMessage) Delete() {
-	_, err := m.ctx.Bot.DeleteMessage(&DeleteMessageP{
-		MessageID: m.MessageID, ChatID: m.ctx.Msg.Chat.ID,
+func (ctx *MsgContext) delete(messageId int) {
+	_, err := ctx.Bot.DeleteMessage(&DeleteMessageP{
+		ChatID:    ctx.Msg.Chat.ID,
+		MessageID: messageId,
 	})
 	if err != nil {
-		m.ctx.Bot.logger.Error(err)
+		ctx.Bot.logger.Error(err)
 	}
+}
+func (m *AnswerMessage) Delete() {
+	m.ctx.delete(m.MessageID)
+}
+func (ctx *MsgContext) CallbackDelete() {
+	ctx.delete(ctx.CallbackMsgId)
 }
 
 func (ctx *MsgContext) Error(err error) {
