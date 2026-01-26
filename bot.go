@@ -218,6 +218,7 @@ func (b *Bot) Run() {
 			if err != nil {
 				b.logger.Error(err)
 			}
+			time.Sleep(time.Millisecond * 10)
 		}
 	}()
 
