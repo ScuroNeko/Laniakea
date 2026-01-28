@@ -18,29 +18,21 @@ func (b *Bot) Updates() ([]*Update, error) {
 		return nil, err
 	}
 	res := make([]*Update, 0)
-	for _, u := range data["data"].([]any) {
-		updateObj := new(Update)
-		data, err := json.Marshal(u)
+	err = AnyToStruct(data["data"], &res)
+	if err != nil {
+		return res, err
+	}
+	
+	for _, u := range res {
+		b.updateOffset = u.UpdateID + 1
+		err = b.updateQueue.Enqueue(u)
 		if err != nil {
 			return res, err
 		}
-		err = json.Unmarshal(data, updateObj)
-		if err != nil {
-			return res, err
-		}
-		//err = MapToStruct(u.(map[string]any), updateObj)
-		//if err != nil {
-		//	return res, err
-		//}
-		b.updateOffset = updateObj.UpdateID + 1
-		err = b.updateQueue.Enqueue(updateObj)
-		if err != nil {
-			return res, err
-		}
-		res = append(res, updateObj)
+		res = append(res, u)
 
 		if b.debug && b.requestLogger != nil {
-			j, err := MapToJson(u.(map[string]interface{}))
+			j, err := json.Marshal(u)
 			if err != nil {
 				b.logger.Error(err)
 			}

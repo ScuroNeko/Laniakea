@@ -6,7 +6,8 @@ import (
 	"strings"
 )
 
-func MapToStruct(m map[string]interface{}, s interface{}) error {
+// MapToStruct unsafe function
+func MapToStruct(m map[string]any, s any) error {
 	data, err := json.Marshal(m)
 	if err != nil {
 		return err
@@ -15,7 +16,27 @@ func MapToStruct(m map[string]interface{}, s interface{}) error {
 	return err
 }
 
-func MapToJson(m map[string]interface{}) (string, error) {
+// SliceToStruct unsafe function
+func SliceToStruct(sl []any, s any) error {
+	data, err := json.Marshal(sl)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(data, s)
+	return err
+}
+
+// AnyToStruct unsafe function
+func AnyToStruct(src, dest any) error {
+	data, err := json.Marshal(src)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(data, dest)
+	return err
+}
+
+func MapToJson(m map[string]any) (string, error) {
 	data, err := json.Marshal(m)
 	return string(data), err
 }
