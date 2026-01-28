@@ -106,11 +106,11 @@ func NewBot(settings *BotSettings) *Bot {
 		level = DEBUG
 	}
 
-	bot.logger = CreateLogger().Level(level).PrintTraceback(true)
-	bot.logger.AddWriter(bot.logger.CreateStdoutWriter())
+	bot.logger = CreateLogger().Level(level)
+	bot.logger.AddWriter(bot.logger.CreateJsonStdoutWriter())
 	if settings.WriteToFile {
 		path := fmt.Sprintf("%s/main.log", strings.TrimRight(settings.LoggerBasePath, "/"))
-		fileWriter, err := bot.logger.CreateFileWriter(path)
+		fileWriter, err := bot.logger.CreateTextFileWriter(path)
 		if err != nil {
 			bot.logger.Fatal(err)
 		}
@@ -119,10 +119,10 @@ func NewBot(settings *BotSettings) *Bot {
 
 	if settings.UseRequestLogger {
 		bot.requestLogger = CreateLogger().Level(level).Prefix("REQUESTS")
-		bot.requestLogger.AddWriter(bot.requestLogger.CreateStdoutWriter())
+		bot.requestLogger.AddWriter(bot.requestLogger.CreateJsonStdoutWriter())
 		if settings.WriteToFile {
 			path := fmt.Sprintf("%s/requests.log", strings.TrimRight(settings.LoggerBasePath, "/"))
-			fileWriter, err := bot.requestLogger.CreateFileWriter(path)
+			fileWriter, err := bot.requestLogger.CreateTextFileWriter(path)
 			if err != nil {
 				bot.logger.Fatal(err)
 			}
@@ -146,7 +146,7 @@ func (b *Bot) InitDatabaseContext(ctx *DatabaseContext) *Bot {
 	b.dbContext = ctx
 	return b
 }
-func (b *Bot) AddDatabaseLogger(writer func(db *DatabaseContext) *LoggerWriter) *Bot {
+func (b *Bot) AddDatabaseLogger(writer func(db *DatabaseContext) LoggerWriter) *Bot {
 	w := writer(b.dbContext)
 	b.logger.AddWriter(w)
 	if b.requestLogger != nil {
