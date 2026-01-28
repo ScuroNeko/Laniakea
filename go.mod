@@ -1,4 +1,4 @@
-module git.nix13.pw/ScuroNeko/Laniakea
+module git.nix13.pw/scuroneko/laniakea
 
 go 1.25.6
 
