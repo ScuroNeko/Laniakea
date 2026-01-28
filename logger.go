@@ -2,6 +2,7 @@ package laniakea
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -12,16 +13,30 @@ import (
 	"github.com/fatih/color"
 )
 
-type LoggerWriter func(level LogLevel, prefix, traceback string, message []any)
+type LoggerWriter struct {
+	writer  io.Writer
+	writeFn LoggerWriterFn
+	logger  *Logger
+}
+
+func (w *LoggerWriter) SetFn(fn LoggerWriterFn) {
+	w.writeFn = fn
+}
+func (w *LoggerWriter) Write(p []byte) (n int, err error) {
+	return w.writer.Write(p)
+}
+func (w *LoggerWriter) Close() error {
+	return w.writer.(io.Closer).Close()
+}
+
+type LoggerWriterFn func(level LogLevel, prefix, traceback string, message []any) error
 
 type Logger struct {
 	prefix         string
 	level          LogLevel
 	printTraceback bool
 	printTime      bool
-	writers        []LoggerWriter
-
-	f *os.File
+	writers        []*LoggerWriter
 }
 
 type LogLevel struct {
@@ -60,16 +75,34 @@ func CreateLogger() *Logger {
 	}
 }
 
-func (l *Logger) OpenFile(name string) *Logger {
-	err := os.MkdirAll(filepath.Dir(name), os.ModePerm)
+func (l *Logger) CreateFileWriter(path string) (*LoggerWriter, error) {
+	err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
 	if err != nil {
-		l.Fatal(err)
+		return nil, err
 	}
-	l.f, err = os.OpenFile(name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		l.Fatal(err)
+		return nil, err
 	}
-	return l
+
+	writer := &LoggerWriter{
+		writer: file, logger: l,
+	}
+	writer.writeFn = func(level LogLevel, prefix, traceback string, message []any) error {
+		_, err = writer.Write([]byte(writer.logger.buildString(level, message) + "\n"))
+		return err
+	}
+	return writer, nil
+}
+func (l *Logger) CreateStdoutWriter() *LoggerWriter {
+	writer := &LoggerWriter{
+		writer: os.Stdout, logger: l,
+	}
+	writer.writeFn = func(level LogLevel, prefix, traceback string, message []any) error {
+		_, err := color.New(level.c).Fprint(writer.writer, writer.logger.buildString(level, message))
+		return err
+	}
+	return writer
 }
 
 func (l *Logger) Prefix(prefix string) *Logger {
@@ -88,11 +121,18 @@ func (l *Logger) PrintTime(b bool) *Logger {
 	l.printTime = b
 	return l
 }
-func (l *Logger) AddWriters(writers []LoggerWriter) *Logger {
+func (l *Logger) AddWriters(writers ...*LoggerWriter) *Logger {
 	l.writers = append(l.writers, writers...)
 	return l
 }
+func (l *Logger) AddWriter(writer *LoggerWriter) *Logger {
+	l.writers = append(l.writers, writer)
+	return l
+}
 
+func (l *Logger) Infof(format string, m ...any) {
+	l.print(INFO, []any{fmt.Sprintf(format, m...)})
+}
 func (l *Logger) Info(m ...any) {
 	l.print(INFO, m)
 }
@@ -209,19 +249,11 @@ func (l *Logger) print(level LogLevel, m []any) {
 	if l.level.n < level.n {
 		return
 	}
-	_, err := color.New(level.c).Println(l.buildString(level, m))
-	if err != nil {
-		l.Fatal(err)
-		return
-	}
 
 	for _, writer := range l.writers {
-		writer(level, l.prefix, l.formatFullTraceback(l.getFullTraceback(4)), m)
-	}
-
-	if l.f != nil {
-		if _, err := l.f.Write([]byte(l.buildString(level, m) + "\n")); err != nil {
-			l.Fatal(err)
+		err := writer.writeFn(level, l.prefix, l.formatFullTraceback(l.getFullTraceback(0)), m)
+		if err != nil {
+			l.Error(err)
 		}
 	}
 }

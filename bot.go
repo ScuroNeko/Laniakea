@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"sort"
@@ -104,15 +105,28 @@ func NewBot(settings *BotSettings) *Bot {
 	if settings.Debug {
 		level = DEBUG
 	}
-	bot.logger = CreateLogger().Level(level)
+
+	bot.logger = CreateLogger().Level(level).PrintTraceback(true)
+	bot.logger.AddWriter(bot.logger.CreateStdoutWriter())
 	if settings.WriteToFile {
-		bot.logger = bot.logger.OpenFile(fmt.Sprintf("%s/main.log", strings.TrimRight(settings.LoggerBasePath, "/")))
+		path := fmt.Sprintf("%s/main.log", strings.TrimRight(settings.LoggerBasePath, "/"))
+		fileWriter, err := bot.logger.CreateFileWriter(path)
+		if err != nil {
+			bot.logger.Fatal(err)
+		}
+		bot.logger.AddWriter(fileWriter)
 	}
-	bot.logger = bot.logger.PrintTraceback(true)
+
 	if settings.UseRequestLogger {
 		bot.requestLogger = CreateLogger().Level(level).Prefix("REQUESTS")
+		bot.requestLogger.AddWriter(bot.requestLogger.CreateStdoutWriter())
 		if settings.WriteToFile {
-			bot.requestLogger = bot.requestLogger.OpenFile(fmt.Sprintf("%s/requests.log", strings.TrimRight(settings.LoggerBasePath, "/")))
+			path := fmt.Sprintf("%s/requests.log", strings.TrimRight(settings.LoggerBasePath, "/"))
+			fileWriter, err := bot.requestLogger.CreateFileWriter(path)
+			if err != nil {
+				bot.logger.Fatal(err)
+			}
+			bot.requestLogger.AddWriter(fileWriter)
 		}
 	}
 
@@ -120,11 +134,11 @@ func NewBot(settings *BotSettings) *Bot {
 }
 
 func (b *Bot) Close() {
-	err := b.logger.f.Close()
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println("log closed")
+	for _, writer := range b.logger.writers {
+		err := writer.Close()
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
 
@@ -132,11 +146,11 @@ func (b *Bot) InitDatabaseContext(ctx *DatabaseContext) *Bot {
 	b.dbContext = ctx
 	return b
 }
-func (b *Bot) AddDatabaseLogger(writer func(db *DatabaseContext) LoggerWriter) *Bot {
-	w := []LoggerWriter{writer(b.dbContext)}
-	b.logger.AddWriters(w)
+func (b *Bot) AddDatabaseLogger(writer func(db *DatabaseContext) *LoggerWriter) *Bot {
+	w := writer(b.dbContext)
+	b.logger.AddWriter(w)
 	if b.requestLogger != nil {
-		b.requestLogger.AddWriters(w)
+		b.requestLogger.AddWriter(w)
 	}
 	return b
 }
@@ -177,7 +191,7 @@ func (b *Bot) Debug(debug bool) *Bot {
 func (b *Bot) AddPlugins(plugin ...*Plugin) *Bot {
 	b.plugins = append(b.plugins, plugin...)
 	for _, p := range plugin {
-		b.logger.Debug(fmt.Sprintf("plugins with name \"%s\" was registered", p.Name))
+		b.logger.Debug(fmt.Sprintf("plugins with name \"%s\" registered", p.Name))
 	}
 	return b
 }
@@ -194,7 +208,7 @@ func (b *Bot) AddMiddleware(middleware ...*Middleware) *Bot {
 
 	b.middlewares = append(b.middlewares, middleware...)
 	for _, m := range middleware {
-		b.logger.Debug(fmt.Sprintf("middleware with name \"%s\" was registered", m.Name))
+		b.logger.Debug(fmt.Sprintf("middleware with name \"%s\" registered", m.Name))
 	}
 	return b
 }
