@@ -1,9 +1,11 @@
 package laniakea
 
 import (
-	"fmt"
+	"errors"
 	"sync"
 )
+
+var QueueFullErr = errors.New("queue is full")
 
 type Queue[T any] struct {
 	size  uint64
@@ -20,7 +22,7 @@ func CreateQueue[T any](size uint64) *Queue[T] {
 
 func (q *Queue[T]) Enqueue(el T) error {
 	if q.IsFull() {
-		return fmt.Errorf("queue full")
+		return QueueFullErr
 	}
 	q.queue = append(q.queue, el)
 	return nil

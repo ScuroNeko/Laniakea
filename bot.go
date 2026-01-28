@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"sort"
 	"strings"
 	"time"
 
+	"git.nix13.pw/scuroneko/slog"
 	"github.com/redis/go-redis/v9"
 	"github.com/vinovest/sqlx"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -30,8 +30,8 @@ type Bot struct {
 	debug         bool
 	errorTemplate string
 
-	logger        *Logger
-	requestLogger *Logger
+	logger        *slog.Logger
+	requestLogger *slog.Logger
 
 	plugins     []*Plugin
 	middlewares []*Middleware
@@ -101,12 +101,12 @@ func NewBot(settings *BotSettings) *Bot {
 	if len(settings.LoggerBasePath) == 0 {
 		settings.LoggerBasePath = "./"
 	}
-	level := FATAL
+	level := slog.FATAL
 	if settings.Debug {
-		level = DEBUG
+		level = slog.DEBUG
 	}
 
-	bot.logger = CreateLogger().Level(level)
+	bot.logger = slog.CreateLogger().Level(level).Prefix("BOT")
 	bot.logger.AddWriter(bot.logger.CreateJsonStdoutWriter())
 	if settings.WriteToFile {
 		path := fmt.Sprintf("%s/main.log", strings.TrimRight(settings.LoggerBasePath, "/"))
@@ -118,7 +118,7 @@ func NewBot(settings *BotSettings) *Bot {
 	}
 
 	if settings.UseRequestLogger {
-		bot.requestLogger = CreateLogger().Level(level).Prefix("REQUESTS")
+		bot.requestLogger = slog.CreateLogger().Level(level).Prefix("REQUESTS")
 		bot.requestLogger.AddWriter(bot.requestLogger.CreateJsonStdoutWriter())
 		if settings.WriteToFile {
 			path := fmt.Sprintf("%s/requests.log", strings.TrimRight(settings.LoggerBasePath, "/"))
@@ -134,19 +134,15 @@ func NewBot(settings *BotSettings) *Bot {
 }
 
 func (b *Bot) Close() {
-	for _, writer := range b.logger.writers {
-		err := writer.Close()
-		if err != nil {
-			log.Println(err)
-		}
-	}
+	b.logger.Close()
+	b.requestLogger.Close()
 }
 
 func (b *Bot) InitDatabaseContext(ctx *DatabaseContext) *Bot {
 	b.dbContext = ctx
 	return b
 }
-func (b *Bot) AddDatabaseLogger(writer func(db *DatabaseContext) LoggerWriter) *Bot {
+func (b *Bot) AddDatabaseLogger(writer func(db *DatabaseContext) slog.LoggerWriter) *Bot {
 	w := writer(b.dbContext)
 	b.logger.AddWriter(w)
 	if b.requestLogger != nil {
@@ -164,12 +160,10 @@ func (b *Bot) AddUpdateType(t ...string) *Bot {
 	b.updateTypes = append(b.updateTypes, t...)
 	return b
 }
-
 func (b *Bot) AddPrefixes(prefixes ...string) *Bot {
 	b.prefixes = append(b.prefixes, prefixes...)
 	return b
 }
-
 func LoadPrefixesFromEnv() []string {
 	prefixesS, exists := os.LookupEnv("PREFIXES")
 	if !exists {
@@ -177,25 +171,21 @@ func LoadPrefixesFromEnv() []string {
 	}
 	return strings.Split(prefixesS, ";")
 }
-
 func (b *Bot) ErrorTemplate(s string) *Bot {
 	b.errorTemplate = s
 	return b
 }
-
-func (b *Bot) Debug(debug bool) *Bot {
+func (b *Bot) Debugln(debug bool) *Bot {
 	b.debug = debug
 	return b
 }
-
 func (b *Bot) AddPlugins(plugin ...*Plugin) *Bot {
 	b.plugins = append(b.plugins, plugin...)
 	for _, p := range plugin {
-		b.logger.Debug(fmt.Sprintf("plugins with name \"%s\" registered", p.Name))
+		b.logger.Debugln(fmt.Sprintf("plugins with name \"%s\" registered", p.Name))
 	}
 	return b
 }
-
 func (b *Bot) AddMiddleware(middleware ...*Middleware) *Bot {
 	sort.Slice(middleware, func(a, b int) bool {
 		first := middleware[a]
@@ -208,29 +198,29 @@ func (b *Bot) AddMiddleware(middleware ...*Middleware) *Bot {
 
 	b.middlewares = append(b.middlewares, middleware...)
 	for _, m := range middleware {
-		b.logger.Debug(fmt.Sprintf("middleware with name \"%s\" registered", m.Name))
+		b.logger.Debugln(fmt.Sprintf("middleware with name \"%s\" registered", m.Name))
 	}
 	return b
 }
 
 func (b *Bot) Run() {
 	if len(b.prefixes) == 0 {
-		b.logger.Fatal("no prefixes defined")
+		b.logger.Fatalln("no prefixes defined")
 		return
 	}
 
 	if len(b.plugins) == 0 {
-		b.logger.Fatal("no plugins defined")
+		b.logger.Fatalln("no plugins defined")
 		return
 	}
 
-	b.logger.Info("Bot running. Press CTRL+C to exit.")
+	b.logger.Infoln("Bot running. Press CTRL+C to exit.")
 
 	go func() {
 		for {
 			_, err := b.Updates()
 			if err != nil {
-				b.logger.Error(err)
+				b.logger.Errorln(err)
 			}
 			time.Sleep(time.Millisecond * 10)
 		}
@@ -245,7 +235,7 @@ func (b *Bot) Run() {
 
 		u := queue.Dequeue()
 		if u == nil {
-			b.logger.Error("update is nil")
+			b.logger.Errorln("update is nil")
 			continue
 		}
 		ctx := &MsgContext{
@@ -314,7 +304,7 @@ func (b *Bot) handleCallback(update *Update, ctx *MsgContext) {
 	data := new(CallbackData)
 	err := json.Unmarshal([]byte(update.CallbackQuery.Data), data)
 	if err != nil {
-		b.logger.Error(err)
+		b.logger.Errorln(err)
 		return
 	}
 
@@ -363,7 +353,7 @@ func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard
 	}
 	msg, err := ctx.Bot.EditMessageText(params)
 	if err != nil {
-		ctx.Bot.logger.Error(err)
+		ctx.Bot.logger.Errorln(err)
 		return nil
 	}
 	return &AnswerMessage{
@@ -375,7 +365,7 @@ func (m *AnswerMessage) Edit(text string) *AnswerMessage {
 }
 func (ctx *MsgContext) EditCallback(text string, keyboard *InlineKeyboard) *AnswerMessage {
 	if ctx.CallbackMsgId == 0 {
-		ctx.Bot.logger.Error("Can't edit non-callback update message")
+		ctx.Bot.logger.Errorln("Can't edit non-callback update message")
 		return nil
 	}
 
@@ -397,7 +387,7 @@ func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeybo
 	}
 	msg, err := ctx.Bot.EditMessageCaption(params)
 	if err != nil {
-		ctx.Bot.logger.Error(err)
+		ctx.Bot.logger.Errorln(err)
 	}
 	return &AnswerMessage{
 		MessageID: msg.MessageID, ctx: ctx, Text: text, IsMedia: true,
@@ -422,7 +412,7 @@ func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard) *AnswerMess
 
 	msg, err := ctx.Bot.SendMessage(params)
 	if err != nil {
-		ctx.Bot.logger.Error(err)
+		ctx.Bot.logger.Errorln(err)
 		return nil
 	}
 	return &AnswerMessage{
@@ -451,7 +441,7 @@ func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard) *An
 	}
 	msg, err := ctx.Bot.SendPhoto(params)
 	if err != nil {
-		ctx.Bot.logger.Error(err)
+		ctx.Bot.logger.Errorln(err)
 	}
 	return &AnswerMessage{
 		MessageID: msg.MessageID, ctx: ctx, Text: text, IsMedia: true,
@@ -470,7 +460,7 @@ func (ctx *MsgContext) delete(messageId int) {
 		MessageID: messageId,
 	})
 	if err != nil {
-		ctx.Bot.logger.Error(err)
+		ctx.Bot.logger.Errorln(err)
 	}
 }
 func (m *AnswerMessage) Delete() {
@@ -485,14 +475,14 @@ func (ctx *MsgContext) Error(err error) {
 		ChatID: ctx.Msg.Chat.ID,
 		Text:   fmt.Sprintf(ctx.Bot.errorTemplate, EscapeMarkdown(err.Error())),
 	})
-	ctx.Bot.logger.Error(err)
+	ctx.Bot.logger.Errorln(err)
 
 	if sendErr != nil {
-		ctx.Bot.logger.Error(sendErr)
+		ctx.Bot.logger.Errorln(sendErr)
 	}
 }
 
-func (b *Bot) Logger() *Logger {
+func (b *Bot) Logger() *slog.Logger {
 	return b.logger
 }
 
@@ -519,7 +509,7 @@ func (b *Bot) request(methodName string, params any) (map[string]interface{}, er
 	}
 
 	if b.debug && b.requestLogger != nil {
-		b.requestLogger.Debug(strings.ReplaceAll(fmt.Sprintf(
+		b.requestLogger.Debugln(strings.ReplaceAll(fmt.Sprintf(
 			"POST https://api.telegram.org/bot%s/%s %s",
 			"<TOKEN>",
 			methodName,
@@ -535,7 +525,7 @@ func (b *Bot) request(methodName string, params any) (map[string]interface{}, er
 	if err != nil {
 		return nil, err
 	}
-	b.requestLogger.Debug(fmt.Sprintf("RES %s %s", methodName, string(data)))
+	b.requestLogger.Debugln(fmt.Sprintf("RES %s %s", methodName, string(data)))
 	response := new(ApiResponse)
 
 	var result map[string]any

@@ -44,7 +44,7 @@ func (b *Bot) Updates() ([]*Update, error) {
 			if err != nil {
 				b.logger.Error(err)
 			}
-			b.requestLogger.Debug(fmt.Sprintf("UPDATE %s", j))
+			b.requestLogger.Debugln(fmt.Sprintf("UPDATE %s", j))
 		}
 	}
 	return res, err
