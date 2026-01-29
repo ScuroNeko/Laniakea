@@ -130,7 +130,11 @@ type DeleteMessageP struct {
 	MessageID int `json:"message_id"`
 }
 
-func (b *Bot) DeleteMessage(params *DeleteMessageP) (*Message, error) {
-	req := NewRequest[Message]("deleteMessage", params)
-	return req.Do(b)
+func (b *Bot) DeleteMessage(params *DeleteMessageP) (bool, error) {
+	req := NewRequest[bool]("deleteMessage", params)
+	ok, err := req.Do(b)
+	if err != nil {
+		return false, err
+	}
+	return *ok, err
 }

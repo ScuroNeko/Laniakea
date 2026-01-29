@@ -45,17 +45,16 @@ func (p *PluginBuilder) UpdateListener(listener CommandExecutor) *PluginBuilder 
 	return p
 }
 
-func (p *PluginBuilder) Build() *Plugin {
+func (p *PluginBuilder) Build() Plugin {
 	if len(p.commands) == 0 && len(p.payloads) == 0 {
 		log.Println("no command or payloads")
 	}
-	plugin := &Plugin{
+	return Plugin{
 		Name:           p.name,
 		Commands:       p.commands,
 		Payloads:       p.payloads,
 		UpdateListener: p.updateListener,
 	}
-	return plugin
 }
 
 func (p *Plugin) Execute(cmd string, ctx *MsgContext, dbContext *DatabaseContext) {
