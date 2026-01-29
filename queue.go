@@ -5,13 +5,13 @@ import (
 	"sync"
 )
 
+var QueueFullErr = errors.New("queue is full")
+
 type Queue[T any] struct {
 	size  uint64
 	mu    sync.RWMutex
 	queue []T
 }
-
-var QueueFullError = errors.New("queue full")
 
 func CreateQueue[T any](size uint64) *Queue[T] {
 	return &Queue[T]{
@@ -22,7 +22,7 @@ func CreateQueue[T any](size uint64) *Queue[T] {
 
 func (q *Queue[T]) Enqueue(el T) error {
 	if q.IsFull() {
-		return QueueFullError
+		return QueueFullErr
 	}
 	q.queue = append(q.queue, el)
 	return nil

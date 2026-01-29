@@ -1,5 +1,7 @@
 package laniakea
 
+import "log"
+
 type CommandExecutor func(ctx *MsgContext, dbContext *DatabaseContext)
 
 type PluginBuilder struct {
@@ -44,8 +46,8 @@ func (p *PluginBuilder) UpdateListener(listener CommandExecutor) *PluginBuilder 
 }
 
 func (p *PluginBuilder) Build() *Plugin {
-	if len(p.commands) == 0 {
-		return nil
+	if len(p.commands) == 0 && len(p.payloads) == 0 {
+		log.Println("no command or payloads")
 	}
 	plugin := &Plugin{
 		Name:           p.name,

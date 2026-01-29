@@ -1,12 +1,8 @@
 package laniakea
 
-import "os"
-
 const (
-	VersionString = "0.1.4"
+	VersionString = "0.3.0"
 	VersionMajor  = 0
-	VersionMinor  = 1
-	VersionPatch  = 4
+	VersionMinor  = 3
+	VersionPatch  = 0
 )
-
-var GoVersion = os.Getenv("GoV")
