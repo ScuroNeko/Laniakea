@@ -1,7 +1,6 @@
 package laniakea
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -132,7 +131,9 @@ func (b *Bot) Close() {
 	}
 }
 
+type DatabaseContextI interface{}
 type DatabaseContext struct {
+	DatabaseContextI
 	PostgresSQL *sqlx.DB
 	MongoDB     *mongo.Client
 	Redis       *redis.Client
@@ -180,19 +181,20 @@ func (b *Bot) AddPlugins(plugin ...*Plugin) *Bot {
 	return b
 }
 func (b *Bot) AddMiddleware(middleware ...*Middleware) *Bot {
-	sort.Slice(middleware, func(a, b int) bool {
-		first := middleware[a]
-		second := middleware[b]
-		if first.Order == second.Order {
-			return first.Name < second.Name
-		}
-		return middleware[a].Order < middleware[b].Order
-	})
-
 	b.middlewares = append(b.middlewares, middleware...)
 	for _, m := range middleware {
 		b.logger.Debugln(fmt.Sprintf("middleware with name \"%s\" registered", m.Name))
 	}
+
+	sort.Slice(&b.middlewares, func(i, j int) bool {
+		first := b.middlewares[i]
+		second := b.middlewares[j]
+		if first.Order == second.Order {
+			return first.Name < second.Name
+		}
+		return first.Order < second.Order
+	})
+
 	return b
 }
 func (b *Bot) AddRunner(runner Runner) *Bot {
@@ -243,6 +245,7 @@ func (b *Bot) Run() {
 			b.logger.Errorln("update is nil")
 			continue
 		}
+
 		ctx := &MsgContext{
 			Bot: b, Update: u,
 		}
@@ -262,79 +265,4 @@ func (b *Bot) Run() {
 			b.handleMessage(u, ctx)
 		}
 	}
-}
-
-// {"callback_query":{"chat_instance":"6202057960757700762","data":"aboba","from":{"first_name":"scuroneko","id":314834933,"is_bot":false,"language_code":"ru","username":"scuroneko"},"id":"1352205741990111553","message":{"chat":{"first_name":"scuroneko","id":314834933,"type":"private","username":"scuroneko"},"date":1734338107,"from":{"first_name":"Kurumi","id":7718900880,"is_bot":true,"username":"kurumi_game_bot"},"message_id":19,"reply_markup":{"inline_keyboard":[[{"callback_data":"aboba","text":"Test"},{"callback_data":"another","text":"Another"}]]},"text":"Aboba"}},"update_id":350979488}
-
-func (b *Bot) handleMessage(update *Update, ctx *MsgContext) {
-	if update.Message == nil {
-		return
-	}
-
-	var text string
-	if len(update.Message.Text) > 0 {
-		text = update.Message.Text
-	} else {
-		text = update.Message.Caption
-	}
-
-	text = strings.TrimSpace(text)
-	prefix, hasPrefix := b.checkPrefixes(text)
-	if !hasPrefix {
-		return
-	}
-	ctx.Prefix = prefix
-	ctx.FromID = update.Message.From.ID
-	ctx.From = update.Message.From
-	ctx.Msg = update.Message
-
-	text = strings.TrimSpace(text[len(prefix):])
-
-	for _, plugin := range b.plugins {
-		// Check every command
-		for cmd := range plugin.Commands {
-			if !strings.HasPrefix(text, cmd) {
-				continue
-			}
-
-			ctx.Text = strings.TrimSpace(text[len(cmd):])
-			ctx.Args = strings.Split(ctx.Text, " ")
-
-			go plugin.Execute(cmd, ctx, b.dbContext)
-			return
-		}
-	}
-}
-
-func (b *Bot) handleCallback(update *Update, ctx *MsgContext) {
-	data := new(CallbackData)
-	err := json.Unmarshal([]byte(update.CallbackQuery.Data), data)
-	if err != nil {
-		b.logger.Errorln(err)
-		return
-	}
-
-	ctx.FromID = update.CallbackQuery.From.ID
-	ctx.From = update.CallbackQuery.From
-	ctx.Msg = update.CallbackQuery.Message
-	ctx.CallbackMsgId = update.CallbackQuery.Message.MessageID
-	ctx.Args = data.Args
-
-	for _, plugin := range b.plugins {
-		_, ok := plugin.Payloads[data.Command]
-		if !ok {
-			continue
-		}
-		go plugin.ExecutePayload(data.Command, ctx, b.dbContext)
-		return
-	}
-}
-
-func (b *Bot) checkPrefixes(text string) (string, bool) {
-	for _, prefix := range b.prefixes {
-		if strings.HasPrefix(text, prefix) {
-			return prefix, true
-		}
-	}
-	return "", false
 }
