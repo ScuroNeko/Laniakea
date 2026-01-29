@@ -131,9 +131,7 @@ func (b *Bot) Close() {
 	}
 }
 
-type DatabaseContextI interface{}
 type DatabaseContext struct {
-	DatabaseContextI
 	PostgresSQL *sqlx.DB
 	MongoDB     *mongo.Client
 	Redis       *redis.Client
