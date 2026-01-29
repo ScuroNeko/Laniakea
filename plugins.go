@@ -68,13 +68,13 @@ func (p *Plugin) ExecutePayload(payload string, ctx *MsgContext, dbContext *Data
 
 type Middleware struct {
 	Name     string
-	Executor *CommandExecutor
+	Executor CommandExecutor
 	Order    int
 	Async    bool
 }
 type MiddlewareBuilder struct {
 	name     string
-	executor *CommandExecutor
+	executor CommandExecutor
 	order    int
 	async    bool
 }
@@ -87,7 +87,7 @@ func (m *MiddlewareBuilder) SetName(name string) *MiddlewareBuilder {
 	return m
 }
 func (m *MiddlewareBuilder) SetExecutor(executor CommandExecutor) *MiddlewareBuilder {
-	m.executor = &executor
+	m.executor = executor
 	return m
 }
 func (m *MiddlewareBuilder) SetOrder(order int) *MiddlewareBuilder {
@@ -98,19 +98,18 @@ func (m *MiddlewareBuilder) SetAsync(async bool) *MiddlewareBuilder {
 	m.async = async
 	return m
 }
-func (m *MiddlewareBuilder) Build() *Middleware {
-	return &Middleware{
+func (m *MiddlewareBuilder) Build() Middleware {
+	return Middleware{
 		Name:     m.name,
 		Executor: m.executor,
 		Order:    m.order,
 		Async:    m.async,
 	}
 }
-func (m *Middleware) Execute(ctx *MsgContext, db *DatabaseContext) {
-	exec := *m.Executor
+func (m Middleware) Execute(ctx *MsgContext, db *DatabaseContext) {
 	if m.Async {
-		go exec(ctx, db)
+		go m.Executor(ctx, db)
 	} else {
-		exec(ctx, db)
+		m.Execute(ctx, db)
 	}
 }

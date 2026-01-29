@@ -3,7 +3,7 @@ module git.nix13.pw/scuroneko/laniakea
 go 1.25
 
 require (
-	git.nix13.pw/scuroneko/slog v1.0.0
+	git.nix13.pw/scuroneko/slog v1.0.2
 	github.com/redis/go-redis/v9 v9.17.3
 	github.com/vinovest/sqlx v1.7.1
 	go.mongodb.org/mongo-driver/v2 v2.5.0
