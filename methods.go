@@ -5,31 +5,36 @@ import (
 	"fmt"
 )
 
-var NoParams = make(map[string]any)
+type EmptyParams struct{}
+
+var NoParams = EmptyParams{}
+
+type UpdateParams struct {
+	Offset         int      `json:"offset"`
+	Timeout        int      `json:"timeout"`
+	AllowedUpdates []string `json:"allowed_updates"`
+}
 
 func (b *Bot) Updates() ([]*Update, error) {
-	params := make(map[string]any)
-	params["offset"] = b.updateOffset
-	params["timeout"] = 30
-	params["allowed_updates"] = b.updateTypes
-
-	data, err := b.request("getUpdates", params)
-	if err != nil {
-		return nil, err
-	}
-	res := make([]*Update, 0)
-	err = AnyToStruct(data["data"], &res)
-	if err != nil {
-		return res, err
+	params := UpdateParams{
+		Offset:         b.updateOffset,
+		Timeout:        30,
+		AllowedUpdates: b.updateTypes,
 	}
 
-	for _, u := range res {
+	req := NewRequest[[]*Update]("getUpdates", params)
+	res, err := req.Do(b)
+	if err != nil {
+		return []*Update{}, err
+	}
+	updates := *res
+
+	for _, u := range updates {
 		b.updateOffset = u.UpdateID + 1
 		err = b.updateQueue.Enqueue(u)
 		if err != nil {
-			return res, err
+			return updates, err
 		}
-		res = append(res, u)
 
 		if b.debug && b.requestLogger != nil {
 			j, err := json.Marshal(u)
@@ -39,19 +44,12 @@ func (b *Bot) Updates() ([]*Update, error) {
 			b.requestLogger.Debugln(fmt.Sprintf("UPDATE %s", j))
 		}
 	}
-	return res, err
+	return updates, err
 }
 
 func (b *Bot) GetMe() (*User, error) {
-	//req := NewRequest[User, EmptyParams]("getMe", EmptyParams{})
-	//user, err := req.Do(b)
-	data, err := b.request("getMe", NoParams)
-	if err != nil {
-		return nil, err
-	}
-	user := new(User)
-	err = MapToStruct(data, user)
-	return user, err
+	req := NewRequest[User, EmptyParams]("getMe", NoParams)
+	return req.Do(b)
 }
 
 type SendMessageP struct {
@@ -73,14 +71,6 @@ type SendMessageP struct {
 func (b *Bot) SendMessage(params *SendMessageP) (*Message, error) {
 	req := NewRequest[Message, SendMessageP]("sendMessage", *params)
 	return req.Do(b)
-
-	data, err := b.request("sendMessage", params)
-	if err != nil {
-		return nil, err
-	}
-	message := new(Message)
-	err = MapToStruct(data, message)
-	return message, err
 }
 
 type SendPhotoP struct {
@@ -101,13 +91,8 @@ type SendPhotoP struct {
 }
 
 func (b *Bot) SendPhoto(params *SendPhotoP) (*Message, error) {
-	data, err := b.request("sendPhoto", params)
-	if err != nil {
-		return nil, err
-	}
-	message := new(Message)
-	err = MapToStruct(data, message)
-	return message, err
+	req := NewRequest[Message]("sendPhoto", params)
+	return req.Do(b)
 }
 
 type EditMessageTextP struct {
@@ -121,13 +106,8 @@ type EditMessageTextP struct {
 }
 
 func (b *Bot) EditMessageText(params *EditMessageTextP) (*Message, error) {
-	data, err := b.request("editMessageText", params)
-	if err != nil {
-		return nil, err
-	}
-	message := new(Message)
-	err = MapToStruct(data, message)
-	return message, err
+	req := NewRequest[Message]("editMessageText", params)
+	return req.Do(b)
 }
 
 type EditMessageCaptionP struct {
@@ -141,13 +121,8 @@ type EditMessageCaptionP struct {
 }
 
 func (b *Bot) EditMessageCaption(params *EditMessageCaptionP) (*Message, error) {
-	data, err := b.request("editMessageCaption", params)
-	if err != nil {
-		return nil, err
-	}
-	message := new(Message)
-	err = MapToStruct(data, message)
-	return message, err
+	req := NewRequest[Message]("editMessageCaption", params)
+	return req.Do(b)
 }
 
 type DeleteMessageP struct {
@@ -156,11 +131,6 @@ type DeleteMessageP struct {
 }
 
 func (b *Bot) DeleteMessage(params *DeleteMessageP) (*Message, error) {
-	data, err := b.request("deleteMessage", params)
-	if err != nil {
-		return nil, err
-	}
-	message := new(Message)
-	err = MapToStruct(data, message)
-	return message, err
+	req := NewRequest[Message]("deleteMessage", params)
+	return req.Do(b)
 }
