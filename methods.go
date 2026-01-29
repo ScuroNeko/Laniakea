@@ -22,7 +22,7 @@ func (b *Bot) Updates() ([]*Update, error) {
 	if err != nil {
 		return res, err
 	}
-	
+
 	for _, u := range res {
 		b.updateOffset = u.UpdateID + 1
 		err = b.updateQueue.Enqueue(u)
@@ -43,6 +43,8 @@ func (b *Bot) Updates() ([]*Update, error) {
 }
 
 func (b *Bot) GetMe() (*User, error) {
+	//req := NewRequest[User, EmptyParams]("getMe", EmptyParams{})
+	//user, err := req.Do(b)
 	data, err := b.request("getMe", NoParams)
 	if err != nil {
 		return nil, err
@@ -69,6 +71,9 @@ type SendMessageP struct {
 }
 
 func (b *Bot) SendMessage(params *SendMessageP) (*Message, error) {
+	req := NewRequest[Message, SendMessageP]("sendMessage", *params)
+	return req.Do(b)
+
 	data, err := b.request("sendMessage", params)
 	if err != nil {
 		return nil, err
