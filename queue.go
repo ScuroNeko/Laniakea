@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-var QueueFullErr = errors.New("queue is full")
+var QueueFullErr = errors.New("queue full")
 
 type Queue[T any] struct {
 	size  uint64

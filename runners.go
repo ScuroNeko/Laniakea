@@ -61,9 +61,14 @@ func (b *Bot) ExecRunners() {
 				}
 			}()
 		} else if !runner.Async && runner.Onetime {
+			t := time.Now()
 			err := runner.Fn(b)
 			if err != nil {
 				b.logger.Warnf("Runner %s failed: %s\n", runner.Name, err)
+			}
+			elapsed := time.Since(t)
+			if elapsed > time.Second*2 {
+				b.logger.Warnf("Runner %s too slow. Elapsed time %s>=2s", runner.Name, elapsed)
 			}
 		} else if !runner.Onetime {
 			go func() {
