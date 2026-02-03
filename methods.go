@@ -138,3 +138,20 @@ func (b *Bot) DeleteMessage(params *DeleteMessageP) (bool, error) {
 	}
 	return *ok, err
 }
+
+type AnswerCallbackQueryP struct {
+	CallbackQueryID string `json:"callback_query_id"`
+	Text            string `json:"text,omitempty"`
+	ShowAlert       bool   `json:"show_alert,omitempty"`
+	URL             string `json:"url,omitempty"`
+	CacheTime       int    `json:"cache_time,omitempty"`
+}
+
+func (b *Bot) AnswerCallbackQuery(params *AnswerCallbackQueryP) (bool, error) {
+	req := NewRequest[bool]("answerCallbackQuery", params)
+	ok, err := req.Do(b)
+	if err != nil {
+		return false, err
+	}
+	return *ok, err
+}

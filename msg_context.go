@@ -3,15 +3,16 @@ package laniakea
 import "fmt"
 
 type MsgContext struct {
-	Bot           *Bot
-	Msg           *Message
-	Update        *Update
-	From          *User
-	CallbackMsgId int
-	FromID        int
-	Prefix        string
-	Text          string
-	Args          []string
+	Bot             *Bot
+	Msg             *Message
+	Update          *Update
+	From            *User
+	CallbackMsgId   int
+	CallbackQueryId string
+	FromID          int
+	Prefix          string
+	Text            string
+	Args            []string
 }
 
 type AnswerMessage struct {
@@ -151,14 +152,41 @@ func (ctx *MsgContext) CallbackDelete() {
 	ctx.delete(ctx.CallbackMsgId)
 }
 
-func (ctx *MsgContext) Error(err error) {
-	_, sendErr := ctx.Bot.SendMessage(&SendMessageP{
-		ChatID: ctx.Msg.Chat.ID,
-		Text:   fmt.Sprintf(ctx.Bot.errorTemplate, EscapeMarkdown(err.Error())),
-	})
-	ctx.Bot.logger.Errorln(err)
-
-	if sendErr != nil {
-		ctx.Bot.logger.Errorln(sendErr)
+func (ctx *MsgContext) answerCallbackQuery(url, text string, showAlert bool) {
+	if len(ctx.CallbackQueryId) == 0 {
+		return
 	}
+	_, err := ctx.Bot.AnswerCallbackQuery(&AnswerCallbackQueryP{
+		CallbackQueryID: ctx.CallbackQueryId,
+		Text:            text, ShowAlert: showAlert, URL: url,
+	})
+	if err != nil {
+		ctx.Bot.logger.Errorln(err)
+	}
+}
+func (ctx *MsgContext) AnswerCbQuery() {
+	ctx.answerCallbackQuery("", "", false)
+}
+func (ctx *MsgContext) AnswerCbQueryText(text string) {
+	ctx.answerCallbackQuery("", text, false)
+}
+func (ctx *MsgContext) AnswerCbQueryAlert(text string) {
+	ctx.answerCallbackQuery("", text, true)
+}
+func (ctx *MsgContext) AnswerCbQueryUrl(u string) {
+	ctx.answerCallbackQuery(u, "", false)
+}
+
+func (ctx *MsgContext) error(err error) {
+	text := fmt.Sprintf(ctx.Bot.errorTemplate, EscapeMarkdown(err.Error()))
+
+	if ctx.CallbackQueryId != "" {
+		ctx.answerCallbackQuery("", text, false)
+	} else {
+		ctx.answer(text, nil)
+	}
+	ctx.Bot.logger.Errorln(err)
+}
+func (ctx *MsgContext) Error(err error) {
+	ctx.error(err)
 }

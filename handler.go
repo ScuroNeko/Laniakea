@@ -57,6 +57,7 @@ func (b *Bot) handleCallback(update *Update, ctx *MsgContext) {
 	ctx.From = update.CallbackQuery.From
 	ctx.Msg = update.CallbackQuery.Message
 	ctx.CallbackMsgId = update.CallbackQuery.Message.MessageID
+	ctx.CallbackQueryId = update.CallbackQuery.ID
 	ctx.Args = data.Args
 
 	for _, plugin := range b.plugins {

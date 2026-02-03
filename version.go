@@ -1,8 +1,8 @@
 package laniakea
 
 const (
-	VersionString = "0.3.2"
+	VersionString = "0.3.6"
 	VersionMajor  = 0
 	VersionMinor  = 3
-	VersionPatch  = 2
+	VersionPatch  = 6
 )
