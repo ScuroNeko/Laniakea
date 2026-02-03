@@ -155,3 +155,12 @@ func (b *Bot) AnswerCallbackQuery(params *AnswerCallbackQueryP) (bool, error) {
 	}
 	return *ok, err
 }
+
+type GetFileP struct {
+	FileId string `json:"file_id"`
+}
+
+func (b *Bot) GetFile(params *GetFileP) (*File, error) {
+	req := NewRequest[File]("getFile", params)
+	return req.Do(b)
+}

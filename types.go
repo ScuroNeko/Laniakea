@@ -172,3 +172,10 @@ type ReactionCount struct {
 	Type       *ReactionType `json:"type"`
 	TotalCount int           `json:"total_count"`
 }
+
+type File struct {
+	FileId       string `json:"file_id"`
+	FileUniqueID string `json:"file_unique_id"`
+	FileSize     int    `json:"file_size,omitempty"`
+	FilePath     string `json:"file_path,omitempty"`
+}

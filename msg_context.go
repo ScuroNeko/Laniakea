@@ -76,6 +76,10 @@ func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeybo
 	}
 }
 func (m *AnswerMessage) EditCaption(text string) *AnswerMessage {
+	if m.MessageID == 0 {
+		m.ctx.Bot.logger.Errorln("Can't edit caption message, message id is zero")
+		return m
+	}
 	return m.ctx.editPhotoText(m.MessageID, text, nil)
 }
 func (m *AnswerMessage) EditCaptionKeyboard(text string, kb *InlineKeyboard) *AnswerMessage {
@@ -124,6 +128,9 @@ func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard) *An
 	msg, err := ctx.Bot.SendPhoto(params)
 	if err != nil {
 		ctx.Bot.logger.Errorln(err)
+		return &AnswerMessage{
+			ctx: ctx, Text: text, IsMedia: true,
+		}
 	}
 	return &AnswerMessage{
 		MessageID: msg.MessageID, ctx: ctx, Text: text, IsMedia: true,
