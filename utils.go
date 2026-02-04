@@ -41,12 +41,12 @@ func MapToJson(m map[string]any) (string, error) {
 	return string(data), err
 }
 
-func StructToMap(s interface{}) (map[string]interface{}, error) {
+func StructToMap(s any) (map[string]any, error) {
 	data, err := json.Marshal(s)
 	if err != nil {
 		return nil, err
 	}
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	err = json.Unmarshal(data, &m)
 	return m, err
 }

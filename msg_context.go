@@ -119,8 +119,8 @@ func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard) *An
 	params := &SendPhotoP{
 		ChatID:    ctx.Msg.Chat.ID,
 		Caption:   text,
-		Photo:     photoId,
 		ParseMode: ParseMD,
+		Photo:     photoId,
 	}
 	if kb != nil {
 		params.ReplyMarkup = kb.Get()
@@ -182,6 +182,15 @@ func (ctx *MsgContext) AnswerCbQueryAlert(text string) {
 }
 func (ctx *MsgContext) AnswerCbQueryUrl(u string) {
 	ctx.answerCallbackQuery(u, "", false)
+}
+
+func (ctx *MsgContext) SendAction(action ChatActions) {
+	_, err := ctx.Bot.SendChatAction(SendChatActionP{
+		ChatID: ctx.Msg.Chat.ID, Action: action,
+	})
+	if err != nil {
+		ctx.Bot.logger.Errorln(err)
+	}
 }
 
 func (ctx *MsgContext) error(err error) {
