@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"git.nix13.pw/scuroneko/extypes"
 	"git.nix13.pw/scuroneko/slog"
 	"github.com/redis/go-redis/v9"
 	"github.com/vinovest/sqlx"
@@ -39,7 +40,7 @@ type Bot struct {
 
 	updateOffset int
 	updateTypes  []string
-	updateQueue  *Queue[*Update]
+	updateQueue  *extypes.Queue[*Update]
 }
 
 type BotSettings struct {
@@ -73,7 +74,7 @@ func LoadPrefixesFromEnv() []string {
 	return strings.Split(prefixesS, ";")
 }
 func NewBot(settings *BotSettings) *Bot {
-	updateQueue := CreateQueue[*Update](256)
+	updateQueue := extypes.CreateQueue[*Update](256)
 	bot := &Bot{
 		updateOffset: 0, plugins: make([]Plugin, 0), debug: settings.Debug, errorTemplate: "%s",
 		prefixes: settings.Prefixes, updateTypes: make([]string, 0), runners: make([]Runner, 0),
@@ -116,6 +117,12 @@ func NewBot(settings *BotSettings) *Bot {
 			bot.requestLogger.AddWriter(fileWriter)
 		}
 	}
+
+	u, err := bot.GetMe()
+	if err != nil {
+		bot.logger.Fatal(err)
+	}
+	bot.logger.Infof("Authorized as %s\n", u.FirstName)
 
 	return bot
 }

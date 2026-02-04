@@ -1,5 +1,7 @@
 package laniakea
 
+import "git.nix13.pw/scuroneko/extypes"
+
 type Update struct {
 	UpdateID               int                          `json:"update_id"`
 	Message                *Message                     `json:"message"`
@@ -54,9 +56,9 @@ type Message struct {
 	Chat            *Chat  `json:"chat,omitempty"`
 	Text            string `json:"text"`
 
-	Photo          Slice[*PhotoSize] `json:"photo,omitempty"`
-	Caption        string            `json:"caption,omitempty"`
-	ReplyToMessage *Message          `json:"reply_to_message"`
+	Photo          extypes.Slice[*PhotoSize] `json:"photo,omitempty"`
+	Caption        string                    `json:"caption,omitempty"`
+	ReplyToMessage *Message                  `json:"reply_to_message"`
 
 	ReplyMarkup *MessageReplyMarkup `json:"reply_markup,omitempty"`
 }

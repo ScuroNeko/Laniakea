@@ -195,3 +195,49 @@ func (b *Bot) SendChatAction(params SendChatActionP) (bool, error) {
 	}
 	return *res, err
 }
+
+type SetMessageReactionP struct {
+	ChatId    int  `json:"chat_id"`
+	MessageId int  `json:"message_id"`
+	IsBig     bool `json:"is_big,omitempty"`
+}
+type SetMessageReactionEmojiP struct {
+	SetMessageReactionP
+	Reaction []ReactionTypeEmoji `json:"reaction"`
+}
+
+func (b *Bot) SetMessageReactionEmoji(params SetMessageReactionEmojiP) (bool, error) {
+	req := NewRequest[bool]("setMessageReaction", params)
+	res, err := req.Do(b)
+	if err != nil {
+		return false, err
+	}
+	return *res, err
+}
+
+type SetMessageReactionCustomEmojiP struct {
+	SetMessageReactionP
+	Reaction []ReactionTypeCustomEmoji `json:"reaction"`
+}
+
+func (b *Bot) SetMessageReactionCustom(params SetMessageReactionCustomEmojiP) (bool, error) {
+	req := NewRequest[bool]("setMessageReaction", params)
+	res, err := req.Do(b)
+	if err != nil {
+		return false, err
+	}
+	return *res, err
+}
+
+type SetMessageReactionPaidP struct {
+	SetMessageReactionP
+}
+
+func (b *Bot) SetMessageReactionPaid(params SetMessageReactionPaidP) (bool, error) {
+	req := NewRequest[bool]("setMessageReaction", params)
+	res, err := req.Do(b)
+	if err != nil {
+		return false, err
+	}
+	return *res, err
+}
