@@ -73,21 +73,36 @@ func (b *Bot) SendMessage(params *SendMessageP) (*Message, error) {
 	return req.Do(b)
 }
 
+type SendPhotoBaseP struct {
+	BusinessConnectionID  string                `json:"business_connection_id,omitempty"`
+	ChatID                int                   `json:"chat_id"`
+	MessageThreadID       int                   `json:"message_thread_id,omitempty"`
+	ParseMode             ParseMode             `json:"parse_mode,omitempty"`
+	Caption               string                `json:"caption,omitempty"`
+	CaptionEntities       []*MessageEntity      `json:"caption_entities,omitempty"`
+	ShowCaptionAboveMedia bool                  `json:"show_caption_above_media,omitempty"`
+	HasSpoiler            bool                  `json:"has_spoiler,omitempty"`
+	DisableNotifications  bool                  `json:"disable_notifications,omitempty"`
+	ProtectContent        bool                  `json:"protect_content,omitempty"`
+	AllowPaidBroadcast    bool                  `json:"allow_paid_broadcast,omitempty"`
+	MessageEffectID       string                `json:"message_effect_id,omitempty"`
+	ReplyMarkup           *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+}
 type SendPhotoP struct {
 	BusinessConnectionID  string               `json:"business_connection_id,omitempty"`
 	ChatID                int                  `json:"chat_id"`
 	MessageThreadID       int                  `json:"message_thread_id,omitempty"`
 	ParseMode             ParseMode            `json:"parse_mode,omitempty"`
-	Photo                 string               `json:"photo"`
 	Caption               string               `json:"caption,omitempty"`
 	CaptionEntities       []*MessageEntity     `json:"caption_entities,omitempty"`
-	ShowCaptionAboveMedia bool                 `json:"show_caption_above_media"`
-	HasSpoiler            bool                 `json:"has_spoiler"`
+	ShowCaptionAboveMedia bool                 `json:"show_caption_above_media,omitempty"`
+	HasSpoiler            bool                 `json:"has_spoiler,omitempty"`
 	DisableNotifications  bool                 `json:"disable_notifications,omitempty"`
 	ProtectContent        bool                 `json:"protect_content,omitempty"`
 	AllowPaidBroadcast    bool                 `json:"allow_paid_broadcast,omitempty"`
 	MessageEffectID       string               `json:"message_effect_id,omitempty"`
 	ReplyMarkup           InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+	Photo                 string               `json:"photo"`
 }
 
 func (b *Bot) SendPhoto(params *SendPhotoP) (*Message, error) {
@@ -130,7 +145,99 @@ type DeleteMessageP struct {
 	MessageID int `json:"message_id"`
 }
 
-func (b *Bot) DeleteMessage(params *DeleteMessageP) (*Message, error) {
-	req := NewRequest[Message]("deleteMessage", params)
+func (b *Bot) DeleteMessage(params *DeleteMessageP) (bool, error) {
+	req := NewRequest[bool]("deleteMessage", params)
+	ok, err := req.Do(b)
+	if err != nil {
+		return false, err
+	}
+	return *ok, err
+}
+
+type AnswerCallbackQueryP struct {
+	CallbackQueryID string `json:"callback_query_id"`
+	Text            string `json:"text,omitempty"`
+	ShowAlert       bool   `json:"show_alert,omitempty"`
+	URL             string `json:"url,omitempty"`
+	CacheTime       int    `json:"cache_time,omitempty"`
+}
+
+func (b *Bot) AnswerCallbackQuery(params *AnswerCallbackQueryP) (bool, error) {
+	req := NewRequest[bool]("answerCallbackQuery", params)
+	ok, err := req.Do(b)
+	if err != nil {
+		return false, err
+	}
+	return *ok, err
+}
+
+type GetFileP struct {
+	FileId string `json:"file_id"`
+}
+
+func (b *Bot) GetFile(params *GetFileP) (*File, error) {
+	req := NewRequest[File]("getFile", params)
 	return req.Do(b)
+}
+
+type SendChatActionP struct {
+	BusinessConnectionID string      `json:"business_connection_id,omitempty"`
+	ChatID               int         `json:"chat_id"`
+	MessageThreadID      int         `json:"message_thread_id,omitempty"`
+	Action               ChatActions `json:"action"`
+}
+
+func (b *Bot) SendChatAction(params SendChatActionP) (bool, error) {
+	req := NewRequest[bool]("sendChatAction", params)
+	res, err := req.Do(b)
+	if err != nil {
+		return false, err
+	}
+	return *res, err
+}
+
+type SetMessageReactionP struct {
+	ChatId    int  `json:"chat_id"`
+	MessageId int  `json:"message_id"`
+	IsBig     bool `json:"is_big,omitempty"`
+}
+type SetMessageReactionEmojiP struct {
+	SetMessageReactionP
+	Reaction []ReactionTypeEmoji `json:"reaction"`
+}
+
+func (b *Bot) SetMessageReactionEmoji(params SetMessageReactionEmojiP) (bool, error) {
+	req := NewRequest[bool]("setMessageReaction", params)
+	res, err := req.Do(b)
+	if err != nil {
+		return false, err
+	}
+	return *res, err
+}
+
+type SetMessageReactionCustomEmojiP struct {
+	SetMessageReactionP
+	Reaction []ReactionTypeCustomEmoji `json:"reaction"`
+}
+
+func (b *Bot) SetMessageReactionCustom(params SetMessageReactionCustomEmojiP) (bool, error) {
+	req := NewRequest[bool]("setMessageReaction", params)
+	res, err := req.Do(b)
+	if err != nil {
+		return false, err
+	}
+	return *res, err
+}
+
+type SetMessageReactionPaidP struct {
+	SetMessageReactionP
+}
+
+func (b *Bot) SetMessageReactionPaid(params SetMessageReactionPaidP) (bool, error) {
+	req := NewRequest[bool]("setMessageReaction", params)
+	res, err := req.Do(b)
+	if err != nil {
+		return false, err
+	}
+	return *res, err
 }

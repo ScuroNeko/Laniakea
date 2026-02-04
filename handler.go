@@ -39,6 +39,9 @@ func (b *Bot) handleMessage(update *Update, ctx *MsgContext) {
 			ctx.Text = strings.TrimSpace(text[len(cmd):])
 			ctx.Args = strings.Split(ctx.Text, " ")
 
+			if !plugin.executeMiddlewares(ctx, b.dbContext) {
+				return
+			}
 			go plugin.Execute(cmd, ctx, b.dbContext)
 			return
 		}
@@ -57,12 +60,17 @@ func (b *Bot) handleCallback(update *Update, ctx *MsgContext) {
 	ctx.From = update.CallbackQuery.From
 	ctx.Msg = update.CallbackQuery.Message
 	ctx.CallbackMsgId = update.CallbackQuery.Message.MessageID
+	ctx.CallbackQueryId = update.CallbackQuery.ID
 	ctx.Args = data.Args
 
 	for _, plugin := range b.plugins {
 		_, ok := plugin.Payloads[data.Command]
 		if !ok {
 			continue
+		}
+
+		if !plugin.executeMiddlewares(ctx, b.dbContext) {
+			return
 		}
 		go plugin.ExecutePayload(data.Command, ctx, b.dbContext)
 		return

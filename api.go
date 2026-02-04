@@ -63,3 +63,18 @@ func (r TelegramRequest[R, P]) Do(bot *Bot) (*R, error) {
 	}
 	return &response.Result, nil
 }
+
+func (b *Bot) GetFileByLink(link string) ([]byte, error) {
+	c := http.DefaultClient
+	u := fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", b.token, link)
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return nil, err
+	}
+	res, err := c.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	return io.ReadAll(res.Body)
+}

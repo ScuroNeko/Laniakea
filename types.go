@@ -1,5 +1,7 @@
 package laniakea
 
+import "git.nix13.pw/scuroneko/extypes"
+
 type Update struct {
 	UpdateID               int                          `json:"update_id"`
 	Message                *Message                     `json:"message"`
@@ -54,9 +56,9 @@ type Message struct {
 	Chat            *Chat  `json:"chat,omitempty"`
 	Text            string `json:"text"`
 
-	Photo          []*PhotoSize `json:"photo,omitempty"`
-	Caption        string       `json:"caption,omitempty"`
-	ReplyToMessage *Message     `json:"reply_to_message"`
+	Photo          extypes.Slice[*PhotoSize] `json:"photo,omitempty"`
+	Caption        string                    `json:"caption,omitempty"`
+	ReplyToMessage *Message                  `json:"reply_to_message"`
 
 	ReplyMarkup *MessageReplyMarkup `json:"reply_markup,omitempty"`
 }
@@ -172,3 +174,23 @@ type ReactionCount struct {
 	Type       *ReactionType `json:"type"`
 	TotalCount int           `json:"total_count"`
 }
+
+type File struct {
+	FileId       string `json:"file_id"`
+	FileUniqueID string `json:"file_unique_id"`
+	FileSize     int    `json:"file_size,omitempty"`
+	FilePath     string `json:"file_path,omitempty"`
+}
+
+type ChatActions string
+
+const (
+	ChatActionTyping          ChatActions = "typing"
+	ChatActionUploadPhoto     ChatActions = "upload_photo"
+	ChatActionUploadVideo     ChatActions = "upload_video"
+	ChatActionUploadVoice     ChatActions = "upload_voice"
+	ChatActionUploadDocument  ChatActions = "upload_document"
+	ChatActionChooseSticker   ChatActions = "choose_sticker"
+	ChatActionFindLocation    ChatActions = "find_location"
+	ChatActionUploadVideoNone ChatActions = "upload_video_none"
+)

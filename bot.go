@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"git.nix13.pw/scuroneko/extypes"
 	"git.nix13.pw/scuroneko/slog"
 	"github.com/redis/go-redis/v9"
 	"github.com/vinovest/sqlx"
@@ -30,8 +31,8 @@ type Bot struct {
 	logger        *slog.Logger
 	requestLogger *slog.Logger
 
-	plugins     []*Plugin
-	middlewares []*Middleware
+	plugins     []Plugin
+	middlewares []Middleware
 	prefixes    []string
 	runners     []Runner
 
@@ -39,7 +40,7 @@ type Bot struct {
 
 	updateOffset int
 	updateTypes  []string
-	updateQueue  *Queue[*Update]
+	updateQueue  *extypes.Queue[*Update]
 }
 
 type BotSettings struct {
@@ -73,9 +74,9 @@ func LoadPrefixesFromEnv() []string {
 	return strings.Split(prefixesS, ";")
 }
 func NewBot(settings *BotSettings) *Bot {
-	updateQueue := CreateQueue[*Update](256)
+	updateQueue := extypes.CreateQueue[*Update](256)
 	bot := &Bot{
-		updateOffset: 0, plugins: make([]*Plugin, 0), debug: settings.Debug, errorTemplate: "%s",
+		updateOffset: 0, plugins: make([]Plugin, 0), debug: settings.Debug, errorTemplate: "%s",
 		prefixes: settings.Prefixes, updateTypes: make([]string, 0), runners: make([]Runner, 0),
 		updateQueue: updateQueue,
 		token:       settings.Token,
@@ -116,6 +117,12 @@ func NewBot(settings *BotSettings) *Bot {
 			bot.requestLogger.AddWriter(fileWriter)
 		}
 	}
+
+	u, err := bot.GetMe()
+	if err != nil {
+		bot.logger.Fatal(err)
+	}
+	bot.logger.Infof("Authorized as %s\n", u.FirstName)
 
 	return bot
 }
@@ -171,20 +178,20 @@ func (b *Bot) Debug(debug bool) *Bot {
 	b.debug = debug
 	return b
 }
-func (b *Bot) AddPlugins(plugin ...*Plugin) *Bot {
+func (b *Bot) AddPlugins(plugin ...Plugin) *Bot {
 	b.plugins = append(b.plugins, plugin...)
 	for _, p := range plugin {
 		b.logger.Debugln(fmt.Sprintf("plugins with name \"%s\" registered", p.Name))
 	}
 	return b
 }
-func (b *Bot) AddMiddleware(middleware ...*Middleware) *Bot {
+func (b *Bot) AddMiddleware(middleware ...Middleware) *Bot {
 	b.middlewares = append(b.middlewares, middleware...)
 	for _, m := range middleware {
 		b.logger.Debugln(fmt.Sprintf("middleware with name \"%s\" registered", m.Name))
 	}
 
-	sort.Slice(&b.middlewares, func(i, j int) bool {
+	sort.Slice(b.middlewares, func(i, j int) bool {
 		first := b.middlewares[i]
 		second := b.middlewares[j]
 		if first.Order == second.Order {
@@ -244,9 +251,7 @@ func (b *Bot) Run() {
 			continue
 		}
 
-		ctx := &MsgContext{
-			Bot: b, Update: u,
-		}
+		ctx := &MsgContext{Bot: b, Update: u}
 		for _, middleware := range b.middlewares {
 			middleware.Execute(ctx, b.dbContext)
 		}
