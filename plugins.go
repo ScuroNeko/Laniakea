@@ -1,6 +1,10 @@
 package laniakea
 
-import "log"
+import (
+	"log"
+
+	"git.nix13.pw/scuroneko/extypes"
+)
 
 type CommandExecutor func(ctx *MsgContext, dbContext *DatabaseContext)
 
@@ -9,6 +13,7 @@ type PluginBuilder struct {
 	commands       map[string]*CommandExecutor
 	payloads       map[string]*CommandExecutor
 	updateListener *CommandExecutor
+	middlewares    extypes.Slice[*PluginMiddleware]
 }
 
 type Plugin struct {
@@ -16,6 +21,7 @@ type Plugin struct {
 	Commands       map[string]*CommandExecutor
 	Payloads       map[string]*CommandExecutor
 	UpdateListener *CommandExecutor
+	Middlewares    extypes.Slice[*PluginMiddleware]
 }
 
 func NewPlugin(name string) *PluginBuilder {
@@ -45,6 +51,11 @@ func (p *PluginBuilder) UpdateListener(listener CommandExecutor) *PluginBuilder 
 	return p
 }
 
+func (p *PluginBuilder) Middleware(middleware *PluginMiddleware) *PluginBuilder {
+	p.middlewares = p.middlewares.Push(middleware)
+	return p
+}
+
 func (p *PluginBuilder) Build() Plugin {
 	if len(p.commands) == 0 && len(p.payloads) == 0 {
 		log.Println("no command or payloads")
@@ -54,6 +65,7 @@ func (p *PluginBuilder) Build() Plugin {
 		Commands:       p.commands,
 		Payloads:       p.payloads,
 		UpdateListener: p.updateListener,
+		Middlewares:    p.middlewares,
 	}
 }
 
@@ -63,6 +75,15 @@ func (p *Plugin) Execute(cmd string, ctx *MsgContext, dbContext *DatabaseContext
 
 func (p *Plugin) ExecutePayload(payload string, ctx *MsgContext, dbContext *DatabaseContext) {
 	(*p.Payloads[payload])(ctx, dbContext)
+}
+
+func (p *Plugin) executeMiddlewares(ctx *MsgContext, db *DatabaseContext) bool {
+	for _, m := range p.Middlewares {
+		if !m.Execute(ctx, db) {
+			return false
+		}
+	}
+	return true
 }
 
 type Middleware struct {
@@ -78,8 +99,8 @@ type MiddlewareBuilder struct {
 	async    bool
 }
 
-func NewMiddleware(name string) *MiddlewareBuilder {
-	return &MiddlewareBuilder{name: name, async: false}
+func NewMiddleware(name string, executor CommandExecutor) *MiddlewareBuilder {
+	return &MiddlewareBuilder{name: name, executor: executor, order: 0, async: false}
 }
 func (m *MiddlewareBuilder) SetName(name string) *MiddlewareBuilder {
 	m.name = name
@@ -111,4 +132,37 @@ func (m Middleware) Execute(ctx *MsgContext, db *DatabaseContext) {
 	} else {
 		m.Execute(ctx, db)
 	}
+}
+
+type PluginMiddlewareExecutor func(ctx *MsgContext, db *DatabaseContext) bool
+
+// PluginMiddleware
+// When async, returned value ignored
+type PluginMiddleware struct {
+	executor PluginMiddlewareExecutor
+	order    int
+	async    bool
+}
+
+func NewPluginMiddleware(executor PluginMiddlewareExecutor) *PluginMiddleware {
+	return &PluginMiddleware{
+		executor: executor,
+		order:    0,
+		async:    false,
+	}
+}
+func (m *PluginMiddleware) SetOrder(order int) *PluginMiddleware {
+	m.order = order
+	return m
+}
+func (m *PluginMiddleware) SetAsync(async bool) *PluginMiddleware {
+	m.async = async
+	return m
+}
+func (m *PluginMiddleware) Execute(ctx *MsgContext, db *DatabaseContext) bool {
+	if m.async {
+		go m.executor(ctx, db)
+		return true
+	}
+	return m.executor(ctx, db)
 }

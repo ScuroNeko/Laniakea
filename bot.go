@@ -251,9 +251,7 @@ func (b *Bot) Run() {
 			continue
 		}
 
-		ctx := &MsgContext{
-			Bot: b, Update: u,
-		}
+		ctx := &MsgContext{Bot: b, Update: u}
 		for _, middleware := range b.middlewares {
 			middleware.Execute(ctx, b.dbContext)
 		}
