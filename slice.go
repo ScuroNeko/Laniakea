@@ -148,6 +148,15 @@ func (s Set[T]) Remove(el T) Set[T] {
 	}
 	return s.Pop(index)
 }
+func (s Set[T]) Filter(f func(e T) bool) Set[T] {
+	out := make(Set[T], 0)
+	for _, v := range s {
+		if f(v) {
+			out = append(out, v)
+		}
+	}
+	return out
+}
 func (s Set[T]) ToSlice() Slice[T] {
 	out := make(Slice[T], s.Len())
 	copy(out, s)
