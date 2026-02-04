@@ -6,7 +6,7 @@ type Slice[T comparable] []T
 
 func NewSliceFrom[T comparable](slice []T) Slice[T] {
 	s := make(Slice[T], len(slice))
-	copy(s[:], slice)
+	copy(s, slice)
 	return s
 }
 func (s Slice[T]) Len() int {
@@ -21,6 +21,11 @@ func (s Slice[T]) Get(index int) T {
 func (s Slice[T]) Last() T {
 	return s.Get(s.Len() - 1)
 }
+func (s Slice[T]) Index(el T) int {
+	return slices.Index(s, el)
+}
+
+// Swap is mutable func
 func (s Slice[T]) Swap(i, j int) Slice[T] {
 	s[i], s[j] = s[j], s[i]
 	return s
@@ -55,7 +60,7 @@ func (s Slice[T]) Pop(index int) Slice[T] {
 	return out
 }
 func (s Slice[T]) Remove(el T) Slice[T] {
-	index := slices.Index(s, el)
+	index := s.Index(el)
 	if index == -1 {
 		return s
 	}
@@ -78,12 +83,20 @@ func (s Slice[T]) ToAnyArray() []any {
 	return out
 }
 
+// ForEach is mutable func
+func (s Slice[T]) ForEach(f func(e T) T) Slice[T] {
+	for i, v := range s {
+		s[i] = f(v)
+	}
+	return s
+}
+
 type Set[T comparable] []T
 
 func NewSetFrom[T comparable](slice []T) Set[T] {
 	s := make(Set[T], 0)
 	for _, v := range slice {
-		if slices.Index(slice, v) >= 0 {
+		if s.Index(v) >= 0 {
 			continue
 		}
 		s = append(s, v)
@@ -102,11 +115,14 @@ func (s Set[T]) Get(index int) T {
 func (s Set[T]) Last() T {
 	return s[s.Len()-1]
 }
+func (s Set[T]) Index(el T) int {
+	return slices.Index(s, el)
+}
 func (s Set[T]) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 func (s Set[T]) Add(v T) Set[T] {
-	index := slices.Index(s, v)
+	index := s.Index(v)
 	if index >= 0 {
 		return s
 	}
@@ -126,7 +142,7 @@ func (s Set[T]) Pop(index int) Set[T] {
 	return out
 }
 func (s Set[T]) Remove(el T) Set[T] {
-	index := slices.Index(s, el)
+	index := s.Index(el)
 	if index == -1 {
 		return s
 	}
