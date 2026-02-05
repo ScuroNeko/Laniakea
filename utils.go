@@ -3,8 +3,19 @@ package laniakea
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
+
+	"git.nix13.pw/scuroneko/slog"
 )
+
+func GetLoggerLevel() slog.LogLevel {
+	level := slog.FATAL
+	if os.Getenv("DEBUG") == "true" {
+		level = slog.DEBUG
+	}
+	return level
+}
 
 // MapToStruct unsafe function
 func MapToStruct(m map[string]any, s any) error {

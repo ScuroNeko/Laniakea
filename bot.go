@@ -37,6 +37,9 @@ type Bot struct {
 	runners     []Runner
 
 	dbContext *DatabaseContext
+	api       *Api
+
+	dbWriterRequested extypes.Slice[*slog.Logger]
 
 	updateOffset int
 	updateTypes  []string
@@ -75,12 +78,14 @@ func LoadPrefixesFromEnv() []string {
 }
 func NewBot(settings *BotSettings) *Bot {
 	updateQueue := extypes.CreateQueue[*Update](256)
+	api := NewAPI(settings.Token)
 	bot := &Bot{
 		updateOffset: 0, plugins: make([]Plugin, 0), debug: settings.Debug, errorTemplate: "%s",
 		prefixes: settings.Prefixes, updateTypes: make([]string, 0), runners: make([]Runner, 0),
-		updateQueue: updateQueue,
-		token:       settings.Token,
+		updateQueue: updateQueue, api: api, dbWriterRequested: make([]*slog.Logger, 0),
+		token: settings.Token,
 	}
+	bot.dbWriterRequested = bot.dbWriterRequested.Push(api.logger)
 
 	if len(settings.ErrorTemplate) > 0 {
 		bot.errorTemplate = settings.ErrorTemplate
@@ -118,7 +123,7 @@ func NewBot(settings *BotSettings) *Bot {
 		}
 	}
 
-	u, err := bot.GetMe()
+	u, err := api.GetMe()
 	if err != nil {
 		bot.logger.Fatal(err)
 	}
@@ -149,6 +154,9 @@ func (b *Bot) AddDatabaseLogger(writer func(db *DatabaseContext) slog.LoggerWrit
 	b.logger.AddWriter(w)
 	if b.requestLogger != nil {
 		b.requestLogger.AddWriter(w)
+	}
+	for _, l := range b.dbWriterRequested {
+		l.AddWriter(w)
 	}
 	return b
 }
@@ -251,7 +259,7 @@ func (b *Bot) Run() {
 			continue
 		}
 
-		ctx := &MsgContext{Bot: b, Update: u}
+		ctx := &MsgContext{Bot: b, Update: u, Api: b.api}
 		for _, middleware := range b.middlewares {
 			middleware.Execute(ctx, b.dbContext)
 		}

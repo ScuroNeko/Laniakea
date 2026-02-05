@@ -8,14 +8,22 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
+
+	"git.nix13.pw/scuroneko/slog"
 )
 
 type Uploader struct {
-	bot *Bot
+	api    *Api
+	logger *slog.Logger
 }
 
-func NewUploader(bot *Bot) *Uploader {
-	return &Uploader{bot: bot}
+func NewUploader(api *Api) *Uploader {
+	logger := slog.CreateLogger().Level(GetLoggerLevel()).Prefix("UPLOADER")
+	logger.AddWriter(logger.CreateJsonStdoutWriter())
+	return &Uploader{api, logger}
+}
+func (u *Uploader) Close() {
+	u.logger.Close()
 }
 
 type UploaderFileType string
@@ -56,8 +64,8 @@ func NewUploaderRequest[R, P any](method string, file UploaderFile, params P) Up
 	return UploaderRequest[R, P]{method, file, params}
 }
 
-func (u UploaderRequest[R, P]) Do(bot *Bot) (*R, error) {
-	url := fmt.Sprintf("https://api.telegram.org/bot%s/%s", bot.token, u.method)
+func (u UploaderRequest[R, P]) Do(up *Uploader) (*R, error) {
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/%s", up.api.token, u.method)
 
 	buf := bytes.NewBuffer(nil)
 	w := multipart.NewWriter(buf)
@@ -87,7 +95,7 @@ func (u UploaderRequest[R, P]) Do(bot *Bot) (*R, error) {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", w.FormDataContentType())
-	bot.logger.Debugln("UPLOADER REQ", u.method)
+	up.logger.Debugln("UPLOADER REQ", u.method)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -98,7 +106,7 @@ func (u UploaderRequest[R, P]) Do(bot *Bot) (*R, error) {
 	if err != nil {
 		return nil, err
 	}
-	bot.logger.Debugln("UPLOADER RES", u.method, string(body))
+	up.logger.Debugln("UPLOADER RES", u.method, string(body))
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("[%d] %s", res.StatusCode, string(body))
 	}
@@ -116,7 +124,7 @@ func (u UploaderRequest[R, P]) Do(bot *Bot) (*R, error) {
 
 func (u *Uploader) UploadPhoto(file UploaderFile, params SendPhotoBaseP) (*Message, error) {
 	req := NewUploaderRequest[Message]("sendPhoto", file, params)
-	return req.Do(u.bot)
+	return req.Do(u)
 }
 
 func uploaderTypeByExt(filename string) UploaderFileType {

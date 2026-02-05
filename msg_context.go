@@ -3,7 +3,9 @@ package laniakea
 import "fmt"
 
 type MsgContext struct {
-	Bot             *Bot
+	Bot *Bot
+	Api *Api
+
 	Msg             *Message
 	Update          *Update
 	From            *User
@@ -33,9 +35,9 @@ func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard
 	if keyboard != nil {
 		params.ReplyMarkup = keyboard.Get()
 	}
-	msg, err := ctx.Bot.EditMessageText(params)
+	msg, err := ctx.Api.EditMessageText(params)
 	if err != nil {
-		ctx.Bot.logger.Errorln(err)
+		ctx.Api.logger.Errorln(err)
 		return nil
 	}
 	return &AnswerMessage{
@@ -47,7 +49,7 @@ func (m *AnswerMessage) Edit(text string) *AnswerMessage {
 }
 func (ctx *MsgContext) EditCallback(text string, keyboard *InlineKeyboard) *AnswerMessage {
 	if ctx.CallbackMsgId == 0 {
-		ctx.Bot.logger.Errorln("Can't edit non-callback update message")
+		ctx.Api.logger.Errorln("Can't edit non-callback update message")
 		return nil
 	}
 
@@ -67,9 +69,9 @@ func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeybo
 	if kb != nil {
 		params.ReplyMarkup = kb.Get()
 	}
-	msg, err := ctx.Bot.EditMessageCaption(params)
+	msg, err := ctx.Api.EditMessageCaption(params)
 	if err != nil {
-		ctx.Bot.logger.Errorln(err)
+		ctx.Api.logger.Errorln(err)
 	}
 	return &AnswerMessage{
 		MessageID: msg.MessageID, ctx: ctx, Text: text, IsMedia: true,
@@ -77,7 +79,7 @@ func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeybo
 }
 func (m *AnswerMessage) EditCaption(text string) *AnswerMessage {
 	if m.MessageID == 0 {
-		m.ctx.Bot.logger.Errorln("Can't edit caption message, message id is zero")
+		m.ctx.Api.logger.Errorln("Can't edit caption message, message id is zero")
 		return m
 	}
 	return m.ctx.editPhotoText(m.MessageID, text, nil)
@@ -96,9 +98,9 @@ func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard) *AnswerMess
 		params.ReplyMarkup = keyboard.Get()
 	}
 
-	msg, err := ctx.Bot.SendMessage(params)
+	msg, err := ctx.Api.SendMessage(params)
 	if err != nil {
-		ctx.Bot.logger.Errorln(err)
+		ctx.Api.logger.Errorln(err)
 		return nil
 	}
 	return &AnswerMessage{
@@ -125,9 +127,9 @@ func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard) *An
 	if kb != nil {
 		params.ReplyMarkup = kb.Get()
 	}
-	msg, err := ctx.Bot.SendPhoto(params)
+	msg, err := ctx.Api.SendPhoto(params)
 	if err != nil {
-		ctx.Bot.logger.Errorln(err)
+		ctx.Api.logger.Errorln(err)
 		return &AnswerMessage{
 			ctx: ctx, Text: text, IsMedia: true,
 		}
@@ -144,12 +146,12 @@ func (ctx *MsgContext) AnswerPhotoKeyboard(photoId, text string, kb *InlineKeybo
 }
 
 func (ctx *MsgContext) delete(messageId int) {
-	_, err := ctx.Bot.DeleteMessage(&DeleteMessageP{
+	_, err := ctx.Api.DeleteMessage(&DeleteMessageP{
 		ChatID:    ctx.Msg.Chat.ID,
 		MessageID: messageId,
 	})
 	if err != nil {
-		ctx.Bot.logger.Errorln(err)
+		ctx.Api.logger.Errorln(err)
 	}
 }
 func (m *AnswerMessage) Delete() {
@@ -163,12 +165,12 @@ func (ctx *MsgContext) answerCallbackQuery(url, text string, showAlert bool) {
 	if len(ctx.CallbackQueryId) == 0 {
 		return
 	}
-	_, err := ctx.Bot.AnswerCallbackQuery(&AnswerCallbackQueryP{
+	_, err := ctx.Api.AnswerCallbackQuery(&AnswerCallbackQueryP{
 		CallbackQueryID: ctx.CallbackQueryId,
 		Text:            text, ShowAlert: showAlert, URL: url,
 	})
 	if err != nil {
-		ctx.Bot.logger.Errorln(err)
+		ctx.Api.logger.Errorln(err)
 	}
 }
 func (ctx *MsgContext) AnswerCbQuery() {
@@ -185,11 +187,11 @@ func (ctx *MsgContext) AnswerCbQueryUrl(u string) {
 }
 
 func (ctx *MsgContext) SendAction(action ChatActions) {
-	_, err := ctx.Bot.SendChatAction(SendChatActionP{
+	_, err := ctx.Api.SendChatAction(SendChatActionP{
 		ChatID: ctx.Msg.Chat.ID, Action: action,
 	})
 	if err != nil {
-		ctx.Bot.logger.Errorln(err)
+		ctx.Api.logger.Errorln(err)
 	}
 }
 

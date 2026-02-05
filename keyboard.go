@@ -41,11 +41,11 @@ func (in *InlineKeyboard) AddLine() *InlineKeyboard {
 	in.CurrentLine = make([]InlineKeyboardButton, 0)
 	return in
 }
-func (in *InlineKeyboard) Get() InlineKeyboardMarkup {
+func (in *InlineKeyboard) Get() *InlineKeyboardMarkup {
 	if len(in.CurrentLine) > 0 {
 		in.Lines = append(in.Lines, in.CurrentLine)
 	}
-	return InlineKeyboardMarkup{
+	return &InlineKeyboardMarkup{
 		InlineKeyboard: in.Lines,
 	}
 }

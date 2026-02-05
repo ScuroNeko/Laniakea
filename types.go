@@ -83,13 +83,15 @@ type MessageEntity struct {
 }
 
 type ReplyParameters struct {
-	MessageID                int              `json:"message_id"`
-	ChatID                   int              `json:"chat_id,omitempty"`
+	MessageID int `json:"message_id"`
+	ChatID    int `json:"chat_id,omitempty"`
+
 	AllowSendingWithoutReply bool             `json:"allow_sending_without_reply,omitempty"`
 	Quote                    string           `json:"quote,omitempty"`
 	QuoteParsingMode         string           `json:"quote_parsing_mode,omitempty"`
 	QuoteEntities            []*MessageEntity `json:"quote_entities,omitempty"`
-	QuotePosition            int              `json:"quote_postigin,omitempty"`
+	QuotePosition            int              `json:"quote_position,omitempty"`
+	ChecklistTaskID          int              `json:"checklist_task_id,omitempty"`
 }
 
 type PhotoSize struct {
@@ -108,6 +110,20 @@ type LinkPreviewOptions struct {
 	ShowAboveText    bool   `json:"show_above_text,omitempty"`
 }
 
+type ReplyMarkup struct {
+	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard,omitempty"`
+
+	Keyboard              [][]int `json:"keyboard,omitempty"`
+	IsPersistent          bool    `json:"is_persistent,omitempty"`
+	ResizeKeyboard        bool    `json:"resize_keyboard,omitempty"`
+	OneTimeKeyboard       bool    `json:"one_time_keyboard,omitempty"`
+	InputFieldPlaceholder string  `json:"input_field_placeholder,omitempty"`
+	Selective             bool    `json:"selective,omitempty"`
+
+	RemoveKeyboard bool `json:"remove_keyboard,omitempty"`
+
+	ForceReply bool `json:"force_reply,omitempty"`
+}
 type InlineKeyboardMarkup struct {
 	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard,omitempty"`
 }
@@ -194,3 +210,17 @@ const (
 	ChatActionFindLocation    ChatActions = "find_location"
 	ChatActionUploadVideoNone ChatActions = "upload_video_none"
 )
+
+type SuggestedPostPrice struct {
+	Currency string `json:"currency"`
+	Amount   int    `json:"amount"`
+}
+type SuggestedPostInfo struct {
+	State    string             `json:"state"` //State of the suggested post. Currently, it can be one of “pending”, “approved”, “declined”.
+	Price    SuggestedPostPrice `json:"price"`
+	SendDate int                `json:"send_date"`
+}
+type SuggestedPostParameters struct {
+	Price    SuggestedPostPrice `json:"price"`
+	SendDate int                `json:"send_date"`
+}

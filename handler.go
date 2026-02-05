@@ -35,6 +35,18 @@ func (b *Bot) handleMessage(update *Update, ctx *MsgContext) {
 			if !strings.HasPrefix(text, cmd) {
 				continue
 			}
+			requestParts := strings.Split(text, " ")
+			cmdParts := strings.Split(cmd, " ")
+			isValid := true
+			for i, part := range cmdParts {
+				if part != requestParts[i] {
+					isValid = false
+					break
+				}
+			}
+			if !isValid {
+				continue
+			}
 
 			ctx.Text = strings.TrimSpace(text[len(cmd):])
 			ctx.Args = strings.Split(ctx.Text, " ")

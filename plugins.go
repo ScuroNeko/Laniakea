@@ -58,7 +58,7 @@ func (p *PluginBuilder) Middleware(middleware *PluginMiddleware) *PluginBuilder 
 
 func (p *PluginBuilder) Build() Plugin {
 	if len(p.commands) == 0 && len(p.payloads) == 0 {
-		log.Println("no command or payloads")
+		log.Printf("no command or payloads for %s", p.name)
 	}
 	return Plugin{
 		Name:           p.name,

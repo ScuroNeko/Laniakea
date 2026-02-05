@@ -7,7 +7,26 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"git.nix13.pw/scuroneko/slog"
 )
+
+type Api struct {
+	token  string
+	logger *slog.Logger
+}
+
+func NewAPI(token string) *Api {
+	l := slog.CreateLogger().Level(GetLoggerLevel()).Prefix("API")
+	l.AddWriter(l.CreateJsonStdoutWriter())
+	return &Api{
+		token:  token,
+		logger: l,
+	}
+}
+func (api *Api) CloseApi() {
+	api.logger.Close()
+}
 
 type ApiResponse[R any] struct {
 	Ok          bool   `json:"ok"`
@@ -24,21 +43,21 @@ type TelegramRequest[R, P any] struct {
 func NewRequest[R, P any](method string, params P) TelegramRequest[R, P] {
 	return TelegramRequest[R, P]{method: method, params: params}
 }
-func (r TelegramRequest[R, P]) Do(bot *Bot) (*R, error) {
+func (r TelegramRequest[R, P]) Do(api *Api) (*R, error) {
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(r.params)
 	if err != nil {
 		return nil, err
 	}
 
-	if bot.requestLogger != nil {
-		bot.requestLogger.Debugln(strings.ReplaceAll(fmt.Sprintf(
+	if api.logger != nil {
+		api.logger.Debugln(strings.ReplaceAll(fmt.Sprintf(
 			"POST https://api.telegram.org/bot%s/%s %s",
 			"<TOKEN>", r.method, buf.String(),
 		), "\n", ""))
 	}
 
-	req, err := http.Post(fmt.Sprintf("https://api.telegram.org/bot%s/%s", bot.token, r.method), "application/json", &buf)
+	req, err := http.Post(fmt.Sprintf("https://api.telegram.org/bot%s/%s", api.token, r.method), "application/json", &buf)
 	if err != nil {
 		return nil, err
 	}
@@ -48,8 +67,8 @@ func (r TelegramRequest[R, P]) Do(bot *Bot) (*R, error) {
 		return nil, err
 	}
 
-	if bot.requestLogger != nil {
-		bot.requestLogger.Debugln(fmt.Sprintf("RES %s %s", r.method, string(data)))
+	if api.logger != nil {
+		api.logger.Debugln(fmt.Sprintf("RES %s %s", r.method, string(data)))
 	}
 
 	response := new(ApiResponse[R])
