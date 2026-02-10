@@ -2,7 +2,6 @@ package laniakea
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
 type EmptyParams struct{}
@@ -25,26 +24,25 @@ func (b *Bot) Updates() ([]*Update, error) {
 	req := NewRequest[[]*Update]("getUpdates", params)
 	res, err := req.Do(b.api)
 	if err != nil {
-		return []*Update{}, err
+		return nil, err
 	}
-	updates := *res
 
-	for _, u := range updates {
+	for _, u := range *res {
 		b.updateOffset = u.UpdateID + 1
 		err = b.updateQueue.Enqueue(u)
 		if err != nil {
-			return updates, err
+			return nil, err
 		}
 
-		if b.debug && b.requestLogger != nil {
+		if b.requestLogger != nil {
 			j, err := json.Marshal(u)
 			if err != nil {
 				b.logger.Error(err)
 			}
-			b.requestLogger.Debugln(fmt.Sprintf("UPDATE %s", j))
+			b.requestLogger.Debugf("UPDATE %s\n", j)
 		}
 	}
-	return updates, err
+	return *res, err
 }
 
 func (api *Api) GetMe() (*User, error) {

@@ -22,8 +22,8 @@ func NewUploader(api *Api) *Uploader {
 	logger.AddWriter(logger.CreateJsonStdoutWriter())
 	return &Uploader{api, logger}
 }
-func (u *Uploader) Close() {
-	u.logger.Close()
+func (u *Uploader) Close() error {
+	return u.logger.Close()
 }
 
 type UploaderFileType string

@@ -19,13 +19,10 @@ type Api struct {
 func NewAPI(token string) *Api {
 	l := slog.CreateLogger().Level(GetLoggerLevel()).Prefix("API")
 	l.AddWriter(l.CreateJsonStdoutWriter())
-	return &Api{
-		token:  token,
-		logger: l,
-	}
+	return &Api{token, l}
 }
-func (api *Api) CloseApi() {
-	api.logger.Close()
+func (api *Api) CloseApi() error {
+	return api.logger.Close()
 }
 
 type ApiResponse[R any] struct {
@@ -44,25 +41,25 @@ func NewRequest[R, P any](method string, params P) TelegramRequest[R, P] {
 	return TelegramRequest[R, P]{method: method, params: params}
 }
 func (r TelegramRequest[R, P]) Do(api *Api) (*R, error) {
-	var buf bytes.Buffer
-	err := json.NewEncoder(&buf).Encode(r.params)
+	buf := bytes.NewBuffer(nil)
+	err := json.NewEncoder(buf).Encode(r.params)
 	if err != nil {
 		return nil, err
 	}
 
+	u := fmt.Sprintf("https://api.telegram.org/bot%s/%s", api.token, r.method)
 	if api.logger != nil {
 		api.logger.Debugln(strings.ReplaceAll(fmt.Sprintf(
-			"POST https://api.telegram.org/bot%s/%s %s",
-			"<TOKEN>", r.method, buf.String(),
-		), "\n", ""))
+			"POST %s %s", u, buf.String(),
+		), api.token, "<TOKEN>"))
 	}
 
-	req, err := http.Post(fmt.Sprintf("https://api.telegram.org/bot%s/%s", api.token, r.method), "application/json", &buf)
+	res, err := http.Post(u, "application/json", buf)
 	if err != nil {
 		return nil, err
 	}
-	defer req.Body.Close()
-	data, err := io.ReadAll(req.Body)
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -84,13 +81,8 @@ func (r TelegramRequest[R, P]) Do(api *Api) (*R, error) {
 }
 
 func (b *Bot) GetFileByLink(link string) ([]byte, error) {
-	c := http.DefaultClient
 	u := fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", b.token, link)
-	req, err := http.NewRequest("GET", u, nil)
-	if err != nil {
-		return nil, err
-	}
-	res, err := c.Do(req)
+	res, err := http.Get(u)
 	if err != nil {
 		return nil, err
 	}

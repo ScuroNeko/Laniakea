@@ -78,7 +78,6 @@ func Encode[T any](w *multipart.Writer, req T) error {
 			if err == nil {
 				_, err = fw.Write([]byte(strconv.FormatBool(field.Bool())))
 			}
-
 		case reflect.Slice:
 			if field.Type().Elem().Kind() == reflect.Uint8 && !field.IsNil() {
 				filename := fieldType.Tag.Get("filename")

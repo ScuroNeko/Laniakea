@@ -3,51 +3,97 @@ package laniakea
 import (
 	"encoding/json"
 	"fmt"
+
+	"git.nix13.pw/scuroneko/extypes"
 )
 
+type InlineKbButtonBuilder struct {
+	text              string
+	iconCustomEmojiID string
+	style             InlineKeyboardButtonStyle
+	url               string
+	callbackData      string
+}
+
+func NewInlineKbButton(text string) InlineKbButtonBuilder {
+	return InlineKbButtonBuilder{text: text}
+}
+func (b InlineKbButtonBuilder) SetIconCustomEmojiId(id string) InlineKbButtonBuilder {
+	b.iconCustomEmojiID = id
+	return b
+}
+func (b InlineKbButtonBuilder) SetStyle(style InlineKeyboardButtonStyle) InlineKbButtonBuilder {
+	b.style = style
+	return b
+}
+func (b InlineKbButtonBuilder) SetUrl(url string) InlineKbButtonBuilder {
+	b.url = url
+	return b
+}
+func (b InlineKbButtonBuilder) SetCallbackData(data *CallbackData) InlineKbButtonBuilder {
+	b.callbackData = data.ToJson()
+	return b
+}
+
+func (b InlineKbButtonBuilder) build() InlineKeyboardButton {
+	return InlineKeyboardButton{
+		Text:              b.text,
+		URL:               b.url,
+		Style:             b.style,
+		IconCustomEmojiID: b.iconCustomEmojiID,
+		CallbackData:      b.callbackData,
+	}
+}
+
 type InlineKeyboard struct {
-	CurrentLine []InlineKeyboardButton
+	CurrentLine extypes.Slice[InlineKeyboardButton]
 	Lines       [][]InlineKeyboardButton
 	maxRow      int
 }
 
 func NewInlineKeyboard(maxRow int) *InlineKeyboard {
 	return &InlineKeyboard{
-		CurrentLine: make([]InlineKeyboardButton, 0),
+		CurrentLine: make(extypes.Slice[InlineKeyboardButton], 0),
 		Lines:       make([][]InlineKeyboardButton, 0),
 		maxRow:      maxRow,
 	}
 }
 
 func (in *InlineKeyboard) append(button InlineKeyboardButton) *InlineKeyboard {
-	if len(in.CurrentLine) == in.maxRow {
+	if in.CurrentLine.Len() == in.maxRow {
 		in.AddLine()
 	}
-	in.CurrentLine = append(in.CurrentLine, button)
+	in.CurrentLine = in.CurrentLine.Push(button)
 	return in
 }
 func (in *InlineKeyboard) AddUrlButton(text, url string) *InlineKeyboard {
 	return in.append(InlineKeyboardButton{Text: text, URL: url})
 }
 func (in *InlineKeyboard) AddCallbackButton(text string, cmd string, args ...any) *InlineKeyboard {
-	return in.append(InlineKeyboardButton{Text: text, CallbackData: NewCallbackData(cmd, args...).ToJson()})
+	return in.append(InlineKeyboardButton{
+		Text: text, CallbackData: NewCallbackData(cmd, args...).ToJson(),
+	})
+}
+func (in *InlineKeyboard) AddCustomButton(button InlineKeyboardButton) *InlineKeyboard {
+	return in.append(button)
+}
+func (in *InlineKeyboard) AddButton(b InlineKbButtonBuilder) *InlineKeyboard {
+	return in.append(b.build())
 }
 
 func (in *InlineKeyboard) AddLine() *InlineKeyboard {
-	if len(in.CurrentLine) == 0 {
+	if in.CurrentLine.Len() == 0 {
 		return in
 	}
 	in.Lines = append(in.Lines, in.CurrentLine)
-	in.CurrentLine = make([]InlineKeyboardButton, 0)
+	in.CurrentLine = make(extypes.Slice[InlineKeyboardButton], 0)
 	return in
 }
 func (in *InlineKeyboard) Get() *InlineKeyboardMarkup {
-	if len(in.CurrentLine) > 0 {
+	if in.CurrentLine.Len() > 0 {
 		in.Lines = append(in.Lines, in.CurrentLine)
 	}
-	return &InlineKeyboardMarkup{
-		InlineKeyboard: in.Lines,
-	}
+	return &InlineKeyboardMarkup{InlineKeyboard: in.Lines}
 }
 
 type CallbackData struct {
