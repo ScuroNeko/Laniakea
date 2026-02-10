@@ -72,19 +72,26 @@ func (in *InlineKeyboard) append(button InlineKeyboardButton) *InlineKeyboard {
 	in.CurrentLine = in.CurrentLine.Push(button)
 	return in
 }
+
 func (in *InlineKeyboard) AddUrlButton(text, url string) *InlineKeyboard {
 	return in.append(InlineKeyboardButton{Text: text, URL: url})
+}
+func (in *InlineKeyboard) AddUrlButtonStyle(text string, style KeyboardButtonStyle, url string) *InlineKeyboard {
+	return in.append(InlineKeyboardButton{Text: text, Style: style, URL: url})
 }
 func (in *InlineKeyboard) AddCallbackButton(text string, cmd string, args ...any) *InlineKeyboard {
 	return in.append(InlineKeyboardButton{
 		Text: text, CallbackData: NewCallbackData(cmd, args...).ToJson(),
 	})
 }
+func (in *InlineKeyboard) AddCallbackButtonStyle(text string, style KeyboardButtonStyle, cmd string, args ...any) *InlineKeyboard {
+	return in.append(InlineKeyboardButton{
+		Text: text, Style: style,
+		CallbackData: NewCallbackData(cmd, args...).ToJson(),
+	})
+}
 func (in *InlineKeyboard) AddButton(b InlineKbButtonBuilder) *InlineKeyboard {
 	return in.append(b.build())
-}
-func (in *InlineKeyboard) AddCustomButton(button InlineKeyboardButton) *InlineKeyboard {
-	return in.append(button)
 }
 
 func (in *InlineKeyboard) AddLine() *InlineKeyboard {
