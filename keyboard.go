@@ -7,10 +7,16 @@ import (
 	"git.nix13.pw/scuroneko/extypes"
 )
 
+const (
+	ButtonStyleDanger  KeyboardButtonStyle = "danger"
+	ButtonStyleSuccess KeyboardButtonStyle = "success"
+	ButtonStylePrimary KeyboardButtonStyle = "primary"
+)
+
 type InlineKbButtonBuilder struct {
 	text              string
 	iconCustomEmojiID string
-	style             InlineKeyboardButtonStyle
+	style             KeyboardButtonStyle
 	url               string
 	callbackData      string
 }
@@ -22,7 +28,7 @@ func (b InlineKbButtonBuilder) SetIconCustomEmojiId(id string) InlineKbButtonBui
 	b.iconCustomEmojiID = id
 	return b
 }
-func (b InlineKbButtonBuilder) SetStyle(style InlineKeyboardButtonStyle) InlineKbButtonBuilder {
+func (b InlineKbButtonBuilder) SetStyle(style KeyboardButtonStyle) InlineKbButtonBuilder {
 	b.style = style
 	return b
 }

@@ -128,13 +128,13 @@ type InlineKeyboardMarkup struct {
 	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard,omitempty"`
 }
 
-type InlineKeyboardButtonStyle string
+type KeyboardButtonStyle string
 type InlineKeyboardButton struct {
-	Text              string                    `json:"text"`
-	URL               string                    `json:"url,omitempty"`
-	CallbackData      string                    `json:"callback_data,omitempty"`
-	Style             InlineKeyboardButtonStyle `json:"style,omitempty"`
-	IconCustomEmojiID string                    `json:"icon_custom_emoji_id,omitempty"`
+	Text              string              `json:"text"`
+	URL               string              `json:"url,omitempty"`
+	CallbackData      string              `json:"callback_data,omitempty"`
+	Style             KeyboardButtonStyle `json:"style,omitempty"`
+	IconCustomEmojiID string              `json:"icon_custom_emoji_id,omitempty"`
 }
 
 type ReplyKeyboardMarkup struct {
