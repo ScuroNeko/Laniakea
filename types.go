@@ -96,8 +96,33 @@ type InaccessableMessage struct {
 type MaybeInaccessibleMessage struct {
 }
 
+type MessageEntityType string
+
+const (
+	MessageEntityMention              MessageEntityType = "mention"
+	MessageEntityHashtag              MessageEntityType = "hashtag"
+	MessageEntityCashtag              MessageEntityType = "cashtag"
+	MessageEntityBotCommand           MessageEntityType = "bot_command"
+	MessageEntityUrl                  MessageEntityType = "url"
+	MessageEntityEmail                MessageEntityType = "email"
+	MessageEntityPhoneNumber          MessageEntityType = "phone_number"
+	MessageEntityBold                 MessageEntityType = "bold"
+	MessageEntityItalic               MessageEntityType = "italic"
+	MessageEntityUnderline            MessageEntityType = "underline"
+	MessageEntityStrike               MessageEntityType = "strikethrough"
+	MessageEntitySpoiler              MessageEntityType = "spoiler"
+	MessageEntityBlockquote           MessageEntityType = "blockquote"
+	MessageEntityExpandableBlockquote MessageEntityType = "expandable_blockquote"
+	MessageEntityCode                 MessageEntityType = "code"
+	MessageEntityPre                  MessageEntityType = "pre"
+	MessageEntityTextLink             MessageEntityType = "text_link"
+	MessageEntityTextMention          MessageEntityType = "text_mention"
+	MessageEntityCustomEmoji          MessageEntityType = "custom_emoji"
+)
+
 type MessageEntity struct {
-	Type          string `json:"type"`
+	Type MessageEntityType `json:"type"`
+	
 	Offset        int    `json:"offset"`
 	Length        int    `json:"length"`
 	URL           string `json:"url,omitempty"`
