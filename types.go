@@ -50,17 +50,41 @@ type MessageReplyMarkup struct {
 }
 
 type Message struct {
-	MessageID       int    `json:"message_id"`
-	MessageThreadID int    `json:"message_thread_id,omitempty"`
-	From            *User  `json:"from,omitempty"`
-	Chat            *Chat  `json:"chat,omitempty"`
-	Text            string `json:"text"`
+	MessageID            int    `json:"message_id"`
+	MessageThreadID      int    `json:"message_thread_id,omitempty"`
+	BusinessConnectionId string `json:"business_connection_id,omitempty"`
+	From                 *User  `json:"from,omitempty"`
 
-	Photo          extypes.Slice[*PhotoSize] `json:"photo,omitempty"`
-	Caption        string                    `json:"caption,omitempty"`
-	ReplyToMessage *Message                  `json:"reply_to_message"`
+	SenderChat        *Chat `json:"sender_chat,omitempty"`
+	SenderBoostCount  int   `json:"sender_boost_count,omitempty"`
+	SenderBusinessBot *User `json:"sender_business_bot,omitempty"`
+	Chat              *Chat `json:"chat,omitempty"`
+
+	IsTopicMessage     bool     `json:"is_topic_message,omitempty"`
+	IsAutomaticForward bool     `json:"is_automatic_forward,omitempty"`
+	IsFromOffline      bool     `json:"is_from_offline,omitempty"`
+	IsPaidPost         bool     `json:"is_paid_post,omitempty"`
+	MediaGroupId       string   `json:"media_group_id,omitempty"`
+	AuthorSignature    string   `json:"author_signature,omitempty"`
+	PaidStarCount      int      `json:"paid_star_count,omitempty"`
+	ReplyToMessage     *Message `json:"reply_to_message,omitempty"`
+
+	Text string `json:"text"`
+
+	Photo           extypes.Slice[*PhotoSize] `json:"photo,omitempty"`
+	Caption         string                    `json:"caption,omitempty"`
+	CaptionEntities []MessageEntity           `json:"caption_entities,omitempty"`
+
+	Date     int `json:"date"`
+	EditDate int `json:"edit_date"`
 
 	ReplyMarkup *MessageReplyMarkup `json:"reply_markup,omitempty"`
+
+	Entities           []MessageEntity     `json:"entities,omitempty"`
+	LinkPreviewOptions *LinkPreviewOptions `json:"link_preview_options,omitempty"`
+	SuggestedPostInfo  *SuggestedPostInfo  `json:"suggested_post_info,omitempty"`
+
+	EffectID string `json:"effect_id,omitempty"`
 }
 
 type InaccessableMessage struct {
