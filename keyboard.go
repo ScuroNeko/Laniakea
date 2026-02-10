@@ -30,8 +30,8 @@ func (b InlineKbButtonBuilder) SetUrl(url string) InlineKbButtonBuilder {
 	b.url = url
 	return b
 }
-func (b InlineKbButtonBuilder) SetCallbackData(data *CallbackData) InlineKbButtonBuilder {
-	b.callbackData = data.ToJson()
+func (b InlineKbButtonBuilder) SetCallbackData(cmd string, args ...any) InlineKbButtonBuilder {
+	b.callbackData = NewCallbackData(cmd, args...).ToJson()
 	return b
 }
 
@@ -74,11 +74,11 @@ func (in *InlineKeyboard) AddCallbackButton(text string, cmd string, args ...any
 		Text: text, CallbackData: NewCallbackData(cmd, args...).ToJson(),
 	})
 }
-func (in *InlineKeyboard) AddCustomButton(button InlineKeyboardButton) *InlineKeyboard {
-	return in.append(button)
-}
 func (in *InlineKeyboard) AddButton(b InlineKbButtonBuilder) *InlineKeyboard {
 	return in.append(b.build())
+}
+func (in *InlineKeyboard) AddCustomButton(button InlineKeyboardButton) *InlineKeyboard {
+	return in.append(button)
 }
 
 func (in *InlineKeyboard) AddLine() *InlineKeyboard {
