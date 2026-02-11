@@ -1,9 +1,9 @@
 package tgapi
 
 type SetMyCommandsP struct {
-	Commands []BotCommand         `json:"commands"`
-	Scope    *BaseBotCommandScope `json:"scope,omitempty"`
-	Language string               `json:"language_code,omitempty"`
+	Commands []BotCommand     `json:"commands"`
+	Scope    *BotCommandScope `json:"scope,omitempty"`
+	Language string           `json:"language_code,omitempty"`
 }
 
 func (api *Api) SetMyCommands(p SetMyCommandsP) (bool, error) {
@@ -12,8 +12,8 @@ func (api *Api) SetMyCommands(p SetMyCommandsP) (bool, error) {
 }
 
 type DeleteMyCommandsP struct {
-	Scope    *BaseBotCommandScope `json:"scope,omitempty"`
-	Language string               `json:"language_code,omitempty"`
+	Scope    *BotCommandScope `json:"scope,omitempty"`
+	Language string           `json:"language_code,omitempty"`
 }
 
 func (api *Api) DeleteMyCommands(p DeleteMyCommandsP) (bool, error) {
@@ -22,8 +22,8 @@ func (api *Api) DeleteMyCommands(p DeleteMyCommandsP) (bool, error) {
 }
 
 type GetMyCommands struct {
-	Scope    *BaseBotCommandScope `json:"scope,omitempty"`
-	Language string               `json:"language_code,omitempty"`
+	Scope    *BotCommandScope `json:"scope,omitempty"`
+	Language string           `json:"language_code,omitempty"`
 }
 
 func (api *Api) GetMyCommands(p GetMyCommands) ([]BotCommand, error) {
@@ -88,15 +88,11 @@ func (api *Api) GetMyShortDescription(p GetMyShortDescription) (BotShortDescript
 	return req.Do(api)
 }
 
-type SetMyProfilePhotoP[T InputProfilePhoto] struct {
-	Photo T `json:"photo"`
+type SetMyProfilePhotoP struct {
+	Photo InputProfilePhoto `json:"photo"`
 }
 
-func (api *Api) SetMyProfilePhotoStatic(p SetMyProfilePhotoP[InputProfilePhotoStatic]) (bool, error) {
-	req := NewRequest[bool]("setMyProfilePhoto", p)
-	return req.Do(api)
-}
-func (api *Api) SetMyProfilePhotoAnimated(p SetMyProfilePhotoP[InputProfilePhotoAnimated]) (bool, error) {
+func (api *Api) SetMyProfilePhoto(p SetMyProfilePhotoP) (bool, error) {
 	req := NewRequest[bool]("setMyProfilePhoto", p)
 	return req.Do(api)
 }
@@ -105,20 +101,12 @@ func (api *Api) RemoveMyProfilePhoto() (bool, error) {
 	return req.Do(api)
 }
 
-type SetChatMenuButtonP[T MenuButton] struct {
-	ChatID     int `json:"chat_id"`
-	MenuButton T   `json:"menu_button"`
+type SetChatMenuButtonP struct {
+	ChatID     int            `json:"chat_id"`
+	MenuButton MenuButtonType `json:"menu_button"`
 }
 
-func (api *Api) SetChatMenuButtonCommands(p SetChatMenuButtonP[MenuButtonCommands]) (bool, error) {
-	req := NewRequest[bool]("setChatMenuButton", p)
-	return req.Do(api)
-}
-func (api *Api) SetChatMenuButtonWebApp(p SetChatMenuButtonP[MenuButtonWebApp]) (bool, error) {
-	req := NewRequest[bool]("setChatMenuButton", p)
-	return req.Do(api)
-}
-func (api *Api) SetChatMenuButtonDefault(p SetChatMenuButtonP[MenuButtonDefault]) (bool, error) {
+func (api *Api) SetChatMenuButton(p SetChatMenuButtonP) (bool, error) {
 	req := NewRequest[bool]("setChatMenuButton", p)
 	return req.Do(api)
 }

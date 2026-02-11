@@ -8,7 +8,7 @@ type SendMessageP struct {
 
 	Text                 string              `json:"text"`
 	ParseMode            ParseMode           `json:"parse_mode,omitempty"`
-	Entities             []*MessageEntity    `json:"entities,omitempty"`
+	Entities             []MessageEntity     `json:"entities,omitempty"`
 	LinkPreviewOptions   *LinkPreviewOptions `json:"link_preview_options,omitempty"`
 	DisableNotifications bool                `json:"disable_notifications,omitempty"`
 	ProtectContent       bool                `json:"protect_content,omitempty"`
@@ -72,12 +72,12 @@ type CopyMessageP struct {
 	Caption             string    `json:"caption,omitempty"`
 	ParseMode           ParseMode `json:"parse_mode,omitempty"`
 
-	CaptionEntities       []*MessageEntity `json:"caption_entities,omitempty"`
-	ShowCaptionAboveMedia bool             `json:"show_caption_above_media,omitempty"`
-	DisableNotification   bool             `json:"disable_notification,omitempty"`
-	ProtectContent        bool             `json:"protect_content,omitempty"`
-	AllowPaidBroadcast    bool             `json:"allow_paid_broadcast,omitempty"`
-	MessageEffectID       string           `json:"message_effect_id,omitempty"`
+	CaptionEntities       []MessageEntity `json:"caption_entities,omitempty"`
+	ShowCaptionAboveMedia bool            `json:"show_caption_above_media,omitempty"`
+	DisableNotification   bool            `json:"disable_notification,omitempty"`
+	ProtectContent        bool            `json:"protect_content,omitempty"`
+	AllowPaidBroadcast    bool            `json:"allow_paid_broadcast,omitempty"`
+	MessageEffectID       string          `json:"message_effect_id,omitempty"`
 
 	SuggestedPostParameters *SuggestedPostParameters `json:"suggested_post_parameters,omitempty"`
 	ReplyParameters         *ReplyParameters         `json:"reply_parameters,omitempty"`
@@ -197,7 +197,7 @@ type SendPollP struct {
 
 	Question              string            `json:"question"`
 	QuestionParseMode     ParseMode         `json:"question_mode,omitempty"`
-	QuestionEntities      []*MessageEntity  `json:"question_entities,omitempty"`
+	QuestionEntities      []MessageEntity   `json:"question_entities,omitempty"`
 	Options               []InputPollOption `json:"options"`
 	IsAnonymous           bool              `json:"is_anonymous,omitempty"`
 	Type                  PollType          `json:"type"`
@@ -205,7 +205,7 @@ type SendPollP struct {
 	CorrectOptionID       int               `json:"correct_option_id,omitempty"`
 	Explanation           string            `json:"explanation,omitempty"`
 	ExplanationParseMode  ParseMode         `json:"explanation_parse_mode,omitempty"`
-	ExplanationEntities   []*MessageEntity  `json:"explanation_entities,omitempty"`
+	ExplanationEntities   []MessageEntity   `json:"explanation_entities,omitempty"`
 	OpenPeriod            int               `json:"open_period,omitempty"`
 	CloseDate             int               `json:"close_date"`
 	IsClosed              bool              `json:"is_closed,omitempty"`
@@ -266,12 +266,12 @@ func (api *Api) SendDice(params SendDiceP) (Message, error) {
 }
 
 type SendMessageDraftP struct {
-	ChatID          int              `json:"chat_id"`
-	MessageThreadID int              `json:"message_thread_id,omitempty"`
-	DraftID         int              `json:"draft_id"`
-	Text            string           `json:"text"`
-	ParseMode       ParseMode        `json:"parse_mode,omitempty"`
-	Entities        []*MessageEntity `json:"entities,omitempty"`
+	ChatID          int             `json:"chat_id"`
+	MessageThreadID int             `json:"message_thread_id,omitempty"`
+	DraftID         int             `json:"draft_id"`
+	Text            string          `json:"text"`
+	ParseMode       ParseMode       `json:"parse_mode,omitempty"`
+	Entities        []MessageEntity `json:"entities,omitempty"`
 }
 
 func (api *Api) SendMessageDraft(params SendMessageDraftP) (bool, error) {
@@ -291,22 +291,14 @@ func (api *Api) SendChatAction(params SendChatActionP) (bool, error) {
 	return req.Do(api)
 }
 
-type SetMessageReactionP[T ReactionType] struct {
-	ChatId    int  `json:"chat_id"`
-	MessageId int  `json:"message_id"`
-	Reaction  []T  `json:"reaction"`
-	IsBig     bool `json:"is_big,omitempty"`
+type SetMessageReactionP struct {
+	ChatId    int            `json:"chat_id"`
+	MessageId int            `json:"message_id"`
+	Reaction  []ReactionType `json:"reaction"`
+	IsBig     bool           `json:"is_big,omitempty"`
 }
 
-func (api *Api) SetMessageReactionEmoji(params SetMessageReactionP[ReactionTypeEmoji]) (bool, error) {
-	req := NewRequest[bool]("setMessageReaction", params)
-	return req.Do(api)
-}
-func (api *Api) SetMessageReactionCustom(params SetMessageReactionP[ReactionTypeCustomEmoji]) (bool, error) {
-	req := NewRequest[bool]("setMessageReaction", params)
-	return req.Do(api)
-}
-func (api *Api) SetMessageReactionPaid(params SetMessageReactionP[ReactionTypePaid]) (bool, error) {
+func (api *Api) SetMessageReaction(params SetMessageReactionP) (bool, error) {
 	req := NewRequest[bool]("setMessageReaction", params)
 	return req.Do(api)
 }

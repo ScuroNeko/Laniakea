@@ -90,17 +90,13 @@ func (api *Api) SetBusinessAccountBio(p SetBusinessAccountBioP) (bool, error) {
 	return req.Do(api)
 }
 
-type SetBusinessAccountProfilePhoto[T InputProfilePhoto] struct {
-	BusinessConnectionID string `json:"business_connection_id"`
-	Photo                T      `json:"photo,omitempty"`
-	IsPublic             bool   `json:"is_public,omitempty"`
+type SetBusinessAccountProfilePhoto struct {
+	BusinessConnectionID string            `json:"business_connection_id"`
+	Photo                InputProfilePhoto `json:"photo,omitempty"`
+	IsPublic             bool              `json:"is_public,omitempty"`
 }
 
-func (api *Api) SetBusinessAccountProfilePhotoStatic(p SetMyProfilePhotoP[InputProfilePhotoStatic]) (bool, error) {
-	req := NewRequest[bool]("setBusinessAccountProfilePhoto", p)
-	return req.Do(api)
-}
-func (api *Api) SetBusinessAccountProfilePhotoAnimated(p SetMyProfilePhotoP[InputProfilePhotoAnimated]) (bool, error) {
+func (api *Api) SetBusinessAccountProfilePhoto(p SetBusinessAccountProfilePhoto) (bool, error) {
 	req := NewRequest[bool]("setBusinessAccountProfilePhoto", p)
 	return req.Do(api)
 }
@@ -161,5 +157,102 @@ type GetBusinessAccountGiftsP struct {
 
 func (api *Api) GetBusinessAccountGifts(p GetBusinessAccountGiftsP) (OwnedGifts, error) {
 	req := NewRequest[OwnedGifts]("getBusinessAccountGifts", p)
+	return req.Do(api)
+}
+
+type ConvertGiftToStarsP struct {
+	BusinessConnectionID string `json:"business_connection_id"`
+	OwnedGiftID          string `json:"owned_gift_id"`
+}
+
+func (api *Api) ConvertGiftToStars(p ConvertGiftToStarsP) (bool, error) {
+	req := NewRequest[bool]("convertGiftToStars", p)
+	return req.Do(api)
+}
+
+type UpgradeGiftP struct {
+	BusinessConnectionID string `json:"business_connection_id"`
+	OwnedGiftID          string `json:"owned_gift_id"`
+	KeepOriginalDetails  bool   `json:"keep_original_details,omitempty"`
+	StarCount            int    `json:"star_count,omitempty"`
+}
+
+func (api *Api) UpgradeGift(p UpgradeGiftP) (bool, error) {
+	req := NewRequest[bool]("upgradeGift", p)
+	return req.Do(api)
+}
+
+type TransferGiftP struct {
+	BusinessConnectionID string `json:"business_connection_id"`
+	OwnedGiftID          string `json:"owned_gift_id"`
+	NewOwnerChatID       int    `json:"new_owner_chat_id"`
+	StarCount            int    `json:"star_count,omitempty"`
+}
+
+func (api *Api) TransferGift(p TransferGiftP) (bool, error) {
+	req := NewRequest[bool]("transferGift", p)
+	return req.Do(api)
+}
+
+type PostStoryP struct {
+	BusinessConnectionID string            `json:"business_connection_id"`
+	Content              InputStoryContent `json:"content"`
+	ActivePeriod         int               `json:"active_period"`
+
+	Caption         string          `json:"caption,omitempty"`
+	ParseMode       ParseMode       `json:"parse_mode,omitempty"`
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
+	Areas           []StoryArea     `json:"areas"`
+
+	PostToChatPage bool `json:"post_to_chat_page,omitempty"`
+	ProtectContent bool `json:"protect_content,omitempty"`
+}
+
+func (api *Api) PostStoryPhoto(p PostStoryP) (Story, error) {
+	req := NewRequest[Story]("postStory", p)
+	return req.Do(api)
+}
+func (api *Api) PostStoryVideo(p PostStoryP) (Story, error) {
+	req := NewRequest[Story]("postStory", p)
+	return req.Do(api)
+}
+
+type RepostStoryP struct {
+	BusinessConnectionID string `json:"business_connection_id"`
+	FromChatID           int    `json:"from_chat_id"`
+	FromStoryID          int    `json:"from_story_id"`
+	ActivePeriod         int    `json:"active_period"`
+	PostToChatPage       bool   `json:"post_to_chat_page,omitempty"`
+	ProtectContent       bool   `json:"protect_content,omitempty"`
+}
+
+func (api *Api) RepostStory(p RepostStoryP) (Story, error) {
+	req := NewRequest[Story]("repostStory", p)
+	return req.Do(api)
+}
+
+type EditStoryP struct {
+	BusinessConnectionID string            `json:"business_connection_id"`
+	StoryID              int               `json:"story_id"`
+	Content              InputStoryContent `json:"content"`
+
+	Caption         string          `json:"caption,omitempty"`
+	ParseMode       ParseMode       `json:"parse_mode,omitempty"`
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
+	Areas           []StoryArea     `json:"areas,omitempty"`
+}
+
+func (api *Api) EditStory(p EditStoryP) (Story, error) {
+	req := NewRequest[Story]("editStory", p)
+	return req.Do(api)
+}
+
+type DeleteStoryP struct {
+	BusinessConnectionID string `json:"business_connection_id"`
+	StoryID              int    `json:"story_id"`
+}
+
+func (api *Api) DeleteStory(p DeleteStoryP) (bool, error) {
+	req := NewRequest[bool]("deleteStory", p)
 	return req.Do(api)
 }

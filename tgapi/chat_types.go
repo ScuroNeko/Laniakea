@@ -42,7 +42,7 @@ type ChatFullInfo struct {
 	PersonalChat *Chat `json:"personal_chat,omitempty"`
 	ParentChat   *Chat `json:"parent_chat,omitempty"`
 
-	AvailableReaction []BaseReaction `json:"available_reaction,omitempty"`
+	AvailableReaction []ReactionType `json:"available_reaction,omitempty"`
 
 	BackgroundCustomEmojiID        *string `json:"background_custom_emoji_id,omitempty"`
 	ProfileAccentColorID           *int    `json:"profile_accent_color_id,omitempty"`
@@ -134,69 +134,47 @@ const (
 	ChatMemberStatusBanned        ChatMemberStatusType = "kicked"
 )
 
-type ChatMember interface {
-	ChatMemberOwner | ChatMemberAdministrator | ChatMemberMember | ChatMemberRestricted | ChatMemberLeft | ChatMemberBanned
-}
-type BaseChatMember struct {
+type ChatMember struct {
 	Status ChatMemberStatusType `json:"status"`
 	User   User                 `json:"user"`
-}
-type ChatMemberOwner struct {
-	BaseChatMember
 
-	IsAnonymous bool    `json:"is_anonymous"`
+	// Owner
+	IsAnonymous *bool   `json:"is_anonymous"`
 	CustomTitle *string `json:"custom_title,omitempty"`
-}
-type ChatMemberAdministrator struct {
-	BaseChatMember
-	CanBeEdited         bool `json:"can_be_edited"`
-	IsAnonymous         bool `json:"is_anonymous"`
-	CanManageChat       bool `json:"can_manage_chat"`
-	CanDeleteMessages   bool `json:"can_delete_messages"`
-	CanManageVideoChats bool `json:"can_manage_video_chats"`
-	CanRestrictMembers  bool `json:"can_restrict_members"`
-	CanPromoteMembers   bool `json:"can_promote_members"`
-	CanChangeInfo       bool `json:"can_change_info"`
-	CanInviteUsers      bool `json:"can_invite_users"`
-	CanPostStories      bool `json:"can_post_stories"`
-	CanEditStories      bool `json:"can_edit_stories"`
-	CanDeleteStories    bool `json:"can_delete_stories"`
 
-	CanPostMessages         *bool   `json:"can_post_messages,omitempty"`
-	CanEditMessages         *bool   `json:"can_edit_messages,omitempty"`
-	CanPinMessages          *bool   `json:"can_pin_messages,omitempty"`
-	CanManageTopics         *bool   `json:"can_manage_topics,omitempty"`
-	CanManageDirectMessages *bool   `json:"can_manage_direct_messages,omitempty"`
-	CustomTitle             *string `json:"custom_title,omitempty"`
-}
-type ChatMemberMember struct {
-	BaseChatMember
+	// Administrator
+	CanBeEdited         *bool `json:"can_be_edited,omitempty"`
+	CanManageChat       *bool `json:"can_manage_chat,omitempty"`
+	CanDeleteMessages   *bool `json:"can_delete_messages,omitempty"`
+	CanManageVideoChats *bool `json:"can_manage_video_chats,omitempty"`
+	CanRestrictMembers  *bool `json:"can_restrict_members,omitempty"`
+	CanPromoteMembers   *bool `json:"can_promote_members,omitempty"`
+	CanChangeInfo       *bool `json:"can_change_info,omitempty"`
+	CanInviteUsers      *bool `json:"can_invite_users,omitempty"`
+	CanPostStories      *bool `json:"can_post_stories,omitempty"`
+	CanEditStories      *bool `json:"can_edit_stories,omitempty"`
+	CanDeleteStories    *bool `json:"can_delete_stories,omitempty"`
+
+	CanPostMessages         *bool `json:"can_post_messages,omitempty"`
+	CanEditMessages         *bool `json:"can_edit_messages,omitempty"`
+	CanPinMessages          *bool `json:"can_pin_messages,omitempty"`
+	CanManageTopics         *bool `json:"can_manage_topics,omitempty"`
+	CanManageDirectMessages *bool `json:"can_manage_direct_messages,omitempty"`
+
+	// Member
 	UntilDate *int `json:"until_date,omitempty"`
-}
-type ChatMemberRestricted struct {
-	BaseChatMember
-	IsMember             bool `json:"is_member"`
-	CanSendMessages      bool `json:"can_send_messages"`
-	CanSendAudios        bool `json:"can_send_audios"`
-	CanSendDocuments     bool `json:"can_send_documents"`
-	CanSendVideos        bool `json:"can_send_videos"`
-	CanSendVideoNotes    bool `json:"can_send_video_notes"`
-	CanSendVoiceNotes    bool `json:"can_send_voice_notes"`
-	CanSendPolls         bool `json:"can_send_polls"`
-	CanSendOtherMessages bool `json:"can_send_other_messages"`
-	CanAddWebPagePreview bool `json:"can_add_web_page_preview"`
-	CanChangeInfo        bool `json:"can_change_info"`
-	CanInviteUsers       bool `json:"can_invite_users"`
-	CanPinMessages       bool `json:"can_pin_messages"`
-	CanManageTopics      bool `json:"can_manage_topics"`
-	UntilDate            int  `json:"until_date"`
-}
-type ChatMemberLeft struct {
-	BaseChatMember
-}
-type ChatMemberBanned struct {
-	BaseChatMember
-	UntilDate int `json:"until_date"`
+
+	// Restricted
+	IsMember             *bool `json:"is_member,omitempty"`
+	CanSendMessages      *bool `json:"can_send_messages,omitempty"`
+	CanSendAudios        *bool `json:"can_send_audios,omitempty"`
+	CanSendDocuments     *bool `json:"can_send_documents,omitempty"`
+	CanSendVideos        *bool `json:"can_send_videos,omitempty"`
+	CanSendVideoNotes    *bool `json:"can_send_video_notes,omitempty"`
+	CanSendVoiceNotes    *bool `json:"can_send_voice_notes,omitempty"`
+	CanSendPolls         *bool `json:"can_send_polls,omitempty"`
+	CanSendOtherMessages *bool `json:"can_send_other_messages,omitempty"`
+	CanAddWebPagePreview *bool `json:"can_add_web_page_preview,omitempty"`
 }
 
 type BaseChatBoostSource struct {

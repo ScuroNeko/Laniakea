@@ -42,3 +42,63 @@ type BusinessConnection struct {
 	Rights     *BusinessBotRights `json:"rights,omitempty"`
 	IsEnabled  bool               `json:"id_enabled"`
 }
+
+const (
+	InputStoryContentPhotoType InputStoryContentType = "photo"
+	InputStoryContentVideoType InputStoryContentType = "video"
+)
+
+type InputStoryContentType string
+type InputStoryContent struct {
+	Type InputStoryContentType `json:"type"`
+	// Photo
+	Photo *string `json:"photo,omitempty"`
+
+	// Video
+	Video               *string  `json:"video,omitempty"`
+	Duration            *float64 `json:"duration,omitempty"`
+	CoverFrameTimestamp *float64 `json:"cover_frame_timestamp,omitempty"`
+	IsAnimation         *bool    `json:"is_animation,omitempty"`
+}
+
+type StoryAreaPosition struct {
+	XPercentage            float64 `json:"x_percentage"`
+	YPercentage            float64 `json:"y_percentage"`
+	WidthPercentage        float64 `json:"width_percentage"`
+	HeightPercentage       float64 `json:"height_percentage"`
+	RotationAngle          float64 `json:"rotation_angle"`
+	CornerRadiusPercentage float64 `json:"corner_radius_percentage"`
+}
+
+const (
+	StoryAreaTypeLocationType   StoryAreaTypeType = "location"
+	StoryAreaTypeReactionType   StoryAreaTypeType = "suggested_reaction"
+	StoryAreaTypeLinkType       StoryAreaTypeType = "link"
+	StoryAreaTypeWeatherType    StoryAreaTypeType = "weather"
+	StoryAreaTypeUniqueGiftType StoryAreaTypeType = "unique_gift"
+)
+
+type StoryAreaTypeType string
+type StoryAreaType struct {
+	Type StoryAreaTypeType `json:"type"`
+
+	Latitude  *float64         `json:"latitude,omitempty"`
+	Longitude *float64         `json:"longitude,omitempty"`
+	Address   *LocationAddress `json:"address,omitempty"`
+
+	ReactionType *ReactionType `json:"reaction_type,omitempty"`
+	IsDark       *bool         `json:"is_dark,omitempty"`
+	IsFlipped    *bool         `json:"is_flipped,omitempty"`
+
+	URL *string `json:"url,omitempty"`
+
+	Temperature     *float64 `json:"temperature,omitempty"`
+	Emoji           *string  `json:"emoji"`
+	BackgroundColor *int     `json:"background_color"`
+
+	Name *string `json:"name,omitempty"`
+}
+type StoryArea struct {
+	Position StoryAreaPosition `json:"position"`
+	Type     StoryAreaType     `json:"type"`
+}

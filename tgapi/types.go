@@ -1,20 +1,85 @@
 package tgapi
 
 type Update struct {
-	UpdateID               int                          `json:"update_id"`
-	Message                *Message                     `json:"message"`
-	EditedMessage          *Message                     `json:"edited_message,omitempty"`
-	ChannelPost            *Message                     `json:"channel_post,omitempty"`
-	EditedChannelPost      *Message                     `json:"edited_channel_post,omitempty"`
+	UpdateID          int      `json:"update_id"`
+	Message           *Message `json:"message,omitempty"`
+	EditedMessage     *Message `json:"edited_message,omitempty"`
+	ChannelPost       *Message `json:"channel_post,omitempty"`
+	EditedChannelPost *Message `json:"edited_channel_post,omitempty"`
+
 	BusinessConnection     *BusinessConnection          `json:"business_connection,omitempty"`
 	BusinessMessage        *Message                     `json:"business_message,omitempty"`
 	EditedBusinessMessage  *Message                     `json:"edited_business_message,omitempty"`
 	DeletedBusinessMessage *Message                     `json:"deleted_business_messages,omitempty"`
 	MessageReaction        *MessageReactionUpdated      `json:"message_reaction,omitempty"`
 	MessageReactionCount   *MessageReactionCountUpdated `json:"message_reaction_count,omitempty"`
-	CallbackQuery          *CallbackQuery               `json:"callback_query,omitempty"`
-	InlineQuery            int
-	ChosenInlineResult     int
+
+	InlineQuery        *InlineQuery        `json:"inline_query,omitempty"`
+	ChosenInlineResult *ChosenInlineResult `json:"chosen_inline_result,omitempty"`
+	CallbackQuery      *CallbackQuery      `json:"callback_query,omitempty"`
+	ShippingQuery      ShippingQuery       `json:"shipping_query,omitempty"`
+	PreCheckoutQuery   *PreCheckoutQuery   `json:"pre_checkout_query,omitempty"`
+	PurchasedPaidMedia *PaidMediaPurchased `json:"purchased_paid_media,omitempty"`
+
+	Poll             any `json:"poll,omitempty"`
+	PollAnswer       any `json:"poll_answer,omitempty"`
+	MyChatMember     any `json:"my_chat_member,omitempty"`
+	ChatMember       any `json:"chat_member,omitempty"`
+	ChatJoinRequest  any `json:"chat_join_request,omitempty"`
+	ChatBoost        any `json:"chat_boost,omitempty"`
+	RemovedChatBoost any `json:"removed_chat_boost,omitempty"`
+}
+
+type InlineQuery struct {
+	ID       string    `json:"id"`
+	From     User      `json:"from"`
+	Query    string    `json:"query"`
+	Offset   string    `json:"offset"`
+	ChatType *ChatType `json:"chat_type,omitempty"`
+	Location *Location `json:"location,omitempty"`
+}
+type ChosenInlineResult struct {
+	ResultID        string    `json:"result_id"`
+	From            User      `json:"from"`
+	Location        *Location `json:"location,omitempty"`
+	InlineMessageID string    `json:"inline_message_id"`
+	Query           string    `json:"query"`
+}
+
+type ShippingQuery struct {
+	ID              string          `json:"id"`
+	From            User            `json:"from"`
+	InvoicePayload  string          `json:"invoice_payload"`
+	ShippingAddress ShippingAddress `json:"shipping_address"`
+}
+type ShippingAddress struct {
+	CountryCode string `json:"country_code"`
+	State       string `json:"state"`
+	City        string `json:"city"`
+	StreetLine1 string `json:"street_line1"`
+	StreetLine2 string `json:"street_line2"`
+	PostCode    string `json:"post_code"`
+}
+
+type OrderInfo struct {
+	Name            string          `json:"name"`
+	PhoneNumber     string          `json:"phone_number"`
+	Email           string          `json:"email"`
+	ShippingAddress ShippingAddress `json:"shipping_address"`
+}
+type PreCheckoutQuery struct {
+	ID               string     `json:"id"`
+	From             User       `json:"from"`
+	Currency         string     `json:"currency"`
+	TotalAmount      int        `json:"total_amount"`
+	InvoicePayload   string     `json:"invoice_payload"`
+	ShippingOptionID string     `json:"shipping_option_id"`
+	OrderInfo        *OrderInfo `json:"order_info,omitempty"`
+}
+
+type PaidMediaPurchased struct {
+	From             User   `json:"from"`
+	PaidMediaPayload string `json:"paid_media_payload"`
 }
 
 type File struct {
@@ -45,6 +110,12 @@ type Location struct {
 	Heading              int     `json:"heading"`
 	ProximityAlertRadius int     `json:"proximity_alert_radius"`
 }
+type LocationAddress struct {
+	CountryCode string  `json:"country_code"`
+	State       *string `json:"state,omitempty"`
+	City        *string `json:"city,omitempty"`
+	Street      *string `json:"street,omitempty"`
+}
 type Venue struct {
 	Location        Location `json:"location"`
 	Title           string   `json:"title"`
@@ -62,6 +133,11 @@ type WebAppInfo struct {
 type StarAmount struct {
 	Amount         int `json:"amount"`
 	NanostarAmount int `json:"nanostar_amount"`
+}
+
+type Story struct {
+	Chat Chat `json:"chat"`
+	ID   int  `json:"id"`
 }
 
 // Gifts

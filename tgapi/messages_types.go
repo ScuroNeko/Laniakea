@@ -190,8 +190,8 @@ type MessageReactionUpdated struct {
 	User        *User          `json:"user,omitempty"`
 	ActorChat   *Chat          `json:"actor_chat"`
 	Date        int            `json:"date"`
-	OldReaction []BaseReaction `json:"old_reaction"`
-	NewReaction []BaseReaction `json:"new_reaction"`
+	OldReaction []ReactionType `json:"old_reaction"`
+	NewReaction []ReactionType `json:"new_reaction"`
 }
 
 type MessageReactionCountUpdated struct {
@@ -200,26 +200,15 @@ type MessageReactionCountUpdated struct {
 	Date      int              `json:"date"`
 	Reactions []*ReactionCount `json:"reactions"`
 }
-
-type ReactionType interface {
-	ReactionTypeEmoji | ReactionTypeCustomEmoji | ReactionTypePaid
-}
-type BaseReaction struct {
+type ReactionType struct {
 	Type string `json:"type"`
-}
-type ReactionTypeEmoji struct {
-	Type  string `json:"type"`
-	Emoji string `json:"emoji"`
-}
-type ReactionTypeCustomEmoji struct {
-	Type          string `json:"type"`
-	CustomEmojiID string `json:"custom_emoji_id"`
-}
-type ReactionTypePaid struct {
-	Type string `json:"type"`
+	// ReactionTypeEmoji
+	Emoji *string `json:"emoji,omitempty"`
+	// ReactionTypeCustomEmoji
+	CustomEmojiID *string `json:"custom_emoji_id,omitempty"`
 }
 type ReactionCount struct {
-	Type       BaseReaction `json:"type"`
+	Type       ReactionType `json:"type"`
 	TotalCount int          `json:"total_count"`
 }
 

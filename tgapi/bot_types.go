@@ -16,33 +16,10 @@ const (
 	BotCommandScopeChatMemberType            BotCommandScopeType = "chat_member"
 )
 
-type BaseBotCommandScope struct {
-	Type BotCommandScopeType `json:"type"`
-}
-type BotCommandScopeDefault struct {
-	BaseBotCommandScope
-}
-type BotCommandScopePrivateChats struct {
-	BaseBotCommandScope
-}
-type BotCommandScopeAllGroupChats struct {
-	BaseBotCommandScope
-}
-type BotCommandScopeAllChatAdministrators struct {
-	BaseBotCommandScope
-}
-type BotCommandScopeChat struct {
-	BaseBotCommandScope
-	ChatID int `json:"chat_id"`
-}
-type BotCommandScopeChatAdministrators struct {
-	BaseBotCommandScope
-	ChatID int `json:"chat_id"`
-}
-type BotCommandScopeChatMember struct {
-	BaseBotCommandScope
-	ChatID int `json:"chat_id"`
-	UserID int `json:"user_id"`
+type BotCommandScope struct {
+	Type   BotCommandScopeType `json:"type"`
+	ChatID *int                `json:"chat_id,omitempty"`
+	UserID *int                `json:"user_id,omitempty"`
 }
 
 type BotName struct {
@@ -61,20 +38,15 @@ const (
 )
 
 type InputProfilePhotoType string
-type InputProfilePhoto interface {
-	InputProfilePhotoStatic | InputProfilePhotoAnimated
-}
-type BaseInputProfilePhoto struct {
+type InputProfilePhoto struct {
 	Type InputProfilePhotoType `json:"type"`
-}
-type InputProfilePhotoStatic struct {
-	BaseInputProfilePhoto
-	Photo string `json:"photo"`
-}
-type InputProfilePhotoAnimated struct {
-	BaseInputProfilePhoto
-	Animation          string  `json:"animation"`
-	MainFrameTimestamp float64 `json:"main_frame_timestamp"`
+
+	// Static
+	Photo *string `json:"photo,omitempty"`
+
+	// Animated
+	Animation          *string  `json:"animation,omitempty"`
+	MainFrameTimestamp *float64 `json:"main_frame_timestamp,omitempty"`
 }
 
 const (
@@ -84,16 +56,9 @@ const (
 )
 
 type MenuButtonType string
-type MenuButton interface {
-	MenuButtonCommands | MenuButtonDefault | MenuButtonWebApp
-}
 type BaseMenuButton struct {
 	Type MenuButtonType `json:"type"`
-}
-type MenuButtonCommands struct{ BaseMenuButton }
-type MenuButtonDefault struct{ BaseMenuButton }
-type MenuButtonWebApp struct {
-	BaseMenuButton
+	// WebApp
 	Text   string     `json:"text"`
 	WebApp WebAppInfo `json:"web_app"`
 }

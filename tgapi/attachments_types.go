@@ -1,7 +1,24 @@
 package tgapi
 
-type InputMedia interface {
-	InputMediaPhoto | InputMediaVideo | InputMediaAudio | InputMediaDocument
+type InputMedia struct {
+	Type  InputMediaType `json:"type"`
+	Media string         `json:"media"`
+
+	Caption               *string         `json:"caption,omitempty"`
+	ParseMode             *ParseMode      `json:"parse_mode,omitempty"`
+	CaptionEntities       []MessageEntity `json:"caption_entities,omitempty"`
+	ShowCaptionAboveMedia *bool           `json:"show_caption_above_media,omitempty"`
+	HasSpoiler            *bool           `json:"has_spoiler,omitempty"`
+
+	Cover             *string `json:"cover"`
+	StartTimestamp    *int    `json:"start_timestamp"`
+	Width             *int    `json:"width,omitempty"`
+	Height            *int    `json:"height,omitempty"`
+	Duration          *int    `json:"duration,omitempty"`
+	SupportsStreaming *bool   `json:"supports_streaming,omitempty"`
+
+	Performer *string `json:"performer,omitempty"`
+	Title     *string `json:"title,omitempty"`
 }
 
 type InputMediaType string
@@ -14,66 +31,6 @@ const (
 	InputMediaTypeAudio     InputMediaType = "audio"
 )
 
-type InputMediaPhoto struct {
-	Type  InputMediaType `json:"type"`
-	Media string         `json:"media"`
-
-	Caption               string          `json:"caption,omitempty"`
-	ParseMode             ParseMode       `json:"parse_mode,omitempty"`
-	CaptionEntities       []MessageEntity `json:"caption_entities,omitempty"`
-	ShowCaptionAboveMedia bool            `json:"show_caption_above_media,omitempty"`
-	HasSpoiler            bool            `json:"has_spoiler,omitempty"`
-}
-type InputMediaVideo struct {
-	Type  InputMediaType `json:"type"`
-	Media string         `json:"media"`
-
-	Cover                 string          `json:"cover"`
-	StartTimestamp        int             `json:"start_timestamp"`
-	Caption               string          `json:"caption,omitempty"`
-	ParseMode             ParseMode       `json:"parse_mode,omitempty"`
-	CaptionEntities       []MessageEntity `json:"caption_entities,omitempty"`
-	ShowCaptionAboveMedia bool            `json:"show_caption_above_media,omitempty"`
-
-	Width             int  `json:"width,omitempty"`
-	Height            int  `json:"height,omitempty"`
-	Duration          int  `json:"duration,omitempty"`
-	SupportsStreaming bool `json:"supports_streaming,omitempty"`
-	HasSpoiler        bool `json:"has_spoiler,omitempty"`
-}
-type InputMediaAnimation struct {
-	Type  InputMediaType `json:"type"`
-	Media string         `json:"media"`
-
-	Caption               string          `json:"caption,omitempty"`
-	ParseMode             ParseMode       `json:"parse_mode,omitempty"`
-	CaptionEntities       []MessageEntity `json:"caption_entities,omitempty"`
-	ShowCaptionAboveMedia bool            `json:"show_caption_above_media,omitempty"`
-	Width                 int             `json:"width,omitempty"`
-	Height                int             `json:"height,omitempty"`
-	Duration              int             `json:"duration,omitempty"`
-	HasSpoiler            bool            `json:"has_spoiler,omitempty"`
-}
-type InputMediaAudio struct {
-	Type  InputMediaType `json:"type"`
-	Media string         `json:"media"`
-
-	Caption         string          `json:"caption,omitempty"`
-	ParseMode       ParseMode       `json:"parse_mode,omitempty"`
-	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
-	Duration        int             `json:"duration,omitempty"`
-	Performer       string          `json:"performer,omitempty"`
-	Title           string          `json:"title,omitempty"`
-}
-type InputMediaDocument struct {
-	Type  InputMediaType `json:"type"`
-	Media string         `json:"media"`
-
-	Caption         string          `json:"caption,omitempty"`
-	ParseMode       ParseMode       `json:"parse_mode,omitempty"`
-	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
-}
-
 type InputPaidMediaType string
 
 const (
@@ -81,14 +38,7 @@ const (
 	InputPaidMediaTypePhoto InputPaidMediaType = "photo"
 )
 
-type InputPaidMedia interface {
-	InputPaidMediaVideo | InputPaidMediaPhoto
-}
-type InputPaidMediaPhoto struct {
-	Type  InputPaidMediaType `json:"type"`
-	Media string             `json:"media"`
-}
-type InputPaidMediaVideo struct {
+type InputPaidMedia struct {
 	Type  InputPaidMediaType `json:"type"`
 	Media string             `json:"media"`
 

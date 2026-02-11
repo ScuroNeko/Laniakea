@@ -1,10 +1,10 @@
 package tgapi
 
 type BanChatMemberP struct {
-	ChatID         int   `json:"chat_id"`
-	UserID         int   `json:"user_id"`
-	UntilDate      int64 `json:"until_date,omitempty"`
-	RevokeMessages bool  `json:"revoke_messages,omitempty"`
+	ChatID         int  `json:"chat_id"`
+	UserID         int  `json:"user_id"`
+	UntilDate      int  `json:"until_date,omitempty"`
+	RevokeMessages bool `json:"revoke_messages,omitempty"`
 }
 
 func (api *Api) BanChatMember(p BanChatMemberP) (bool, error) {
@@ -115,11 +115,11 @@ func (api *Api) ExportChatInviteLink(p ExportChatInviteLinkP) (string, error) {
 }
 
 type CreateChatInviteLinkP struct {
-	ChatID             int    `json:"chat_id"`
-	Name               string `json:"name,omitempty"`
-	ExpireDate         int    `json:"expire_date,omitempty"`
-	MemberLimit        int    `json:"member_limit,omitempty"`
-	CreatesJoinRequest int    `json:"creates_join_request,omitempty"`
+	ChatID             int     `json:"chat_id"`
+	Name               *string `json:"name,omitempty"`
+	ExpireDate         int     `json:"expire_date,omitempty"`
+	MemberLimit        int     `json:"member_limit,omitempty"`
+	CreatesJoinRequest int     `json:"creates_join_request,omitempty"`
 }
 
 func (api *Api) CreateChatInviteLink(p CreateChatInviteLinkP) (ChatInviteLink, error) {
@@ -230,10 +230,10 @@ func (api *Api) SetChatDescription(p SetChatDescriptionP) (bool, error) {
 }
 
 type PinChatMessageP struct {
-	BusinessConnectionID string `json:"business_connection_id,omitempty"`
-	ChatID               int    `json:"chat_id"`
-	MessageID            int    `json:"message_id"`
-	DisableNotification  bool   `json:"disable_notification,omitempty"`
+	BusinessConnectionID *string `json:"business_connection_id,omitempty"`
+	ChatID               int     `json:"chat_id"`
+	MessageID            int     `json:"message_id"`
+	DisableNotification  bool    `json:"disable_notification,omitempty"`
 }
 
 func (api *Api) PinChatMessage(p PinChatMessageP) (bool, error) {
@@ -242,9 +242,9 @@ func (api *Api) PinChatMessage(p PinChatMessageP) (bool, error) {
 }
 
 type UnpinChatMessageP struct {
-	BusinessConnectionID string `json:"business_connection_id,omitempty"`
-	ChatID               int    `json:"chat_id"`
-	MessageID            int    `json:"message_id"`
+	BusinessConnectionID *string `json:"business_connection_id,omitempty"`
+	ChatID               int     `json:"chat_id"`
+	MessageID            int     `json:"message_id"`
 }
 
 func (api *Api) UnpinChatMessage(p UnpinChatMessageP) (bool, error) {
@@ -283,8 +283,8 @@ type GetChatAdministratorsP struct {
 	ChatID int `json:"chat_id"`
 }
 
-func (api *Api) GetChatAdministrators(p GetChatAdministratorsP) ([]BaseChatMember, error) {
-	req := NewRequest[[]BaseChatMember]("getChatAdministrators", p)
+func (api *Api) GetChatAdministrators(p GetChatAdministratorsP) ([]ChatMember, error) {
+	req := NewRequest[[]ChatMember]("getChatAdministrators", p)
 	return req.Do(api)
 }
 
@@ -302,8 +302,8 @@ type GetChatMemberP struct {
 	UserID int `json:"user_id"`
 }
 
-func (api *Api) GetChatMember(p GetChatMemberP) (BaseChatMember, error) {
-	req := NewRequest[BaseChatMember]("getChatMember", p)
+func (api *Api) GetChatMember(p GetChatMemberP) (ChatMember, error) {
+	req := NewRequest[ChatMember]("getChatMember", p)
 	return req.Do(api)
 }
 
@@ -333,5 +333,24 @@ type GetUserChatBoostsP struct {
 
 func (api *Api) GetUserChatBoosts(p GetUserChatBoostsP) (UserChatBoosts, error) {
 	req := NewRequest[UserChatBoosts]("getUserChatBoosts", p)
+	return req.Do(api)
+}
+
+type GetChatGiftsP struct {
+	ChatID                      int    `json:"chat_id"`
+	ExcludeUnsaved              bool   `json:"exclude_unsaved,omitempty"`
+	ExcludeSaved                bool   `json:"exclude_saved,omitempty"`
+	ExcludeUnlimited            bool   `json:"exclude_unlimited,omitempty"`
+	ExcludeLimitedUpgradable    bool   `json:"exclude_limited_upgradable,omitempty"`
+	ExcludeLimitedNonUpgradable bool   `json:"exclude_limited_non_upgradable,omitempty"`
+	ExcludeUnique               bool   `json:"exclude_unique,omitempty"`
+	ExcludeFromBlockchain       bool   `json:"exclude_from_blockchain,omitempty"`
+	SortByPrice                 bool   `json:"sort_by_price,omitempty"`
+	Offset                      string `json:"offset,omitempty"`
+	Limit                       int    `json:"limit,omitempty"`
+}
+
+func (api *Api) GetChatGifts(p GetChatGiftsP) (OwnedGifts, error) {
+	req := NewRequest[OwnedGifts]("getChatGifts", p)
 	return req.Do(api)
 }
