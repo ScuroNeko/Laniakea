@@ -107,6 +107,11 @@ type Gifts struct {
 	Gifts []Gift `json:"gifts"`
 }
 
+const (
+	OwnedGiftRegularType OwnedGiftType = "regular"
+	OwnedGiftUniqueType  OwnedGiftType = "unique"
+)
+
 type OwnedGiftType string
 type BaseOwnedGift struct {
 	Type        OwnedGiftType `json:"type"`
