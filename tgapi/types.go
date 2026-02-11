@@ -109,5 +109,36 @@ type Gifts struct {
 
 type OwnedGiftType string
 type BaseOwnedGift struct {
-	Type OwnedGiftType `json:"type"`
+	Type        OwnedGiftType `json:"type"`
+	OwnerGiftID *string       `json:"owner_gift_id,omitempty"`
+	SendDate    *int          `json:"send_date,omitempty"`
+	IsSaved     *bool         `json:"is_saved,omitempty"`
+}
+type OwnedGiftRegular struct {
+	BaseOwnedGift
+	Gift                    Gift            `json:"gift"`
+	SenderUser              User            `json:"sender_user,omitempty"`
+	Text                    string          `json:"text,omitempty"`
+	Entities                []MessageEntity `json:"entities,omitempty"`
+	IsPrivate               *bool           `json:"is_private,omitempty"`
+	CanBeUpgraded           *bool           `json:"can_be_upgraded,omitempty"`
+	WasRefunded             *bool           `json:"was_refunded,omitempty"`
+	ConvertStarCount        *int            `json:"convert_star_count,omitempty"`
+	PrepaidUpgradeStarCount *int            `json:"prepaid_upgrade_star_count,omitempty"`
+	IsUpgradeSeparate       *bool           `json:"is_upgrade_separate,omitempty"`
+	UniqueGiftNumber        *int            `json:"unique_gift_number,omitempty"`
+}
+type OwnedGiftUnique struct {
+	BaseOwnedGift
+	CanBeTransferred  *bool `json:"can_be_transferred,omitempty"`
+	TransferStarCount *int  `json:"transfer_star_count,omitempty"`
+	NextTransferDate  *int  `json:"next_transfer_date,omitempty"`
+}
+type OwnedGifts struct {
+	TotalCount int `json:"total_count"`
+	Gifts      []struct {
+		OwnedGiftRegular
+		OwnedGiftUnique
+	} `json:"gifts"`
+	NextOffset string `json:"next_offset"`
 }
