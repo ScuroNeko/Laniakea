@@ -177,26 +177,24 @@ type ChatMember struct {
 	CanAddWebPagePreview *bool `json:"can_add_web_page_preview,omitempty"`
 }
 
-type BaseChatBoostSource struct {
+type ChatBoostSource struct {
 	Source string `json:"source"`
 	User   User   `json:"user"`
+
+	// Giveaway
+	GiveawayMessageID *int  `json:"giveaway_message_id,omitempty"`
+	PrizeStarCount    *int  `json:"prize_star_count,omitempty"`
+	IsUnclaimed       *bool `json:"is_unclaimed,omitempty"`
 }
-type ChatBoostSourcePremium struct{ BaseChatBoostSource }
-type ChatBoostSourceGiftCode struct{ BaseChatBoostSource }
-type ChatBoostSourceGiveaway struct {
-	BaseChatBoostSource
-	GiveawayMessageID int  `json:"giveaway_message_id"`
-	PrizeStarCount    *int `json:"prize_star_count,omitempty"`
-	IsUnclaimed       bool `json:"is_unclaimed"`
-}
-type ChatBoost[T BaseChatBoostSource] struct {
-	BoostID        int `json:"boost_id"`
-	AddDate        int `json:"add_date"`
-	ExpirationDate int `json:"expiration_date"`
-	Source         T   `json:"source"`
+
+type ChatBoost struct {
+	BoostID        int             `json:"boost_id"`
+	AddDate        int             `json:"add_date"`
+	ExpirationDate int             `json:"expiration_date"`
+	Source         ChatBoostSource `json:"source"`
 }
 type UserChatBoosts struct {
-	Boosts []ChatBoost[BaseChatBoostSource] `json:"boosts"`
+	Boosts []ChatBoost `json:"boosts"`
 }
 
 type ChatAdministratorRights struct {
@@ -217,4 +215,16 @@ type ChatAdministratorRights struct {
 	CanPinMessages          *bool `json:"can_pin_messages,omitempty"`
 	CanManageTopics         *bool `json:"can_manage_topics,omitempty"`
 	CanManageDirectMessages *bool `json:"can_manage_direct_messages,omitempty"`
+}
+
+type ChatBoostUpdated struct {
+	Chat  Chat      `json:"chat"`
+	Boost ChatBoost `json:"boost"`
+}
+
+type ChatBoostRemoved struct {
+	Chat       Chat            `json:"chat"`
+	BoostID    string          `json:"boost_id"`
+	RemoveDate int             `json:"remove_date"`
+	Source     ChatBoostSource `json:"source"`
 }

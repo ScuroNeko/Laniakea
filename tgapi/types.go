@@ -1,5 +1,35 @@
 package tgapi
 
+type UpdateType string
+
+const (
+	UpdateTypeMessage              UpdateType = "message"
+	UpdateTypeEditedMessage        UpdateType = "edited_message"
+	UpdateTypeChannelPost          UpdateType = "channel_post"
+	UpdateTypeEditedChannelPost    UpdateType = "edited_channel_post"
+	UpdateTypeMessageReaction      UpdateType = "message_reaction"
+	UpdateTypeMessageReactionCount UpdateType = "message_reaction_count"
+
+	UpdateTypeBusinessConnection     UpdateType = "business_connection"
+	UpdateTypeBusinessMessage        UpdateType = "business_message"
+	UpdateTypeEditedBusinessMessage  UpdateType = "edited_business_message"
+	UpdateTypeDeletedBusinessMessage UpdateType = "deleted_business_message"
+
+	UpdateTypeInlineQuery        UpdateType = "inline_query"
+	UpdateTypeChosenInlineResult UpdateType = "chosen_inline_result"
+	UpdateTypeCallbackQuery      UpdateType = "callback_query"
+	UpdateTypeShippingQuery      UpdateType = "shipping_query"
+	UpdateTypePreCheckoutQuery   UpdateType = "pre_checkout_query"
+	UpdateTypePurchasedPaidMedia UpdateType = "purchased_paid_media"
+	UpdateTypePoll               UpdateType = "poll"
+	UpdateTypePollAnswer         UpdateType = "poll_answer"
+	UpdateTypeMyChatMember       UpdateType = "my_chat_member"
+	UpdateTypeChatMember         UpdateType = "chat_member"
+	UpdateTypeChatJoinRequest    UpdateType = "chat_join_request"
+	UpdateTypeChatBoost          UpdateType = "chat_boost"
+	UpdateTypeRemovedChatBoost   UpdateType = "removed_chat_boost"
+)
+
 type Update struct {
 	UpdateID          int      `json:"update_id"`
 	Message           *Message `json:"message,omitempty"`
@@ -21,13 +51,13 @@ type Update struct {
 	PreCheckoutQuery   *PreCheckoutQuery   `json:"pre_checkout_query,omitempty"`
 	PurchasedPaidMedia *PaidMediaPurchased `json:"purchased_paid_media,omitempty"`
 
-	Poll             any `json:"poll,omitempty"`
-	PollAnswer       any `json:"poll_answer,omitempty"`
-	MyChatMember     any `json:"my_chat_member,omitempty"`
-	ChatMember       any `json:"chat_member,omitempty"`
-	ChatJoinRequest  any `json:"chat_join_request,omitempty"`
-	ChatBoost        any `json:"chat_boost,omitempty"`
-	RemovedChatBoost any `json:"removed_chat_boost,omitempty"`
+	Poll             *Poll              `json:"poll,omitempty"`
+	PollAnswer       *PollAnswer        `json:"poll_answer,omitempty"`
+	MyChatMember     *ChatMemberUpdated `json:"my_chat_member,omitempty"`
+	ChatMember       *ChatMemberUpdated `json:"chat_member,omitempty"`
+	ChatJoinRequest  *ChatJoinRequest   `json:"chat_join_request,omitempty"`
+	ChatBoost        *ChatBoostUpdated  `json:"chat_boost,omitempty"`
+	RemovedChatBoost *ChatBoostRemoved  `json:"removed_chat_boost,omitempty"`
 }
 
 type InlineQuery struct {
@@ -100,6 +130,54 @@ type Audio struct {
 	MimeType  string     `json:"mime_type,omitempty"`
 	FileSize  int        `json:"file_size,omitempty"`
 	Thumbnail *PhotoSize `json:"thumbnail,omitempty"`
+}
+
+type PollOption struct {
+	Text         string          `json:"text"`
+	TextEntities []MessageEntity `json:"text_entities"`
+	VoterCount   int             `json:"voter_count"`
+}
+type Poll struct {
+	ID               string          `json:"id"`
+	Question         string          `json:"question"`
+	QuestionEntities []MessageEntity `json:"question_entities"`
+	Options          []PollOption    `json:"options"`
+	TotalVoterCount  int             `json:"total_voter_count"`
+	IsClosed         bool            `json:"is_closed"`
+	IsAnonymous      bool            `json:"is_anonymous"`
+	Type             PollType        `json:"type"`
+
+	AllowsMultipleAnswers bool            `json:"allows_multiple_answers"`
+	CorrectOptionID       *int            `json:"correct_option_id,omitempty"`
+	Explanation           *string         `json:"explanation,omitempty"`
+	ExplanationEntities   []MessageEntity `json:"explanation_entities,omitempty"`
+	OpenPeriod            int             `json:"open_period,omitempty"`
+	CloseDate             int             `json:"close_date,omitempty"`
+}
+type PollAnswer struct {
+	PollID    string `json:"poll_id"`
+	VoterChat Chat   `json:"voter_chat"`
+	User      User   `json:"user"`
+	OptionIDS []int  `json:"option_ids"`
+}
+type ChatMemberUpdated struct {
+	Chat                    Chat            `json:"chat"`
+	From                    User            `json:"from"`
+	Date                    int64           `json:"date"`
+	OldChatMember           ChatMember      `json:"old_chat_member"`
+	NewChatMember           ChatMember      `json:"new_chat_member"`
+	InviteLink              *ChatInviteLink `json:"invite_link,omitempty"`
+	ViaJoinRequest          *bool           `json:"via_join_request,omitempty"`
+	ViaChatFolderInviteLink *bool           `json:"via_chat_folder_invite_link,omitempty"`
+}
+
+type ChatJoinRequest struct {
+	Chat       Chat            `json:"chat"`
+	From       User            `json:"from"`
+	UserChatID int             `json:"user_chat_id"`
+	Date       int64           `json:"date"`
+	Bio        *string         `json:"bio,omitempty"`
+	InviteLink *ChatInviteLink `json:"invite_link,omitempty"`
 }
 
 type Location struct {

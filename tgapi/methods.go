@@ -13,9 +13,10 @@ type EmptyParams struct{}
 var NoParams = EmptyParams{}
 
 type UpdateParams struct {
-	Offset         int      `json:"offset"`
-	Timeout        int      `json:"timeout"`
-	AllowedUpdates []string `json:"allowed_updates"`
+	Offset         *int         `json:"offset,omitempty"`
+	Limit          *int         `json:"limit,omitempty"`
+	Timeout        *int         `json:"timeout,omitempty"`
+	AllowedUpdates []UpdateType `json:"allowed_updates"`
 }
 
 func (api *Api) GetMe() (User, error) {
