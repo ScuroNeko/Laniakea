@@ -1,4 +1,4 @@
-package laniakea
+package utils
 
 import (
 	"encoding/json"

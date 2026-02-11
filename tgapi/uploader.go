@@ -1,4 +1,4 @@
-package laniakea
+package tgapi
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"git.nix13.pw/scuroneko/laniakea/utils"
 	"git.nix13.pw/scuroneko/slog"
 )
 
@@ -80,7 +81,7 @@ func (u UploaderRequest[R, P]) Do(up *Uploader) (*R, error) {
 		w.Close()
 		return nil, err
 	}
-	err = Encode(w, u.params)
+	err = utils.Encode(w, u.params)
 	if err != nil {
 		w.Close()
 		return nil, err
@@ -122,9 +123,29 @@ func (u UploaderRequest[R, P]) Do(up *Uploader) (*R, error) {
 	return response.Result, nil
 }
 
-func (u *Uploader) UploadPhoto(file UploaderFile, params SendPhotoBaseP) (*Message, error) {
+type UploadPhotoP struct {
+	BusinessConnectionID  string                `json:"business_connection_id,omitempty"`
+	ChatID                int                   `json:"chat_id"`
+	MessageThreadID       int                   `json:"message_thread_id,omitempty"`
+	ParseMode             ParseMode             `json:"parse_mode,omitempty"`
+	Caption               string                `json:"caption,omitempty"`
+	CaptionEntities       []*MessageEntity      `json:"caption_entities,omitempty"`
+	ShowCaptionAboveMedia bool                  `json:"show_caption_above_media,omitempty"`
+	HasSpoiler            bool                  `json:"has_spoiler,omitempty"`
+	DisableNotifications  bool                  `json:"disable_notifications,omitempty"`
+	ProtectContent        bool                  `json:"protect_content,omitempty"`
+	AllowPaidBroadcast    bool                  `json:"allow_paid_broadcast,omitempty"`
+	MessageEffectID       string                `json:"message_effect_id,omitempty"`
+	ReplyMarkup           *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+}
+
+func (u *Uploader) UploadPhoto(file UploaderFile, params UploadPhotoP) (*Message, error) {
 	req := NewUploaderRequest[Message]("sendPhoto", file, params)
 	return req.Do(u)
+}
+
+// setChatPhoto https://core.telegram.org/bots/api#setchatphoto
+type UploadChatPhotoP struct {
 }
 
 func uploaderTypeByExt(filename string) UploaderFileType {

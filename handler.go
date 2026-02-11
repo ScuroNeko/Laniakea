@@ -3,9 +3,11 @@ package laniakea
 import (
 	"encoding/json"
 	"strings"
+
+	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
 
-func (b *Bot) handleMessage(update *Update, ctx *MsgContext) {
+func (b *Bot) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 	if update.Message == nil {
 		return
 	}
@@ -60,7 +62,7 @@ func (b *Bot) handleMessage(update *Update, ctx *MsgContext) {
 	}
 }
 
-func (b *Bot) handleCallback(update *Update, ctx *MsgContext) {
+func (b *Bot) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 	data := new(CallbackData)
 	err := json.Unmarshal([]byte(update.CallbackQuery.Data), data)
 	if err != nil {

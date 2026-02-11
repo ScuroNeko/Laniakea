@@ -5,18 +5,19 @@ import (
 	"fmt"
 
 	"git.nix13.pw/scuroneko/extypes"
+	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
 
 const (
-	ButtonStyleDanger  KeyboardButtonStyle = "danger"
-	ButtonStyleSuccess KeyboardButtonStyle = "success"
-	ButtonStylePrimary KeyboardButtonStyle = "primary"
+	ButtonStyleDanger  tgapi.KeyboardButtonStyle = "danger"
+	ButtonStyleSuccess tgapi.KeyboardButtonStyle = "success"
+	ButtonStylePrimary tgapi.KeyboardButtonStyle = "primary"
 )
 
 type InlineKbButtonBuilder struct {
 	text              string
 	iconCustomEmojiID string
-	style             KeyboardButtonStyle
+	style             tgapi.KeyboardButtonStyle
 	url               string
 	callbackData      string
 }
@@ -28,7 +29,7 @@ func (b InlineKbButtonBuilder) SetIconCustomEmojiId(id string) InlineKbButtonBui
 	b.iconCustomEmojiID = id
 	return b
 }
-func (b InlineKbButtonBuilder) SetStyle(style KeyboardButtonStyle) InlineKbButtonBuilder {
+func (b InlineKbButtonBuilder) SetStyle(style tgapi.KeyboardButtonStyle) InlineKbButtonBuilder {
 	b.style = style
 	return b
 }
@@ -41,8 +42,8 @@ func (b InlineKbButtonBuilder) SetCallbackData(cmd string, args ...any) InlineKb
 	return b
 }
 
-func (b InlineKbButtonBuilder) build() InlineKeyboardButton {
-	return InlineKeyboardButton{
+func (b InlineKbButtonBuilder) build() tgapi.InlineKeyboardButton {
+	return tgapi.InlineKeyboardButton{
 		Text:              b.text,
 		URL:               b.url,
 		Style:             b.style,
@@ -52,20 +53,20 @@ func (b InlineKbButtonBuilder) build() InlineKeyboardButton {
 }
 
 type InlineKeyboard struct {
-	CurrentLine extypes.Slice[InlineKeyboardButton]
-	Lines       [][]InlineKeyboardButton
+	CurrentLine extypes.Slice[tgapi.InlineKeyboardButton]
+	Lines       [][]tgapi.InlineKeyboardButton
 	maxRow      int
 }
 
 func NewInlineKeyboard(maxRow int) *InlineKeyboard {
 	return &InlineKeyboard{
-		CurrentLine: make(extypes.Slice[InlineKeyboardButton], 0),
-		Lines:       make([][]InlineKeyboardButton, 0),
+		CurrentLine: make(extypes.Slice[tgapi.InlineKeyboardButton], 0),
+		Lines:       make([][]tgapi.InlineKeyboardButton, 0),
 		maxRow:      maxRow,
 	}
 }
 
-func (in *InlineKeyboard) append(button InlineKeyboardButton) *InlineKeyboard {
+func (in *InlineKeyboard) append(button tgapi.InlineKeyboardButton) *InlineKeyboard {
 	if in.CurrentLine.Len() == in.maxRow {
 		in.AddLine()
 	}
@@ -74,18 +75,18 @@ func (in *InlineKeyboard) append(button InlineKeyboardButton) *InlineKeyboard {
 }
 
 func (in *InlineKeyboard) AddUrlButton(text, url string) *InlineKeyboard {
-	return in.append(InlineKeyboardButton{Text: text, URL: url})
+	return in.append(tgapi.InlineKeyboardButton{Text: text, URL: url})
 }
-func (in *InlineKeyboard) AddUrlButtonStyle(text string, style KeyboardButtonStyle, url string) *InlineKeyboard {
-	return in.append(InlineKeyboardButton{Text: text, Style: style, URL: url})
+func (in *InlineKeyboard) AddUrlButtonStyle(text string, style tgapi.KeyboardButtonStyle, url string) *InlineKeyboard {
+	return in.append(tgapi.InlineKeyboardButton{Text: text, Style: style, URL: url})
 }
 func (in *InlineKeyboard) AddCallbackButton(text string, cmd string, args ...any) *InlineKeyboard {
-	return in.append(InlineKeyboardButton{
+	return in.append(tgapi.InlineKeyboardButton{
 		Text: text, CallbackData: NewCallbackData(cmd, args...).ToJson(),
 	})
 }
-func (in *InlineKeyboard) AddCallbackButtonStyle(text string, style KeyboardButtonStyle, cmd string, args ...any) *InlineKeyboard {
-	return in.append(InlineKeyboardButton{
+func (in *InlineKeyboard) AddCallbackButtonStyle(text string, style tgapi.KeyboardButtonStyle, cmd string, args ...any) *InlineKeyboard {
+	return in.append(tgapi.InlineKeyboardButton{
 		Text: text, Style: style,
 		CallbackData: NewCallbackData(cmd, args...).ToJson(),
 	})
@@ -99,14 +100,14 @@ func (in *InlineKeyboard) AddLine() *InlineKeyboard {
 		return in
 	}
 	in.Lines = append(in.Lines, in.CurrentLine)
-	in.CurrentLine = make(extypes.Slice[InlineKeyboardButton], 0)
+	in.CurrentLine = make(extypes.Slice[tgapi.InlineKeyboardButton], 0)
 	return in
 }
-func (in *InlineKeyboard) Get() *InlineKeyboardMarkup {
+func (in *InlineKeyboard) Get() *tgapi.ReplyMarkup {
 	if in.CurrentLine.Len() > 0 {
 		in.Lines = append(in.Lines, in.CurrentLine)
 	}
-	return &InlineKeyboardMarkup{InlineKeyboard: in.Lines}
+	return &tgapi.ReplyMarkup{InlineKeyboard: in.Lines}
 }
 
 type CallbackData struct {

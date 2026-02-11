@@ -1,4 +1,4 @@
-package laniakea
+package tgapi
 
 type MaskPositionPoint string
 
@@ -34,12 +34,12 @@ type Sticker struct {
 	IsVideo      bool        `json:"is_video"`
 
 	Thumbnail      *PhotoSize    `json:"thumbnail,omitempty"`
-	Emoji          string        `json:"emoji,omitempty"`
-	SetName        string        `json:"set_name,omitempty"`
+	Emoji          *string       `json:"emoji,omitempty"`
+	SetName        *string       `json:"set_name,omitempty"`
 	MaskPosition   *MaskPosition `json:"mask_position,omitempty"`
-	CustomEmojiID  string        `json:"custom_emoji_id,omitempty"`
-	NeedRepainting bool          `json:"need_repainting,omitempty"`
-	FileSize       int           `json:"file_size,omitempty"`
+	CustomEmojiID  *string       `json:"custom_emoji_id,omitempty"`
+	NeedRepainting *bool         `json:"need_repainting,omitempty"`
+	FileSize       *int          `json:"file_size,omitempty"`
 }
 type StickerSet struct {
 	Name        string      `json:"name"`
@@ -62,32 +62,4 @@ type InputSticker struct {
 	EmojiList    []string           `json:"emoji_list"`
 	MaskPosition *MaskPosition      `json:"mask_position,omitempty"`
 	Keywords     []string           `json:"keywords,omitempty"`
-}
-
-type SendStickerP struct {
-	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
-	MessageThreadID       int    `json:"message_thread_id,omitempty"`
-	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
-
-	Sticker             string `json:"sticker"`
-	Emoji               string `json:"emoji,omitempty"`
-	DisableNotification bool   `json:"disable_notification,omitempty"`
-	ProtectContent      bool   `json:"protect_content,omitempty"`
-	AllowPaidBroadcast  bool   `json:"allow_paid_broadcast,omitempty"`
-	MessageEffectID     string `json:"message_effect_id,omitempty"`
-}
-
-func (api *Api) SendSticker(p SendStickerP) (*Message, error) {
-	req := NewRequest[Message]("sendSticker", p)
-	return req.Do(api)
-}
-
-type GetStickerSetP struct {
-	Name string `json:"name"`
-}
-
-func (api *Api) GetStickerSet(p GetStickerSetP) (*StickerSet, error) {
-	req := NewRequest[StickerSet]("getStickerSet", p)
-	return req.Do(api)
 }
