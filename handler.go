@@ -5,6 +5,19 @@ import (
 	"strings"
 )
 
+func (b *Bot) handle(u *Update) {
+	ctx := &MsgContext{Bot: b, Update: u, Api: b.api}
+	for _, middleware := range b.middlewares {
+		middleware.Execute(ctx, b.dbContext)
+	}
+
+	if u.CallbackQuery != nil {
+		b.handleCallback(u, ctx)
+	} else {
+		b.handleMessage(u, ctx)
+	}
+}
+
 func (b *Bot) handleMessage(update *Update, ctx *MsgContext) {
 	if update.Message == nil {
 		return
@@ -30,7 +43,6 @@ func (b *Bot) handleMessage(update *Update, ctx *MsgContext) {
 	text = strings.TrimSpace(text[len(prefix):])
 
 	for _, plugin := range b.plugins {
-		// Check every command
 		for cmd := range plugin.Commands {
 			if !strings.HasPrefix(text, cmd) {
 				continue

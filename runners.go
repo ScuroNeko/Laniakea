@@ -44,6 +44,7 @@ func (b *RunnerBuilder) Build() Runner {
 }
 
 func (b *Bot) ExecRunners() {
+	b.logger.Infoln("Executing runners...")
 	for _, runner := range b.runners {
 		if !runner.Onetime && !runner.Async {
 			b.logger.Warnf("Runner %s not onetime, but sync\n", runner.Name)

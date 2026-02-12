@@ -233,7 +233,6 @@ func (b *Bot) Run() {
 		return
 	}
 
-	b.logger.Infoln("Executing runners...")
 	b.ExecRunners()
 
 	b.logger.Infoln("Bot running. Press CTRL+C to exit.")
@@ -247,33 +246,17 @@ func (b *Bot) Run() {
 	}()
 
 	for {
-		queue := b.updateQueue
-		if queue.IsEmpty() {
+		if b.updateQueue.IsEmpty() {
 			time.Sleep(time.Millisecond * 25)
 			continue
 		}
 
-		u := queue.Dequeue()
+		u := b.updateQueue.Dequeue()
 		if u == nil {
 			b.logger.Errorln("update is nil")
 			continue
 		}
 
-		ctx := &MsgContext{Bot: b, Update: u, Api: b.api}
-		for _, middleware := range b.middlewares {
-			middleware.Execute(ctx, b.dbContext)
-		}
-
-		for _, plugin := range b.plugins {
-			if plugin.UpdateListener != nil {
-				(*plugin.UpdateListener)(ctx, b.dbContext)
-			}
-		}
-
-		if u.CallbackQuery != nil {
-			b.handleCallback(u, ctx)
-		} else {
-			b.handleMessage(u, ctx)
-		}
+		b.handle(u)
 	}
 }
