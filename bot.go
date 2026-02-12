@@ -2,7 +2,6 @@ package laniakea
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"sort"
 	"strings"
@@ -126,15 +125,13 @@ func NewBot(settings *BotSettings) *Bot {
 	return bot
 }
 
-func (b *Bot) Close() {
+func (b *Bot) Close() error {
 	err := b.logger.Close()
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 	err = b.RequestLogger.Close()
-	if err != nil {
-		log.Println(err)
-	}
+	return err
 }
 
 func (b *Bot) GetUpdateOffset() int                    { return b.updateOffset }
