@@ -1,12 +1,19 @@
 package laniakea
 
-import "fmt"
+import (
+	"fmt"
+
+	"git.nix13.pw/scuroneko/laniakea/tgapi"
+	"git.nix13.pw/scuroneko/laniakea/utils"
+)
 
 type MsgContext struct {
-	Bot             *Bot
-	Msg             *Message
-	Update          *Update
-	From            *User
+	Bot *Bot
+	Api *tgapi.Api
+
+	Msg             *tgapi.Message
+	Update          tgapi.Update
+	From            *tgapi.User
 	CallbackMsgId   int
 	CallbackQueryId string
 	FromID          int
@@ -24,18 +31,18 @@ type AnswerMessage struct {
 }
 
 func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard) *AnswerMessage {
-	params := &EditMessageTextP{
+	params := tgapi.EditMessageTextP{
 		MessageID: messageId,
 		ChatID:    ctx.Msg.Chat.ID,
 		Text:      text,
-		ParseMode: ParseMD,
+		ParseMode: tgapi.ParseMD,
 	}
 	if keyboard != nil {
 		params.ReplyMarkup = keyboard.Get()
 	}
-	msg, err := ctx.Bot.EditMessageText(params)
+	msg, _, err := ctx.Api.EditMessageText(params)
 	if err != nil {
-		ctx.Bot.logger.Errorln(err)
+		ctx.Api.Logger.Errorln(err)
 		return nil
 	}
 	return &AnswerMessage{
@@ -47,7 +54,7 @@ func (m *AnswerMessage) Edit(text string) *AnswerMessage {
 }
 func (ctx *MsgContext) EditCallback(text string, keyboard *InlineKeyboard) *AnswerMessage {
 	if ctx.CallbackMsgId == 0 {
-		ctx.Bot.logger.Errorln("Can't edit non-callback update message")
+		ctx.Api.Logger.Errorln("Can't edit non-callback update message")
 		return nil
 	}
 
@@ -58,18 +65,18 @@ func (ctx *MsgContext) EditCallbackf(format string, keyboard *InlineKeyboard, ar
 }
 
 func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeyboard) *AnswerMessage {
-	params := &EditMessageCaptionP{
+	params := tgapi.EditMessageCaptionP{
 		ChatID:    ctx.Msg.Chat.ID,
 		MessageID: messageId,
 		Caption:   text,
-		ParseMode: ParseMD,
+		ParseMode: tgapi.ParseMD,
 	}
 	if kb != nil {
 		params.ReplyMarkup = kb.Get()
 	}
-	msg, err := ctx.Bot.EditMessageCaption(params)
+	msg, _, err := ctx.Api.EditMessageCaption(params)
 	if err != nil {
-		ctx.Bot.logger.Errorln(err)
+		ctx.Api.Logger.Errorln(err)
 	}
 	return &AnswerMessage{
 		MessageID: msg.MessageID, ctx: ctx, Text: text, IsMedia: true,
@@ -77,7 +84,7 @@ func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeybo
 }
 func (m *AnswerMessage) EditCaption(text string) *AnswerMessage {
 	if m.MessageID == 0 {
-		m.ctx.Bot.logger.Errorln("Can't edit caption message, message id is zero")
+		m.ctx.Api.Logger.Errorln("Can't edit caption message, message id is zero")
 		return m
 	}
 	return m.ctx.editPhotoText(m.MessageID, text, nil)
@@ -87,18 +94,18 @@ func (m *AnswerMessage) EditCaptionKeyboard(text string, kb *InlineKeyboard) *An
 }
 
 func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard) *AnswerMessage {
-	params := &SendMessageP{
+	params := tgapi.SendMessageP{
 		ChatID:    ctx.Msg.Chat.ID,
 		Text:      text,
-		ParseMode: ParseMD,
+		ParseMode: tgapi.ParseMD,
 	}
 	if keyboard != nil {
 		params.ReplyMarkup = keyboard.Get()
 	}
 
-	msg, err := ctx.Bot.SendMessage(params)
+	msg, err := ctx.Api.SendMessage(params)
 	if err != nil {
-		ctx.Bot.logger.Errorln(err)
+		ctx.Api.Logger.Errorln(err)
 		return nil
 	}
 	return &AnswerMessage{
@@ -116,18 +123,18 @@ func (ctx *MsgContext) Keyboard(text string, kb *InlineKeyboard) *AnswerMessage 
 }
 
 func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard) *AnswerMessage {
-	params := &SendPhotoP{
+	params := tgapi.SendPhotoP{
 		ChatID:    ctx.Msg.Chat.ID,
 		Caption:   text,
-		ParseMode: ParseMD,
+		ParseMode: tgapi.ParseMD,
 		Photo:     photoId,
 	}
 	if kb != nil {
 		params.ReplyMarkup = kb.Get()
 	}
-	msg, err := ctx.Bot.SendPhoto(params)
+	msg, err := ctx.Api.SendPhoto(params)
 	if err != nil {
-		ctx.Bot.logger.Errorln(err)
+		ctx.Api.Logger.Errorln(err)
 		return &AnswerMessage{
 			ctx: ctx, Text: text, IsMedia: true,
 		}
@@ -144,12 +151,12 @@ func (ctx *MsgContext) AnswerPhotoKeyboard(photoId, text string, kb *InlineKeybo
 }
 
 func (ctx *MsgContext) delete(messageId int) {
-	_, err := ctx.Bot.DeleteMessage(&DeleteMessageP{
+	_, err := ctx.Api.DeleteMessage(tgapi.DeleteMessageP{
 		ChatID:    ctx.Msg.Chat.ID,
 		MessageID: messageId,
 	})
 	if err != nil {
-		ctx.Bot.logger.Errorln(err)
+		ctx.Api.Logger.Errorln(err)
 	}
 }
 func (m *AnswerMessage) Delete() {
@@ -163,12 +170,12 @@ func (ctx *MsgContext) answerCallbackQuery(url, text string, showAlert bool) {
 	if len(ctx.CallbackQueryId) == 0 {
 		return
 	}
-	_, err := ctx.Bot.AnswerCallbackQuery(&AnswerCallbackQueryP{
+	_, err := ctx.Api.AnswerCallbackQuery(tgapi.AnswerCallbackQueryP{
 		CallbackQueryID: ctx.CallbackQueryId,
 		Text:            text, ShowAlert: showAlert, URL: url,
 	})
 	if err != nil {
-		ctx.Bot.logger.Errorln(err)
+		ctx.Api.Logger.Errorln(err)
 	}
 }
 func (ctx *MsgContext) AnswerCbQuery() {
@@ -184,24 +191,24 @@ func (ctx *MsgContext) AnswerCbQueryUrl(u string) {
 	ctx.answerCallbackQuery(u, "", false)
 }
 
-func (ctx *MsgContext) SendAction(action ChatActions) {
-	_, err := ctx.Bot.SendChatAction(SendChatActionP{
+func (ctx *MsgContext) SendAction(action tgapi.ChatActionType) {
+	_, err := ctx.Api.SendChatAction(tgapi.SendChatActionP{
 		ChatID: ctx.Msg.Chat.ID, Action: action,
 	})
 	if err != nil {
-		ctx.Bot.logger.Errorln(err)
+		ctx.Api.Logger.Errorln(err)
 	}
 }
 
 func (ctx *MsgContext) error(err error) {
-	text := fmt.Sprintf(ctx.Bot.errorTemplate, EscapeMarkdown(err.Error()))
+	text := fmt.Sprintf(ctx.Bot.errorTemplate, utils.EscapeMarkdown(err.Error()))
 
 	if ctx.CallbackQueryId != "" {
 		ctx.answerCallbackQuery("", text, false)
 	} else {
 		ctx.answer(text, nil)
 	}
-	ctx.Bot.logger.Errorln(err)
+	ctx.Bot.Logger().Errorln(err)
 }
 func (ctx *MsgContext) Error(err error) {
 	ctx.error(err)

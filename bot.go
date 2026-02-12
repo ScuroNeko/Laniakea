@@ -9,18 +9,11 @@ import (
 	"time"
 
 	"git.nix13.pw/scuroneko/extypes"
+	"git.nix13.pw/scuroneko/laniakea/tgapi"
 	"git.nix13.pw/scuroneko/slog"
 	"github.com/redis/go-redis/v9"
 	"github.com/vinovest/sqlx"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-)
-
-type ParseMode string
-
-const (
-	ParseMDV2 ParseMode = "MarkdownV2"
-	ParseHTML ParseMode = "HTML"
-	ParseMD   ParseMode = "Markdown"
 )
 
 type Bot struct {
@@ -29,7 +22,7 @@ type Bot struct {
 	errorTemplate string
 
 	logger        *slog.Logger
-	requestLogger *slog.Logger
+	RequestLogger *slog.Logger
 
 	plugins     []Plugin
 	middlewares []Middleware
@@ -37,11 +30,19 @@ type Bot struct {
 	runners     []Runner
 
 	dbContext *DatabaseContext
+	api       *tgapi.Api
+
+	dbWriterRequested extypes.Slice[*slog.Logger]
 
 	updateOffset int
-	updateTypes  []string
-	updateQueue  *extypes.Queue[*Update]
+	updateTypes  []tgapi.UpdateType
+	updateQueue  *extypes.Queue[*tgapi.Update]
 }
+
+func (b *Bot) GetUpdateOffset() int                    { return b.updateOffset }
+func (b *Bot) SetUpdateOffset(offset int)              { b.updateOffset = offset }
+func (b *Bot) GetUpdateTypes() []tgapi.UpdateType      { return b.updateTypes }
+func (b *Bot) GetQueue() *extypes.Queue[*tgapi.Update] { return b.updateQueue }
 
 type BotSettings struct {
 	Token            string
@@ -74,13 +75,15 @@ func LoadPrefixesFromEnv() []string {
 	return strings.Split(prefixesS, ";")
 }
 func NewBot(settings *BotSettings) *Bot {
-	updateQueue := extypes.CreateQueue[*Update](256)
+	updateQueue := extypes.CreateQueue[*tgapi.Update](256)
+	api := tgapi.NewAPI(settings.Token)
 	bot := &Bot{
 		updateOffset: 0, plugins: make([]Plugin, 0), debug: settings.Debug, errorTemplate: "%s",
-		prefixes: settings.Prefixes, updateTypes: make([]string, 0), runners: make([]Runner, 0),
-		updateQueue: updateQueue,
-		token:       settings.Token,
+		prefixes: settings.Prefixes, updateTypes: make([]tgapi.UpdateType, 0), runners: make([]Runner, 0),
+		updateQueue: updateQueue, api: api, dbWriterRequested: make([]*slog.Logger, 0),
+		token: settings.Token,
 	}
+	bot.dbWriterRequested = bot.dbWriterRequested.Push(api.Logger)
 
 	if len(settings.ErrorTemplate) > 0 {
 		bot.errorTemplate = settings.ErrorTemplate
@@ -106,19 +109,19 @@ func NewBot(settings *BotSettings) *Bot {
 	}
 
 	if settings.UseRequestLogger {
-		bot.requestLogger = slog.CreateLogger().Level(level).Prefix("REQUESTS")
-		bot.requestLogger.AddWriter(bot.requestLogger.CreateJsonStdoutWriter())
+		bot.RequestLogger = slog.CreateLogger().Level(level).Prefix("REQUESTS")
+		bot.RequestLogger.AddWriter(bot.RequestLogger.CreateJsonStdoutWriter())
 		if settings.WriteToFile {
 			path := fmt.Sprintf("%s/requests.log", strings.TrimRight(settings.LoggerBasePath, "/"))
-			fileWriter, err := bot.requestLogger.CreateTextFileWriter(path)
+			fileWriter, err := bot.RequestLogger.CreateTextFileWriter(path)
 			if err != nil {
 				bot.logger.Fatal(err)
 			}
-			bot.requestLogger.AddWriter(fileWriter)
+			bot.RequestLogger.AddWriter(fileWriter)
 		}
 	}
 
-	u, err := bot.GetMe()
+	u, err := api.GetMe()
 	if err != nil {
 		bot.logger.Fatal(err)
 	}
@@ -132,7 +135,7 @@ func (b *Bot) Close() {
 	if err != nil {
 		log.Println(err)
 	}
-	err = b.requestLogger.Close()
+	err = b.RequestLogger.Close()
 	if err != nil {
 		log.Println(err)
 	}
@@ -147,8 +150,11 @@ type DatabaseContext struct {
 func (b *Bot) AddDatabaseLogger(writer func(db *DatabaseContext) slog.LoggerWriter) *Bot {
 	w := writer(b.dbContext)
 	b.logger.AddWriter(w)
-	if b.requestLogger != nil {
-		b.requestLogger.AddWriter(w)
+	if b.RequestLogger != nil {
+		b.RequestLogger.AddWriter(w)
+	}
+	for _, l := range b.dbWriterRequested {
+		l.AddWriter(w)
 	}
 	return b
 }
@@ -157,12 +163,12 @@ func (b *Bot) DatabaseContext(ctx *DatabaseContext) *Bot {
 	b.dbContext = ctx
 	return b
 }
-func (b *Bot) UpdateTypes(t ...string) *Bot {
-	b.updateTypes = make([]string, 0)
+func (b *Bot) UpdateTypes(t ...tgapi.UpdateType) *Bot {
+	b.updateTypes = make([]tgapi.UpdateType, 0)
 	b.updateTypes = append(b.updateTypes, t...)
 	return b
 }
-func (b *Bot) AddUpdateType(t ...string) *Bot {
+func (b *Bot) AddUpdateType(t ...tgapi.UpdateType) *Bot {
 	b.updateTypes = append(b.updateTypes, t...)
 	return b
 }
@@ -251,15 +257,9 @@ func (b *Bot) Run() {
 			continue
 		}
 
-		ctx := &MsgContext{Bot: b, Update: u}
+		ctx := &MsgContext{Bot: b, Update: *u, Api: b.api}
 		for _, middleware := range b.middlewares {
 			middleware.Execute(ctx, b.dbContext)
-		}
-
-		for _, plugin := range b.plugins {
-			if plugin.UpdateListener != nil {
-				(*plugin.UpdateListener)(ctx, b.dbContext)
-			}
 		}
 
 		if u.CallbackQuery != nil {
