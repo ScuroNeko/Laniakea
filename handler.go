@@ -7,6 +7,19 @@ import (
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
 
+func (b *Bot) handle(u *tgapi.Update) {
+	ctx := &MsgContext{Bot: b, Update: *u, Api: b.api}
+	for _, middleware := range b.middlewares {
+		middleware.Execute(ctx, b.dbContext)
+	}
+
+	if u.CallbackQuery != nil {
+		b.handleCallback(u, ctx)
+	} else {
+		b.handleMessage(u, ctx)
+	}
+}
+
 func (b *Bot) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 	if update.Message == nil {
 		return

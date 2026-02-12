@@ -23,7 +23,7 @@ type Api struct {
 func NewAPI(token string) *Api {
 	l := slog.CreateLogger().Level(utils.GetLoggerLevel()).Prefix("API")
 	l.AddWriter(l.CreateJsonStdoutWriter())
-	client := &http.Client{Timeout: time.Second * 10}
+	client := &http.Client{Timeout: time.Second * 45}
 	return &Api{token, client, l}
 }
 func (api *Api) CloseApi() error {

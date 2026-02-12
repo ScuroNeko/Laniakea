@@ -262,12 +262,6 @@ func (b *Bot) Run() {
 			middleware.Execute(ctx, b.dbContext)
 		}
 
-		for _, plugin := range b.plugins {
-			if plugin.UpdateListener != nil {
-				(*plugin.UpdateListener)(ctx, b.dbContext)
-			}
-		}
-
 		if u.CallbackQuery != nil {
 			b.handleCallback(u, ctx)
 		} else {
