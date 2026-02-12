@@ -19,19 +19,19 @@ type UpdateParams struct {
 	AllowedUpdates []UpdateType `json:"allowed_updates"`
 }
 
-func (api *Api) GetMe() (User, error) {
+func (api *API) GetMe() (User, error) {
 	req := NewRequest[User, EmptyParams]("getMe", NoParams)
 	return req.Do(api)
 }
-func (api *Api) LogOut() (bool, error) {
+func (api *API) LogOut() (bool, error) {
 	req := NewRequest[bool, EmptyParams]("logOut", NoParams)
 	return req.Do(api)
 }
-func (api *Api) Close() (bool, error) {
+func (api *API) Close() (bool, error) {
 	req := NewRequest[bool, EmptyParams]("close", NoParams)
 	return req.Do(api)
 }
-func (api *Api) GetUpdates(params UpdateParams) ([]Update, error) {
+func (api *API) GetUpdates(params UpdateParams) ([]Update, error) {
 	req := NewRequest[[]Update]("getUpdates", params)
 	return req.Do(api)
 }
@@ -40,7 +40,7 @@ type GetFileP struct {
 	FileId string `json:"file_id"`
 }
 
-func (api *Api) GetFile(params GetFileP) (File, error) {
+func (api *API) GetFile(params GetFileP) (File, error) {
 	req := NewRequest[File]("getFile", params)
 	return req.Do(api)
 }

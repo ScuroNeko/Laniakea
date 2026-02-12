@@ -20,7 +20,7 @@ type SendMessageP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendMessage(params SendMessageP) (Message, error) {
+func (api *API) SendMessage(params SendMessageP) (Message, error) {
 	req := NewRequest[Message, SendMessageP]("sendMessage", params)
 	return req.Do(api)
 }
@@ -40,7 +40,7 @@ type ForwardMessageP struct {
 	SuggestedPostParameters *SuggestedPostParameters `json:"suggested_post_parameters,omitempty"`
 }
 
-func (api *Api) ForwardMessage(params ForwardMessageP) (Message, error) {
+func (api *API) ForwardMessage(params ForwardMessageP) (Message, error) {
 	req := NewRequest[Message]("forwardMessage", params)
 	return req.Do(api)
 }
@@ -56,7 +56,7 @@ type ForwardMessagesP struct {
 	ProtectContent      bool  `json:"protect_content,omitempty"`
 }
 
-func (api *Api) ForwardMessages(params ForwardMessagesP) ([]int, error) {
+func (api *API) ForwardMessages(params ForwardMessagesP) ([]int, error) {
 	req := NewRequest[[]int]("forwardMessages", params)
 	return req.Do(api)
 }
@@ -84,7 +84,7 @@ type CopyMessageP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) CopyMessage(params CopyMessageP) (int, error) {
+func (api *API) CopyMessage(params CopyMessageP) (int, error) {
 	req := NewRequest[int]("copyMessage", params)
 	return req.Do(api)
 }
@@ -101,7 +101,7 @@ type CopyMessagesP struct {
 	RemoveCaption       bool  `json:"remove_caption,omitempty"`
 }
 
-func (api *Api) CopyMessages(params CopyMessagesP) ([]int, error) {
+func (api *API) CopyMessages(params CopyMessagesP) ([]int, error) {
 	req := NewRequest[[]int]("copyMessages", params)
 	return req.Do(api)
 }
@@ -129,7 +129,7 @@ type SendLocationP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendLocation(params SendLocationP) (Message, error) {
+func (api *API) SendLocation(params SendLocationP) (Message, error) {
 	req := NewRequest[Message]("sendLocation", params)
 	return req.Do(api)
 }
@@ -159,7 +159,7 @@ type SendVenueP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendVenue(params SendVenueP) (Message, error) {
+func (api *API) SendVenue(params SendVenueP) (Message, error) {
 	req := NewRequest[Message]("sendVenue", params)
 	return req.Do(api)
 }
@@ -185,7 +185,7 @@ type SendContactP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendContact(params SendContactP) (Message, error) {
+func (api *API) SendContact(params SendContactP) (Message, error) {
 	req := NewRequest[Message]("sendContact", params)
 	return req.Do(api)
 }
@@ -219,7 +219,7 @@ type SendPollP struct {
 	ReplyMarkup     *ReplyMarkup     `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendPoll(params SendPollP) (Message, error) {
+func (api *API) SendPoll(params SendPollP) (Message, error) {
 	req := NewRequest[Message]("sendPoll", params)
 	return req.Do(api)
 }
@@ -237,7 +237,7 @@ type SendChecklistP struct {
 	ReplyMarkup     *ReplyMarkup     `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendChecklist(params SendChecklistP) (Message, error) {
+func (api *API) SendChecklist(params SendChecklistP) (Message, error) {
 	req := NewRequest[Message]("sendChecklist", params)
 	return req.Do(api)
 }
@@ -260,7 +260,7 @@ type SendDiceP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendDice(params SendDiceP) (Message, error) {
+func (api *API) SendDice(params SendDiceP) (Message, error) {
 	req := NewRequest[Message]("sendDice", params)
 	return req.Do(api)
 }
@@ -274,7 +274,7 @@ type SendMessageDraftP struct {
 	Entities        []MessageEntity `json:"entities,omitempty"`
 }
 
-func (api *Api) SendMessageDraft(params SendMessageDraftP) (bool, error) {
+func (api *API) SendMessageDraft(params SendMessageDraftP) (bool, error) {
 	req := NewRequest[bool]("sendMessageDraft", params)
 	return req.Do(api)
 }
@@ -286,7 +286,7 @@ type SendChatActionP struct {
 	Action               ChatActionType `json:"action"`
 }
 
-func (api *Api) SendChatAction(params SendChatActionP) (bool, error) {
+func (api *API) SendChatAction(params SendChatActionP) (bool, error) {
 	req := NewRequest[bool]("sendChatAction", params)
 	return req.Do(api)
 }
@@ -298,7 +298,7 @@ type SetMessageReactionP struct {
 	IsBig     bool           `json:"is_big,omitempty"`
 }
 
-func (api *Api) SetMessageReaction(params SetMessageReactionP) (bool, error) {
+func (api *API) SetMessageReaction(params SetMessageReactionP) (bool, error) {
 	req := NewRequest[bool]("setMessageReaction", params)
 	return req.Do(api)
 }
@@ -317,7 +317,7 @@ type EditMessageTextP struct {
 
 // EditMessageText If inline message, first return will be zero-valued, and second will boolean
 // Otherwise, first return will be Message, and second false
-func (api *Api) EditMessageText(params EditMessageTextP) (Message, bool, error) {
+func (api *API) EditMessageText(params EditMessageTextP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
 		req := NewRequest[bool]("editMessageText", params)
@@ -341,7 +341,7 @@ type EditMessageCaptionP struct {
 
 // EditMessageCaption If inline message, first return will be zero-valued, and second will boolean
 // Otherwise, first return will be Message, and second false
-func (api *Api) EditMessageCaption(params EditMessageCaptionP) (Message, bool, error) {
+func (api *API) EditMessageCaption(params EditMessageCaptionP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
 		req := NewRequest[bool]("editMessageCaption", params)
@@ -364,7 +364,7 @@ type EditMessageMediaP struct {
 
 // EditMessageMedia If inline message, first return will be zero-valued, and second will boolean
 // Otherwise, first return will be Message, and second false
-func (api *Api) EditMessageMedia(params EditMessageMediaP) (Message, bool, error) {
+func (api *API) EditMessageMedia(params EditMessageMediaP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
 		req := NewRequest[bool]("editMessageMedia", params)
@@ -393,7 +393,7 @@ type EditMessageLiveLocationP struct {
 
 // EditMessageLiveLocation If inline message, first return will be zero-valued, and second will boolean
 // Otherwise, first return will be Message, and second false
-func (api *Api) EditMessageLiveLocation(params EditMessageLiveLocationP) (Message, bool, error) {
+func (api *API) EditMessageLiveLocation(params EditMessageLiveLocationP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
 		req := NewRequest[bool]("editMessageLiveLocation", params)
@@ -415,7 +415,7 @@ type StopMessageLiveLocationP struct {
 
 // StopMessageLiveLocation If inline message, first return will be zero-valued, and second will boolean
 // Otherwise, first return will be Message, and second false
-func (api *Api) StopMessageLiveLocation(params StopMessageLiveLocationP) (Message, bool, error) {
+func (api *API) StopMessageLiveLocation(params StopMessageLiveLocationP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
 		req := NewRequest[bool]("stopMessageLiveLocation", params)
@@ -435,7 +435,7 @@ type EditMessageChecklistP struct {
 	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) EditMessageChecklist(params EditMessageChecklistP) (Message, error) {
+func (api *API) EditMessageChecklist(params EditMessageChecklistP) (Message, error) {
 	req := NewRequest[Message]("editMessageChecklist", params)
 	return req.Do(api)
 }
@@ -448,7 +448,7 @@ type EditMessageReplyMarkupP struct {
 	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) EditMessageReplyMarkup(params EditMessageReplyMarkupP) (Message, bool, error) {
+func (api *API) EditMessageReplyMarkup(params EditMessageReplyMarkupP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
 		req := NewRequest[bool]("editMessageReplyMarkup", params)
@@ -467,7 +467,7 @@ type StopPollP struct {
 	InlineMessageID      string `json:"inline_message_id,omitempty"`
 }
 
-func (api *Api) StopPoll(params StopPollP) (Poll, error) {
+func (api *API) StopPoll(params StopPollP) (Poll, error) {
 	req := NewRequest[Poll]("stopPoll", params)
 	return req.Do(api)
 }
@@ -478,7 +478,7 @@ type ApproveSuggestedPostP struct {
 	SendDate  int `json:"send_date,omitempty"`
 }
 
-func (api *Api) ApproveSuggestedPost(params ApproveSuggestedPostP) (bool, error) {
+func (api *API) ApproveSuggestedPost(params ApproveSuggestedPostP) (bool, error) {
 	req := NewRequest[bool]("approveSuggestedPost", params)
 	return req.Do(api)
 }
@@ -489,7 +489,7 @@ type DeclineSuggestedPostP struct {
 	Comment   string `json:"comment,omitempty"`
 }
 
-func (api *Api) DeclineSuggestedPost(params DeclineSuggestedPostP) (bool, error) {
+func (api *API) DeclineSuggestedPost(params DeclineSuggestedPostP) (bool, error) {
 	req := NewRequest[bool]("declineSuggestedPost", params)
 	return req.Do(api)
 }
@@ -499,7 +499,7 @@ type DeleteMessageP struct {
 	MessageID int `json:"message_id"`
 }
 
-func (api *Api) DeleteMessage(params DeleteMessageP) (bool, error) {
+func (api *API) DeleteMessage(params DeleteMessageP) (bool, error) {
 	req := NewRequest[bool]("deleteMessage", params)
 	return req.Do(api)
 }
@@ -509,7 +509,7 @@ type DeleteMessagesP struct {
 	MessageIDs []int `json:"message_ids"`
 }
 
-func (api *Api) DeleteMessages(params DeleteMessagesP) (bool, error) {
+func (api *API) DeleteMessages(params DeleteMessagesP) (bool, error) {
 	req := NewRequest[bool]("deleteMessages", params)
 	return req.Do(api)
 }
@@ -522,7 +522,7 @@ type AnswerCallbackQueryP struct {
 	CacheTime       int    `json:"cache_time,omitempty"`
 }
 
-func (api *Api) AnswerCallbackQuery(params AnswerCallbackQueryP) (bool, error) {
+func (api *API) AnswerCallbackQuery(params AnswerCallbackQueryP) (bool, error) {
 	req := NewRequest[bool]("answerCallbackQuery", params)
 	return req.Do(api)
 }

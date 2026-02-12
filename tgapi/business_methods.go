@@ -5,7 +5,7 @@ type VerifyUserP struct {
 	CustomDescription string `json:"custom_description,omitempty"`
 }
 
-func (api *Api) VerifyUser(params VerifyUserP) (bool, error) {
+func (api *API) VerifyUser(params VerifyUserP) (bool, error) {
 	req := NewRequest[bool]("verifyUser", params)
 	return req.Do(api)
 }
@@ -15,7 +15,7 @@ type VerifyChatP struct {
 	CustomDescription string `json:"custom_description,omitempty"`
 }
 
-func (api *Api) VerifyChat(params VerifyChatP) (bool, error) {
+func (api *API) VerifyChat(params VerifyChatP) (bool, error) {
 	req := NewRequest[bool]("verifyChat", params)
 	return req.Do(api)
 }
@@ -24,7 +24,7 @@ type RemoveUserVerificationP struct {
 	UserID int `json:"user_id"`
 }
 
-func (api *Api) RemoveUserVerification(params RemoveUserVerificationP) (bool, error) {
+func (api *API) RemoveUserVerification(params RemoveUserVerificationP) (bool, error) {
 	req := NewRequest[bool]("removeUserVerification", params)
 	return req.Do(api)
 }
@@ -33,7 +33,7 @@ type RemoveChatVerificationP struct {
 	ChatID int `json:"chat_id"`
 }
 
-func (api *Api) RemoveChatVerification(params RemoveChatVerificationP) (bool, error) {
+func (api *API) RemoveChatVerification(params RemoveChatVerificationP) (bool, error) {
 	req := NewRequest[bool]("removeChatVerification", params)
 	return req.Do(api)
 }
@@ -44,7 +44,7 @@ type ReadBusinessMessageP struct {
 	MessageID            int    `json:"message_id"`
 }
 
-func (api *Api) ReadBusinessMessage(params ReadBusinessMessageP) (bool, error) {
+func (api *API) ReadBusinessMessage(params ReadBusinessMessageP) (bool, error) {
 	req := NewRequest[bool]("readBusinessMessage", params)
 	return req.Do(api)
 }
@@ -54,7 +54,7 @@ type DeleteBusinessMessageP struct {
 	MessageIDs           []int  `json:"message_ids"`
 }
 
-func (api *Api) DeleteBusinessMessage(params DeleteBusinessMessageP) (bool, error) {
+func (api *API) DeleteBusinessMessage(params DeleteBusinessMessageP) (bool, error) {
 	req := NewRequest[bool]("deleteBusinessMessage", params)
 	return req.Do(api)
 }
@@ -65,7 +65,7 @@ type SetBusinessAccountNameP struct {
 	LastName             string `json:"last_name,omitempty"`
 }
 
-func (api *Api) SetBusinessAccountName(params SetBusinessAccountNameP) (bool, error) {
+func (api *API) SetBusinessAccountName(params SetBusinessAccountNameP) (bool, error) {
 	req := NewRequest[bool]("setBusinessAccountName", params)
 	return req.Do(api)
 }
@@ -75,7 +75,7 @@ type SetBusinessAccountUsernameP struct {
 	Username             string `json:"username,omitempty"`
 }
 
-func (api *Api) SetBusinessAccountUsername(params SetBusinessAccountUsernameP) (bool, error) {
+func (api *API) SetBusinessAccountUsername(params SetBusinessAccountUsernameP) (bool, error) {
 	req := NewRequest[bool]("setBusinessAccountUsername", params)
 	return req.Do(api)
 }
@@ -85,7 +85,7 @@ type SetBusinessAccountBioP struct {
 	Bio                  string `json:"bio,omitempty"`
 }
 
-func (api *Api) SetBusinessAccountBio(params SetBusinessAccountBioP) (bool, error) {
+func (api *API) SetBusinessAccountBio(params SetBusinessAccountBioP) (bool, error) {
 	req := NewRequest[bool]("setBusinessAccountBio", params)
 	return req.Do(api)
 }
@@ -96,7 +96,7 @@ type SetBusinessAccountProfilePhoto struct {
 	IsPublic             bool              `json:"is_public,omitempty"`
 }
 
-func (api *Api) SetBusinessAccountProfilePhoto(params SetBusinessAccountProfilePhoto) (bool, error) {
+func (api *API) SetBusinessAccountProfilePhoto(params SetBusinessAccountProfilePhoto) (bool, error) {
 	req := NewRequest[bool]("setBusinessAccountProfilePhoto", params)
 	return req.Do(api)
 }
@@ -106,7 +106,7 @@ type RemoveBusinessAccountProfilePhotoP struct {
 	IsPublic             bool   `json:"is_public,omitempty"`
 }
 
-func (api *Api) RemoveBusinessAccountProfilePhoto(params RemoveBusinessAccountProfilePhotoP) (bool, error) {
+func (api *API) RemoveBusinessAccountProfilePhoto(params RemoveBusinessAccountProfilePhotoP) (bool, error) {
 	req := NewRequest[bool]("removeBusinessAccountProfilePhoto", params)
 	return req.Do(api)
 }
@@ -117,7 +117,7 @@ type SetBusinessAccountGiftSettingsP struct {
 	AcceptedGiftTypes    AcceptedGiftTypes `json:"accepted_gift_types"`
 }
 
-func (api *Api) SetBusinessAccountGiftSettings(params SetBusinessAccountGiftSettingsP) (bool, error) {
+func (api *API) SetBusinessAccountGiftSettings(params SetBusinessAccountGiftSettingsP) (bool, error) {
 	req := NewRequest[bool]("setBusinessAccountGiftSettings", params)
 	return req.Do(api)
 }
@@ -126,7 +126,7 @@ type GetBusinessAccountStarBalanceP struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 }
 
-func (api *Api) GetBusinessAccountStarBalance(params GetBusinessAccountStarBalanceP) (StarAmount, error) {
+func (api *API) GetBusinessAccountStarBalance(params GetBusinessAccountStarBalanceP) (StarAmount, error) {
 	req := NewRequest[StarAmount]("getBusinessAccountGiftSettings", params)
 	return req.Do(api)
 }
@@ -136,7 +136,7 @@ type TransferBusinessAccountStartP struct {
 	StarCount            int    `json:"star_count"`
 }
 
-func (api *Api) TransferBusinessAccountStart(params TransferBusinessAccountStartP) (bool, error) {
+func (api *API) TransferBusinessAccountStart(params TransferBusinessAccountStartP) (bool, error) {
 	req := NewRequest[bool]("transferBusinessAccountStart", params)
 	return req.Do(api)
 }
@@ -155,7 +155,7 @@ type GetBusinessAccountGiftsP struct {
 	Limit                       int    `json:"limit,omitempty"`
 }
 
-func (api *Api) GetBusinessAccountGifts(params GetBusinessAccountGiftsP) (OwnedGifts, error) {
+func (api *API) GetBusinessAccountGifts(params GetBusinessAccountGiftsP) (OwnedGifts, error) {
 	req := NewRequest[OwnedGifts]("getBusinessAccountGifts", params)
 	return req.Do(api)
 }
@@ -165,7 +165,7 @@ type ConvertGiftToStarsP struct {
 	OwnedGiftID          string `json:"owned_gift_id"`
 }
 
-func (api *Api) ConvertGiftToStars(params ConvertGiftToStarsP) (bool, error) {
+func (api *API) ConvertGiftToStars(params ConvertGiftToStarsP) (bool, error) {
 	req := NewRequest[bool]("convertGiftToStars", params)
 	return req.Do(api)
 }
@@ -177,7 +177,7 @@ type UpgradeGiftP struct {
 	StarCount            int    `json:"star_count,omitempty"`
 }
 
-func (api *Api) UpgradeGift(params UpgradeGiftP) (bool, error) {
+func (api *API) UpgradeGift(params UpgradeGiftP) (bool, error) {
 	req := NewRequest[bool]("upgradeGift", params)
 	return req.Do(api)
 }
@@ -189,7 +189,7 @@ type TransferGiftP struct {
 	StarCount            int    `json:"star_count,omitempty"`
 }
 
-func (api *Api) TransferGift(params TransferGiftP) (bool, error) {
+func (api *API) TransferGift(params TransferGiftP) (bool, error) {
 	req := NewRequest[bool]("transferGift", params)
 	return req.Do(api)
 }
@@ -208,11 +208,11 @@ type PostStoryP struct {
 	ProtectContent bool `json:"protect_content,omitempty"`
 }
 
-func (api *Api) PostStoryPhoto(params PostStoryP) (Story, error) {
+func (api *API) PostStoryPhoto(params PostStoryP) (Story, error) {
 	req := NewRequest[Story]("postStory", params)
 	return req.Do(api)
 }
-func (api *Api) PostStoryVideo(params PostStoryP) (Story, error) {
+func (api *API) PostStoryVideo(params PostStoryP) (Story, error) {
 	req := NewRequest[Story]("postStory", params)
 	return req.Do(api)
 }
@@ -226,7 +226,7 @@ type RepostStoryP struct {
 	ProtectContent       bool   `json:"protect_content,omitempty"`
 }
 
-func (api *Api) RepostStory(params RepostStoryP) (Story, error) {
+func (api *API) RepostStory(params RepostStoryP) (Story, error) {
 	req := NewRequest[Story]("repostStory", params)
 	return req.Do(api)
 }
@@ -242,7 +242,7 @@ type EditStoryP struct {
 	Areas           []StoryArea     `json:"areas,omitempty"`
 }
 
-func (api *Api) EditStory(params EditStoryP) (Story, error) {
+func (api *API) EditStory(params EditStoryP) (Story, error) {
 	req := NewRequest[Story]("editStory", params)
 	return req.Do(api)
 }
@@ -252,7 +252,7 @@ type DeleteStoryP struct {
 	StoryID              int    `json:"story_id"`
 }
 
-func (api *Api) DeleteStory(params DeleteStoryP) (bool, error) {
+func (api *API) DeleteStory(params DeleteStoryP) (bool, error) {
 	req := NewRequest[bool]("deleteStory", params)
 	return req.Do(api)
 }

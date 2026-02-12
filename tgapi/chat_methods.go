@@ -7,7 +7,7 @@ type BanChatMemberP struct {
 	RevokeMessages bool `json:"revoke_messages,omitempty"`
 }
 
-func (api *Api) BanChatMember(params BanChatMemberP) (bool, error) {
+func (api *API) BanChatMember(params BanChatMemberP) (bool, error) {
 	req := NewRequest[bool]("banChatMember", params)
 	return req.Do(api)
 }
@@ -18,7 +18,7 @@ type UnbanChatMemberP struct {
 	OnlyIfBanned bool `json:"only_if_banned"`
 }
 
-func (api *Api) UnbanChatMember(params UnbanChatMemberP) (bool, error) {
+func (api *API) UnbanChatMember(params UnbanChatMemberP) (bool, error) {
 	req := NewRequest[bool]("unbanChatMember", params)
 	return req.Do(api)
 }
@@ -31,7 +31,7 @@ type RestrictChatMemberP struct {
 	UntilDate                     int             `json:"until_date,omitempty"`
 }
 
-func (api *Api) RestrictChatMember(params RestrictChatMemberP) (bool, error) {
+func (api *API) RestrictChatMember(params RestrictChatMemberP) (bool, error) {
 	req := NewRequest[bool]("restrictChatMember", params)
 	return req.Do(api)
 }
@@ -58,7 +58,7 @@ type PromoteChatMember struct {
 	CanManageDirectMessages bool `json:"can_manage_direct_messages,omitempty"`
 }
 
-func (api *Api) PromoteChatMember(params PromoteChatMember) (bool, error) {
+func (api *API) PromoteChatMember(params PromoteChatMember) (bool, error) {
 	req := NewRequest[bool]("promoteChatMember", params)
 	return req.Do(api)
 }
@@ -69,7 +69,7 @@ type SetChatAdministratorCustomTitleP struct {
 	CustomTitle string `json:"custom_title"`
 }
 
-func (api *Api) SetChatAdministratorCustomTitle(params SetChatAdministratorCustomTitleP) (bool, error) {
+func (api *API) SetChatAdministratorCustomTitle(params SetChatAdministratorCustomTitleP) (bool, error) {
 	req := NewRequest[bool]("setChatAdministratorCustomTitle", params)
 	return req.Do(api)
 }
@@ -79,7 +79,7 @@ type BanChatSenderChatP struct {
 	SenderChatID int `json:"sender_chat_id"`
 }
 
-func (api *Api) BanChatSenderChat(params BanChatSenderChatP) (bool, error) {
+func (api *API) BanChatSenderChat(params BanChatSenderChatP) (bool, error) {
 	req := NewRequest[bool]("banChatSenderChat", params)
 	return req.Do(api)
 }
@@ -89,7 +89,7 @@ type UnbanChatSenderChatP struct {
 	SenderChatID int `json:"sender_chat_id"`
 }
 
-func (api *Api) UnbanChatSenderChat(params BanChatSenderChatP) (bool, error) {
+func (api *API) UnbanChatSenderChat(params BanChatSenderChatP) (bool, error) {
 	req := NewRequest[bool]("unbanChatSenderChat", params)
 	return req.Do(api)
 }
@@ -100,7 +100,7 @@ type SetChatPermissionsP struct {
 	UseIndependentChatPermissions bool            `json:"use_independent_chat_permissions,omitempty"`
 }
 
-func (api *Api) SetChatPermissions(params SetChatPermissionsP) (bool, error) {
+func (api *API) SetChatPermissions(params SetChatPermissionsP) (bool, error) {
 	req := NewRequest[bool]("setChatPermissions", params)
 	return req.Do(api)
 }
@@ -109,7 +109,7 @@ type ExportChatInviteLinkP struct {
 	ChatID int `json:"chat_id"`
 }
 
-func (api *Api) ExportChatInviteLink(params ExportChatInviteLinkP) (string, error) {
+func (api *API) ExportChatInviteLink(params ExportChatInviteLinkP) (string, error) {
 	req := NewRequest[string]("exportChatInviteLink", params)
 	return req.Do(api)
 }
@@ -122,7 +122,7 @@ type CreateChatInviteLinkP struct {
 	CreatesJoinRequest int     `json:"creates_join_request,omitempty"`
 }
 
-func (api *Api) CreateChatInviteLink(params CreateChatInviteLinkP) (ChatInviteLink, error) {
+func (api *API) CreateChatInviteLink(params CreateChatInviteLinkP) (ChatInviteLink, error) {
 	req := NewRequest[ChatInviteLink]("createChatInviteLink", params)
 	return req.Do(api)
 }
@@ -137,7 +137,7 @@ type EditChatInviteLinkP struct {
 	CreatesJoinRequest int    `json:"creates_join_request,omitempty"`
 }
 
-func (api *Api) EditChatInviteLink(params EditChatInviteLinkP) (ChatInviteLink, error) {
+func (api *API) EditChatInviteLink(params EditChatInviteLinkP) (ChatInviteLink, error) {
 	req := NewRequest[ChatInviteLink]("editChatInviteLink", params)
 	return req.Do(api)
 }
@@ -149,7 +149,7 @@ type CreateChatSubscriptionInviteLinkP struct {
 	SubscriptionPrice  int    `json:"subscription_price,omitempty"`
 }
 
-func (api *Api) CreateChatSubscriptionInviteLink(params CreateChatSubscriptionInviteLinkP) (ChatInviteLink, error) {
+func (api *API) CreateChatSubscriptionInviteLink(params CreateChatSubscriptionInviteLinkP) (ChatInviteLink, error) {
 	req := NewRequest[ChatInviteLink]("createChatSubscriptionInviteLink", params)
 	return req.Do(api)
 }
@@ -160,7 +160,7 @@ type EditChatSubscriptionInviteLinkP struct {
 	Name       string `json:"name,omitempty"`
 }
 
-func (api *Api) EditChatSubscriptionInviteLink(params EditChatSubscriptionInviteLinkP) (ChatInviteLink, error) {
+func (api *API) EditChatSubscriptionInviteLink(params EditChatSubscriptionInviteLinkP) (ChatInviteLink, error) {
 	req := NewRequest[ChatInviteLink]("editChatSubscriptionInviteLink", params)
 	return req.Do(api)
 }
@@ -170,7 +170,7 @@ type RevokeChatInviteLinkP struct {
 	InviteLink string `json:"invite_link"`
 }
 
-func (api *Api) RevokeChatInviteLink(params RevokeChatInviteLinkP) (ChatInviteLink, error) {
+func (api *API) RevokeChatInviteLink(params RevokeChatInviteLinkP) (ChatInviteLink, error) {
 	req := NewRequest[ChatInviteLink]("revokeChatInviteLink", params)
 	return req.Do(api)
 }
@@ -180,7 +180,7 @@ type ApproveChatJoinRequestP struct {
 	UserID int `json:"user_id"`
 }
 
-func (api *Api) ApproveChatJoinRequest(params ApproveChatJoinRequestP) (bool, error) {
+func (api *API) ApproveChatJoinRequest(params ApproveChatJoinRequestP) (bool, error) {
 	req := NewRequest[bool]("approveChatJoinRequest", params)
 	return req.Do(api)
 }
@@ -190,12 +190,12 @@ type DeclineChatJoinRequestP struct {
 	UserID int `json:"user_id"`
 }
 
-func (api *Api) DeclineChatJoinRequest(params DeclineChatJoinRequestP) (bool, error) {
+func (api *API) DeclineChatJoinRequest(params DeclineChatJoinRequestP) (bool, error) {
 	req := NewRequest[bool]("declineChatJoinRequest", params)
 	return req.Do(api)
 }
 
-func (api *Api) SetChatPhoto() {
+func (api *API) SetChatPhoto() {
 	uploader := NewUploader(api)
 	defer uploader.Close()
 }
@@ -204,7 +204,7 @@ type DeleteChatPhotoP struct {
 	ChatID int `json:"chat_id"`
 }
 
-func (api *Api) DeleteChatPhoto(params DeleteChatPhotoP) (bool, error) {
+func (api *API) DeleteChatPhoto(params DeleteChatPhotoP) (bool, error) {
 	req := NewRequest[bool]("deleteChatPhoto", params)
 	return req.Do(api)
 }
@@ -214,7 +214,7 @@ type SetChatTitleP struct {
 	Title  string `json:"title"`
 }
 
-func (api *Api) SetChatTitle(params SetChatTitleP) (bool, error) {
+func (api *API) SetChatTitle(params SetChatTitleP) (bool, error) {
 	req := NewRequest[bool]("setChatTitle", params)
 	return req.Do(api)
 }
@@ -224,7 +224,7 @@ type SetChatDescriptionP struct {
 	Description string `json:"description"`
 }
 
-func (api *Api) SetChatDescription(params SetChatDescriptionP) (bool, error) {
+func (api *API) SetChatDescription(params SetChatDescriptionP) (bool, error) {
 	req := NewRequest[bool]("setChatDescription", params)
 	return req.Do(api)
 }
@@ -236,7 +236,7 @@ type PinChatMessageP struct {
 	DisableNotification  bool    `json:"disable_notification,omitempty"`
 }
 
-func (api *Api) PinChatMessage(params PinChatMessageP) (bool, error) {
+func (api *API) PinChatMessage(params PinChatMessageP) (bool, error) {
 	req := NewRequest[bool]("pinChatMessage", params)
 	return req.Do(api)
 }
@@ -247,7 +247,7 @@ type UnpinChatMessageP struct {
 	MessageID            int     `json:"message_id"`
 }
 
-func (api *Api) UnpinChatMessage(params UnpinChatMessageP) (bool, error) {
+func (api *API) UnpinChatMessage(params UnpinChatMessageP) (bool, error) {
 	req := NewRequest[bool]("unpinChatMessage", params)
 	return req.Do(api)
 }
@@ -256,7 +256,7 @@ type UnpinAllChatMessagesP struct {
 	ChatID int `json:"chat_id"`
 }
 
-func (api *Api) UnpinAllChatMessages(params UnpinAllChatMessagesP) (bool, error) {
+func (api *API) UnpinAllChatMessages(params UnpinAllChatMessagesP) (bool, error) {
 	req := NewRequest[bool]("unpinAllChatMessages", params)
 	return req.Do(api)
 }
@@ -265,7 +265,7 @@ type LeaveChatP struct {
 	ChatID int `json:"chat_id"`
 }
 
-func (api *Api) LeaveChat(params LeaveChatP) (bool, error) {
+func (api *API) LeaveChat(params LeaveChatP) (bool, error) {
 	req := NewRequest[bool]("leaveChatP", params)
 	return req.Do(api)
 }
@@ -274,7 +274,7 @@ type GetChatP struct {
 	ChatID int `json:"chat_id"`
 }
 
-func (api *Api) GetChatP(params GetChatP) (ChatFullInfo, error) {
+func (api *API) GetChatP(params GetChatP) (ChatFullInfo, error) {
 	req := NewRequest[ChatFullInfo]("getChatP", params)
 	return req.Do(api)
 }
@@ -283,7 +283,7 @@ type GetChatAdministratorsP struct {
 	ChatID int `json:"chat_id"`
 }
 
-func (api *Api) GetChatAdministrators(params GetChatAdministratorsP) ([]ChatMember, error) {
+func (api *API) GetChatAdministrators(params GetChatAdministratorsP) ([]ChatMember, error) {
 	req := NewRequest[[]ChatMember]("getChatAdministrators", params)
 	return req.Do(api)
 }
@@ -292,7 +292,7 @@ type GetChatMembersCountP struct {
 	ChatID int `json:"chat_id"`
 }
 
-func (api *Api) GetChatMemberCount(params GetChatMembersCountP) (int, error) {
+func (api *API) GetChatMemberCount(params GetChatMembersCountP) (int, error) {
 	req := NewRequest[int]("getChatMemberCount", params)
 	return req.Do(api)
 }
@@ -302,7 +302,7 @@ type GetChatMemberP struct {
 	UserID int `json:"user_id"`
 }
 
-func (api *Api) GetChatMember(params GetChatMemberP) (ChatMember, error) {
+func (api *API) GetChatMember(params GetChatMemberP) (ChatMember, error) {
 	req := NewRequest[ChatMember]("getChatMember", params)
 	return req.Do(api)
 }
@@ -312,7 +312,7 @@ type SetChatStickerSetP struct {
 	StickerSetName string `json:"sticker_set_name"`
 }
 
-func (api *Api) SetChatStickerSet(params SetChatStickerSetP) (bool, error) {
+func (api *API) SetChatStickerSet(params SetChatStickerSetP) (bool, error) {
 	req := NewRequest[bool]("setChatStickerSet", params)
 	return req.Do(api)
 }
@@ -321,7 +321,7 @@ type DeleteChatStickerSetP struct {
 	ChatID int `json:"chat_id"`
 }
 
-func (api *Api) DeleteChatStickerSet(params DeleteChatStickerSetP) (bool, error) {
+func (api *API) DeleteChatStickerSet(params DeleteChatStickerSetP) (bool, error) {
 	req := NewRequest[bool]("deleteChatStickerSet", params)
 	return req.Do(api)
 }
@@ -331,7 +331,7 @@ type GetUserChatBoostsP struct {
 	UserID int `json:"user_id"`
 }
 
-func (api *Api) GetUserChatBoosts(params GetUserChatBoostsP) (UserChatBoosts, error) {
+func (api *API) GetUserChatBoosts(params GetUserChatBoostsP) (UserChatBoosts, error) {
 	req := NewRequest[UserChatBoosts]("getUserChatBoosts", params)
 	return req.Do(api)
 }
@@ -350,7 +350,7 @@ type GetChatGiftsP struct {
 	Limit                       int    `json:"limit,omitempty"`
 }
 
-func (api *Api) GetChatGifts(params GetChatGiftsP) (OwnedGifts, error) {
+func (api *API) GetChatGifts(params GetChatGiftsP) (OwnedGifts, error) {
 	req := NewRequest[OwnedGifts]("getChatGifts", params)
 	return req.Do(api)
 }

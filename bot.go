@@ -16,34 +16,6 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-type Bot struct {
-	token         string
-	debug         bool
-	errorTemplate string
-
-	logger        *slog.Logger
-	RequestLogger *slog.Logger
-
-	plugins     []Plugin
-	middlewares []Middleware
-	prefixes    []string
-	runners     []Runner
-
-	dbContext *DatabaseContext
-	api       *tgapi.Api
-
-	dbWriterRequested extypes.Slice[*slog.Logger]
-
-	updateOffset int
-	updateTypes  []tgapi.UpdateType
-	updateQueue  *extypes.Queue[*tgapi.Update]
-}
-
-func (b *Bot) GetUpdateOffset() int                    { return b.updateOffset }
-func (b *Bot) SetUpdateOffset(offset int)              { b.updateOffset = offset }
-func (b *Bot) GetUpdateTypes() []tgapi.UpdateType      { return b.updateTypes }
-func (b *Bot) GetQueue() *extypes.Queue[*tgapi.Update] { return b.updateQueue }
-
 type BotSettings struct {
 	Token            string
 	Debug            bool
@@ -74,6 +46,30 @@ func LoadPrefixesFromEnv() []string {
 	}
 	return strings.Split(prefixesS, ";")
 }
+
+type Bot struct {
+	token         string
+	debug         bool
+	errorTemplate string
+
+	logger        *slog.Logger
+	RequestLogger *slog.Logger
+
+	plugins     []Plugin
+	middlewares []Middleware
+	prefixes    []string
+	runners     []Runner
+
+	dbContext *DatabaseContext
+	api       *tgapi.API
+
+	dbWriterRequested extypes.Slice[*slog.Logger]
+
+	updateOffset int
+	updateTypes  []tgapi.UpdateType
+	updateQueue  *extypes.Queue[*tgapi.Update]
+}
+
 func NewBot(settings *BotSettings) *Bot {
 	updateQueue := extypes.CreateQueue[*tgapi.Update](256)
 	api := tgapi.NewAPI(settings.Token)
@@ -140,6 +136,11 @@ func (b *Bot) Close() {
 		log.Println(err)
 	}
 }
+
+func (b *Bot) GetUpdateOffset() int                    { return b.updateOffset }
+func (b *Bot) SetUpdateOffset(offset int)              { b.updateOffset = offset }
+func (b *Bot) GetUpdateTypes() []tgapi.UpdateType      { return b.updateTypes }
+func (b *Bot) GetQueue() *extypes.Queue[*tgapi.Update] { return b.updateQueue }
 
 type DatabaseContext struct {
 	PostgresSQL *sqlx.DB

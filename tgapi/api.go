@@ -7,26 +7,25 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"git.nix13.pw/scuroneko/laniakea/utils"
 	"git.nix13.pw/scuroneko/slog"
 )
 
-type Api struct {
+type API struct {
 	token  string
 	client *http.Client
 	Logger *slog.Logger
 }
 
-func NewAPI(token string) *Api {
+func NewAPI(token string) *API {
 	l := slog.CreateLogger().Level(utils.GetLoggerLevel()).Prefix("API")
 	l.AddWriter(l.CreateJsonStdoutWriter())
 	client := &http.Client{Timeout: time.Second * 45}
-	return &Api{token, client, l}
+	return &API{token, client, l}
 }
-func (api *Api) CloseApi() error {
+func (api *API) CloseApi() error {
 	return api.Logger.Close()
 }
 
@@ -45,7 +44,7 @@ type TelegramRequest[R, P any] struct {
 func NewRequest[R, P any](method string, params P) TelegramRequest[R, P] {
 	return TelegramRequest[R, P]{method: method, params: params}
 }
-func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *Api) (R, error) {
+func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *API) (R, error) {
 	var zero R
 	data, err := json.Marshal(r.params)
 	if err != nil {
@@ -54,12 +53,6 @@ func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *Api) (R, 
 	buf := bytes.NewBuffer(data)
 
 	u := fmt.Sprintf("https://api.telegram.org/bot%s/%s", api.token, r.method)
-	if api.Logger != nil {
-		api.Logger.Debugln(strings.ReplaceAll(fmt.Sprintf(
-			"POST %s %s", u, buf.String(),
-		), api.token, "<TOKEN>"))
-	}
-
 	req, err := http.NewRequestWithContext(ctx, "POST", u, buf)
 	if err != nil {
 		return zero, err
@@ -68,6 +61,7 @@ func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *Api) (R, 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", fmt.Sprintf("Laniakea/%s", utils.VersionString))
 
+	api.Logger.Debugln("REQ", r.method, buf.String())
 	res, err := api.client.Do(req)
 	if err != nil {
 		return zero, err
@@ -82,24 +76,20 @@ func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *Api) (R, 
 	if err != nil {
 		return zero, err
 	}
-
-	if api.Logger != nil {
-		api.Logger.Debugln(fmt.Sprintf("RES %s %s", r.method, string(data)))
-	}
+	api.Logger.Debugln("RES", r.method, string(data))
 
 	var resp ApiResponse[R]
 	err = json.Unmarshal(data, &resp)
 	if err != nil {
 		return zero, err
 	}
-
 	if !resp.Ok {
 		return zero, fmt.Errorf("[%d] %s", resp.ErrorCode, resp.Description)
 	}
 	return resp.Result, nil
 
 }
-func (r TelegramRequest[R, P]) Do(api *Api) (R, error) {
+func (r TelegramRequest[R, P]) Do(api *API) (R, error) {
 	ctx := context.Background()
 	return r.DoWithContext(ctx, api)
 }

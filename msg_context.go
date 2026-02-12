@@ -9,7 +9,7 @@ import (
 
 type MsgContext struct {
 	Bot *Bot
-	Api *tgapi.Api
+	Api *tgapi.API
 
 	Msg             *tgapi.Message
 	Update          tgapi.Update
@@ -26,7 +26,6 @@ type AnswerMessage struct {
 	MessageID int
 	Text      string
 	IsMedia   bool
-	Keyboard  *InlineKeyboard
 	ctx       *MsgContext
 }
 

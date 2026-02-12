@@ -23,7 +23,7 @@ type SendPhotoP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendPhoto(params SendPhotoP) (Message, error) {
+func (api *API) SendPhoto(params SendPhotoP) (Message, error) {
 	req := NewRequest[Message]("sendPhoto", params)
 	return req.Do(api)
 }
@@ -52,7 +52,7 @@ type SendAudioP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendAudio(params SendAudioP) (Message, error) {
+func (api *API) SendAudio(params SendAudioP) (Message, error) {
 	req := NewRequest[Message]("sendAudio", params)
 	return req.Do(api)
 }
@@ -78,7 +78,7 @@ type SendDocumentP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendDocument(params SendDocumentP) (Message, error) {
+func (api *API) SendDocument(params SendDocumentP) (Message, error) {
 	req := NewRequest[Message]("sendDocument", params)
 	return req.Do(api)
 }
@@ -113,7 +113,7 @@ type SendVideoP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendVideo(params SendVideoP) (Message, error) {
+func (api *API) SendVideo(params SendVideoP) (Message, error) {
 	req := NewRequest[Message]("sendVideo", params)
 	return req.Do(api)
 }
@@ -144,7 +144,7 @@ type SendAnimationP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendAnimation(params SendAnimationP) (Message, error) {
+func (api *API) SendAnimation(params SendAnimationP) (Message, error) {
 	req := NewRequest[Message]("sendAnimation", params)
 	return req.Do(api)
 }
@@ -170,7 +170,7 @@ type SendVoiceP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendVoice(params *SendVoiceP) (Message, error) {
+func (api *API) SendVoice(params *SendVoiceP) (Message, error) {
 	req := NewRequest[Message]("sendVoice", params)
 	return req.Do(api)
 }
@@ -194,7 +194,7 @@ type SendVideoNoteP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendVideoNote(params SendVideoNoteP) (Message, error) {
+func (api *API) SendVideoNote(params SendVideoNoteP) (Message, error) {
 	req := NewRequest[Message]("sendVideoNote", params)
 	return req.Do(api)
 }
@@ -221,7 +221,7 @@ type SendPaidMediaP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendPaidMedia(params SendPaidMediaP) (Message, error) {
+func (api *API) SendPaidMedia(params SendPaidMediaP) (Message, error) {
 	req := NewRequest[Message]("sendPaidMedia", params)
 	return req.Do(api)
 }
@@ -240,7 +240,7 @@ type SendMediaGroupP struct {
 	ReplyParameters     *ReplyParameters `json:"reply_parameters,omitempty"`
 }
 
-func (api *Api) SendMediaGroup(params SendMediaGroupP) (Message, error) {
+func (api *API) SendMediaGroup(params SendMediaGroupP) (Message, error) {
 	req := NewRequest[Message]("sendMediaGroup", params)
 	return req.Do(api)
 }
