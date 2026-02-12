@@ -1,5 +1,7 @@
 package tgapi
 
+import "git.nix13.pw/scuroneko/extypes"
+
 type MessageReplyMarkup struct {
 	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard"`
 }
@@ -26,9 +28,9 @@ type Message struct {
 
 	Text string `json:"text"`
 
-	Photo           []*PhotoSize    `json:"photo,omitempty"`
-	Caption         string          `json:"caption,omitempty"`
-	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
+	Photo           extypes.Slice[*PhotoSize] `json:"photo,omitempty"`
+	Caption         string                    `json:"caption,omitempty"`
+	CaptionEntities []MessageEntity           `json:"caption_entities,omitempty"`
 
 	Date     int `json:"date"`
 	EditDate int `json:"edit_date"`
