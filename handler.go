@@ -3,10 +3,12 @@ package laniakea
 import (
 	"encoding/json"
 	"strings"
+
+	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
 
-func (b *Bot) handle(u *Update) {
-	ctx := &MsgContext{Bot: b, Update: u, Api: b.api}
+func (b *Bot) handle(u *tgapi.Update) {
+	ctx := &MsgContext{Bot: b, Update: *u, Api: b.api}
 	for _, middleware := range b.middlewares {
 		middleware.Execute(ctx, b.dbContext)
 	}
@@ -18,7 +20,7 @@ func (b *Bot) handle(u *Update) {
 	}
 }
 
-func (b *Bot) handleMessage(update *Update, ctx *MsgContext) {
+func (b *Bot) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 	if update.Message == nil {
 		return
 	}
@@ -43,6 +45,7 @@ func (b *Bot) handleMessage(update *Update, ctx *MsgContext) {
 	text = strings.TrimSpace(text[len(prefix):])
 
 	for _, plugin := range b.plugins {
+		// Check every command
 		for cmd := range plugin.Commands {
 			if !strings.HasPrefix(text, cmd) {
 				continue
@@ -72,7 +75,7 @@ func (b *Bot) handleMessage(update *Update, ctx *MsgContext) {
 	}
 }
 
-func (b *Bot) handleCallback(update *Update, ctx *MsgContext) {
+func (b *Bot) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 	data := new(CallbackData)
 	err := json.Unmarshal([]byte(update.CallbackQuery.Data), data)
 	if err != nil {
@@ -81,8 +84,8 @@ func (b *Bot) handleCallback(update *Update, ctx *MsgContext) {
 	}
 
 	ctx.FromID = update.CallbackQuery.From.ID
-	ctx.From = update.CallbackQuery.From
-	ctx.Msg = update.CallbackQuery.Message
+	ctx.From = &update.CallbackQuery.From
+	ctx.Msg = &update.CallbackQuery.Message
 	ctx.CallbackMsgId = update.CallbackQuery.Message.MessageID
 	ctx.CallbackQueryId = update.CallbackQuery.ID
 	ctx.Args = data.Args
