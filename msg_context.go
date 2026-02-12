@@ -12,7 +12,7 @@ type MsgContext struct {
 	Api *tgapi.Api
 
 	Msg             *tgapi.Message
-	Update          *tgapi.Update
+	Update          tgapi.Update
 	From            *tgapi.User
 	CallbackMsgId   int
 	CallbackQueryId string
@@ -31,7 +31,7 @@ type AnswerMessage struct {
 }
 
 func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard) *AnswerMessage {
-	params := &tgapi.EditMessageTextP{
+	params := tgapi.EditMessageTextP{
 		MessageID: messageId,
 		ChatID:    ctx.Msg.Chat.ID,
 		Text:      text,
@@ -40,7 +40,7 @@ func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard
 	if keyboard != nil {
 		params.ReplyMarkup = keyboard.Get()
 	}
-	msg, err := ctx.Api.EditMessageText(params)
+	msg, _, err := ctx.Api.EditMessageText(params)
 	if err != nil {
 		ctx.Api.Logger.Errorln(err)
 		return nil
@@ -65,7 +65,7 @@ func (ctx *MsgContext) EditCallbackf(format string, keyboard *InlineKeyboard, ar
 }
 
 func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeyboard) *AnswerMessage {
-	params := &tgapi.EditMessageCaptionP{
+	params := tgapi.EditMessageCaptionP{
 		ChatID:    ctx.Msg.Chat.ID,
 		MessageID: messageId,
 		Caption:   text,
@@ -74,7 +74,7 @@ func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeybo
 	if kb != nil {
 		params.ReplyMarkup = kb.Get()
 	}
-	msg, err := ctx.Api.EditMessageCaption(params)
+	msg, _, err := ctx.Api.EditMessageCaption(params)
 	if err != nil {
 		ctx.Api.Logger.Errorln(err)
 	}
@@ -94,7 +94,7 @@ func (m *AnswerMessage) EditCaptionKeyboard(text string, kb *InlineKeyboard) *An
 }
 
 func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard) *AnswerMessage {
-	params := &tgapi.SendMessageP{
+	params := tgapi.SendMessageP{
 		ChatID:    ctx.Msg.Chat.ID,
 		Text:      text,
 		ParseMode: tgapi.ParseMD,
@@ -123,7 +123,7 @@ func (ctx *MsgContext) Keyboard(text string, kb *InlineKeyboard) *AnswerMessage 
 }
 
 func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard) *AnswerMessage {
-	params := &tgapi.SendPhotoP{
+	params := tgapi.SendPhotoP{
 		ChatID:    ctx.Msg.Chat.ID,
 		Caption:   text,
 		ParseMode: tgapi.ParseMD,
@@ -151,7 +151,7 @@ func (ctx *MsgContext) AnswerPhotoKeyboard(photoId, text string, kb *InlineKeybo
 }
 
 func (ctx *MsgContext) delete(messageId int) {
-	_, err := ctx.Api.DeleteMessage(&tgapi.DeleteMessageP{
+	_, err := ctx.Api.DeleteMessage(tgapi.DeleteMessageP{
 		ChatID:    ctx.Msg.Chat.ID,
 		MessageID: messageId,
 	})
@@ -170,7 +170,7 @@ func (ctx *MsgContext) answerCallbackQuery(url, text string, showAlert bool) {
 	if len(ctx.CallbackQueryId) == 0 {
 		return
 	}
-	_, err := ctx.Api.AnswerCallbackQuery(&tgapi.AnswerCallbackQueryP{
+	_, err := ctx.Api.AnswerCallbackQuery(tgapi.AnswerCallbackQueryP{
 		CallbackQueryID: ctx.CallbackQueryId,
 		Text:            text, ShowAlert: showAlert, URL: url,
 	})

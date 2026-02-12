@@ -6,8 +6,8 @@ type GetUserProfilePhotosP struct {
 	Limit  int `json:"limit,omitempty"`
 }
 
-func (api *Api) GetUserProfilePhotos(p GetUserProfilePhotosP) (UserProfilePhotos, error) {
-	req := NewRequest[UserProfilePhotos]("getUserProfilePhotos", p)
+func (api *Api) GetUserProfilePhotos(params GetUserProfilePhotosP) (UserProfilePhotos, error) {
+	req := NewRequest[UserProfilePhotos]("getUserProfilePhotos", params)
 	return req.Do(api)
 }
 
@@ -17,8 +17,8 @@ type GetUserProfileAudiosP struct {
 	Limit  int `json:"limit,omitempty"`
 }
 
-func (api *Api) GetUserProfileAudios(p GetUserProfileAudiosP) (UserProfileAudios, error) {
-	req := NewRequest[UserProfileAudios]("getUserProfileAudios", p)
+func (api *Api) GetUserProfileAudios(params GetUserProfileAudiosP) (UserProfileAudios, error) {
+	req := NewRequest[UserProfileAudios]("getUserProfileAudios", params)
 	return req.Do(api)
 }
 
@@ -28,8 +28,8 @@ type SetUserEmojiStatusP struct {
 	ExpirationDate int    `json:"emoji_status_expiration_date,omitempty"`
 }
 
-func (api *Api) SetUserEmojiStatus(p SetUserEmojiStatusP) (bool, error) {
-	req := NewRequest[bool]("setUserEmojiStatus", p)
+func (api *Api) SetUserEmojiStatus(params SetUserEmojiStatusP) (bool, error) {
+	req := NewRequest[bool]("setUserEmojiStatus", params)
 	return req.Do(api)
 }
 
@@ -45,7 +45,7 @@ type GetUserGiftsP struct {
 	Limit                       int    `json:"limit,omitempty"`
 }
 
-func (api *Api) GetUserGifts(p GetUserGiftsP) (OwnedGifts, error) {
-	req := NewRequest[OwnedGifts]("getUserGifts", p)
+func (api *Api) GetUserGifts(params GetUserGiftsP) (OwnedGifts, error) {
+	req := NewRequest[OwnedGifts]("getUserGifts", params)
 	return req.Do(api)
 }

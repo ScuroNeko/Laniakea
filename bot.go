@@ -35,13 +35,13 @@ type Bot struct {
 	dbWriterRequested extypes.Slice[*slog.Logger]
 
 	updateOffset int
-	updateTypes  []string
+	updateTypes  []tgapi.UpdateType
 	updateQueue  *extypes.Queue[*tgapi.Update]
 }
 
 func (b *Bot) GetUpdateOffset() int                    { return b.updateOffset }
 func (b *Bot) SetUpdateOffset(offset int)              { b.updateOffset = offset }
-func (b *Bot) GetUpdateTypes() []string                { return b.updateTypes }
+func (b *Bot) GetUpdateTypes() []tgapi.UpdateType      { return b.updateTypes }
 func (b *Bot) GetQueue() *extypes.Queue[*tgapi.Update] { return b.updateQueue }
 
 type BotSettings struct {
@@ -79,7 +79,7 @@ func NewBot(settings *BotSettings) *Bot {
 	api := tgapi.NewAPI(settings.Token)
 	bot := &Bot{
 		updateOffset: 0, plugins: make([]Plugin, 0), debug: settings.Debug, errorTemplate: "%s",
-		prefixes: settings.Prefixes, updateTypes: make([]string, 0), runners: make([]Runner, 0),
+		prefixes: settings.Prefixes, updateTypes: make([]tgapi.UpdateType, 0), runners: make([]Runner, 0),
 		updateQueue: updateQueue, api: api, dbWriterRequested: make([]*slog.Logger, 0),
 		token: settings.Token,
 	}
@@ -163,12 +163,12 @@ func (b *Bot) DatabaseContext(ctx *DatabaseContext) *Bot {
 	b.dbContext = ctx
 	return b
 }
-func (b *Bot) UpdateTypes(t ...string) *Bot {
-	b.updateTypes = make([]string, 0)
+func (b *Bot) UpdateTypes(t ...tgapi.UpdateType) *Bot {
+	b.updateTypes = make([]tgapi.UpdateType, 0)
 	b.updateTypes = append(b.updateTypes, t...)
 	return b
 }
-func (b *Bot) AddUpdateType(t ...string) *Bot {
+func (b *Bot) AddUpdateType(t ...tgapi.UpdateType) *Bot {
 	b.updateTypes = append(b.updateTypes, t...)
 	return b
 }
@@ -257,7 +257,7 @@ func (b *Bot) Run() {
 			continue
 		}
 
-		ctx := &MsgContext{Bot: b, Update: u, Api: b.api}
+		ctx := &MsgContext{Bot: b, Update: *u, Api: b.api}
 		for _, middleware := range b.middlewares {
 			middleware.Execute(ctx, b.dbContext)
 		}

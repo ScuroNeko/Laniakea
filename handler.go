@@ -71,8 +71,8 @@ func (b *Bot) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 	}
 
 	ctx.FromID = update.CallbackQuery.From.ID
-	ctx.From = update.CallbackQuery.From
-	ctx.Msg = update.CallbackQuery.Message
+	ctx.From = &update.CallbackQuery.From
+	ctx.Msg = &update.CallbackQuery.Message
 	ctx.CallbackMsgId = update.CallbackQuery.Message.MessageID
 	ctx.CallbackQueryId = update.CallbackQuery.ID
 	ctx.Args = data.Args

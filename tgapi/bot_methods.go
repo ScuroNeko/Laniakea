@@ -6,8 +6,8 @@ type SetMyCommandsP struct {
 	Language string           `json:"language_code,omitempty"`
 }
 
-func (api *Api) SetMyCommands(p SetMyCommandsP) (bool, error) {
-	req := NewRequest[bool]("setMyCommands", p)
+func (api *Api) SetMyCommands(params SetMyCommandsP) (bool, error) {
+	req := NewRequest[bool]("setMyCommands", params)
 	return req.Do(api)
 }
 
@@ -16,8 +16,8 @@ type DeleteMyCommandsP struct {
 	Language string           `json:"language_code,omitempty"`
 }
 
-func (api *Api) DeleteMyCommands(p DeleteMyCommandsP) (bool, error) {
-	req := NewRequest[bool]("deleteMyCommands", p)
+func (api *Api) DeleteMyCommands(params DeleteMyCommandsP) (bool, error) {
+	req := NewRequest[bool]("deleteMyCommands", params)
 	return req.Do(api)
 }
 
@@ -26,8 +26,8 @@ type GetMyCommands struct {
 	Language string           `json:"language_code,omitempty"`
 }
 
-func (api *Api) GetMyCommands(p GetMyCommands) ([]BotCommand, error) {
-	req := NewRequest[[]BotCommand]("getMyCommands", p)
+func (api *Api) GetMyCommands(params GetMyCommands) ([]BotCommand, error) {
+	req := NewRequest[[]BotCommand]("getMyCommands", params)
 	return req.Do(api)
 }
 
@@ -36,8 +36,8 @@ type SetMyName struct {
 	Language string `json:"language_code,omitempty"`
 }
 
-func (api *Api) SetMyName(p SetMyName) (bool, error) {
-	req := NewRequest[bool]("setMyName", p)
+func (api *Api) SetMyName(params SetMyName) (bool, error) {
+	req := NewRequest[bool]("setMyName", params)
 	return req.Do(api)
 }
 
@@ -45,8 +45,8 @@ type GetMyName struct {
 	Language string `json:"language_code,omitempty"`
 }
 
-func (api *Api) GetMyName(p GetMyName) (BotName, error) {
-	req := NewRequest[BotName]("getMyName", p)
+func (api *Api) GetMyName(params GetMyName) (BotName, error) {
+	req := NewRequest[BotName]("getMyName", params)
 	return req.Do(api)
 }
 
@@ -55,8 +55,8 @@ type SetMyDescription struct {
 	Language    string `json:"language_code,omitempty"`
 }
 
-func (api *Api) SetMyDescription(p SetMyDescription) (bool, error) {
-	req := NewRequest[bool]("setMyDescription", p)
+func (api *Api) SetMyDescription(params SetMyDescription) (bool, error) {
+	req := NewRequest[bool]("setMyDescription", params)
 	return req.Do(api)
 }
 
@@ -64,8 +64,8 @@ type GetMyDescription struct {
 	Language string `json:"language_code,omitempty"`
 }
 
-func (api *Api) GetMyDescription(p GetMyDescription) (BotDescription, error) {
-	req := NewRequest[BotDescription]("getMyDescription", p)
+func (api *Api) GetMyDescription(params GetMyDescription) (BotDescription, error) {
+	req := NewRequest[BotDescription]("getMyDescription", params)
 	return req.Do(api)
 }
 
@@ -74,8 +74,8 @@ type SetMyShortDescription struct {
 	Language         string `json:"language_code,omitempty"`
 }
 
-func (api *Api) SetMyShortDescription(p SetMyShortDescription) (bool, error) {
-	req := NewRequest[bool]("setMyShortDescription", p)
+func (api *Api) SetMyShortDescription(params SetMyShortDescription) (bool, error) {
+	req := NewRequest[bool]("setMyShortDescription", params)
 	return req.Do(api)
 }
 
@@ -83,8 +83,8 @@ type GetMyShortDescription struct {
 	Language string `json:"language_code,omitempty"`
 }
 
-func (api *Api) GetMyShortDescription(p GetMyShortDescription) (BotShortDescription, error) {
-	req := NewRequest[BotShortDescription]("getMyShortDescription", p)
+func (api *Api) GetMyShortDescription(params GetMyShortDescription) (BotShortDescription, error) {
+	req := NewRequest[BotShortDescription]("getMyShortDescription", params)
 	return req.Do(api)
 }
 
@@ -92,8 +92,8 @@ type SetMyProfilePhotoP struct {
 	Photo InputProfilePhoto `json:"photo"`
 }
 
-func (api *Api) SetMyProfilePhoto(p SetMyProfilePhotoP) (bool, error) {
-	req := NewRequest[bool]("setMyProfilePhoto", p)
+func (api *Api) SetMyProfilePhoto(params SetMyProfilePhotoP) (bool, error) {
+	req := NewRequest[bool]("setMyProfilePhoto", params)
 	return req.Do(api)
 }
 func (api *Api) RemoveMyProfilePhoto() (bool, error) {
@@ -106,8 +106,8 @@ type SetChatMenuButtonP struct {
 	MenuButton MenuButtonType `json:"menu_button"`
 }
 
-func (api *Api) SetChatMenuButton(p SetChatMenuButtonP) (bool, error) {
-	req := NewRequest[bool]("setChatMenuButton", p)
+func (api *Api) SetChatMenuButton(params SetChatMenuButtonP) (bool, error) {
+	req := NewRequest[bool]("setChatMenuButton", params)
 	return req.Do(api)
 }
 
@@ -115,8 +115,8 @@ type GetChatMenuButtonP struct {
 	ChatID int `json:"chat_id"`
 }
 
-func (api *Api) GetChatMenuButton(p GetChatMenuButtonP) (BaseMenuButton, error) {
-	req := NewRequest[BaseMenuButton]("getChatMenuButton", p)
+func (api *Api) GetChatMenuButton(params GetChatMenuButtonP) (BaseMenuButton, error) {
+	req := NewRequest[BaseMenuButton]("getChatMenuButton", params)
 	return req.Do(api)
 }
 
@@ -125,8 +125,8 @@ type SetMyDefaultAdministratorRightsP struct {
 	ForChannels bool                     `json:"for_channels"`
 }
 
-func (api *Api) SetMyDefaultAdministratorRights(p SetMyDefaultAdministratorRightsP) (bool, error) {
-	req := NewRequest[bool]("setMyDefaultAdministratorRights", p)
+func (api *Api) SetMyDefaultAdministratorRights(params SetMyDefaultAdministratorRightsP) (bool, error) {
+	req := NewRequest[bool]("setMyDefaultAdministratorRights", params)
 	return req.Do(api)
 }
 
@@ -134,8 +134,8 @@ type GetMyDefaultAdministratorRightsP struct {
 	ForChannels bool `json:"for_channels"`
 }
 
-func (api *Api) GetMyDefaultAdministratorRights(p GetMyDefaultAdministratorRightsP) (ChatAdministratorRights, error) {
-	req := NewRequest[ChatAdministratorRights]("getMyDefaultAdministratorRights", p)
+func (api *Api) GetMyDefaultAdministratorRights(params GetMyDefaultAdministratorRightsP) (ChatAdministratorRights, error) {
+	req := NewRequest[ChatAdministratorRights]("getMyDefaultAdministratorRights", params)
 	return req.Do(api)
 }
 
@@ -154,8 +154,8 @@ type SendGiftP struct {
 	TextEntities  []MessageEntity `json:"text_entities,omitempty"`
 }
 
-func (api *Api) SendGift(p SendGiftP) (bool, error) {
-	req := NewRequest[bool]("sendGift", p)
+func (api *Api) SendGift(params SendGiftP) (bool, error) {
+	req := NewRequest[bool]("sendGift", params)
 	return req.Do(api)
 }
 
@@ -168,7 +168,7 @@ type GiftPremiumSubscriptionP struct {
 	TextEntities  []MessageEntity `json:"text_entities,omitempty"`
 }
 
-func (api *Api) GiftPremiumSubscription(p GiftPremiumSubscriptionP) (bool, error) {
-	req := NewRequest[bool]("giftPremiumSubscription", p)
+func (api *Api) GiftPremiumSubscription(params GiftPremiumSubscriptionP) (bool, error) {
+	req := NewRequest[bool]("giftPremiumSubscription", params)
 	return req.Do(api)
 }

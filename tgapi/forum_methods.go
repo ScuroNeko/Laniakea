@@ -17,8 +17,8 @@ type CreateForumTopicP struct {
 	IconCustomEmojiID string              `json:"icon_custom_emoji_id"`
 }
 
-func (api *Api) CreateForumTopic(p CreateForumTopicP) (ForumTopic, error) {
-	req := NewRequest[ForumTopic]("createForumTopic", p)
+func (api *Api) CreateForumTopic(params CreateForumTopicP) (ForumTopic, error) {
+	req := NewRequest[ForumTopic]("createForumTopic", params)
 	return req.Do(api)
 }
 
@@ -28,25 +28,25 @@ type EditForumTopicP struct {
 	IconCustomEmojiID string `json:"icon_custom_emoji_id"`
 }
 
-func (api *Api) EditForumTopic(p EditForumTopicP) (bool, error) {
-	req := NewRequest[bool]("editForumTopic", p)
+func (api *Api) EditForumTopic(params EditForumTopicP) (bool, error) {
+	req := NewRequest[bool]("editForumTopic", params)
 	return req.Do(api)
 }
 
-func (api *Api) CloseForumTopic(p BaseForumTopicP) (bool, error) {
-	req := NewRequest[bool]("closeForumTopic", p)
+func (api *Api) CloseForumTopic(params BaseForumTopicP) (bool, error) {
+	req := NewRequest[bool]("closeForumTopic", params)
 	return req.Do(api)
 }
-func (api *Api) ReopenForumTopic(p BaseForumTopicP) (bool, error) {
-	req := NewRequest[bool]("reopenForumTopic", p)
+func (api *Api) ReopenForumTopic(params BaseForumTopicP) (bool, error) {
+	req := NewRequest[bool]("reopenForumTopic", params)
 	return req.Do(api)
 }
-func (api *Api) DeleteForumTopic(p BaseForumTopicP) (bool, error) {
-	req := NewRequest[bool]("deleteForumTopic", p)
+func (api *Api) DeleteForumTopic(params BaseForumTopicP) (bool, error) {
+	req := NewRequest[bool]("deleteForumTopic", params)
 	return req.Do(api)
 }
-func (api *Api) UnpinAllForumTopicMessages(p BaseForumTopicP) (bool, error) {
-	req := NewRequest[bool]("unpinAllForumTopicMessages", p)
+func (api *Api) UnpinAllForumTopicMessages(params BaseForumTopicP) (bool, error) {
+	req := NewRequest[bool]("unpinAllForumTopicMessages", params)
 	return req.Do(api)
 }
 
@@ -59,28 +59,28 @@ type EditGeneralForumTopicP struct {
 	Name   string `json:"name"`
 }
 
-func (api *Api) EditGeneralForumTopic(p EditGeneralForumTopicP) (bool, error) {
-	req := NewRequest[bool]("editGeneralForumTopic", p)
+func (api *Api) EditGeneralForumTopic(params EditGeneralForumTopicP) (bool, error) {
+	req := NewRequest[bool]("editGeneralForumTopic", params)
 	return req.Do(api)
 }
 
-func (api *Api) CloseGeneralForumTopic(p BaseGeneralForumTopicP) (bool, error) {
-	req := NewRequest[bool]("closeGeneralForumTopic", p)
+func (api *Api) CloseGeneralForumTopic(params BaseGeneralForumTopicP) (bool, error) {
+	req := NewRequest[bool]("closeGeneralForumTopic", params)
 	return req.Do(api)
 }
-func (api *Api) ReopenGeneralForumTopic(p BaseGeneralForumTopicP) (bool, error) {
-	req := NewRequest[bool]("reopenGeneralForumTopic", p)
+func (api *Api) ReopenGeneralForumTopic(params BaseGeneralForumTopicP) (bool, error) {
+	req := NewRequest[bool]("reopenGeneralForumTopic", params)
 	return req.Do(api)
 }
-func (api *Api) HideGeneralForumTopic(p BaseGeneralForumTopicP) (bool, error) {
-	req := NewRequest[bool]("hideGeneralForumTopic", p)
+func (api *Api) HideGeneralForumTopic(params BaseGeneralForumTopicP) (bool, error) {
+	req := NewRequest[bool]("hideGeneralForumTopic", params)
 	return req.Do(api)
 }
-func (api *Api) UnhideGeneralForumTopic(p BaseGeneralForumTopicP) (bool, error) {
-	req := NewRequest[bool]("unhideGeneralForumTopic", p)
+func (api *Api) UnhideGeneralForumTopic(params BaseGeneralForumTopicP) (bool, error) {
+	req := NewRequest[bool]("unhideGeneralForumTopic", params)
 	return req.Do(api)
 }
-func (api *Api) UnpinAllGeneralForumTopicMessages(p BaseGeneralForumTopicP) (bool, error) {
-	req := NewRequest[bool]("unpinAllGeneralForumTopicMessages", p)
+func (api *Api) UnpinAllGeneralForumTopicMessages(params BaseGeneralForumTopicP) (bool, error) {
+	req := NewRequest[bool]("unpinAllGeneralForumTopicMessages", params)
 	return req.Do(api)
 }

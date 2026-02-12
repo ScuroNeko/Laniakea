@@ -144,8 +144,8 @@ type SendAnimationP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendAnimation(p SendAnimationP) (Message, error) {
-	req := NewRequest[Message]("sendAnimation", p)
+func (api *Api) SendAnimation(params SendAnimationP) (Message, error) {
+	req := NewRequest[Message]("sendAnimation", params)
 	return req.Do(api)
 }
 
@@ -240,7 +240,7 @@ type SendMediaGroupP struct {
 	ReplyParameters     *ReplyParameters `json:"reply_parameters,omitempty"`
 }
 
-func (api *Api) SendMediaGroup(p SendMediaGroupP) (Message, error) {
-	req := NewRequest[Message]("sendMediaGroup", p)
+func (api *Api) SendMediaGroup(params SendMediaGroupP) (Message, error) {
+	req := NewRequest[Message]("sendMediaGroup", params)
 	return req.Do(api)
 }

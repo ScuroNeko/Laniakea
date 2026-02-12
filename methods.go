@@ -9,23 +9,22 @@ import (
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
 
-func (b *Bot) Updates() ([]*tgapi.Update, error) {
+func (b *Bot) Updates() ([]tgapi.Update, error) {
 	offset := b.GetUpdateOffset()
 	params := tgapi.UpdateParams{
-		Offset:         offset,
-		Timeout:        30,
+		Offset:         Ptr(offset),
+		Timeout:        Ptr(30),
 		AllowedUpdates: b.GetUpdateTypes(),
 	}
 
-	req := tgapi.NewRequest[[]*tgapi.Update]("getUpdates", params)
-	res, err := req.Do(b.api)
+	updates, err := b.api.GetUpdates(params)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, u := range *res {
+	for _, u := range updates {
 		b.SetUpdateOffset(u.UpdateID + 1)
-		err = b.GetQueue().Enqueue(u)
+		err = b.GetQueue().Enqueue(&u)
 		if err != nil {
 			return nil, err
 		}
@@ -38,7 +37,7 @@ func (b *Bot) Updates() ([]*tgapi.Update, error) {
 			b.RequestLogger.Debugf("UPDATE %s\n", j)
 		}
 	}
-	return *res, err
+	return updates, err
 }
 
 func (b *Bot) GetFileByLink(link string) ([]byte, error) {

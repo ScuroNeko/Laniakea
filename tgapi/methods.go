@@ -31,6 +31,10 @@ func (api *Api) Close() (bool, error) {
 	req := NewRequest[bool, EmptyParams]("close", NoParams)
 	return req.Do(api)
 }
+func (api *Api) GetUpdates(params UpdateParams) ([]Update, error) {
+	req := NewRequest[[]Update]("getUpdates", params)
+	return req.Do(api)
+}
 
 type GetFileP struct {
 	FileId string `json:"file_id"`

@@ -20,8 +20,8 @@ type SendMessageP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) SendMessage(params *SendMessageP) (Message, error) {
-	req := NewRequest[Message, SendMessageP]("sendMessage", *params)
+func (api *Api) SendMessage(params SendMessageP) (Message, error) {
+	req := NewRequest[Message, SendMessageP]("sendMessage", params)
 	return req.Do(api)
 }
 
@@ -315,9 +315,18 @@ type EditMessageTextP struct {
 	ReplyMarkup          *ReplyMarkup `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) EditMessageText(params *EditMessageTextP) (Message, error) {
+// EditMessageText If inline message, first return will be zero-valued, and second will boolean
+// Otherwise, first return will be Message, and second false
+func (api *Api) EditMessageText(params EditMessageTextP) (Message, bool, error) {
+	var zero Message
+	if params.InlineMessageID != "" {
+		req := NewRequest[bool]("editMessageText", params)
+		res, err := req.Do(api)
+		return zero, res, err
+	}
 	req := NewRequest[Message]("editMessageText", params)
-	return req.Do(api)
+	res, err := req.Do(api)
+	return res, false, err
 }
 
 type EditMessageCaptionP struct {
@@ -330,8 +339,158 @@ type EditMessageCaptionP struct {
 	ReplyMarkup          *ReplyMarkup `json:"reply_markup,omitempty"`
 }
 
-func (api *Api) EditMessageCaption(params *EditMessageCaptionP) (Message, error) {
+// EditMessageCaption If inline message, first return will be zero-valued, and second will boolean
+// Otherwise, first return will be Message, and second false
+func (api *Api) EditMessageCaption(params EditMessageCaptionP) (Message, bool, error) {
+	var zero Message
+	if params.InlineMessageID != "" {
+		req := NewRequest[bool]("editMessageCaption", params)
+		res, err := req.Do(api)
+		return zero, res, err
+	}
 	req := NewRequest[Message]("editMessageCaption", params)
+	res, err := req.Do(api)
+	return res, false, err
+}
+
+type EditMessageMediaP struct {
+	BusinessConnectionID string                `json:"business_connection_id,omitempty"`
+	ChatID               int                   `json:"chat_id,omitempty"`
+	MessageID            int                   `json:"message_id,omitempty"`
+	InlineMessageID      string                `json:"inline_message_id,omitempty"`
+	Message              InputMedia            `json:"message"`
+	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+}
+
+// EditMessageMedia If inline message, first return will be zero-valued, and second will boolean
+// Otherwise, first return will be Message, and second false
+func (api *Api) EditMessageMedia(params EditMessageMediaP) (Message, bool, error) {
+	var zero Message
+	if params.InlineMessageID != "" {
+		req := NewRequest[bool]("editMessageMedia", params)
+		res, err := req.Do(api)
+		return zero, res, err
+	}
+	req := NewRequest[Message]("editMessageMedia", params)
+	res, err := req.Do(api)
+	return res, false, err
+}
+
+type EditMessageLiveLocationP struct {
+	BusinessConnectionID string `json:"business_connection_id,omitempty"`
+	ChatID               int    `json:"chat_id,omitempty"`
+	MessageID            int    `json:"message_id,omitempty"`
+	InlineMessageID      string `json:"inline_message_id,omitempty"`
+
+	Latitude             float64               `json:"latitude"`
+	Longitude            float64               `json:"longitude"`
+	LivePeriod           int                   `json:"live_period,omitempty"`
+	HorizontalAccuracy   float64               `json:"horizontal_accuracy,omitempty"`
+	Heading              int                   `json:"heading,omitempty"`
+	ProximityAlertRadius int                   `json:"proximity_alert_radius,omitempty"`
+	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+}
+
+// EditMessageLiveLocation If inline message, first return will be zero-valued, and second will boolean
+// Otherwise, first return will be Message, and second false
+func (api *Api) EditMessageLiveLocation(params EditMessageLiveLocationP) (Message, bool, error) {
+	var zero Message
+	if params.InlineMessageID != "" {
+		req := NewRequest[bool]("editMessageLiveLocation", params)
+		res, err := req.Do(api)
+		return zero, res, err
+	}
+	req := NewRequest[Message]("editMessageLiveLocation", params)
+	res, err := req.Do(api)
+	return res, false, err
+}
+
+type StopMessageLiveLocationP struct {
+	BusinessConnectionID string                `json:"business_connection_id,omitempty"`
+	ChatID               int                   `json:"chat_id,omitempty"`
+	MessageID            int                   `json:"message_id,omitempty"`
+	InlineMessageID      string                `json:"inline_message_id,omitempty"`
+	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+}
+
+// StopMessageLiveLocation If inline message, first return will be zero-valued, and second will boolean
+// Otherwise, first return will be Message, and second false
+func (api *Api) StopMessageLiveLocation(params StopMessageLiveLocationP) (Message, bool, error) {
+	var zero Message
+	if params.InlineMessageID != "" {
+		req := NewRequest[bool]("stopMessageLiveLocation", params)
+		res, err := req.Do(api)
+		return zero, res, err
+	}
+	req := NewRequest[Message]("stopMessageLiveLocation", params)
+	res, err := req.Do(api)
+	return res, false, err
+}
+
+type EditMessageChecklistP struct {
+	BusinessConnectionID string                `json:"business_connection_id"`
+	ChatID               int                   `json:"chat_id"`
+	MessageID            int                   `json:"message_id"`
+	Checklist            InputChecklist        `json:"checklist"`
+	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+}
+
+func (api *Api) EditMessageChecklist(params EditMessageChecklistP) (Message, error) {
+	req := NewRequest[Message]("editMessageChecklist", params)
+	return req.Do(api)
+}
+
+type EditMessageReplyMarkupP struct {
+	BusinessConnectionID string                `json:"business_connection_id,omitempty"`
+	ChatID               int                   `json:"chat_id,omitempty"`
+	MessageID            int                   `json:"message_id,omitempty"`
+	InlineMessageID      string                `json:"inline_message_id,omitempty"`
+	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+}
+
+func (api *Api) EditMessageReplyMarkup(params EditMessageReplyMarkupP) (Message, bool, error) {
+	var zero Message
+	if params.InlineMessageID != "" {
+		req := NewRequest[bool]("editMessageReplyMarkup", params)
+		res, err := req.Do(api)
+		return zero, res, err
+	}
+	req := NewRequest[Message]("editMessageReplyMarkup", params)
+	res, err := req.Do(api)
+	return res, false, err
+}
+
+type StopPollP struct {
+	BusinessConnectionID string `json:"business_connection_id,omitempty"`
+	ChatID               int    `json:"chat_id"`
+	MessageID            int    `json:"message_id"`
+	InlineMessageID      string `json:"inline_message_id,omitempty"`
+}
+
+func (api *Api) StopPoll(params StopPollP) (Poll, error) {
+	req := NewRequest[Poll]("stopPoll", params)
+	return req.Do(api)
+}
+
+type ApproveSuggestedPostP struct {
+	ChatID    int `json:"chat_id"`
+	MessageID int `json:"message_id"`
+	SendDate  int `json:"send_date,omitempty"`
+}
+
+func (api *Api) ApproveSuggestedPost(params ApproveSuggestedPostP) (bool, error) {
+	req := NewRequest[bool]("approveSuggestedPost", params)
+	return req.Do(api)
+}
+
+type DeclineSuggestedPostP struct {
+	ChatID    int    `json:"chat_id"`
+	MessageID int    `json:"message_id"`
+	Comment   string `json:"comment,omitempty"`
+}
+
+func (api *Api) DeclineSuggestedPost(params DeclineSuggestedPostP) (bool, error) {
+	req := NewRequest[bool]("declineSuggestedPost", params)
 	return req.Do(api)
 }
 
@@ -340,8 +499,18 @@ type DeleteMessageP struct {
 	MessageID int `json:"message_id"`
 }
 
-func (api *Api) DeleteMessage(params *DeleteMessageP) (bool, error) {
+func (api *Api) DeleteMessage(params DeleteMessageP) (bool, error) {
 	req := NewRequest[bool]("deleteMessage", params)
+	return req.Do(api)
+}
+
+type DeleteMessagesP struct {
+	ChatID     int   `json:"chat_id"`
+	MessageIDs []int `json:"message_ids"`
+}
+
+func (api *Api) DeleteMessages(params DeleteMessagesP) (bool, error) {
+	req := NewRequest[bool]("deleteMessages", params)
 	return req.Do(api)
 }
 
@@ -353,7 +522,7 @@ type AnswerCallbackQueryP struct {
 	CacheTime       int    `json:"cache_time,omitempty"`
 }
 
-func (api *Api) AnswerCallbackQuery(params *AnswerCallbackQueryP) (bool, error) {
+func (api *Api) AnswerCallbackQuery(params AnswerCallbackQueryP) (bool, error) {
 	req := NewRequest[bool]("answerCallbackQuery", params)
 	return req.Do(api)
 }
