@@ -1,72 +1,97 @@
 package laniakea
 
 import (
-	"log"
+	"regexp"
 
 	"git.nix13.pw/scuroneko/extypes"
 )
 
 type CommandExecutor func(ctx *MsgContext, dbContext *DatabaseContext)
 
-type PluginBuilder struct {
-	name        string
-	commands    map[string]CommandExecutor
-	payloads    map[string]CommandExecutor
-	middlewares extypes.Slice[*PluginMiddleware]
+const (
+	CommandValueStringType CommandValueType = "string"
+	CommandValueIntType    CommandValueType = "int"
+	CommandValueBoolType   CommandValueType = "bool"
+	CommandValueAnyType    CommandValueType = "any"
+)
+
+var (
+	CommandRegexInt    = regexp.MustCompile("\\d+")
+	CommandRegexString = regexp.MustCompile("\\.+")
+)
+
+type CommandValueType string
+type CommandArg struct {
+	valueType CommandValueType
+	text      string
+	regex     *regexp.Regexp
+}
+
+func NewCommandArg(text string, valueType CommandValueType) CommandArg {
+	regex := CommandRegexString
+	switch valueType {
+	case CommandValueIntType:
+		regex = CommandRegexInt
+	}
+	return CommandArg{valueType, text, regex}
+}
+
+type Command struct {
+	command     string
+	exec        CommandExecutor
+	args        []CommandArg
+	middlewares []Middleware
+}
+
+func NewCommand(exec CommandExecutor, command string, args ...CommandArg) *Command {
+	return &Command{command, exec, args, make([]Middleware, 0)}
 }
 
 type Plugin struct {
 	Name        string
-	Commands    map[string]CommandExecutor
-	Payloads    map[string]CommandExecutor
-	Middlewares extypes.Slice[*PluginMiddleware]
+	Commands    map[string]Command
+	Payloads    map[string]Command
+	Middlewares extypes.Slice[PluginMiddleware]
 }
 
-func NewPlugin(name string) *PluginBuilder {
-	return &PluginBuilder{
-		name:     name,
-		commands: make(map[string]CommandExecutor),
-		payloads: make(map[string]CommandExecutor),
+func NewPlugin(name string) *Plugin {
+	return &Plugin{
+		Name:        name,
+		Commands:    map[string]Command{},
+		Payloads:    map[string]Command{},
+		Middlewares: extypes.Slice[PluginMiddleware]{},
 	}
 }
 
-func (p *PluginBuilder) Command(f CommandExecutor, cmd ...string) *PluginBuilder {
-	for _, c := range cmd {
-		p.commands[c] = f
-	}
+func (p *Plugin) AddCommand(command Command) *Plugin {
+	p.Commands[command.command] = command
 	return p
 }
 
-func (p *PluginBuilder) Payload(f CommandExecutor, payloads ...string) *PluginBuilder {
-	for _, payload := range payloads {
-		p.payloads[payload] = f
-	}
+func (p *Plugin) AddPayload(command Command) *Plugin {
+	p.Payloads[command.command] = command
 	return p
 }
 
-func (p *PluginBuilder) AddMiddleware(middleware *PluginMiddleware) *PluginBuilder {
-	p.middlewares = p.middlewares.Push(middleware)
+func (p *Plugin) AddMiddleware(middleware PluginMiddleware) *Plugin {
+	p.Middlewares = p.Middlewares.Push(middleware)
 	return p
-}
-
-func (p *PluginBuilder) Build() Plugin {
-	if len(p.commands) == 0 && len(p.payloads) == 0 {
-		log.Printf("no command or payloads for %s", p.name)
-	}
-	return Plugin{
-		p.name, p.commands,
-		p.payloads, p.middlewares,
-	}
 }
 
 func (p *Plugin) Execute(cmd string, ctx *MsgContext, dbContext *DatabaseContext) {
-	(p.Commands[cmd])(ctx, dbContext)
+	command := p.Commands[cmd]
+	if !command.validateArgs(ctx.Args) {
+		return
+	}
+	command.exec(ctx, dbContext)
 }
-
 func (p *Plugin) ExecutePayload(payload string, ctx *MsgContext, dbContext *DatabaseContext) {
-	(p.Payloads[payload])(ctx, dbContext)
+	pl := p.Payloads[payload]
+	if !pl.validateArgs(ctx.Args) {
+		return
+	}
+	pl.exec(ctx, dbContext)
 }
-
 func (p *Plugin) executeMiddlewares(ctx *MsgContext, db *DatabaseContext) bool {
 	for _, m := range p.Middlewares {
 		if !m.Execute(ctx, db) {
@@ -75,42 +100,43 @@ func (p *Plugin) executeMiddlewares(ctx *MsgContext, db *DatabaseContext) bool {
 	}
 	return true
 }
+func (c *Command) validateArgs(args []string) bool {
+	if len(args) != len(c.args) {
+		return false
+	}
+
+	for i, arg := range c.args {
+		if arg.regex == nil {
+			continue
+		}
+		if !arg.regex.MatchString(args[i]) {
+			return false
+		}
+	}
+	return true
+}
 
 type Middleware struct {
-	Name     string
-	Executor CommandExecutor
-	Order    int
-	Async    bool
-}
-type MiddlewareBuilder struct {
-	name     string
-	executor CommandExecutor
-	order    int
-	async    bool
+	name  string
+	exec  CommandExecutor
+	order int
+	async bool
 }
 
-func NewMiddleware(name string, executor CommandExecutor) *MiddlewareBuilder {
-	return &MiddlewareBuilder{name: name, executor: executor, order: 0, async: false}
+func NewMiddleware(name string, executor CommandExecutor) *Middleware {
+	return &Middleware{name, executor, 0, false}
 }
-func (m *MiddlewareBuilder) SetOrder(order int) *MiddlewareBuilder {
+func (m *Middleware) SetOrder(order int) *Middleware {
 	m.order = order
 	return m
 }
-func (m *MiddlewareBuilder) SetAsync(async bool) *MiddlewareBuilder {
+func (m *Middleware) SetAsync(async bool) *Middleware {
 	m.async = async
 	return m
 }
-func (m *MiddlewareBuilder) Build() Middleware {
-	return Middleware{
-		Name:     m.name,
-		Executor: m.executor,
-		Order:    m.order,
-		Async:    m.async,
-	}
-}
-func (m Middleware) Execute(ctx *MsgContext, db *DatabaseContext) {
-	if m.Async {
-		go m.Executor(ctx, db)
+func (m *Middleware) Execute(ctx *MsgContext, db *DatabaseContext) {
+	if m.async {
+		go m.exec(ctx, db)
 	} else {
 		m.Execute(ctx, db)
 	}

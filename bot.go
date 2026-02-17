@@ -192,16 +192,16 @@ func (b *Bot) AddPlugins(plugin ...Plugin) *Bot {
 func (b *Bot) AddMiddleware(middleware ...Middleware) *Bot {
 	b.middlewares = append(b.middlewares, middleware...)
 	for _, m := range middleware {
-		b.logger.Debugln(fmt.Sprintf("middleware with name \"%s\" registered", m.Name))
+		b.logger.Debugln(fmt.Sprintf("middleware with name \"%s\" registered", m.name))
 	}
 
 	sort.Slice(b.middlewares, func(i, j int) bool {
 		first := b.middlewares[i]
 		second := b.middlewares[j]
-		if first.Order == second.Order {
-			return first.Name < second.Name
+		if first.order == second.order {
+			return first.name < second.name
 		}
-		return first.Order < second.Order
+		return first.order < second.order
 	})
 
 	return b

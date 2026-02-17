@@ -1,6 +1,7 @@
 package laniakea
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"strings"
 
@@ -111,4 +112,33 @@ func (b *Bot) checkPrefixes(text string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func encodeJsonPayload(d CallbackData) (string, error) {
+	b, err := json.Marshal(d)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+func decodeJsonPayload(s string) (CallbackData, error) {
+	var data CallbackData
+	err := json.Unmarshal([]byte(s), &data)
+	return data, err
+}
+func encodeBase64Payload(d CallbackData) (string, error) {
+	data, err := encodeJsonPayload(d)
+	if err != nil {
+		return "", err
+	}
+	dst := make([]byte, base64.StdEncoding.EncodedLen(len([]byte(data))))
+	base64.StdEncoding.Encode(dst, []byte(data))
+	return string(dst), nil
+}
+func decodeBase64Payload(s string) (CallbackData, error) {
+	b, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return CallbackData{}, err
+	}
+	return decodeJsonPayload(string(b))
 }
