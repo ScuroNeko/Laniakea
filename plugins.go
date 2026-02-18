@@ -52,10 +52,11 @@ type Command struct {
 	exec        CommandExecutor
 	args        extypes.Slice[CommandArg]
 	middlewares extypes.Slice[Middleware]
+	skipAutoCmd bool
 }
 
 func NewCommand(exec CommandExecutor, command string, args ...CommandArg) *Command {
-	return &Command{command, "", exec, args, make(extypes.Slice[Middleware], 0)}
+	return &Command{command, "", exec, args, make(extypes.Slice[Middleware], 0), false}
 }
 func (c *Command) Use(m Middleware) *Command {
 	c.middlewares = c.middlewares.Push(m)
@@ -63,6 +64,10 @@ func (c *Command) Use(m Middleware) *Command {
 }
 func (c *Command) SetDescription(desc string) *Command {
 	c.description = desc
+	return c
+}
+func (c *Command) SkipCommandAutoGen() *Command {
+	c.skipAutoCmd = true
 	return c
 }
 func (c *Command) validateArgs(args []string) error {

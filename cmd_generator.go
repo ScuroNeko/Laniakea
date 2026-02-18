@@ -27,6 +27,9 @@ func generateBotCommand(cmd Command) tgapi.BotCommand {
 func generateBotCommandForPlugin(pl Plugin) []tgapi.BotCommand {
 	commands := make([]tgapi.BotCommand, 0)
 	for _, cmd := range pl.Commands {
+		if cmd.skipAutoCmd {
+			continue
+		}
 		commands = append(commands, generateBotCommand(cmd))
 	}
 	return commands
