@@ -46,7 +46,6 @@ func (b *Bot) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 	text = strings.TrimSpace(text[len(prefix):])
 
 	for _, plugin := range b.plugins {
-		// Check every command
 		for cmd := range plugin.Commands {
 			if !strings.HasPrefix(text, cmd) {
 				continue
@@ -60,17 +59,22 @@ func (b *Bot) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 					break
 				}
 			}
+
 			if !isValid {
 				continue
 			}
 
 			ctx.Text = strings.TrimSpace(text[len(cmd):])
-			ctx.Args = strings.Split(ctx.Text, " ")
+			if ctx.Text == "" {
+				ctx.Args = []string{}
+			} else {
+				ctx.Args = strings.Split(ctx.Text, " ")
+			}
 
 			if !plugin.executeMiddlewares(ctx, b.dbContext) {
 				return
 			}
-			go plugin.Execute(cmd, ctx, b.dbContext)
+			go plugin.executeCmd(cmd, ctx, b.dbContext)
 			return
 		}
 	}
@@ -100,7 +104,7 @@ func (b *Bot) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 		if !plugin.executeMiddlewares(ctx, b.dbContext) {
 			return
 		}
-		go plugin.ExecutePayload(data.Command, ctx, b.dbContext)
+		go plugin.executePayload(data.Command, ctx, b.dbContext)
 		return
 	}
 }

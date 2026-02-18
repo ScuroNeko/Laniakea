@@ -212,3 +212,11 @@ func (ctx *MsgContext) error(err error) {
 func (ctx *MsgContext) Error(err error) {
 	ctx.error(err)
 }
+
+func (ctx *MsgContext) Translate(key string) string {
+	if ctx.From == nil {
+		return key
+	}
+	lang := Val(ctx.From.LanguageCode, ctx.Bot.l10n.GetFallbackLanguage())
+	return ctx.Bot.L10n(lang, key)
+}

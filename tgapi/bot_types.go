@@ -9,7 +9,7 @@ type BotCommandScopeType string
 const (
 	BotCommandScopeDefaultType               BotCommandScopeType = "default"
 	BotCommandScopePrivateType               BotCommandScopeType = "all_private_chats"
-	BotCommandScopeGroupType                 BotCommandScopeType = "all_groups_chats"
+	BotCommandScopeGroupType                 BotCommandScopeType = "all_group_chats"
 	BotCommandScopeAllChatAdministratorsType BotCommandScopeType = "all_chat_administrators"
 	BotCommandScopeChatType                  BotCommandScopeType = "chat"
 	BotCommandScopeChatAdministratorsType    BotCommandScopeType = "chat_administrators"

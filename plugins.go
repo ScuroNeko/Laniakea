@@ -1,12 +1,11 @@
 package laniakea
 
 import (
+	"errors"
 	"regexp"
 
 	"git.nix13.pw/scuroneko/extypes"
 )
-
-type CommandExecutor func(ctx *MsgContext, dbContext *DatabaseContext)
 
 const (
 	CommandValueStringType CommandValueType = "string"
@@ -17,7 +16,12 @@ const (
 
 var (
 	CommandRegexInt    = regexp.MustCompile("\\d+")
-	CommandRegexString = regexp.MustCompile("\\.+")
+	CommandRegexString = regexp.MustCompile(".+")
+)
+
+var (
+	ErrCmdArgCountMismatch  = errors.New("command arg count mismatch")
+	ErrCmdArgRegexpMismatch = errors.New("command arg regexp mismatch")
 )
 
 type CommandValueType string
@@ -25,69 +29,102 @@ type CommandArg struct {
 	valueType CommandValueType
 	text      string
 	regex     *regexp.Regexp
+	required  bool
 }
 
-func NewCommandArg(text string, valueType CommandValueType) CommandArg {
+func NewCommandArg(text string, valueType CommandValueType) *CommandArg {
 	regex := CommandRegexString
 	switch valueType {
 	case CommandValueIntType:
 		regex = CommandRegexInt
 	}
-	return CommandArg{valueType, text, regex}
+	return &CommandArg{valueType, text, regex, false}
+}
+func (c *CommandArg) SetRequired() *CommandArg {
+	c.required = true
+	return c
 }
 
+type CommandExecutor func(ctx *MsgContext, dbContext *DatabaseContext)
 type Command struct {
 	command     string
+	description string
 	exec        CommandExecutor
-	args        []CommandArg
-	middlewares []Middleware
+	args        extypes.Slice[CommandArg]
+	middlewares extypes.Slice[Middleware]
 }
 
 func NewCommand(exec CommandExecutor, command string, args ...CommandArg) *Command {
-	return &Command{command, exec, args, make([]Middleware, 0)}
+	return &Command{command, "", exec, args, make(extypes.Slice[Middleware], 0)}
+}
+func (c *Command) Use(m Middleware) *Command {
+	c.middlewares = c.middlewares.Push(m)
+	return c
+}
+func (c *Command) SetDescription(desc string) *Command {
+	c.description = desc
+	return c
+}
+func (c *Command) validateArgs(args []string) error {
+	cmdArgs := c.args.Filter(func(e CommandArg) bool { return !e.required })
+	if len(args) < cmdArgs.Len() {
+		return ErrCmdArgCountMismatch
+	}
+
+	for i, arg := range args {
+		if i >= c.args.Len() {
+			break
+		}
+		cmdArg := c.args.Get(i)
+		if cmdArg.regex == nil {
+			continue
+		}
+		if !cmdArg.regex.MatchString(arg) {
+			return ErrCmdArgRegexpMismatch
+		}
+	}
+	return nil
 }
 
 type Plugin struct {
 	Name        string
 	Commands    map[string]Command
 	Payloads    map[string]Command
-	Middlewares extypes.Slice[PluginMiddleware]
+	Middlewares extypes.Slice[Middleware]
 }
 
 func NewPlugin(name string) *Plugin {
 	return &Plugin{
-		Name:        name,
-		Commands:    map[string]Command{},
-		Payloads:    map[string]Command{},
-		Middlewares: extypes.Slice[PluginMiddleware]{},
+		name, map[string]Command{},
+		map[string]Command{}, extypes.Slice[Middleware]{},
 	}
 }
 
-func (p *Plugin) AddCommand(command Command) *Plugin {
-	p.Commands[command.command] = command
+func (p *Plugin) AddCommand(command *Command) *Plugin {
+	p.Commands[command.command] = *command
 	return p
 }
-
-func (p *Plugin) AddPayload(command Command) *Plugin {
-	p.Payloads[command.command] = command
+func (p *Plugin) AddPayload(command *Command) *Plugin {
+	p.Payloads[command.command] = *command
 	return p
 }
-
-func (p *Plugin) AddMiddleware(middleware PluginMiddleware) *Plugin {
+func (p *Plugin) AddMiddleware(middleware Middleware) *Plugin {
 	p.Middlewares = p.Middlewares.Push(middleware)
 	return p
 }
 
-func (p *Plugin) Execute(cmd string, ctx *MsgContext, dbContext *DatabaseContext) {
+func (p *Plugin) executeCmd(cmd string, ctx *MsgContext, dbContext *DatabaseContext) {
 	command := p.Commands[cmd]
-	if !command.validateArgs(ctx.Args) {
+	if err := command.validateArgs(ctx.Args); err != nil {
+		ctx.error(err)
 		return
 	}
 	command.exec(ctx, dbContext)
 }
-func (p *Plugin) ExecutePayload(payload string, ctx *MsgContext, dbContext *DatabaseContext) {
+func (p *Plugin) executePayload(payload string, ctx *MsgContext, dbContext *DatabaseContext) {
 	pl := p.Payloads[payload]
-	if !pl.validateArgs(ctx.Args) {
+	if err := pl.validateArgs(ctx.Args); err != nil {
+		ctx.error(err)
 		return
 	}
 	pl.exec(ctx, dbContext)
@@ -100,30 +137,19 @@ func (p *Plugin) executeMiddlewares(ctx *MsgContext, db *DatabaseContext) bool {
 	}
 	return true
 }
-func (c *Command) validateArgs(args []string) bool {
-	if len(args) != len(c.args) {
-		return false
-	}
 
-	for i, arg := range c.args {
-		if arg.regex == nil {
-			continue
-		}
-		if !arg.regex.MatchString(args[i]) {
-			return false
-		}
-	}
-	return true
-}
+type MiddlewareExecutor func(ctx *MsgContext, db *DatabaseContext) bool
 
+// Middleware
+// When async, returned value ignored
 type Middleware struct {
-	name  string
-	exec  CommandExecutor
-	order int
-	async bool
+	name     string
+	executor MiddlewareExecutor
+	order    int
+	async    bool
 }
 
-func NewMiddleware(name string, executor CommandExecutor) *Middleware {
+func NewMiddleware(name string, executor MiddlewareExecutor) *Middleware {
 	return &Middleware{name, executor, 0, false}
 }
 func (m *Middleware) SetOrder(order int) *Middleware {
@@ -134,40 +160,7 @@ func (m *Middleware) SetAsync(async bool) *Middleware {
 	m.async = async
 	return m
 }
-func (m *Middleware) Execute(ctx *MsgContext, db *DatabaseContext) {
-	if m.async {
-		go m.exec(ctx, db)
-	} else {
-		m.Execute(ctx, db)
-	}
-}
-
-type PluginMiddlewareExecutor func(ctx *MsgContext, db *DatabaseContext) bool
-
-// PluginMiddleware
-// When async, returned value ignored
-type PluginMiddleware struct {
-	executor PluginMiddlewareExecutor
-	order    int
-	async    bool
-}
-
-func NewPluginMiddleware(executor PluginMiddlewareExecutor) *PluginMiddleware {
-	return &PluginMiddleware{
-		executor: executor,
-		order:    0,
-		async:    false,
-	}
-}
-func (m *PluginMiddleware) SetOrder(order int) *PluginMiddleware {
-	m.order = order
-	return m
-}
-func (m *PluginMiddleware) SetAsync(async bool) *PluginMiddleware {
-	m.async = async
-	return m
-}
-func (m *PluginMiddleware) Execute(ctx *MsgContext, db *DatabaseContext) bool {
+func (m *Middleware) Execute(ctx *MsgContext, db *DatabaseContext) bool {
 	if m.async {
 		go m.executor(ctx, db)
 		return true

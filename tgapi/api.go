@@ -67,9 +67,6 @@ func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *API) (R, 
 		return zero, err
 	}
 	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		return zero, fmt.Errorf("unexpected status code: %d", res.StatusCode)
-	}
 
 	reader := io.LimitReader(res.Body, 10<<20)
 	data, err = io.ReadAll(reader)
@@ -77,6 +74,9 @@ func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *API) (R, 
 		return zero, err
 	}
 	api.Logger.Debugln("RES", r.method, string(data))
+	if res.StatusCode != http.StatusOK {
+		return zero, fmt.Errorf("unexpected status code: %d", res.StatusCode)
+	}
 
 	var resp ApiResponse[R]
 	err = json.Unmarshal(data, &resp)

@@ -41,7 +41,7 @@ func LoadSettingsFromEnv() *BotSettings {
 func LoadPrefixesFromEnv() []string {
 	prefixesS, exists := os.LookupEnv("PREFIXES")
 	if !exists {
-		return []string{"!"}
+		return []string{"/"}
 	}
 	return strings.Split(prefixesS, ";")
 }
@@ -61,6 +61,7 @@ type Bot struct {
 
 	dbContext *DatabaseContext
 	api       *tgapi.API
+	l10n      L10n
 
 	dbWriterRequested extypes.Slice[*slog.Logger]
 
@@ -76,7 +77,7 @@ func NewBot(settings *BotSettings) *Bot {
 		updateOffset: 0, plugins: make([]Plugin, 0), debug: settings.Debug, errorTemplate: "%s",
 		prefixes: settings.Prefixes, updateTypes: make([]tgapi.UpdateType, 0), runners: make([]Runner, 0),
 		updateQueue: updateQueue, api: api, dbWriterRequested: make([]*slog.Logger, 0),
-		token: settings.Token,
+		token: settings.Token, l10n: L10n{},
 	}
 	bot.dbWriterRequested = bot.dbWriterRequested.Push(api.Logger)
 
@@ -182,9 +183,9 @@ func (b *Bot) Debug(debug bool) *Bot {
 	b.debug = debug
 	return b
 }
-func (b *Bot) AddPlugins(plugin ...Plugin) *Bot {
-	b.plugins = append(b.plugins, plugin...)
+func (b *Bot) AddPlugins(plugin ...*Plugin) *Bot {
 	for _, p := range plugin {
+		b.plugins = append(b.plugins, *p)
 		b.logger.Debugln(fmt.Sprintf("plugins with name \"%s\" registered", p.Name))
 	}
 	return b
@@ -210,6 +211,13 @@ func (b *Bot) AddRunner(runner Runner) *Bot {
 	b.runners = append(b.runners, runner)
 	b.logger.Debugln(fmt.Sprintf("runner with name \"%s\" registered", runner.Name))
 	return b
+}
+func (b *Bot) AddL10n(l L10n) *Bot {
+	b.l10n = l
+	return b
+}
+func (b *Bot) L10n(lang, key string) string {
+	return b.l10n.Translate(lang, key)
 }
 func (b *Bot) Logger() *slog.Logger {
 	return b.logger
