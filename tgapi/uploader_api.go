@@ -108,9 +108,6 @@ func (u UploaderRequest[R, P]) DoWithContext(ctx context.Context, up *Uploader) 
 		return zero, err
 	}
 	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		return zero, fmt.Errorf("unexpected status code: %d", res.StatusCode)
-	}
 
 	reader := io.LimitReader(res.Body, 10<<20)
 	body, err := io.ReadAll(reader)
@@ -118,6 +115,9 @@ func (u UploaderRequest[R, P]) DoWithContext(ctx context.Context, up *Uploader) 
 		return zero, err
 	}
 	up.logger.Debugln("UPLOADER RES", u.method, string(body))
+	if res.StatusCode != http.StatusOK {
+		return zero, fmt.Errorf("unexpected status code: %d, %s", res.StatusCode, string(body))
+	}
 
 	var resp ApiResponse[R]
 	err = json.Unmarshal(body, &resp)

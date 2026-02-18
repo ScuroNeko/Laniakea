@@ -75,7 +75,7 @@ func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *API) (R, 
 	}
 	api.Logger.Debugln("RES", r.method, string(data))
 	if res.StatusCode != http.StatusOK {
-		return zero, fmt.Errorf("unexpected status code: %d", res.StatusCode)
+		return zero, fmt.Errorf("unexpected status code: %d, %s", res.StatusCode, string(data))
 	}
 
 	var resp ApiResponse[R]
