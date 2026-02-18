@@ -109,6 +109,9 @@ func (p *Plugin) AddCommand(command *Command) *Plugin {
 	p.Commands[command.command] = *command
 	return p
 }
+func (p *Plugin) NewCommand(exec CommandExecutor, command string, args ...CommandArg) *Command {
+	return NewCommand(exec, command, args...)
+}
 func (p *Plugin) AddPayload(command *Command) *Plugin {
 	p.Payloads[command.command] = *command
 	return p
