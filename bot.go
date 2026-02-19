@@ -47,6 +47,7 @@ func LoadPrefixesFromEnv() []string {
 }
 
 type DbContext interface{}
+type NoDB struct{ DbContext }
 type Bot[T DbContext] struct {
 	token         string
 	debug         bool
@@ -65,7 +66,7 @@ type Bot[T DbContext] struct {
 	dbContext *T
 	l10n      *L10n
 
-	dbWriterRequested extypes.Slice[*slog.Logger]
+	extraLoggers extypes.Slice[*slog.Logger]
 
 	updateOffset int
 	updateTypes  []tgapi.UpdateType
@@ -81,21 +82,21 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 	uploader := tgapi.NewUploader(api)
 
 	bot := &Bot[T]{
-		updateOffset:      0,
-		errorTemplate:     "%s",
-		updateQueue:       updateQueue,
-		api:               api,
-		uploader:          uploader,
-		debug:             opts.Debug,
-		prefixes:          opts.Prefixes,
-		token:             opts.Token,
-		plugins:           make([]Plugin[T], 0),
-		updateTypes:       make([]tgapi.UpdateType, 0),
-		runners:           make([]Runner[T], 0),
-		dbWriterRequested: make([]*slog.Logger, 0),
-		l10n:              &L10n{},
+		updateOffset:  0,
+		errorTemplate: "%s",
+		updateQueue:   updateQueue,
+		api:           api,
+		uploader:      uploader,
+		debug:         opts.Debug,
+		prefixes:      opts.Prefixes,
+		token:         opts.Token,
+		plugins:       make([]Plugin[T], 0),
+		updateTypes:   make([]tgapi.UpdateType, 0),
+		runners:       make([]Runner[T], 0),
+		extraLoggers:  make([]*slog.Logger, 0),
+		l10n:          &L10n{},
 	}
-	bot.dbWriterRequested = bot.dbWriterRequested.Push(api.GetLogger()).Push(uploader.GetLogger())
+	bot.extraLoggers = bot.extraLoggers.Push(api.GetLogger()).Push(uploader.GetLogger())
 
 	if len(opts.ErrorTemplate) > 0 {
 		bot.errorTemplate = opts.ErrorTemplate
@@ -169,13 +170,15 @@ func (bot *Bot[T]) GetLogger() *slog.Logger                 { return bot.logger 
 func (bot *Bot[T]) GetDBContext() *T                        { return bot.dbContext }
 func (bot *Bot[T]) L10n(lang, key string) string            { return bot.l10n.Translate(lang, key) }
 
-func (bot *Bot[T]) AddDatabaseLogger(writer func(db *T) slog.LoggerWriter) *Bot[T] {
+type DbLogger[T DbContext] func(db *T) slog.LoggerWriter
+
+func (bot *Bot[T]) AddDatabaseLoggerWriter(writer DbLogger[T]) *Bot[T] {
 	w := writer(bot.dbContext)
 	bot.logger.AddWriter(w)
 	if bot.RequestLogger != nil {
 		bot.RequestLogger.AddWriter(w)
 	}
-	for _, l := range bot.dbWriterRequested {
+	for _, l := range bot.extraLoggers {
 		l.AddWriter(w)
 	}
 	return bot
