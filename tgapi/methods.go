@@ -1,5 +1,11 @@
 package tgapi
 
+import (
+	"fmt"
+	"io"
+	"net/http"
+)
+
 type ParseMode string
 
 const (
@@ -43,4 +49,14 @@ type GetFileP struct {
 func (api *API) GetFile(params GetFileP) (File, error) {
 	req := NewRequest[File]("getFile", params)
 	return req.Do(api)
+}
+
+func (api *API) GetFileByLink(link string) ([]byte, error) {
+	u := fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", api.token, link)
+	res, err := http.Get(u)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	return io.ReadAll(res.Body)
 }

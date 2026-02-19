@@ -2,9 +2,6 @@ package laniakea
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
@@ -38,14 +35,4 @@ func (bot *Bot[T]) Updates() ([]tgapi.Update, error) {
 		}
 	}
 	return updates, err
-}
-
-func (bot *Bot[T]) GetFileByLink(link string) ([]byte, error) {
-	u := fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", bot.token, link)
-	res, err := http.Get(u)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-	return io.ReadAll(res.Body)
 }
