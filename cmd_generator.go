@@ -1,6 +1,7 @@
 package laniakea
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -35,6 +36,8 @@ func generateBotCommandForPlugin(pl Plugin) []tgapi.BotCommand {
 	return commands
 }
 
+var ErrTooManyCommands = errors.New("too many commands. max 100")
+
 func (b *Bot) AutoGenerateCommands() error {
 	_, err := b.api.DeleteMyCommands(tgapi.DeleteMyCommandsP{})
 	if err != nil {
@@ -44,6 +47,9 @@ func (b *Bot) AutoGenerateCommands() error {
 	commands := make([]tgapi.BotCommand, 0)
 	for _, pl := range b.plugins {
 		commands = append(commands, generateBotCommandForPlugin(pl)...)
+	}
+	if len(commands) > 100 {
+		return ErrTooManyCommands
 	}
 
 	privateChatsScope := &tgapi.BotCommandScope{Type: tgapi.BotCommandScopePrivateType}

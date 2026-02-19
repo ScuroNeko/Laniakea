@@ -3,9 +3,7 @@ package tgapi
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
@@ -66,39 +64,22 @@ func NewUploaderRequest[R, P any](method string, params P, files ...UploaderFile
 }
 func (u UploaderRequest[R, P]) DoWithContext(ctx context.Context, up *Uploader) (R, error) {
 	var zero R
-	url := fmt.Sprintf("https://api.telegram.org/bot%s/%s", up.api.token, u.method)
 
-	buf := bytes.NewBuffer(nil)
-	w := multipart.NewWriter(buf)
-
-	for _, file := range u.files {
-		fw, err := w.CreateFormFile(string(file.field), file.filename)
-		if err != nil {
-			_ = w.Close()
-			return zero, err
-		}
-		_, err = fw.Write(file.data)
-		if err != nil {
-			_ = w.Close()
-			return zero, err
-		}
-	}
-
-	err := utils.Encode(w, u.params)
-	if err != nil {
-		_ = w.Close()
-		return zero, err
-	}
-	err = w.Close()
+	buf, contentType, err := prepareMultipart(u.files, u.params)
 	if err != nil {
 		return zero, err
 	}
 
+	methodPrefix := ""
+	if up.api.useTestServer {
+		methodPrefix = "/test"
+	}
+	url := fmt.Sprintf("%s/bot%s%s/%s", up.api.apiUrl, up.api.token, methodPrefix, u.method)
 	req, err := http.NewRequestWithContext(ctx, "POST", url, buf)
 	if err != nil {
 		return zero, err
 	}
-	req.Header.Set("Content-Type", w.FormDataContentType())
+	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", fmt.Sprintf("Laniakea/%s", utils.VersionString))
 
@@ -109,28 +90,43 @@ func (u UploaderRequest[R, P]) DoWithContext(ctx context.Context, up *Uploader) 
 	}
 	defer res.Body.Close()
 
-	reader := io.LimitReader(res.Body, 10<<20)
-	body, err := io.ReadAll(reader)
-	if err != nil {
-		return zero, err
-	}
+	body, err := readBody(res.Body)
 	up.logger.Debugln("UPLOADER RES", u.method, string(body))
 	if res.StatusCode != http.StatusOK {
 		return zero, fmt.Errorf("unexpected status code: %d, %s", res.StatusCode, string(body))
 	}
 
-	var resp ApiResponse[R]
-	err = json.Unmarshal(body, &resp)
-	if err != nil {
-		return zero, err
-	}
-	if !resp.Ok {
-		return zero, fmt.Errorf("[%d] %s", resp.ErrorCode, resp.Description)
-	}
-	return resp.Result, nil
+	return parseBody[R](body)
 }
 func (u UploaderRequest[R, P]) Do(up *Uploader) (R, error) {
 	return u.DoWithContext(context.Background(), up)
+}
+
+func prepareMultipart[P any](files []UploaderFile, params P) (*bytes.Buffer, string, error) {
+	buf := bytes.NewBuffer(nil)
+	w := multipart.NewWriter(buf)
+
+	for _, file := range files {
+		fw, err := w.CreateFormFile(string(file.field), file.filename)
+		if err != nil {
+			_ = w.Close()
+			return buf, w.FormDataContentType(), err
+		}
+
+		_, err = fw.Write(file.data)
+		if err != nil {
+			_ = w.Close()
+			return buf, w.FormDataContentType(), err
+		}
+	}
+
+	err := utils.Encode(w, params)
+	if err != nil {
+		_ = w.Close()
+		return buf, w.FormDataContentType(), err
+	}
+	err = w.Close()
+	return buf, w.FormDataContentType(), err
 }
 
 func uploaderTypeByExt(filename string) UploaderFileType {

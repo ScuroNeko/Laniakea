@@ -15,7 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-type BotSettings struct {
+type BotOpts struct {
 	Token            string
 	Debug            bool
 	ErrorTemplate    string
@@ -24,10 +24,12 @@ type BotSettings struct {
 	LoggerBasePath   string
 	UseRequestLogger bool
 	WriteToFile      bool
+	UseTestServer    bool
+	APIUrl           string
 }
 
-func LoadSettingsFromEnv() *BotSettings {
-	return &BotSettings{
+func LoadOptsFromEnv() *BotOpts {
+	return &BotOpts{
 		Token:            os.Getenv("TG_TOKEN"),
 		Debug:            os.Getenv("DEBUG") == "true",
 		ErrorTemplate:    os.Getenv("ERROR_TEMPLATE"),
@@ -35,6 +37,8 @@ func LoadSettingsFromEnv() *BotSettings {
 		UpdateTypes:      strings.Split(os.Getenv("UPDATE_TYPES"), ";"),
 		UseRequestLogger: os.Getenv("USE_REQ_LOG") == "true",
 		WriteToFile:      os.Getenv("WRITE_TO_FILE") == "true",
+		UseTestServer:    os.Getenv("USE_TEST_SERVER") == "true",
+		APIUrl:           os.Getenv("API_URL"),
 	}
 }
 
@@ -70,9 +74,10 @@ type Bot struct {
 	updateQueue  *extypes.Queue[*tgapi.Update]
 }
 
-func NewBot(settings *BotSettings) *Bot {
+func NewBot(settings *BotOpts) *Bot {
 	updateQueue := extypes.CreateQueue[*tgapi.Update](256)
-	api := tgapi.NewAPI(settings.Token)
+	apiOpts := tgapi.NewAPIOpts(settings.Token).SetAPIUrl(settings.APIUrl).UseTestServer(settings.UseTestServer)
+	api := tgapi.NewAPI(apiOpts)
 	bot := &Bot{
 		updateOffset: 0, plugins: make([]Plugin, 0), debug: settings.Debug, errorTemplate: "%s",
 		prefixes: settings.Prefixes, updateTypes: make([]tgapi.UpdateType, 0), runners: make([]Runner, 0),
@@ -237,7 +242,6 @@ func (b *Bot) Run() {
 		return
 	}
 
-	b.logger.Infoln("Executing runners...")
 	b.ExecRunners()
 
 	b.logger.Infoln("Bot running. Press CTRL+C to exit.")

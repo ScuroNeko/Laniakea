@@ -13,17 +13,49 @@ import (
 	"git.nix13.pw/scuroneko/slog"
 )
 
-type API struct {
-	token  string
-	client *http.Client
-	Logger *slog.Logger
+type APIOpts struct {
+	token         string
+	client        *http.Client
+	useTestServer bool
+	apiUrl        string
 }
 
-func NewAPI(token string) *API {
+func NewAPIOpts(token string) *APIOpts {
+	return &APIOpts{token: token, client: nil, useTestServer: false, apiUrl: "https://api.telegram.org"}
+}
+func (opts *APIOpts) SetHTTPClient(client *http.Client) *APIOpts {
+	if client != nil {
+		opts.client = client
+	}
+	return opts
+}
+func (opts *APIOpts) UseTestServer(use bool) *APIOpts {
+	opts.useTestServer = use
+	return opts
+}
+func (opts *APIOpts) SetAPIUrl(apiUrl string) *APIOpts {
+	if apiUrl != "" {
+		opts.apiUrl = apiUrl
+	}
+	return opts
+}
+
+type API struct {
+	token         string
+	client        *http.Client
+	Logger        *slog.Logger
+	useTestServer bool
+	apiUrl        string
+}
+
+func NewAPI(opts *APIOpts) *API {
 	l := slog.CreateLogger().Level(utils.GetLoggerLevel()).Prefix("API")
 	l.AddWriter(l.CreateJsonStdoutWriter())
-	client := &http.Client{Timeout: time.Second * 45}
-	return &API{token, client, l}
+	client := opts.client
+	if client == nil {
+		client = &http.Client{Timeout: time.Second * 45}
+	}
+	return &API{opts.token, client, l, opts.useTestServer, opts.apiUrl}
 }
 func (api *API) CloseApi() error {
 	return api.Logger.Close()
@@ -52,8 +84,12 @@ func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *API) (R, 
 	}
 	buf := bytes.NewBuffer(data)
 
-	u := fmt.Sprintf("https://api.telegram.org/bot%s/%s", api.token, r.method)
-	req, err := http.NewRequestWithContext(ctx, "POST", u, buf)
+	methodPrefix := ""
+	if api.useTestServer {
+		methodPrefix = "/test"
+	}
+	url := fmt.Sprintf("%s/bot%s%s/%s", api.apiUrl, api.token, methodPrefix, r.method)
+	req, err := http.NewRequestWithContext(ctx, "POST", url, buf)
 	if err != nil {
 		return zero, err
 	}
@@ -61,15 +97,16 @@ func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *API) (R, 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", fmt.Sprintf("Laniakea/%s", utils.VersionString))
 
-	api.Logger.Debugln("REQ", r.method, buf.String())
+	api.Logger.Debugln("REQ", api.apiUrl, r.method, buf.String())
 	res, err := api.client.Do(req)
 	if err != nil {
 		return zero, err
 	}
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(res.Body)
 
-	reader := io.LimitReader(res.Body, 10<<20)
-	data, err = io.ReadAll(reader)
+	data, err = readBody(res.Body)
 	if err != nil {
 		return zero, err
 	}
@@ -77,9 +114,21 @@ func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *API) (R, 
 	if res.StatusCode != http.StatusOK {
 		return zero, fmt.Errorf("unexpected status code: %d, %s", res.StatusCode, string(data))
 	}
+	return parseBody[R](data)
 
+}
+func (r TelegramRequest[R, P]) Do(api *API) (R, error) {
+	return r.DoWithContext(context.Background(), api)
+}
+
+func readBody(body io.ReadCloser) ([]byte, error) {
+	reader := io.LimitReader(body, 10<<20)
+	return io.ReadAll(reader)
+}
+func parseBody[R any](data []byte) (R, error) {
+	var zero R
 	var resp ApiResponse[R]
-	err = json.Unmarshal(data, &resp)
+	err := json.Unmarshal(data, &resp)
 	if err != nil {
 		return zero, err
 	}
@@ -87,9 +136,4 @@ func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *API) (R, 
 		return zero, fmt.Errorf("[%d] %s", resp.ErrorCode, resp.Description)
 	}
 	return resp.Result, nil
-
-}
-func (r TelegramRequest[R, P]) Do(api *API) (R, error) {
-	ctx := context.Background()
-	return r.DoWithContext(ctx, api)
 }
