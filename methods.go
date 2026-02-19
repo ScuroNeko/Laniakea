@@ -9,39 +9,39 @@ import (
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
 
-func (b *Bot) Updates() ([]tgapi.Update, error) {
-	offset := b.GetUpdateOffset()
+func (bot *Bot[T]) Updates() ([]tgapi.Update, error) {
+	offset := bot.GetUpdateOffset()
 	params := tgapi.UpdateParams{
 		Offset:         Ptr(offset),
 		Timeout:        Ptr(30),
-		AllowedUpdates: b.GetUpdateTypes(),
+		AllowedUpdates: bot.GetUpdateTypes(),
 	}
 
-	updates, err := b.api.GetUpdates(params)
+	updates, err := bot.api.GetUpdates(params)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, u := range updates {
-		b.SetUpdateOffset(u.UpdateID + 1)
-		err = b.GetQueue().Enqueue(&u)
+		bot.SetUpdateOffset(u.UpdateID + 1)
+		err = bot.GetQueue().Enqueue(&u)
 		if err != nil {
 			return nil, err
 		}
 
-		if b.RequestLogger != nil {
+		if bot.RequestLogger != nil {
 			j, err := json.Marshal(u)
 			if err != nil {
-				b.Logger().Error(err)
+				bot.GetLogger().Error(err)
 			}
-			b.RequestLogger.Debugf("UPDATE %s\n", j)
+			bot.RequestLogger.Debugf("UPDATE %s\n", j)
 		}
 	}
 	return updates, err
 }
 
-func (b *Bot) GetFileByLink(link string) ([]byte, error) {
-	u := fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", b.token, link)
+func (bot *Bot[T]) GetFileByLink(link string) ([]byte, error) {
+	u := fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", bot.token, link)
 	res, err := http.Get(u)
 	if err != nil {
 		return nil, err

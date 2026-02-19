@@ -17,7 +17,6 @@ func (l *L10n) AddDictEntry(key string, value DictEntry) *L10n {
 func (l *L10n) GetFallbackLanguage() string {
 	return l.fallbackLang
 }
-
 func (l *L10n) Translate(lang, key string) string {
 	s, ok := l.entries[key]
 	if !ok {

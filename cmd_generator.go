@@ -8,7 +8,7 @@ import (
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
 
-func generateBotCommand(cmd Command) tgapi.BotCommand {
+func generateBotCommand[T any](cmd Command[T]) tgapi.BotCommand {
 	desc := cmd.command
 	if len(cmd.description) > 0 {
 		desc = cmd.description
@@ -25,7 +25,7 @@ func generateBotCommand(cmd Command) tgapi.BotCommand {
 	return tgapi.BotCommand{Command: cmd.command, Description: desc}
 }
 
-func generateBotCommandForPlugin(pl Plugin) []tgapi.BotCommand {
+func generateBotCommandForPlugin[T any](pl Plugin[T]) []tgapi.BotCommand {
 	commands := make([]tgapi.BotCommand, 0)
 	for _, cmd := range pl.Commands {
 		if cmd.skipAutoCmd {
@@ -38,14 +38,14 @@ func generateBotCommandForPlugin(pl Plugin) []tgapi.BotCommand {
 
 var ErrTooManyCommands = errors.New("too many commands. max 100")
 
-func (b *Bot) AutoGenerateCommands() error {
-	_, err := b.api.DeleteMyCommands(tgapi.DeleteMyCommandsP{})
+func (bot *Bot[T]) AutoGenerateCommands() error {
+	_, err := bot.api.DeleteMyCommands(tgapi.DeleteMyCommandsP{})
 	if err != nil {
 		return err
 	}
 
 	commands := make([]tgapi.BotCommand, 0)
-	for _, pl := range b.plugins {
+	for _, pl := range bot.plugins {
 		commands = append(commands, generateBotCommandForPlugin(pl)...)
 	}
 	if len(commands) > 100 {
@@ -55,14 +55,14 @@ func (b *Bot) AutoGenerateCommands() error {
 	privateChatsScope := &tgapi.BotCommandScope{Type: tgapi.BotCommandScopePrivateType}
 	groupChatsScope := &tgapi.BotCommandScope{Type: tgapi.BotCommandScopeGroupType}
 	chatAdminsScope := &tgapi.BotCommandScope{Type: tgapi.BotCommandScopeAllChatAdministratorsType}
-	_, err = b.api.SetMyCommands(tgapi.SetMyCommandsP{Commands: commands, Scope: privateChatsScope})
+	_, err = bot.api.SetMyCommands(tgapi.SetMyCommandsP{Commands: commands, Scope: privateChatsScope})
 	if err != nil {
 		return err
 	}
-	_, err = b.api.SetMyCommands(tgapi.SetMyCommandsP{Commands: commands, Scope: groupChatsScope})
+	_, err = bot.api.SetMyCommands(tgapi.SetMyCommandsP{Commands: commands, Scope: groupChatsScope})
 	if err != nil {
 		return err
 	}
-	_, err = b.api.SetMyCommands(tgapi.SetMyCommandsP{Commands: commands, Scope: chatAdminsScope})
+	_, err = bot.api.SetMyCommands(tgapi.SetMyCommandsP{Commands: commands, Scope: chatAdminsScope})
 	return err
 }

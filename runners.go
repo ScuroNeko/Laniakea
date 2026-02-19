@@ -4,81 +4,69 @@ import (
 	"time"
 )
 
-type RunnerFn func(*Bot) error
-type RunnerBuilder struct {
+type RunnerFn[T DbContext] func(*Bot[T]) error
+type Runner[T DbContext] struct {
 	name    string
 	onetime bool
 	async   bool
 	timeout time.Duration
-	fn      RunnerFn
-}
-type Runner struct {
-	Name    string
-	Onetime bool
-	Async   bool
-	Timeout time.Duration
-	Fn      RunnerFn
+	fn      RunnerFn[T]
 }
 
-func NewRunner(name string, fn RunnerFn) *RunnerBuilder {
-	return &RunnerBuilder{
+func NewRunner[T DbContext](name string, fn RunnerFn[T]) *Runner[T] {
+	return &Runner[T]{
 		name: name, fn: fn, async: true,
 	}
 }
-func (b *RunnerBuilder) Onetime(onetime bool) *RunnerBuilder {
+func (b *Runner[T]) Onetime(onetime bool) *Runner[T] {
 	b.onetime = onetime
 	return b
 }
-func (b *RunnerBuilder) Async(async bool) *RunnerBuilder {
+func (b *Runner[T]) Async(async bool) *Runner[T] {
 	b.async = async
 	return b
 }
-func (b *RunnerBuilder) Timeout(timeout time.Duration) *RunnerBuilder {
+func (b *Runner[T]) Timeout(timeout time.Duration) *Runner[T] {
 	b.timeout = timeout
 	return b
 }
-func (b *RunnerBuilder) Build() Runner {
-	return Runner{
-		Name: b.name, Onetime: b.onetime, Async: b.async, Fn: b.fn, Timeout: b.timeout,
-	}
-}
 
-func (b *Bot) ExecRunners() {
-	b.logger.Infoln("Executing runners...")
-	for _, runner := range b.runners {
-		if !runner.Onetime && !runner.Async {
-			b.logger.Warnf("Runner %s not onetime, but sync\n", runner.Name)
+func (bot *Bot[T]) ExecRunners() {
+	bot.logger.Infoln("Executing runners...")
+	for _, runner := range bot.runners {
+		if !runner.onetime && !runner.async {
+			bot.logger.Warnf("Runner %s not onetime, but sync\n", runner.name)
 			continue
 		}
-		if !runner.Onetime && runner.Async && runner.Timeout == (time.Second*0) {
-			b.logger.Warnf("Background runner \"%s\" should have timeout", runner.Name)
+		if !runner.onetime && runner.async && runner.timeout == (time.Second*0) {
+			bot.logger.Warnf("Background runner \"%s\" should have timeout", runner.name)
 		}
 
-		if runner.Async && runner.Onetime {
+		if runner.async && runner.onetime {
 			go func() {
-				err := runner.Fn(b)
+				err := runner.fn(bot)
 				if err != nil {
-					b.logger.Warnf("Runner %s failed: %s\n", runner.Name, err)
+					bot.logger.Warnf("Runner %s failed: %s\n", runner.name, err)
 				}
 			}()
-		} else if !runner.Async && runner.Onetime {
+		} else if !runner.async && runner.onetime {
 			t := time.Now()
-			err := runner.Fn(b)
+			err := runner.fn(bot)
 			if err != nil {
-				b.logger.Warnf("Runner %s failed: %s\n", runner.Name, err)
+				bot.logger.Warnf("Runner %s failed: %s\n", runner.name, err)
 			}
 			elapsed := time.Since(t)
 			if elapsed > time.Second*2 {
-				b.logger.Warnf("Runner %s too slow. Elapsed time %s>=2s", runner.Name, elapsed)
+				bot.logger.Warnf("Runner %s too slow. Elapsed time %s>=2s", runner.name, elapsed)
 			}
-		} else if !runner.Onetime {
+		} else if !runner.onetime {
 			go func() {
 				for {
-					err := runner.Fn(b)
+					err := runner.fn(bot)
 					if err != nil {
-						b.logger.Warnf("Runner %s failed: %s\n", runner.Name, err)
+						bot.logger.Warnf("Runner %s failed: %s\n", runner.name, err)
 					}
-					time.Sleep(runner.Timeout)
+					time.Sleep(runner.timeout)
 				}
 			}()
 		}

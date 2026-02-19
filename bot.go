@@ -10,9 +10,6 @@ import (
 	"git.nix13.pw/scuroneko/extypes"
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 	"git.nix13.pw/scuroneko/slog"
-	"github.com/redis/go-redis/v9"
-	"github.com/vinovest/sqlx"
-	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type BotOpts struct {
@@ -41,7 +38,6 @@ func LoadOptsFromEnv() *BotOpts {
 		APIUrl:           os.Getenv("API_URL"),
 	}
 }
-
 func LoadPrefixesFromEnv() []string {
 	prefixesS, exists := os.LookupEnv("PREFIXES")
 	if !exists {
@@ -50,7 +46,8 @@ func LoadPrefixesFromEnv() []string {
 	return strings.Split(prefixesS, ";")
 }
 
-type Bot struct {
+type DbContext interface{}
+type Bot[T DbContext] struct {
 	token         string
 	debug         bool
 	errorTemplate string
@@ -58,14 +55,15 @@ type Bot struct {
 	logger        *slog.Logger
 	RequestLogger *slog.Logger
 
-	plugins     []Plugin
-	middlewares []Middleware
+	plugins     []Plugin[T]
+	middlewares []Middleware[T]
 	prefixes    []string
-	runners     []Runner
+	runners     []Runner[T]
 
-	dbContext *DatabaseContext
 	api       *tgapi.API
-	l10n      L10n
+	uploader  *tgapi.Uploader
+	dbContext *T
+	l10n      *L10n
 
 	dbWriterRequested extypes.Slice[*slog.Logger]
 
@@ -74,34 +72,74 @@ type Bot struct {
 	updateQueue  *extypes.Queue[*tgapi.Update]
 }
 
-func NewBot(settings *BotOpts) *Bot {
-	updateQueue := extypes.CreateQueue[*tgapi.Update](256)
-	apiOpts := tgapi.NewAPIOpts(settings.Token).SetAPIUrl(settings.APIUrl).UseTestServer(settings.UseTestServer)
+func NewBot[T any](opts *BotOpts) *Bot[T] {
+	updateQueue := extypes.CreateQueue[*tgapi.Update](512)
+
+	apiOpts := tgapi.NewAPIOpts(opts.Token).SetAPIUrl(opts.APIUrl).UseTestServer(opts.UseTestServer)
 	api := tgapi.NewAPI(apiOpts)
-	bot := &Bot{
-		updateOffset: 0, plugins: make([]Plugin, 0), debug: settings.Debug, errorTemplate: "%s",
-		prefixes: settings.Prefixes, updateTypes: make([]tgapi.UpdateType, 0), runners: make([]Runner, 0),
-		updateQueue: updateQueue, api: api, dbWriterRequested: make([]*slog.Logger, 0),
-		token: settings.Token, l10n: L10n{},
-	}
-	bot.dbWriterRequested = bot.dbWriterRequested.Push(api.Logger)
 
-	if len(settings.ErrorTemplate) > 0 {
-		bot.errorTemplate = settings.ErrorTemplate
-	}
-	if len(settings.LoggerBasePath) == 0 {
-		settings.LoggerBasePath = "./"
-	}
+	uploader := tgapi.NewUploader(api)
 
+	bot := &Bot[T]{
+		updateOffset:      0,
+		errorTemplate:     "%s",
+		updateQueue:       updateQueue,
+		api:               api,
+		uploader:          uploader,
+		debug:             opts.Debug,
+		prefixes:          opts.Prefixes,
+		token:             opts.Token,
+		plugins:           make([]Plugin[T], 0),
+		updateTypes:       make([]tgapi.UpdateType, 0),
+		runners:           make([]Runner[T], 0),
+		dbWriterRequested: make([]*slog.Logger, 0),
+		l10n:              &L10n{},
+	}
+	bot.dbWriterRequested = bot.dbWriterRequested.Push(api.GetLogger()).Push(uploader.GetLogger())
+
+	if len(opts.ErrorTemplate) > 0 {
+		bot.errorTemplate = opts.ErrorTemplate
+	}
+	if len(opts.LoggerBasePath) == 0 {
+		opts.LoggerBasePath = "./"
+	}
+	bot.initLoggers(opts)
+
+	u, err := api.GetMe()
+	if err != nil {
+		_ = api.CloseApi()
+		_ = uploader.Close()
+		bot.logger.Fatal(err)
+	}
+	bot.logger.Infof("Authorized as %s\n", u.FirstName)
+
+	return bot
+}
+func (bot *Bot[T]) Close() error {
+	if err := bot.uploader.Close(); err != nil {
+		bot.logger.Errorln(err)
+	}
+	if err := bot.api.CloseApi(); err != nil {
+		bot.logger.Errorln(err)
+	}
+	if err := bot.RequestLogger.Close(); err != nil {
+		bot.logger.Errorln(err)
+	}
+	if err := bot.logger.Close(); err != nil {
+		return err
+	}
+	return nil
+}
+func (bot *Bot[T]) initLoggers(opts *BotOpts) {
 	level := slog.FATAL
-	if settings.Debug {
+	if opts.Debug {
 		level = slog.DEBUG
 	}
 
 	bot.logger = slog.CreateLogger().Level(level).Prefix("BOT")
 	bot.logger.AddWriter(bot.logger.CreateJsonStdoutWriter())
-	if settings.WriteToFile {
-		path := fmt.Sprintf("%s/main.log", strings.TrimRight(settings.LoggerBasePath, "/"))
+	if opts.WriteToFile {
+		path := fmt.Sprintf("%s/main.log", strings.TrimRight(opts.LoggerBasePath, "/"))
 		fileWriter, err := bot.logger.CreateTextFileWriter(path)
 		if err != nil {
 			bot.logger.Fatal(err)
@@ -109,11 +147,11 @@ func NewBot(settings *BotOpts) *Bot {
 		bot.logger.AddWriter(fileWriter)
 	}
 
-	if settings.UseRequestLogger {
+	if opts.UseRequestLogger {
 		bot.RequestLogger = slog.CreateLogger().Level(level).Prefix("REQUESTS")
 		bot.RequestLogger.AddWriter(bot.RequestLogger.CreateJsonStdoutWriter())
-		if settings.WriteToFile {
-			path := fmt.Sprintf("%s/requests.log", strings.TrimRight(settings.LoggerBasePath, "/"))
+		if opts.WriteToFile {
+			path := fmt.Sprintf("%s/requests.log", strings.TrimRight(opts.LoggerBasePath, "/"))
 			fileWriter, err := bot.RequestLogger.CreateTextFileWriter(path)
 			if err != nil {
 				bot.logger.Fatal(err)
@@ -121,141 +159,112 @@ func NewBot(settings *BotOpts) *Bot {
 			bot.RequestLogger.AddWriter(fileWriter)
 		}
 	}
+}
 
-	u, err := api.GetMe()
-	if err != nil {
-		bot.logger.Fatal(err)
+func (bot *Bot[T]) GetUpdateOffset() int                    { return bot.updateOffset }
+func (bot *Bot[T]) SetUpdateOffset(offset int)              { bot.updateOffset = offset }
+func (bot *Bot[T]) GetUpdateTypes() []tgapi.UpdateType      { return bot.updateTypes }
+func (bot *Bot[T]) GetQueue() *extypes.Queue[*tgapi.Update] { return bot.updateQueue }
+func (bot *Bot[T]) GetLogger() *slog.Logger                 { return bot.logger }
+func (bot *Bot[T]) GetDBContext() *T                        { return bot.dbContext }
+func (bot *Bot[T]) L10n(lang, key string) string            { return bot.l10n.Translate(lang, key) }
+
+func (bot *Bot[T]) AddDatabaseLogger(writer func(db *T) slog.LoggerWriter) *Bot[T] {
+	w := writer(bot.dbContext)
+	bot.logger.AddWriter(w)
+	if bot.RequestLogger != nil {
+		bot.RequestLogger.AddWriter(w)
 	}
-	bot.logger.Infof("Authorized as %s\n", u.FirstName)
-
+	for _, l := range bot.dbWriterRequested {
+		l.AddWriter(w)
+	}
 	return bot
 }
 
-func (b *Bot) Close() error {
-	err := b.logger.Close()
-	if err != nil {
-		return err
-	}
-	err = b.RequestLogger.Close()
-	return err
+func (bot *Bot[T]) DatabaseContext(ctx *T) *Bot[T] {
+	bot.dbContext = ctx
+	return bot
 }
-
-func (b *Bot) GetUpdateOffset() int                    { return b.updateOffset }
-func (b *Bot) SetUpdateOffset(offset int)              { b.updateOffset = offset }
-func (b *Bot) GetUpdateTypes() []tgapi.UpdateType      { return b.updateTypes }
-func (b *Bot) GetQueue() *extypes.Queue[*tgapi.Update] { return b.updateQueue }
-
-type DatabaseContext struct {
-	PostgresSQL *sqlx.DB
-	MongoDB     *mongo.Client
-	Redis       *redis.Client
+func (bot *Bot[T]) UpdateTypes(t ...tgapi.UpdateType) *Bot[T] {
+	bot.updateTypes = make([]tgapi.UpdateType, 0)
+	bot.updateTypes = append(bot.updateTypes, t...)
+	return bot
 }
-
-func (b *Bot) AddDatabaseLogger(writer func(db *DatabaseContext) slog.LoggerWriter) *Bot {
-	w := writer(b.dbContext)
-	b.logger.AddWriter(w)
-	if b.RequestLogger != nil {
-		b.RequestLogger.AddWriter(w)
-	}
-	for _, l := range b.dbWriterRequested {
-		l.AddWriter(w)
-	}
-	return b
+func (bot *Bot[T]) AddUpdateType(t ...tgapi.UpdateType) *Bot[T] {
+	bot.updateTypes = append(bot.updateTypes, t...)
+	return bot
 }
-
-func (b *Bot) DatabaseContext(ctx *DatabaseContext) *Bot {
-	b.dbContext = ctx
-	return b
+func (bot *Bot[T]) AddPrefixes(prefixes ...string) *Bot[T] {
+	bot.prefixes = append(bot.prefixes, prefixes...)
+	return bot
 }
-func (b *Bot) UpdateTypes(t ...tgapi.UpdateType) *Bot {
-	b.updateTypes = make([]tgapi.UpdateType, 0)
-	b.updateTypes = append(b.updateTypes, t...)
-	return b
+func (bot *Bot[T]) ErrorTemplate(s string) *Bot[T] {
+	bot.errorTemplate = s
+	return bot
 }
-func (b *Bot) AddUpdateType(t ...tgapi.UpdateType) *Bot {
-	b.updateTypes = append(b.updateTypes, t...)
-	return b
+func (bot *Bot[T]) Debug(debug bool) *Bot[T] {
+	bot.debug = debug
+	return bot
 }
-func (b *Bot) AddPrefixes(prefixes ...string) *Bot {
-	b.prefixes = append(b.prefixes, prefixes...)
-	return b
-}
-func (b *Bot) ErrorTemplate(s string) *Bot {
-	b.errorTemplate = s
-	return b
-}
-func (b *Bot) Debug(debug bool) *Bot {
-	b.debug = debug
-	return b
-}
-func (b *Bot) AddPlugins(plugin ...*Plugin) *Bot {
+func (bot *Bot[T]) AddPlugins(plugin ...*Plugin[T]) *Bot[T] {
 	for _, p := range plugin {
-		b.plugins = append(b.plugins, *p)
-		b.logger.Debugln(fmt.Sprintf("plugins with name \"%s\" registered", p.Name))
+		bot.plugins = append(bot.plugins, *p)
+		bot.logger.Debugln(fmt.Sprintf("plugins with name \"%s\" registered", p.Name))
 	}
-	return b
+	return bot
 }
-func (b *Bot) AddMiddleware(middleware ...Middleware) *Bot {
-	b.middlewares = append(b.middlewares, middleware...)
+func (bot *Bot[T]) AddMiddleware(middleware ...Middleware[T]) *Bot[T] {
+	bot.middlewares = append(bot.middlewares, middleware...)
 	for _, m := range middleware {
-		b.logger.Debugln(fmt.Sprintf("middleware with name \"%s\" registered", m.name))
+		bot.logger.Debugln(fmt.Sprintf("middleware with name \"%s\" registered", m.name))
 	}
 
-	sort.Slice(b.middlewares, func(i, j int) bool {
-		first := b.middlewares[i]
-		second := b.middlewares[j]
+	sort.Slice(bot.middlewares, func(i, j int) bool {
+		first := bot.middlewares[i]
+		second := bot.middlewares[j]
 		if first.order == second.order {
 			return first.name < second.name
 		}
 		return first.order < second.order
 	})
 
-	return b
+	return bot
 }
-func (b *Bot) AddRunner(runner Runner) *Bot {
-	b.runners = append(b.runners, runner)
-	b.logger.Debugln(fmt.Sprintf("runner with name \"%s\" registered", runner.Name))
-	return b
+func (bot *Bot[T]) AddRunner(runner Runner[T]) *Bot[T] {
+	bot.runners = append(bot.runners, runner)
+	bot.logger.Debugln(fmt.Sprintf("runner with name \"%s\" registered", runner.name))
+	return bot
 }
-func (b *Bot) AddL10n(l L10n) *Bot {
-	b.l10n = l
-	return b
-}
-func (b *Bot) L10n(lang, key string) string {
-	return b.l10n.Translate(lang, key)
-}
-func (b *Bot) Logger() *slog.Logger {
-	return b.logger
-}
-func (b *Bot) GetDBContext() *DatabaseContext {
-	return b.dbContext
+func (bot *Bot[T]) AddL10n(l *L10n) *Bot[T] {
+	bot.l10n = l
+	return bot
 }
 
-func (b *Bot) Run() {
-	if len(b.prefixes) == 0 {
-		b.logger.Fatalln("no prefixes defined")
+func (bot *Bot[T]) Run() {
+	if len(bot.prefixes) == 0 {
+		bot.logger.Fatalln("no prefixes defined")
 		return
 	}
 
-	if len(b.plugins) == 0 {
-		b.logger.Fatalln("no plugins defined")
+	if len(bot.plugins) == 0 {
+		bot.logger.Fatalln("no plugins defined")
 		return
 	}
 
-	b.ExecRunners()
+	bot.ExecRunners()
 
-	b.logger.Infoln("Bot running. Press CTRL+C to exit.")
+	bot.logger.Infoln("Bot running. Press CTRL+C to exit.")
 	go func() {
 		for {
-			_, err := b.Updates()
+			_, err := bot.Updates()
 			if err != nil {
-				b.logger.Errorln(err)
+				bot.logger.Errorln(err)
 			}
 		}
 	}()
 
 	for {
-		queue := b.updateQueue
+		queue := bot.updateQueue
 		if queue.IsEmpty() {
 			time.Sleep(time.Millisecond * 25)
 			continue
@@ -263,19 +272,10 @@ func (b *Bot) Run() {
 
 		u := queue.Dequeue()
 		if u == nil {
-			b.logger.Errorln("update is nil")
+			bot.logger.Errorln("update is nil")
 			continue
 		}
 
-		ctx := &MsgContext{Bot: b, Update: *u, Api: b.api}
-		for _, middleware := range b.middlewares {
-			middleware.Execute(ctx, b.dbContext)
-		}
-
-		if u.CallbackQuery != nil {
-			b.handleCallback(u, ctx)
-		} else {
-			b.handleMessage(u, ctx)
-		}
+		bot.handle(u)
 	}
 }

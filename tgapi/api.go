@@ -43,7 +43,7 @@ func (opts *APIOpts) SetAPIUrl(apiUrl string) *APIOpts {
 type API struct {
 	token         string
 	client        *http.Client
-	Logger        *slog.Logger
+	logger        *slog.Logger
 	useTestServer bool
 	apiUrl        string
 }
@@ -57,9 +57,8 @@ func NewAPI(opts *APIOpts) *API {
 	}
 	return &API{opts.token, client, l, opts.useTestServer, opts.apiUrl}
 }
-func (api *API) CloseApi() error {
-	return api.Logger.Close()
-}
+func (api *API) CloseApi() error         { return api.logger.Close() }
+func (api *API) GetLogger() *slog.Logger { return api.logger }
 
 type ApiResponse[R any] struct {
 	Ok          bool   `json:"ok"`
@@ -67,7 +66,6 @@ type ApiResponse[R any] struct {
 	Result      R      `json:"result,omitempty"`
 	ErrorCode   int    `json:"error_code,omitempty"`
 }
-
 type TelegramRequest[R, P any] struct {
 	method string
 	params P
@@ -97,7 +95,7 @@ func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *API) (R, 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", fmt.Sprintf("Laniakea/%s", utils.VersionString))
 
-	api.Logger.Debugln("REQ", api.apiUrl, r.method, buf.String())
+	api.logger.Debugln("REQ", api.apiUrl, r.method, buf.String())
 	res, err := api.client.Do(req)
 	if err != nil {
 		return zero, err
@@ -110,7 +108,7 @@ func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *API) (R, 
 	if err != nil {
 		return zero, err
 	}
-	api.Logger.Debugln("RES", r.method, string(data))
+	api.logger.Debugln("RES", r.method, string(data))
 	if res.StatusCode != http.StatusOK {
 		return zero, fmt.Errorf("unexpected status code: %d, %s", res.StatusCode, string(data))
 	}

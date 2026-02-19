@@ -5,10 +5,10 @@ import (
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 	"git.nix13.pw/scuroneko/laniakea/utils"
+	"git.nix13.pw/scuroneko/slog"
 )
 
 type MsgContext struct {
-	Bot *Bot
 	Api *tgapi.API
 
 	Msg             *tgapi.Message
@@ -20,6 +20,10 @@ type MsgContext struct {
 	Prefix          string
 	Text            string
 	Args            []string
+
+	errorTemplate string
+	botLogger     *slog.Logger
+	l10n          *L10n
 }
 
 type AnswerMessage struct {
@@ -41,7 +45,7 @@ func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard
 	}
 	msg, _, err := ctx.Api.EditMessageText(params)
 	if err != nil {
-		ctx.Api.Logger.Errorln(err)
+		ctx.botLogger.Errorln(err)
 		return nil
 	}
 	return &AnswerMessage{
@@ -53,7 +57,7 @@ func (m *AnswerMessage) Edit(text string) *AnswerMessage {
 }
 func (ctx *MsgContext) EditCallback(text string, keyboard *InlineKeyboard) *AnswerMessage {
 	if ctx.CallbackMsgId == 0 {
-		ctx.Api.Logger.Errorln("Can't edit non-callback update message")
+		ctx.botLogger.Errorln("Can't edit non-callback update message")
 		return nil
 	}
 
@@ -75,7 +79,7 @@ func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeybo
 	}
 	msg, _, err := ctx.Api.EditMessageCaption(params)
 	if err != nil {
-		ctx.Api.Logger.Errorln(err)
+		ctx.botLogger.Errorln(err)
 	}
 	return &AnswerMessage{
 		MessageID: msg.MessageID, ctx: ctx, Text: text, IsMedia: true,
@@ -83,7 +87,7 @@ func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeybo
 }
 func (m *AnswerMessage) EditCaption(text string) *AnswerMessage {
 	if m.MessageID == 0 {
-		m.ctx.Api.Logger.Errorln("Can't edit caption message, message id is zero")
+		m.ctx.botLogger.Errorln("Can't edit caption message, message id is zero")
 		return m
 	}
 	return m.ctx.editPhotoText(m.MessageID, text, nil)
@@ -104,7 +108,7 @@ func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard) *AnswerMess
 
 	msg, err := ctx.Api.SendMessage(params)
 	if err != nil {
-		ctx.Api.Logger.Errorln(err)
+		ctx.botLogger.Errorln(err)
 		return nil
 	}
 	return &AnswerMessage{
@@ -133,7 +137,7 @@ func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard) *An
 	}
 	msg, err := ctx.Api.SendPhoto(params)
 	if err != nil {
-		ctx.Api.Logger.Errorln(err)
+		ctx.botLogger.Errorln(err)
 		return &AnswerMessage{
 			ctx: ctx, Text: text, IsMedia: true,
 		}
@@ -155,7 +159,7 @@ func (ctx *MsgContext) delete(messageId int) {
 		MessageID: messageId,
 	})
 	if err != nil {
-		ctx.Api.Logger.Errorln(err)
+		ctx.botLogger.Errorln(err)
 	}
 }
 func (m *AnswerMessage) Delete() {
@@ -174,7 +178,7 @@ func (ctx *MsgContext) answerCallbackQuery(url, text string, showAlert bool) {
 		Text:            text, ShowAlert: showAlert, URL: url,
 	})
 	if err != nil {
-		ctx.Api.Logger.Errorln(err)
+		ctx.botLogger.Errorln(err)
 	}
 }
 func (ctx *MsgContext) AnswerCbQuery() {
@@ -195,19 +199,19 @@ func (ctx *MsgContext) SendAction(action tgapi.ChatActionType) {
 		ChatID: ctx.Msg.Chat.ID, Action: action,
 	})
 	if err != nil {
-		ctx.Api.Logger.Errorln(err)
+		ctx.botLogger.Errorln(err)
 	}
 }
 
 func (ctx *MsgContext) error(err error) {
-	text := fmt.Sprintf(ctx.Bot.errorTemplate, utils.EscapeMarkdown(err.Error()))
+	text := fmt.Sprintf(ctx.errorTemplate, utils.EscapeMarkdown(err.Error()))
 
 	if ctx.CallbackQueryId != "" {
 		ctx.answerCallbackQuery("", text, false)
 	} else {
 		ctx.answer(text, nil)
 	}
-	ctx.Bot.Logger().Errorln(err)
+	ctx.botLogger.Errorln(err)
 }
 func (ctx *MsgContext) Error(err error) {
 	ctx.error(err)
@@ -217,6 +221,6 @@ func (ctx *MsgContext) Translate(key string) string {
 	if ctx.From == nil {
 		return key
 	}
-	lang := Val(ctx.From.LanguageCode, ctx.Bot.l10n.GetFallbackLanguage())
-	return ctx.Bot.L10n(lang, key)
+	lang := Val(ctx.From.LanguageCode, ctx.l10n.GetFallbackLanguage())
+	return ctx.l10n.Translate(lang, key)
 }

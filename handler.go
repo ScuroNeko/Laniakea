@@ -8,20 +8,20 @@ import (
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
 
-func (b *Bot) handle(u *tgapi.Update) {
-	ctx := &MsgContext{Bot: b, Update: *u, Api: b.api}
-	for _, middleware := range b.middlewares {
-		middleware.Execute(ctx, b.dbContext)
+func (bot *Bot[T]) handle(u *tgapi.Update) {
+	ctx := &MsgContext{Update: *u, Api: bot.api, botLogger: bot.logger, errorTemplate: bot.errorTemplate, l10n: bot.l10n}
+	for _, middleware := range bot.middlewares {
+		middleware.Execute(ctx, bot.dbContext)
 	}
 
 	if u.CallbackQuery != nil {
-		b.handleCallback(u, ctx)
+		bot.handleCallback(u, ctx)
 	} else {
-		b.handleMessage(u, ctx)
+		bot.handleMessage(u, ctx)
 	}
 }
 
-func (b *Bot) handleMessage(update *tgapi.Update, ctx *MsgContext) {
+func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 	if update.Message == nil {
 		return
 	}
@@ -34,7 +34,7 @@ func (b *Bot) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 	}
 
 	text = strings.TrimSpace(text)
-	prefix, hasPrefix := b.checkPrefixes(text)
+	prefix, hasPrefix := bot.checkPrefixes(text)
 	if !hasPrefix {
 		return
 	}
@@ -45,7 +45,7 @@ func (b *Bot) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 
 	text = strings.TrimSpace(text[len(prefix):])
 
-	for _, plugin := range b.plugins {
+	for _, plugin := range bot.plugins {
 		for cmd := range plugin.Commands {
 			if !strings.HasPrefix(text, cmd) {
 				continue
@@ -71,20 +71,20 @@ func (b *Bot) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 				ctx.Args = strings.Split(ctx.Text, " ")
 			}
 
-			if !plugin.executeMiddlewares(ctx, b.dbContext) {
+			if !plugin.executeMiddlewares(ctx, bot.dbContext) {
 				return
 			}
-			go plugin.executeCmd(cmd, ctx, b.dbContext)
+			go plugin.executeCmd(cmd, ctx, bot.dbContext)
 			return
 		}
 	}
 }
 
-func (b *Bot) handleCallback(update *tgapi.Update, ctx *MsgContext) {
+func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 	data := new(CallbackData)
 	err := json.Unmarshal([]byte(update.CallbackQuery.Data), data)
 	if err != nil {
-		b.logger.Errorln(err)
+		bot.logger.Errorln(err)
 		return
 	}
 
@@ -95,22 +95,22 @@ func (b *Bot) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 	ctx.CallbackQueryId = update.CallbackQuery.ID
 	ctx.Args = data.Args
 
-	for _, plugin := range b.plugins {
+	for _, plugin := range bot.plugins {
 		_, ok := plugin.Payloads[data.Command]
 		if !ok {
 			continue
 		}
 
-		if !plugin.executeMiddlewares(ctx, b.dbContext) {
+		if !plugin.executeMiddlewares(ctx, bot.dbContext) {
 			return
 		}
-		go plugin.executePayload(data.Command, ctx, b.dbContext)
+		go plugin.executePayload(data.Command, ctx, bot.dbContext)
 		return
 	}
 }
 
-func (b *Bot) checkPrefixes(text string) (string, bool) {
-	for _, prefix := range b.prefixes {
+func (bot *Bot[T]) checkPrefixes(text string) (string, bool) {
+	for _, prefix := range bot.prefixes {
 		if strings.HasPrefix(text, prefix) {
 			return prefix, true
 		}

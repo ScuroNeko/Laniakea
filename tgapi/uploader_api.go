@@ -51,7 +51,8 @@ func NewUploader(api *API) *Uploader {
 	logger.AddWriter(logger.CreateJsonStdoutWriter())
 	return &Uploader{api, logger}
 }
-func (u *Uploader) Close() error { return u.logger.Close() }
+func (u *Uploader) Close() error            { return u.logger.Close() }
+func (u *Uploader) GetLogger() *slog.Logger { return u.logger }
 
 type UploaderRequest[R, P any] struct {
 	method string
