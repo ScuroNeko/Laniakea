@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 	"git.nix13.pw/scuroneko/laniakea/utils"
 	"git.nix13.pw/scuroneko/slog"
+	"golang.org/x/time/rate"
 )
 
 type APIOpts struct {
@@ -18,7 +20,12 @@ type APIOpts struct {
 	client        *http.Client
 	useTestServer bool
 	apiUrl        string
+
+	limiter           *rate.Limiter
+	dropOverflowLimit bool
 }
+
+var ErrPoolUnexpected = errors.New("unexpected response from pool")
 
 func NewAPIOpts(token string) *APIOpts {
 	return &APIOpts{token: token, client: nil, useTestServer: false, apiUrl: "https://api.telegram.org"}
@@ -39,6 +46,14 @@ func (opts *APIOpts) SetAPIUrl(apiUrl string) *APIOpts {
 	}
 	return opts
 }
+func (opts *APIOpts) SetLimiter(limiter *rate.Limiter) *APIOpts {
+	opts.limiter = limiter
+	return opts
+}
+func (opts *APIOpts) SetLimiterDrop(b bool) *APIOpts {
+	opts.dropOverflowLimit = b
+	return opts
+}
 
 type API struct {
 	token         string
@@ -46,6 +61,10 @@ type API struct {
 	logger        *slog.Logger
 	useTestServer bool
 	apiUrl        string
+
+	pool              *WorkerPool
+	limiter           *rate.Limiter
+	dropOverflowLimit bool
 }
 
 func NewAPI(opts *APIOpts) *API {
@@ -55,9 +74,18 @@ func NewAPI(opts *APIOpts) *API {
 	if client == nil {
 		client = &http.Client{Timeout: time.Second * 45}
 	}
-	return &API{opts.token, client, l, opts.useTestServer, opts.apiUrl}
+	pool := NewWorkerPool(16, 256)
+	pool.Start(context.Background())
+	return &API{
+		opts.token, client, l,
+		opts.useTestServer, opts.apiUrl,
+		pool, opts.limiter, opts.dropOverflowLimit,
+	}
 }
-func (api *API) CloseApi() error         { return api.logger.Close() }
+func (api *API) CloseApi() error {
+	api.pool.Stop()
+	return api.logger.Close()
+}
 func (api *API) GetLogger() *slog.Logger { return api.logger }
 
 type ApiResponse[R any] struct {
@@ -74,8 +102,20 @@ type TelegramRequest[R, P any] struct {
 func NewRequest[R, P any](method string, params P) TelegramRequest[R, P] {
 	return TelegramRequest[R, P]{method: method, params: params}
 }
-func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *API) (R, error) {
+func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, error) {
 	var zero R
+	if api.limiter != nil {
+		if api.dropOverflowLimit {
+			if !api.limiter.Allow() {
+				return zero, errors.New("rate limited")
+			}
+		} else {
+			if err := api.limiter.Wait(ctx); err != nil {
+				return zero, err
+			}
+		}
+	}
+
 	data, err := json.Marshal(r.params)
 	if err != nil {
 		return zero, err
@@ -113,7 +153,28 @@ func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *API) (R, 
 		return zero, fmt.Errorf("unexpected status code: %d, %s", res.StatusCode, string(data))
 	}
 	return parseBody[R](data)
+}
+func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *API) (R, error) {
+	var zero R
+	result, err := api.pool.Submit(ctx, func(ctx context.Context) (any, error) {
+		return r.doRequest(ctx, api)
+	})
+	if err != nil {
+		return zero, err
+	}
 
+	select {
+	case <-ctx.Done():
+		return zero, ctx.Err()
+	case res := <-result:
+		if res.Err != nil {
+			return zero, res.Err
+		}
+		if val, ok := res.Value.(R); ok {
+			return val, nil
+		}
+		return zero, ErrPoolUnexpected
+	}
 }
 func (r TelegramRequest[R, P]) Do(api *API) (R, error) {
 	return r.DoWithContext(context.Background(), api)

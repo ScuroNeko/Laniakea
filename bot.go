@@ -4,38 +4,58 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"git.nix13.pw/scuroneko/extypes"
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 	"git.nix13.pw/scuroneko/slog"
+	"golang.org/x/time/rate"
 )
 
 type BotOpts struct {
-	Token            string
-	Debug            bool
-	ErrorTemplate    string
-	Prefixes         []string
-	UpdateTypes      []string
+	Token       string
+	UpdateTypes []string
+
+	Debug         bool
+	ErrorTemplate string
+	Prefixes      []string
+
 	LoggerBasePath   string
 	UseRequestLogger bool
 	WriteToFile      bool
-	UseTestServer    bool
-	APIUrl           string
+
+	UseTestServer bool
+	APIUrl        string
+
+	RateLimit      int
+	DropRLOverflow bool
 }
 
+func NewOpts() *BotOpts { return new(BotOpts) }
 func LoadOptsFromEnv() *BotOpts {
+	rateLimit := 30
+	if rl := os.Getenv("RATE_LIMIT"); rl != "" {
+		rateLimit, _ = strconv.Atoi(rl)
+	}
+
 	return &BotOpts{
-		Token:            os.Getenv("TG_TOKEN"),
-		Debug:            os.Getenv("DEBUG") == "true",
-		ErrorTemplate:    os.Getenv("ERROR_TEMPLATE"),
-		Prefixes:         LoadPrefixesFromEnv(),
-		UpdateTypes:      strings.Split(os.Getenv("UPDATE_TYPES"), ";"),
+		Token:       os.Getenv("TG_TOKEN"),
+		UpdateTypes: strings.Split(os.Getenv("UPDATE_TYPES"), ";"),
+
+		Debug:         os.Getenv("DEBUG") == "true",
+		ErrorTemplate: os.Getenv("ERROR_TEMPLATE"),
+		Prefixes:      LoadPrefixesFromEnv(),
+
 		UseRequestLogger: os.Getenv("USE_REQ_LOG") == "true",
 		WriteToFile:      os.Getenv("WRITE_TO_FILE") == "true",
-		UseTestServer:    os.Getenv("USE_TEST_SERVER") == "true",
-		APIUrl:           os.Getenv("API_URL"),
+
+		UseTestServer: os.Getenv("USE_TEST_SERVER") == "true",
+		APIUrl:        os.Getenv("API_URL"),
+
+		RateLimit:      rateLimit,
+		DropRLOverflow: os.Getenv("DROP_RL_OVERFLOW") == "true",
 	}
 }
 func LoadPrefixesFromEnv() []string {
@@ -55,6 +75,7 @@ type Bot[T DbContext] struct {
 
 	logger        *slog.Logger
 	RequestLogger *slog.Logger
+	extraLoggers  extypes.Slice[*slog.Logger]
 
 	plugins     []Plugin[T]
 	middlewares []Middleware[T]
@@ -66,8 +87,6 @@ type Bot[T DbContext] struct {
 	dbContext *T
 	l10n      *L10n
 
-	extraLoggers extypes.Slice[*slog.Logger]
-
 	updateOffset int
 	updateTypes  []tgapi.UpdateType
 	updateQueue  *extypes.Queue[*tgapi.Update]
@@ -76,7 +95,12 @@ type Bot[T DbContext] struct {
 func NewBot[T any](opts *BotOpts) *Bot[T] {
 	updateQueue := extypes.CreateQueue[*tgapi.Update](512)
 
-	apiOpts := tgapi.NewAPIOpts(opts.Token).SetAPIUrl(opts.APIUrl).UseTestServer(opts.UseTestServer)
+	var limiter *rate.Limiter
+	if opts.RateLimit > 0 {
+		limiter = rate.NewLimiter(rate.Limit(opts.RateLimit), opts.RateLimit)
+	}
+
+	apiOpts := tgapi.NewAPIOpts(opts.Token).SetAPIUrl(opts.APIUrl).UseTestServer(opts.UseTestServer).SetLimiter(limiter)
 	api := tgapi.NewAPI(apiOpts)
 
 	uploader := tgapi.NewUploader(api)
@@ -108,8 +132,7 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 
 	u, err := api.GetMe()
 	if err != nil {
-		_ = api.CloseApi()
-		_ = uploader.Close()
+		_ = bot.Close()
 		bot.logger.Fatal(err)
 	}
 	bot.logger.Infof("Authorized as %s\n", u.FirstName)
