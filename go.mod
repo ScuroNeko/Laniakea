@@ -5,8 +5,8 @@ go 1.26
 require (
 	git.nix13.pw/scuroneko/extypes v1.2.1
 	git.nix13.pw/scuroneko/slog v1.0.2
-	golang.org/x/time v0.14.0
 	github.com/alitto/pond/v2 v2.6.2
+	golang.org/x/time v0.14.0
 )
 
 require (
