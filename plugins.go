@@ -93,37 +93,42 @@ func (c *Command[T]) validateArgs(args []string) error {
 }
 
 type Plugin[T DbContext] struct {
-	Name        string
-	Commands    map[string]Command[T]
-	Payloads    map[string]Command[T]
-	Middlewares extypes.Slice[Middleware[T]]
+	name        string
+	commands    map[string]Command[T]
+	payloads    map[string]Command[T]
+	middlewares extypes.Slice[Middleware[T]]
+	skipAutoCmd bool
 }
 
 func NewPlugin[T DbContext](name string) *Plugin[T] {
 	return &Plugin[T]{
 		name, map[string]Command[T]{},
-		map[string]Command[T]{}, extypes.Slice[Middleware[T]]{},
+		map[string]Command[T]{}, extypes.Slice[Middleware[T]]{}, false,
 	}
 }
 
 func (p *Plugin[T]) AddCommand(command *Command[T]) *Plugin[T] {
-	p.Commands[command.command] = *command
+	p.commands[command.command] = *command
 	return p
 }
 func (p *Plugin[T]) NewCommand(exec CommandExecutor[T], command string, args ...CommandArg) *Command[T] {
 	return NewCommand(exec, command, args...)
 }
 func (p *Plugin[T]) AddPayload(command *Command[T]) *Plugin[T] {
-	p.Payloads[command.command] = *command
+	p.payloads[command.command] = *command
 	return p
 }
 func (p *Plugin[T]) AddMiddleware(middleware Middleware[T]) *Plugin[T] {
-	p.Middlewares = p.Middlewares.Push(middleware)
+	p.middlewares = p.middlewares.Push(middleware)
+	return p
+}
+func (p *Plugin[T]) SkipCommandAutoGen() *Plugin[T] {
+	p.skipAutoCmd = true
 	return p
 }
 
 func (p *Plugin[T]) executeCmd(cmd string, ctx *MsgContext, dbContext *T) {
-	command := p.Commands[cmd]
+	command := p.commands[cmd]
 	if err := command.validateArgs(ctx.Args); err != nil {
 		ctx.error(err)
 		return
@@ -131,7 +136,7 @@ func (p *Plugin[T]) executeCmd(cmd string, ctx *MsgContext, dbContext *T) {
 	command.exec(ctx, dbContext)
 }
 func (p *Plugin[T]) executePayload(payload string, ctx *MsgContext, dbContext *T) {
-	pl := p.Payloads[payload]
+	pl := p.payloads[payload]
 	if err := pl.validateArgs(ctx.Args); err != nil {
 		ctx.error(err)
 		return
@@ -139,7 +144,7 @@ func (p *Plugin[T]) executePayload(payload string, ctx *MsgContext, dbContext *T
 	pl.exec(ctx, dbContext)
 }
 func (p *Plugin[T]) executeMiddlewares(ctx *MsgContext, db *T) bool {
-	for _, m := range p.Middlewares {
+	for _, m := range p.middlewares {
 		if !m.Execute(ctx, db) {
 			return false
 		}

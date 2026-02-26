@@ -46,7 +46,7 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 	text = strings.TrimSpace(text[len(prefix):])
 
 	for _, plugin := range bot.plugins {
-		for cmd := range plugin.Commands {
+		for cmd := range plugin.commands {
 			if !strings.HasPrefix(text, cmd) {
 				continue
 			}
@@ -96,7 +96,7 @@ func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 	ctx.Args = data.Args
 
 	for _, plugin := range bot.plugins {
-		_, ok := plugin.Payloads[data.Command]
+		_, ok := plugin.payloads[data.Command]
 		if !ok {
 			continue
 		}

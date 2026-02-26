@@ -19,20 +19,17 @@ func (bot *Bot[T]) Updates() ([]tgapi.Update, error) {
 		return nil, err
 	}
 
-	for _, u := range updates {
-		bot.SetUpdateOffset(u.UpdateID + 1)
-		err = bot.GetQueue().Enqueue(&u)
-		if err != nil {
-			return nil, err
-		}
-
-		if bot.RequestLogger != nil {
+	if bot.RequestLogger != nil {
+		for _, u := range updates {
 			j, err := json.Marshal(u)
 			if err != nil {
 				bot.GetLogger().Error(err)
 			}
 			bot.RequestLogger.Debugf("UPDATE %s\n", j)
 		}
+	}
+	if len(updates) > 0 {
+		bot.SetUpdateOffset(updates[len(updates)-1].UpdateID + 1)
 	}
 	return updates, err
 }

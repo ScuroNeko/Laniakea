@@ -1,9 +1,9 @@
 package utils
 
 const (
-	VersionString = "0.8.0-beta.4"
-	VersionMajor  = 0
-	VersionMinor  = 8
+	VersionString = "1.0.0-beta.1"
+	VersionMajor  = 1
+	VersionMinor  = 0
 	VersionPatch  = 0
-	Beta          = 4
+	Beta          = 1
 )

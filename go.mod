@@ -3,13 +3,13 @@ module git.nix13.pw/scuroneko/laniakea
 go 1.26
 
 require (
-	git.nix13.pw/scuroneko/extypes v1.2.0
+	git.nix13.pw/scuroneko/extypes v1.2.1
 	git.nix13.pw/scuroneko/slog v1.0.2
 	golang.org/x/time v0.14.0
+	github.com/alitto/pond/v2 v2.6.2
 )
 
 require (
-	github.com/alitto/pond/v2 v2.6.2 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
