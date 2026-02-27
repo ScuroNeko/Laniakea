@@ -3,7 +3,6 @@ package laniakea
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"sort"
 	"strconv"
@@ -325,7 +324,6 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) {
 	pool := pond.NewPool(16)
 	for update := range bot.updateQueue {
 		update := update
-		log.Println(update)
 		pool.Submit(func() {
 			bot.handle(update)
 		})
