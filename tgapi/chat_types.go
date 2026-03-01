@@ -99,6 +99,7 @@ type ChatPermissions struct {
 	CanSendPolls         bool `json:"can_send_polls"`
 	CanSendOtherMessages bool `json:"can_send_other_messages"`
 	CanAddWebPagePreview bool `json:"can_add_web_page_preview"`
+	CatEditTag           bool `json:"cat_edit_tag"`
 	CanChangeInfo        bool `json:"can_change_info"`
 	CanInviteUsers       bool `json:"can_invite_users"`
 	CanPinMessages       bool `json:"can_pin_messages"`
@@ -137,6 +138,7 @@ const (
 type ChatMember struct {
 	Status ChatMemberStatusType `json:"status"`
 	User   User                 `json:"user"`
+	Tag    string               `json:"tag,omitempty"`
 
 	// Owner
 	IsAnonymous *bool   `json:"is_anonymous"`
@@ -160,6 +162,7 @@ type ChatMember struct {
 	CanPinMessages          *bool `json:"can_pin_messages,omitempty"`
 	CanManageTopics         *bool `json:"can_manage_topics,omitempty"`
 	CanManageDirectMessages *bool `json:"can_manage_direct_messages,omitempty"`
+	CanManageTags           *bool `json:"can_manage_tags,omitempty"`
 
 	// Member
 	UntilDate *int `json:"until_date,omitempty"`
@@ -175,6 +178,7 @@ type ChatMember struct {
 	CanSendPolls         *bool `json:"can_send_polls,omitempty"`
 	CanSendOtherMessages *bool `json:"can_send_other_messages,omitempty"`
 	CanAddWebPagePreview *bool `json:"can_add_web_page_preview,omitempty"`
+	CanEditTag           *bool `json:"can_edit_tag,omitempty"`
 }
 
 type ChatBoostSource struct {
@@ -215,6 +219,7 @@ type ChatAdministratorRights struct {
 	CanPinMessages          *bool `json:"can_pin_messages,omitempty"`
 	CanManageTopics         *bool `json:"can_manage_topics,omitempty"`
 	CanManageDirectMessages *bool `json:"can_manage_direct_messages,omitempty"`
+	CanManageTags           *bool `json:"can_manage_tags,omitempty"`
 }
 
 type ChatBoostUpdated struct {

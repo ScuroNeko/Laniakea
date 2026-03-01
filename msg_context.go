@@ -24,6 +24,7 @@ type MsgContext struct {
 	errorTemplate string
 	botLogger     *slog.Logger
 	l10n          *L10n
+	draftProvider *DraftProvider
 }
 
 type AnswerMessage struct {
@@ -77,6 +78,7 @@ func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeybo
 	if kb != nil {
 		params.ReplyMarkup = kb.Get()
 	}
+
 	msg, _, err := ctx.Api.EditMessageCaption(params)
 	if err != nil {
 		ctx.botLogger.Errorln(err)
@@ -104,6 +106,9 @@ func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard) *AnswerMess
 	}
 	if keyboard != nil {
 		params.ReplyMarkup = keyboard.Get()
+	}
+	if ctx.Msg.MessageThreadID > 0 {
+		params.MessageThreadID = ctx.Msg.MessageThreadID
 	}
 
 	msg, err := ctx.Api.SendMessage(params)
@@ -135,6 +140,10 @@ func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard) *An
 	if kb != nil {
 		params.ReplyMarkup = kb.Get()
 	}
+	if ctx.Msg.MessageThreadID > 0 {
+		params.MessageThreadID = ctx.Msg.MessageThreadID
+	}
+
 	msg, err := ctx.Api.SendPhoto(params)
 	if err != nil {
 		ctx.botLogger.Errorln(err)
@@ -162,12 +171,8 @@ func (ctx *MsgContext) delete(messageId int) {
 		ctx.botLogger.Errorln(err)
 	}
 }
-func (m *AnswerMessage) Delete() {
-	m.ctx.delete(m.MessageID)
-}
-func (ctx *MsgContext) CallbackDelete() {
-	ctx.delete(ctx.CallbackMsgId)
-}
+func (m *AnswerMessage) Delete()        { m.ctx.delete(m.MessageID) }
+func (ctx *MsgContext) CallbackDelete() { ctx.delete(ctx.CallbackMsgId) }
 
 func (ctx *MsgContext) answerCallbackQuery(url, text string, showAlert bool) {
 	if len(ctx.CallbackQueryId) == 0 {
@@ -181,23 +186,19 @@ func (ctx *MsgContext) answerCallbackQuery(url, text string, showAlert bool) {
 		ctx.botLogger.Errorln(err)
 	}
 }
-func (ctx *MsgContext) AnswerCbQuery() {
-	ctx.answerCallbackQuery("", "", false)
-}
-func (ctx *MsgContext) AnswerCbQueryText(text string) {
-	ctx.answerCallbackQuery("", text, false)
-}
-func (ctx *MsgContext) AnswerCbQueryAlert(text string) {
-	ctx.answerCallbackQuery("", text, true)
-}
-func (ctx *MsgContext) AnswerCbQueryUrl(u string) {
-	ctx.answerCallbackQuery(u, "", false)
-}
+func (ctx *MsgContext) AnswerCbQuery()                 { ctx.answerCallbackQuery("", "", false) }
+func (ctx *MsgContext) AnswerCbQueryText(text string)  { ctx.answerCallbackQuery("", text, false) }
+func (ctx *MsgContext) AnswerCbQueryAlert(text string) { ctx.answerCallbackQuery("", text, true) }
+func (ctx *MsgContext) AnswerCbQueryUrl(u string)      { ctx.answerCallbackQuery(u, "", false) }
 
 func (ctx *MsgContext) SendAction(action tgapi.ChatActionType) {
-	_, err := ctx.Api.SendChatAction(tgapi.SendChatActionP{
+	params := tgapi.SendChatActionP{
 		ChatID: ctx.Msg.Chat.ID, Action: action,
-	})
+	}
+	if ctx.Msg.MessageThreadID > 0 {
+		params.MessageThreadID = ctx.Msg.MessageThreadID
+	}
+	_, err := ctx.Api.SendChatAction(params)
 	if err != nil {
 		ctx.botLogger.Errorln(err)
 	}
@@ -213,10 +214,9 @@ func (ctx *MsgContext) error(err error) {
 	}
 	ctx.botLogger.Errorln(err)
 }
-func (ctx *MsgContext) Error(err error) {
-	ctx.error(err)
-}
+func (ctx *MsgContext) Error(err error) { ctx.error(err) }
 
+func (ctx *MsgContext) NewDraft() *Draft { return ctx.draftProvider.NewDraft() }
 func (ctx *MsgContext) Translate(key string) string {
 	if ctx.From == nil {
 		return key

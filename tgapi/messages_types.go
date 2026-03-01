@@ -12,10 +12,11 @@ type Message struct {
 	BusinessConnectionId string `json:"business_connection_id,omitempty"`
 	From                 *User  `json:"from,omitempty"`
 
-	SenderChat        *Chat `json:"sender_chat,omitempty"`
-	SenderBoostCount  int   `json:"sender_boost_count,omitempty"`
-	SenderBusinessBot *User `json:"sender_business_bot,omitempty"`
-	Chat              *Chat `json:"chat,omitempty"`
+	SenderChat        *Chat  `json:"sender_chat,omitempty"`
+	SenderBoostCount  int    `json:"sender_boost_count,omitempty"`
+	SenderBusinessBot *User  `json:"sender_business_bot,omitempty"`
+	SenderTag         string `json:"sender_tag,omitempty"`
+	Chat              *Chat  `json:"chat,omitempty"`
 
 	IsTopicMessage     bool     `json:"is_topic_message,omitempty"`
 	IsAutomaticForward bool     `json:"is_automatic_forward,omitempty"`
@@ -74,6 +75,7 @@ const (
 	MessageEntityTextLink             MessageEntityType = "text_link"
 	MessageEntityTextMention          MessageEntityType = "text_mention"
 	MessageEntityCustomEmoji          MessageEntityType = "custom_emoji"
+	MessageEntityDateTime             MessageEntityType = "date_time"
 )
 
 type MessageEntity struct {
@@ -85,6 +87,9 @@ type MessageEntity struct {
 	User          *User  `json:"user,omitempty"`
 	Language      string `json:"language,omitempty"`
 	CustomEmojiID string `json:"custom_emoji_id,omitempty"`
+
+	UnixTime       int    `json:"unix_time,omitempty"`
+	DateTimeFormat string `json:"date_time_format,omitempty"`
 }
 
 type ReplyParameters struct {

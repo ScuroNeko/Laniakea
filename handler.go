@@ -9,7 +9,13 @@ import (
 )
 
 func (bot *Bot[T]) handle(u *tgapi.Update) {
-	ctx := &MsgContext{Update: *u, Api: bot.api, botLogger: bot.logger, errorTemplate: bot.errorTemplate, l10n: bot.l10n}
+	ctx := &MsgContext{
+		Update: *u, Api: bot.api,
+		botLogger:     bot.logger,
+		errorTemplate: bot.errorTemplate,
+		l10n:          bot.l10n,
+		draftProvider: bot.draftProvider,
+	}
 	for _, middleware := range bot.middlewares {
 		middleware.Execute(ctx, bot.dbContext)
 	}

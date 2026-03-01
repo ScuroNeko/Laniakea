@@ -56,6 +56,7 @@ type PromoteChatMember struct {
 	CanPinMessages          bool `json:"can_pin_messages,omitempty"`
 	CanManageTopics         bool `json:"can_manage_topics,omitempty"`
 	CanManageDirectMessages bool `json:"can_manage_direct_messages,omitempty"`
+	CanManageTags           bool `json:"can_manage_tags,omitempty"`
 }
 
 func (api *API) PromoteChatMember(params PromoteChatMember) (bool, error) {
@@ -71,6 +72,17 @@ type SetChatAdministratorCustomTitleP struct {
 
 func (api *API) SetChatAdministratorCustomTitle(params SetChatAdministratorCustomTitleP) (bool, error) {
 	req := NewRequest[bool]("setChatAdministratorCustomTitle", params)
+	return req.Do(api)
+}
+
+type SetChatMemberTagP struct {
+	ChatID int    `json:"chat_id"`
+	UserID int    `json:"user_id"`
+	Tag    string `json:"tag,omitempty"`
+}
+
+func (api *API) SetChatMemberTag(params SetChatMemberTagP) (bool, error) {
+	req := NewRequest[bool]("setChatMemberTag", params)
 	return req.Do(api)
 }
 

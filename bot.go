@@ -84,10 +84,11 @@ type Bot[T DbContext] struct {
 	prefixes    []string
 	runners     []Runner[T]
 
-	api       *tgapi.API
-	uploader  *tgapi.Uploader
-	dbContext *T
-	l10n      *L10n
+	api           *tgapi.API
+	uploader      *tgapi.Uploader
+	dbContext     *T
+	l10n          *L10n
+	draftProvider *DraftProvider
 
 	updateOffsetMu sync.Mutex
 	updateOffset   int
@@ -122,6 +123,7 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 		runners:       make([]Runner[T], 0),
 		extraLoggers:  make([]*slog.Logger, 0),
 		l10n:          &L10n{},
+		draftProvider: NewRandomDraftProvider(api),
 	}
 	bot.extraLoggers = bot.extraLoggers.Push(api.GetLogger()).Push(uploader.GetLogger())
 
@@ -202,6 +204,10 @@ func (bot *Bot[T]) GetUpdateTypes() []tgapi.UpdateType { return bot.updateTypes 
 func (bot *Bot[T]) GetLogger() *slog.Logger            { return bot.logger }
 func (bot *Bot[T]) GetDBContext() *T                   { return bot.dbContext }
 func (bot *Bot[T]) L10n(lang, key string) string       { return bot.l10n.Translate(lang, key) }
+func (bot *Bot[T]) SetDraftProvider(p *DraftProvider) *Bot[T] {
+	bot.draftProvider = p
+	return bot
+}
 
 type DbLogger[T DbContext] func(db *T) slog.LoggerWriter
 

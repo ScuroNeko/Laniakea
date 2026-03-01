@@ -268,7 +268,7 @@ func (api *API) SendDice(params SendDiceP) (Message, error) {
 type SendMessageDraftP struct {
 	ChatID          int             `json:"chat_id"`
 	MessageThreadID int             `json:"message_thread_id,omitempty"`
-	DraftID         int             `json:"draft_id"`
+	DraftID         uint64          `json:"draft_id"`
 	Text            string          `json:"text"`
 	ParseMode       ParseMode       `json:"parse_mode,omitempty"`
 	Entities        []MessageEntity `json:"entities,omitempty"`
