@@ -87,3 +87,15 @@ func (d *Draft) Push(newText string) error {
 	_, err := d.api.SendMessageDraft(params)
 	return err
 }
+func (d *Draft) Flush() error {
+	params := tgapi.SendMessageP{
+		ChatID:    d.chatID,
+		ParseMode: d.parseMode,
+		Entities:  d.entities,
+	}
+	if d.messageThreadID > 0 {
+		params.MessageThreadID = d.messageThreadID
+	}
+	_, err := d.api.SendMessage(params)
+	return err
+}
