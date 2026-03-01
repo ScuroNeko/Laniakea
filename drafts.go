@@ -88,10 +88,15 @@ func (d *Draft) Push(newText string) error {
 	return err
 }
 func (d *Draft) Flush() error {
+	if d.Message == "" {
+		return nil
+	}
+
 	params := tgapi.SendMessageP{
 		ChatID:    d.chatID,
 		ParseMode: d.parseMode,
 		Entities:  d.entities,
+		Text:      d.Message,
 	}
 	if d.messageThreadID > 0 {
 		params.MessageThreadID = d.messageThreadID

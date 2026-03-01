@@ -6,11 +6,17 @@ type MessageReplyMarkup struct {
 	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard"`
 }
 
+type DirectMessageTopic struct {
+	TopicID int64 `json:"topic_id"`
+	User    *User `json:"user,omitempty"`
+}
+
 type Message struct {
-	MessageID            int    `json:"message_id"`
-	MessageThreadID      int    `json:"message_thread_id,omitempty"`
-	BusinessConnectionId string `json:"business_connection_id,omitempty"`
-	From                 *User  `json:"from,omitempty"`
+	MessageID            int                 `json:"message_id"`
+	MessageThreadID      int                 `json:"message_thread_id,omitempty"`
+	DirectMessageTopic   *DirectMessageTopic `json:"direct_message_topic,omitempty"`
+	BusinessConnectionId string              `json:"business_connection_id,omitempty"`
+	From                 *User               `json:"from,omitempty"`
 
 	SenderChat        *Chat  `json:"sender_chat,omitempty"`
 	SenderBoostCount  int    `json:"sender_boost_count,omitempty"`

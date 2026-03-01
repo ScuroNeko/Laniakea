@@ -110,6 +110,9 @@ func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard) *AnswerMess
 	if ctx.Msg.MessageThreadID > 0 {
 		params.MessageThreadID = ctx.Msg.MessageThreadID
 	}
+	if ctx.Msg.DirectMessageTopic != nil {
+		params.DirectMessagesTopicID = ctx.Msg.DirectMessageTopic.TopicID
+	}
 
 	msg, err := ctx.Api.SendMessage(params)
 	if err != nil {

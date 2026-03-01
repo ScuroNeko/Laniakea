@@ -4,7 +4,7 @@ type SendMessageP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
 	ChatID                int    `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
-	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
+	DirectMessagesTopicID int64  `json:"direct_messages_topic_id,omitempty"`
 
 	Text                 string              `json:"text"`
 	ParseMode            ParseMode           `json:"parse_mode,omitempty"`
