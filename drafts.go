@@ -53,10 +53,17 @@ type Draft struct {
 }
 
 func NewRandomDraftProvider(api *tgapi.API) *DraftProvider {
-	return &DraftProvider{api: api, generator: &RandomDraftIdGenerator{}}
+	return &DraftProvider{
+		api: api, generator: &RandomDraftIdGenerator{},
+		drafts: make(map[uint64]*Draft),
+	}
 }
 func NewLinearDraftProvider(api *tgapi.API, startValue uint64) *DraftProvider {
-	return &DraftProvider{api: api, generator: &LinearDraftIdGenerator{lastId: startValue}}
+	return &DraftProvider{
+		api:       api,
+		generator: &LinearDraftIdGenerator{lastId: startValue},
+		drafts:    make(map[uint64]*Draft),
+	}
 }
 func (d *DraftProvider) NewDraft() *Draft {
 	id := d.generator.Next()
@@ -65,11 +72,11 @@ func (d *DraftProvider) NewDraft() *Draft {
 	return draft
 }
 
-func (d *Draft) Push(draftId uint64, newText string) error {
+func (d *Draft) Push(newText string) error {
 	d.Message += newText
 	params := tgapi.SendMessageDraftP{
 		ChatID:    d.chatID,
-		DraftID:   draftId,
+		DraftID:   d.ID,
 		Text:      d.Message,
 		ParseMode: d.parseMode,
 		Entities:  d.entities,

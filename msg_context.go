@@ -216,7 +216,12 @@ func (ctx *MsgContext) error(err error) {
 }
 func (ctx *MsgContext) Error(err error) { ctx.error(err) }
 
-func (ctx *MsgContext) NewDraft() *Draft { return ctx.draftProvider.NewDraft() }
+func (ctx *MsgContext) NewDraft() *Draft {
+	draft := ctx.draftProvider.NewDraft()
+	draft.chatID = ctx.Msg.Chat.ID
+	draft.messageThreadID = ctx.Msg.MessageThreadID
+	return draft
+}
 func (ctx *MsgContext) Translate(key string) string {
 	if ctx.From == nil {
 		return key
