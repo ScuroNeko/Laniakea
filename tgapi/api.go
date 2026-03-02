@@ -102,10 +102,14 @@ type ApiResponse[R any] struct {
 type TelegramRequest[R, P any] struct {
 	method string
 	params P
+	chatId int64
 }
 
 func NewRequest[R, P any](method string, params P) TelegramRequest[R, P] {
-	return TelegramRequest[R, P]{method: method, params: params}
+	return TelegramRequest[R, P]{method, params, 0}
+}
+func NewRequestWithChatID[R, P any](method string, params P, chatId int64) TelegramRequest[R, P] {
+	return TelegramRequest[R, P]{method, params, chatId}
 }
 func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, error) {
 	var zero R
@@ -165,7 +169,12 @@ func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, erro
 			if responseData.Parameters.RetryAfter != nil {
 				after = *responseData.Parameters.RetryAfter
 			}
-			api.Limiter.SetGlobalLock(after)
+			if r.chatId > 0 {
+				api.Limiter.SetChatLock(r.chatId, after)
+			} else {
+				api.Limiter.SetGlobalLock(after)
+			}
+			time.Sleep(time.Duration(after) * time.Second)
 			return r.doRequest(ctx, api)
 		}
 		return zero, ErrRateLimit

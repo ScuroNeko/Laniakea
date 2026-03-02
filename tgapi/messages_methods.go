@@ -21,7 +21,7 @@ type SendMessageP struct {
 }
 
 func (api *API) SendMessage(params SendMessageP) (Message, error) {
-	req := NewRequest[Message, SendMessageP]("sendMessage", params)
+	req := NewRequestWithChatID[Message, SendMessageP]("sendMessage", params, params.ChatID)
 	return req.Do(api)
 }
 
@@ -275,7 +275,7 @@ type SendMessageDraftP struct {
 }
 
 func (api *API) SendMessageDraft(params SendMessageDraftP) (bool, error) {
-	req := NewRequest[bool]("sendMessageDraft", params)
+	req := NewRequestWithChatID[bool]("sendMessageDraft", params, params.ChatID)
 	return req.Do(api)
 }
 
