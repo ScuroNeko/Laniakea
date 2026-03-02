@@ -1,6 +1,7 @@
 package laniakea
 
 import (
+	"context"
 	"fmt"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
@@ -114,6 +115,11 @@ func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard) *AnswerMess
 		params.DirectMessagesTopicID = ctx.Msg.DirectMessageTopic.TopicID
 	}
 
+	cont := context.Background()
+	if err := ctx.Api.Limiter.Wait(cont, ctx.Msg.Chat.ID); err != nil {
+		ctx.botLogger.Errorln(err)
+		return nil
+	}
 	msg, err := ctx.Api.SendMessage(params)
 	if err != nil {
 		ctx.botLogger.Errorln(err)
@@ -220,6 +226,12 @@ func (ctx *MsgContext) error(err error) {
 func (ctx *MsgContext) Error(err error) { ctx.error(err) }
 
 func (ctx *MsgContext) NewDraft() *Draft {
+	c := context.Background()
+	if err := ctx.Api.Limiter.Wait(c, ctx.Msg.Chat.ID); err != nil {
+		ctx.botLogger.Errorln(err)
+		return nil
+	}
+
 	draft := ctx.draftProvider.NewDraft()
 	draft.chatID = ctx.Msg.Chat.ID
 	draft.messageThreadID = ctx.Msg.MessageThreadID

@@ -32,7 +32,7 @@ func (g *LinearDraftIdGenerator) Next() uint64 {
 type DraftProvider struct {
 	api *tgapi.API
 
-	chatID          int
+	chatID          int64
 	messageThreadID int
 	parseMode       tgapi.ParseMode
 	entities        []tgapi.MessageEntity
@@ -43,7 +43,7 @@ type DraftProvider struct {
 type Draft struct {
 	api *tgapi.API
 
-	chatID          int
+	chatID          int64
 	messageThreadID int
 	parseMode       tgapi.ParseMode
 	entities        []tgapi.MessageEntity

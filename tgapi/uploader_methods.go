@@ -2,7 +2,7 @@ package tgapi
 
 type UploadPhotoP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 

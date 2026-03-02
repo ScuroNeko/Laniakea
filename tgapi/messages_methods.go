@@ -2,7 +2,7 @@ package tgapi
 
 type SendMessageP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int64  `json:"direct_messages_topic_id,omitempty"`
 
@@ -266,7 +266,7 @@ func (api *API) SendDice(params SendDiceP) (Message, error) {
 }
 
 type SendMessageDraftP struct {
-	ChatID          int             `json:"chat_id"`
+	ChatID          int64           `json:"chat_id"`
 	MessageThreadID int             `json:"message_thread_id,omitempty"`
 	DraftID         uint64          `json:"draft_id"`
 	Text            string          `json:"text"`
@@ -281,7 +281,7 @@ func (api *API) SendMessageDraft(params SendMessageDraftP) (bool, error) {
 
 type SendChatActionP struct {
 	BusinessConnectionID string         `json:"business_connection_id,omitempty"`
-	ChatID               int            `json:"chat_id"`
+	ChatID               int64          `json:"chat_id"`
 	MessageThreadID      int            `json:"message_thread_id,omitempty"`
 	Action               ChatActionType `json:"action"`
 }
@@ -307,7 +307,7 @@ func (api *API) SetMessageReaction(params SetMessageReactionP) (bool, error) {
 
 type EditMessageTextP struct {
 	BusinessConnectionID string       `json:"business_connection_id,omitempty"`
-	ChatID               int          `json:"chat_id,omitempty"`
+	ChatID               int64        `json:"chat_id,omitempty"`
 	MessageID            int          `json:"message_id,omitempty"`
 	InlineMessageID      string       `json:"inline_message_id,omitempty"`
 	Text                 string       `json:"text"`
@@ -331,7 +331,7 @@ func (api *API) EditMessageText(params EditMessageTextP) (Message, bool, error) 
 
 type EditMessageCaptionP struct {
 	BusinessConnectionID string       `json:"business_connection_id,omitempty"`
-	ChatID               int          `json:"chat_id,omitempty"`
+	ChatID               int64        `json:"chat_id,omitempty"`
 	MessageID            int          `json:"message_id,omitempty"`
 	InlineMessageID      string       `json:"inline_message_id,omitempty"`
 	Caption              string       `json:"caption"`
@@ -495,8 +495,8 @@ func (api *API) DeclineSuggestedPost(params DeclineSuggestedPostP) (bool, error)
 }
 
 type DeleteMessageP struct {
-	ChatID    int `json:"chat_id"`
-	MessageID int `json:"message_id"`
+	ChatID    int64 `json:"chat_id"`
+	MessageID int   `json:"message_id"`
 }
 
 func (api *API) DeleteMessage(params DeleteMessageP) (bool, error) {

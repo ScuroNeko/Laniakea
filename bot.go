@@ -11,9 +11,9 @@ import (
 
 	"git.nix13.pw/scuroneko/extypes"
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
+	"git.nix13.pw/scuroneko/laniakea/utils"
 	"git.nix13.pw/scuroneko/slog"
 	"github.com/alitto/pond/v2"
-	"golang.org/x/time/rate"
 )
 
 type BotOpts struct {
@@ -99,9 +99,9 @@ type Bot[T DbContext] struct {
 func NewBot[T any](opts *BotOpts) *Bot[T] {
 	updateQueue := make(chan *tgapi.Update, 512)
 
-	var limiter *rate.Limiter
+	var limiter *utils.RateLimiter
 	if opts.RateLimit > 0 {
-		limiter = rate.NewLimiter(rate.Limit(opts.RateLimit), opts.RateLimit)
+		limiter = utils.NewRateLimiter()
 	}
 
 	apiOpts := tgapi.NewAPIOpts(opts.Token).SetAPIUrl(opts.APIUrl).UseTestServer(opts.UseTestServer).SetLimiter(limiter)

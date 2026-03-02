@@ -12,7 +12,6 @@ import (
 
 	"git.nix13.pw/scuroneko/laniakea/utils"
 	"git.nix13.pw/scuroneko/slog"
-	"golang.org/x/time/rate"
 )
 
 type APIOpts struct {
@@ -21,7 +20,7 @@ type APIOpts struct {
 	useTestServer bool
 	apiUrl        string
 
-	limiter           *rate.Limiter
+	limiter           *utils.RateLimiter
 	dropOverflowLimit bool
 }
 
@@ -46,7 +45,7 @@ func (opts *APIOpts) SetAPIUrl(apiUrl string) *APIOpts {
 	}
 	return opts
 }
-func (opts *APIOpts) SetLimiter(limiter *rate.Limiter) *APIOpts {
+func (opts *APIOpts) SetLimiter(limiter *utils.RateLimiter) *APIOpts {
 	opts.limiter = limiter
 	return opts
 }
@@ -63,7 +62,7 @@ type API struct {
 	apiUrl        string
 
 	pool              *WorkerPool
-	limiter           *rate.Limiter
+	Limiter           *utils.RateLimiter
 	dropOverflowLimit bool
 }
 
@@ -88,11 +87,17 @@ func (api *API) CloseApi() error {
 }
 func (api *API) GetLogger() *slog.Logger { return api.logger }
 
+type ResponseParameters struct {
+	MigrateToChatID *int64 `json:"migrate_to_chat_id,omitempty"`
+	RetryAfter      *int   `json:"retry_after,omitempty"`
+}
 type ApiResponse[R any] struct {
 	Ok          bool   `json:"ok"`
 	Description string `json:"description,omitempty"`
 	Result      R      `json:"result,omitempty"`
 	ErrorCode   int    `json:"error_code,omitempty"`
+
+	Parameters *ResponseParameters `json:"parameters,omitempty"`
 }
 type TelegramRequest[R, P any] struct {
 	method string
@@ -104,13 +109,13 @@ func NewRequest[R, P any](method string, params P) TelegramRequest[R, P] {
 }
 func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, error) {
 	var zero R
-	if api.limiter != nil {
+	if api.Limiter != nil {
 		if api.dropOverflowLimit {
-			if !api.limiter.Allow() {
+			if !api.Limiter.GlobalAllow() {
 				return zero, errors.New("rate limited")
 			}
 		} else {
-			if err := api.limiter.Wait(ctx); err != nil {
+			if err := api.Limiter.GlobalWait(ctx); err != nil {
 				return zero, err
 			}
 		}
@@ -149,10 +154,23 @@ func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, erro
 		return zero, err
 	}
 	api.logger.Debugln("RES", r.method, string(data))
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusTooManyRequests {
 		return zero, fmt.Errorf("unexpected status code: %d, %s", res.StatusCode, string(data))
 	}
-	return parseBody[R](data)
+
+	responseData, err := parseBody[R](data)
+	if errors.Is(err, ErrRateLimit) {
+		if responseData.Parameters != nil {
+			after := 0
+			if responseData.Parameters.RetryAfter != nil {
+				after = *responseData.Parameters.RetryAfter
+			}
+			api.Limiter.SetGlobalLock(after)
+			return r.doRequest(ctx, api)
+		}
+		return zero, ErrRateLimit
+	}
+	return responseData.Result, err
 }
 func (r TelegramRequest[R, P]) DoWithContext(ctx context.Context, api *API) (R, error) {
 	var zero R
@@ -184,15 +202,17 @@ func readBody(body io.ReadCloser) ([]byte, error) {
 	reader := io.LimitReader(body, 10<<20)
 	return io.ReadAll(reader)
 }
-func parseBody[R any](data []byte) (R, error) {
-	var zero R
+func parseBody[R any](data []byte) (ApiResponse[R], error) {
 	var resp ApiResponse[R]
 	err := json.Unmarshal(data, &resp)
 	if err != nil {
-		return zero, err
+		return resp, err
 	}
 	if !resp.Ok {
-		return zero, fmt.Errorf("[%d] %s", resp.ErrorCode, resp.Description)
+		if resp.ErrorCode == 429 {
+			return resp, ErrRateLimit
+		}
+		return resp, fmt.Errorf("[%d] %s", resp.ErrorCode, resp.Description)
 	}
-	return resp.Result, nil
+	return resp, nil
 }

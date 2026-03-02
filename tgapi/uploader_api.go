@@ -66,13 +66,13 @@ func NewUploaderRequest[R, P any](method string, params P, files ...UploaderFile
 }
 func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, error) {
 	var zero R
-	if up.api.limiter != nil {
+	if up.api.Limiter != nil {
 		if up.api.dropOverflowLimit {
-			if !up.api.limiter.Allow() {
+			if !up.api.Limiter.GlobalAllow() {
 				return zero, errors.New("rate limited")
 			}
 		} else {
-			if err := up.api.limiter.Wait(ctx); err != nil {
+			if err := up.api.Limiter.GlobalWait(ctx); err != nil {
 				return zero, err
 			}
 		}
@@ -109,7 +109,11 @@ func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, 
 		return zero, fmt.Errorf("unexpected status code: %d, %s", res.StatusCode, string(body))
 	}
 
-	return parseBody[R](body)
+	respBody, err := parseBody[R](body)
+	if err != nil {
+		return zero, err
+	}
+	return respBody.Result, nil
 }
 func (r UploaderRequest[R, P]) DoWithContext(ctx context.Context, up *Uploader) (R, error) {
 	var zero R
