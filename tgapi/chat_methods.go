@@ -209,7 +209,9 @@ func (api *API) DeclineChatJoinRequest(params DeclineChatJoinRequestP) (bool, er
 
 func (api *API) SetChatPhoto() {
 	uploader := NewUploader(api)
-	defer uploader.Close()
+	defer func() {
+		_ = uploader.Close()
+	}()
 }
 
 type DeleteChatPhotoP struct {

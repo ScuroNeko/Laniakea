@@ -113,6 +113,9 @@ func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, 
 
 		body, err := readBody(resp.Body)
 		_ = resp.Body.Close()
+		if err != nil {
+			return zero, err
+		}
 		up.logger.Debugln("UPLOADER RES", r.method, string(body))
 
 		response, err := parseBody[R](body)
@@ -145,7 +148,7 @@ func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, 
 func (r UploaderRequest[R, P]) DoWithContext(ctx context.Context, up *Uploader) (R, error) {
 	var zero R
 
-	result, err := up.api.pool.Submit(ctx, func(ctx context.Context) (any, error) {
+	result, err := up.api.pool.submit(ctx, func(ctx context.Context) (any, error) {
 		return r.doRequest(ctx, up)
 	})
 	if err != nil {
@@ -156,10 +159,10 @@ func (r UploaderRequest[R, P]) DoWithContext(ctx context.Context, up *Uploader) 
 	case <-ctx.Done():
 		return zero, ctx.Err()
 	case res := <-result:
-		if res.Err != nil {
-			return zero, res.Err
+		if res.err != nil {
+			return zero, res.err
 		}
-		if val, ok := res.Value.(R); ok {
+		if val, ok := res.value.(R); ok {
 			return val, nil
 		}
 		return zero, ErrPoolUnexpected

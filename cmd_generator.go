@@ -16,7 +16,7 @@ func generateBotCommand[T any](cmd Command[T]) tgapi.BotCommand {
 	var descArgs []string
 	for _, a := range cmd.args {
 		if a.required {
-			descArgs = append(descArgs, fmt.Sprintf("%s", a.text))
+			descArgs = append(descArgs, a.text)
 		} else {
 			descArgs = append(descArgs, fmt.Sprintf("[%s]", a.text))
 		}

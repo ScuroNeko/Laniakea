@@ -15,7 +15,7 @@ const (
 )
 
 var (
-	CommandRegexInt    = regexp.MustCompile("\\d+")
+	CommandRegexInt    = regexp.MustCompile(`\d+`)
 	CommandRegexString = regexp.MustCompile(".+")
 )
 
