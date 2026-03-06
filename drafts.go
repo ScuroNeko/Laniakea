@@ -87,9 +87,9 @@ func (d *DraftProvider) NewDraft() *Draft {
 }
 func (d *Draft) push(text string, escapeMd bool) error {
 	if escapeMd {
-		text += EscapeMarkdownV2(text)
+		d.Message += EscapeMarkdownV2(text)
 	} else {
-		text += text
+		d.Message += text
 	}
 	params := tgapi.SendMessageDraftP{
 		ChatID:    d.chatID,
