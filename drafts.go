@@ -5,6 +5,7 @@ import (
 	"sync/atomic"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
+	"git.nix13.pw/scuroneko/laniakea/utils"
 )
 
 type draftIdGenerator interface {
@@ -55,7 +56,8 @@ type Draft struct {
 func NewRandomDraftProvider(api *tgapi.API) *DraftProvider {
 	return &DraftProvider{
 		api: api, generator: &RandomDraftIdGenerator{},
-		drafts: make(map[uint64]*Draft),
+		parseMode: tgapi.ParseMDV2,
+		drafts:    make(map[uint64]*Draft),
 	}
 }
 func NewLinearDraftProvider(api *tgapi.API, startValue uint64) *DraftProvider {
@@ -84,9 +86,12 @@ func (d *DraftProvider) NewDraft() *Draft {
 	d.drafts[id] = draft
 	return draft
 }
-
-func (d *Draft) Push(newText string) error {
-	d.Message += newText
+func (d *Draft) push(text string, escapeMd bool) error {
+	if escapeMd {
+		text += utils.EscapeMarkdownV2(text)
+	} else {
+		text += text
+	}
 	params := tgapi.SendMessageDraftP{
 		ChatID:    d.chatID,
 		DraftID:   d.ID,
@@ -100,6 +105,14 @@ func (d *Draft) Push(newText string) error {
 	_, err := d.api.SendMessageDraft(params)
 	return err
 }
+
+func (d *Draft) Push(text string) error {
+	return d.push(text, true)
+}
+func (d *Draft) PushMarkdown(text string) error {
+	return d.push(text, false)
+}
+
 func (d *Draft) Clear() {
 	d.Message = ""
 }

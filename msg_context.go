@@ -99,11 +99,14 @@ func (m *AnswerMessage) EditCaptionKeyboard(text string, kb *InlineKeyboard) *An
 	return m.ctx.editPhotoText(m.MessageID, text, kb)
 }
 
-func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard) *AnswerMessage {
+func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard, escapeMd bool) *AnswerMessage {
 	params := tgapi.SendMessageP{
 		ChatID:    ctx.Msg.Chat.ID,
 		Text:      text,
 		ParseMode: tgapi.ParseMDV2,
+	}
+	if escapeMd {
+		params.Text = utils.EscapeMarkdownV2(text)
 	}
 	if keyboard != nil {
 		params.ReplyMarkup = keyboard.Get()
@@ -129,22 +132,34 @@ func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard) *AnswerMess
 		MessageID: msg.MessageID, ctx: ctx, IsMedia: false, Text: text,
 	}
 }
+func (ctx *MsgContext) AnswerMarkdown(text string) *AnswerMessage {
+	return ctx.answer(text, nil, false)
+}
 func (ctx *MsgContext) Answer(text string) *AnswerMessage {
-	return ctx.answer(text, nil)
+	return ctx.answer(text, nil, true)
+}
+func (ctx *MsgContext) AnswerfMarkdown(template string, args ...any) *AnswerMessage {
+	return ctx.answer(fmt.Sprintf(template, args...), nil, false)
 }
 func (ctx *MsgContext) Answerf(template string, args ...any) *AnswerMessage {
-	return ctx.answer(fmt.Sprintf(template, args...), nil)
+	return ctx.answer(fmt.Sprintf(template, args...), nil, true)
+}
+func (ctx *MsgContext) KeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage {
+	return ctx.answer(text, keyboard, false)
 }
 func (ctx *MsgContext) Keyboard(text string, kb *InlineKeyboard) *AnswerMessage {
-	return ctx.answer(text, kb)
+	return ctx.answer(text, kb, true)
 }
 
-func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard) *AnswerMessage {
+func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard, escapeMd bool) *AnswerMessage {
 	params := tgapi.SendPhotoP{
 		ChatID:    ctx.Msg.Chat.ID,
 		Caption:   text,
-		ParseMode: tgapi.ParseMD,
+		ParseMode: tgapi.ParseMDV2,
 		Photo:     photoId,
+	}
+	if escapeMd {
+		params.Caption = utils.EscapeMarkdownV2(text)
 	}
 	if kb != nil {
 		params.ReplyMarkup = kb.Get()
@@ -165,10 +180,24 @@ func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard) *An
 	}
 }
 func (ctx *MsgContext) AnswerPhoto(photoId, text string) *AnswerMessage {
-	return ctx.answerPhoto(photoId, text, nil)
+	return ctx.answerPhoto(photoId, text, nil, true)
 }
+func (ctx *MsgContext) AnswerPhotoMarkdown(photoId, text string) *AnswerMessage {
+	return ctx.answerPhoto(photoId, text, nil, false)
+}
+
 func (ctx *MsgContext) AnswerPhotoKeyboard(photoId, text string, kb *InlineKeyboard) *AnswerMessage {
-	return ctx.answerPhoto(photoId, text, kb)
+	return ctx.answerPhoto(photoId, text, kb, true)
+}
+func (ctx *MsgContext) AnswerPhotoKeyboardMarkdown(photoId, text string, kb *InlineKeyboard) *AnswerMessage {
+	return ctx.answerPhoto(photoId, text, kb, false)
+}
+
+func (ctx *MsgContext) AnswerPhotof(photoId, template string, args ...any) *AnswerMessage {
+	return ctx.answerPhoto(photoId, fmt.Sprintf(template, args...), nil, true)
+}
+func (ctx *MsgContext) AnswerPhotofMarkdown(photoId, template string, args ...any) *AnswerMessage {
+	return ctx.answerPhoto(photoId, fmt.Sprintf(template, args...), nil, false)
 }
 
 func (ctx *MsgContext) delete(messageId int) {
@@ -214,12 +243,12 @@ func (ctx *MsgContext) SendAction(action tgapi.ChatActionType) {
 }
 
 func (ctx *MsgContext) error(err error) {
-	text := fmt.Sprintf(ctx.errorTemplate, utils.EscapeMarkdown(err.Error()))
+	text := fmt.Sprintf(ctx.errorTemplate, err.Error())
 
 	if ctx.CallbackQueryId != "" {
 		ctx.answerCallbackQuery("", text, false)
 	} else {
-		ctx.answer(text, nil)
+		ctx.answer(text, nil, true)
 	}
 	ctx.botLogger.Errorln(err)
 }
