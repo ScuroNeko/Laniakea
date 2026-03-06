@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
-	"git.nix13.pw/scuroneko/laniakea/utils"
 	"git.nix13.pw/scuroneko/slog"
 )
 
@@ -35,12 +34,15 @@ type AnswerMessage struct {
 	ctx       *MsgContext
 }
 
-func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard) *AnswerMessage {
+func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard, escapeMd bool) *AnswerMessage {
 	params := tgapi.EditMessageTextP{
 		MessageID: messageId,
 		ChatID:    ctx.Msg.Chat.ID,
 		Text:      text,
-		ParseMode: tgapi.ParseMD,
+		ParseMode: tgapi.ParseMDV2,
+	}
+	if escapeMd {
+		params.Text = EscapeMarkdownV2(text)
 	}
 	if keyboard != nil {
 		params.ReplyMarkup = keyboard.Get()
@@ -55,7 +57,10 @@ func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard
 	}
 }
 func (m *AnswerMessage) Edit(text string) *AnswerMessage {
-	return m.ctx.edit(m.MessageID, text, nil)
+	return m.ctx.edit(m.MessageID, text, nil, true)
+}
+func (m *AnswerMessage) EditMarkdown(text string) *AnswerMessage {
+	return m.ctx.edit(m.MessageID, text, nil, false)
 }
 func (ctx *MsgContext) EditCallback(text string, keyboard *InlineKeyboard) *AnswerMessage {
 	if ctx.CallbackMsgId == 0 {
@@ -63,7 +68,15 @@ func (ctx *MsgContext) EditCallback(text string, keyboard *InlineKeyboard) *Answ
 		return nil
 	}
 
-	return ctx.edit(ctx.CallbackMsgId, text, keyboard)
+	return ctx.edit(ctx.CallbackMsgId, text, keyboard, true)
+}
+func (ctx *MsgContext) EditCallbackMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage {
+	if ctx.CallbackMsgId == 0 {
+		ctx.botLogger.Errorln("Can't edit non-callback update message")
+		return nil
+	}
+
+	return ctx.edit(ctx.CallbackMsgId, text, keyboard, false)
 }
 func (ctx *MsgContext) EditCallbackf(format string, keyboard *InlineKeyboard, args ...any) *AnswerMessage {
 	return ctx.EditCallback(fmt.Sprintf(format, args...), keyboard)
@@ -106,7 +119,7 @@ func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard, escapeMd bo
 		ParseMode: tgapi.ParseMDV2,
 	}
 	if escapeMd {
-		params.Text = utils.EscapeMarkdownV2(text)
+		params.Text = EscapeMarkdownV2(text)
 	}
 	if keyboard != nil {
 		params.ReplyMarkup = keyboard.Get()
@@ -159,7 +172,7 @@ func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard, esc
 		Photo:     photoId,
 	}
 	if escapeMd {
-		params.Caption = utils.EscapeMarkdownV2(text)
+		params.Caption = EscapeMarkdownV2(text)
 	}
 	if kb != nil {
 		params.ReplyMarkup = kb.Get()

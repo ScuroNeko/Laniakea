@@ -5,7 +5,6 @@ import (
 	"sync/atomic"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
-	"git.nix13.pw/scuroneko/laniakea/utils"
 )
 
 type draftIdGenerator interface {
@@ -88,7 +87,7 @@ func (d *DraftProvider) NewDraft() *Draft {
 }
 func (d *Draft) push(text string, escapeMd bool) error {
 	if escapeMd {
-		text += utils.EscapeMarkdownV2(text)
+		text += EscapeMarkdownV2(text)
 	} else {
 		text += text
 	}
