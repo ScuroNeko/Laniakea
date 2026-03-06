@@ -103,7 +103,7 @@ func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard) *AnswerMess
 	params := tgapi.SendMessageP{
 		ChatID:    ctx.Msg.Chat.ID,
 		Text:      text,
-		ParseMode: tgapi.ParseMD,
+		ParseMode: tgapi.ParseMDV2,
 	}
 	if keyboard != nil {
 		params.ReplyMarkup = keyboard.Get()

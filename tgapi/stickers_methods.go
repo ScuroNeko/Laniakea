@@ -2,7 +2,7 @@ package tgapi
 
 type SendStickerP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
@@ -15,7 +15,7 @@ type SendStickerP struct {
 }
 
 func (api *API) SendSticker(params SendStickerP) (Message, error) {
-	req := NewRequest[Message]("sendSticker", params)
+	req := NewRequestWithChatID[Message]("sendSticker", params, params.ChatID)
 	return req.Do(api)
 }
 

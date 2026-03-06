@@ -13,6 +13,9 @@ type Runner[T DbContext] struct {
 	fn      RunnerFn[T]
 }
 
+// NewRunner creates a new Runner with async=true by default.
+// Builder methods (Onetime, Async, Timeout) modify the Runner in-place.
+// DO NOT call builder methods concurrently or after Execute().
 func NewRunner[T DbContext](name string, fn RunnerFn[T]) *Runner[T] {
 	return &Runner[T]{
 		name: name, fn: fn, async: true,

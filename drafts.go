@@ -1,7 +1,6 @@
 package laniakea
 
 import (
-	"math"
 	"math/rand/v2"
 	"sync/atomic"
 
@@ -17,16 +16,16 @@ type RandomDraftIdGenerator struct {
 }
 
 func (g *RandomDraftIdGenerator) Next() uint64 {
-	return rand.Uint64N(math.MaxUint64)
+	return rand.Uint64()
 }
 
 type LinearDraftIdGenerator struct {
 	draftIdGenerator
-	lastId uint64
+	lastId atomic.Uint64
 }
 
 func (g *LinearDraftIdGenerator) Next() uint64 {
-	return atomic.AddUint64(&g.lastId, 1)
+	return g.lastId.Add(1)
 }
 
 type DraftProvider struct {
@@ -41,7 +40,8 @@ type DraftProvider struct {
 	generator draftIdGenerator
 }
 type Draft struct {
-	api *tgapi.API
+	api      *tgapi.API
+	provider *DraftProvider
 
 	chatID          int64
 	messageThreadID int
@@ -59,15 +59,28 @@ func NewRandomDraftProvider(api *tgapi.API) *DraftProvider {
 	}
 }
 func NewLinearDraftProvider(api *tgapi.API, startValue uint64) *DraftProvider {
+	g := &LinearDraftIdGenerator{}
+	g.lastId.Store(startValue)
 	return &DraftProvider{
 		api:       api,
-		generator: &LinearDraftIdGenerator{lastId: startValue},
+		generator: g,
 		drafts:    make(map[uint64]*Draft),
 	}
 }
 func (d *DraftProvider) NewDraft() *Draft {
 	id := d.generator.Next()
-	draft := &Draft{d.api, d.chatID, d.messageThreadID, d.parseMode, d.entities, id, ""}
+	entitiesCopy := make([]tgapi.MessageEntity, 0)
+	copy(entitiesCopy, d.entities)
+	draft := &Draft{
+		api:             d.api,
+		provider:        d,
+		chatID:          d.chatID,
+		messageThreadID: d.messageThreadID,
+		parseMode:       d.parseMode,
+		entities:        entitiesCopy,
+		ID:              id,
+		Message:         "",
+	}
 	d.drafts[id] = draft
 	return draft
 }
@@ -87,6 +100,9 @@ func (d *Draft) Push(newText string) error {
 	_, err := d.api.SendMessageDraft(params)
 	return err
 }
+func (d *Draft) Clear() {
+	d.Message = ""
+}
 func (d *Draft) Flush() error {
 	if d.Message == "" {
 		return nil
@@ -102,5 +118,9 @@ func (d *Draft) Flush() error {
 		params.MessageThreadID = d.messageThreadID
 	}
 	_, err := d.api.SendMessage(params)
+	if err == nil {
+		d.Clear()
+		delete(d.provider.drafts, d.ID)
+	}
 	return err
 }

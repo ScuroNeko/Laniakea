@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -16,6 +15,7 @@ func GetLoggerLevel() slog.LogLevel {
 	return level
 }
 
+// EscapeMarkdown Deprecated. Use MarkdownV2
 func EscapeMarkdown(s string) string {
 	s = strings.ReplaceAll(s, "_", `\_`)
 	s = strings.ReplaceAll(s, "*", `\*`)
@@ -23,10 +23,20 @@ func EscapeMarkdown(s string) string {
 	return strings.ReplaceAll(s, "`", "\\`")
 }
 
+// EscapeHTML escapes special characters for Telegram HTML parse mode.
+func EscapeHTML(s string) string {
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	return s
+}
+
+// EscapeMarkdownV2 escapes special characters for Telegram MarkdownV2.
+// https://core.telegram.org/bots/api#markdownv2-style
 func EscapeMarkdownV2(s string) string {
-	symbols := []string{"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!"}
+	symbols := []string{"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!", "\\"}
 	for _, symbol := range symbols {
-		s = strings.ReplaceAll(s, symbol, fmt.Sprintf("\\%s", symbol))
+		s = strings.ReplaceAll(s, symbol, "\\"+symbol)
 	}
 	return s
 }

@@ -26,47 +26,47 @@ func (api *API) SendMessage(params SendMessageP) (Message, error) {
 }
 
 type ForwardMessageP struct {
-	ChatID                int `json:"chat_id"`
-	MessageThreadID       int `json:"message_thread_id,omitempty"`
-	DirectMessagesTopicID int `json:"direct_messages_topic_id,omitempty"`
+	ChatID                int64 `json:"chat_id"`
+	MessageThreadID       int   `json:"message_thread_id,omitempty"`
+	DirectMessagesTopicID int   `json:"direct_messages_topic_id,omitempty"`
 
-	MessageID           int  `json:"message_id,omitempty"`
-	FromChatID          int  `json:"from_chat_id,omitempty"`
-	VideoStartTimestamp int  `json:"video_start_timestamp,omitempty"`
-	DisableNotification bool `json:"disable_notification,omitempty"`
-	ProtectContent      bool `json:"protect_content,omitempty"`
+	MessageID           int   `json:"message_id,omitempty"`
+	FromChatID          int64 `json:"from_chat_id,omitempty"`
+	VideoStartTimestamp int   `json:"video_start_timestamp,omitempty"`
+	DisableNotification bool  `json:"disable_notification,omitempty"`
+	ProtectContent      bool  `json:"protect_content,omitempty"`
 
 	MessageEffectID         string                   `json:"message_effect_id,omitempty"`
 	SuggestedPostParameters *SuggestedPostParameters `json:"suggested_post_parameters,omitempty"`
 }
 
 func (api *API) ForwardMessage(params ForwardMessageP) (Message, error) {
-	req := NewRequest[Message]("forwardMessage", params)
+	req := NewRequestWithChatID[Message]("forwardMessage", params, params.ChatID)
 	return req.Do(api)
 }
 
 type ForwardMessagesP struct {
-	ChatID                int `json:"chat_id"`
-	MessageThreadID       int `json:"message_thread_id,omitempty"`
-	DirectMessagesTopicID int `json:"direct_messages_topic_id,omitempty"`
+	ChatID                int64 `json:"chat_id"`
+	MessageThreadID       int   `json:"message_thread_id,omitempty"`
+	DirectMessagesTopicID int   `json:"direct_messages_topic_id,omitempty"`
 
-	FromChatID          int   `json:"from_chat_id,omitempty"`
+	FromChatID          int64 `json:"from_chat_id,omitempty"`
 	MessageIDs          []int `json:"message_ids,omitempty"`
 	DisableNotification bool  `json:"disable_notification,omitempty"`
 	ProtectContent      bool  `json:"protect_content,omitempty"`
 }
 
 func (api *API) ForwardMessages(params ForwardMessagesP) ([]int, error) {
-	req := NewRequest[[]int]("forwardMessages", params)
+	req := NewRequestWithChatID[[]int]("forwardMessages", params, params.ChatID)
 	return req.Do(api)
 }
 
 type CopyMessageP struct {
-	ChatID                int `json:"chat_id"`
-	MessageThreadID       int `json:"message_thread_id,omitempty"`
-	DirectMessagesTopicID int `json:"direct_messages_topic_id,omitempty"`
+	ChatID                int64 `json:"chat_id"`
+	MessageThreadID       int   `json:"message_thread_id,omitempty"`
+	DirectMessagesTopicID int   `json:"direct_messages_topic_id,omitempty"`
 
-	FromChatID          int       `json:"from_chat_id"`
+	FromChatID          int64     `json:"from_chat_id"`
 	MessageID           int       `json:"message_id"`
 	VideoStartTimestamp int       `json:"video_start_timestamp,omitempty"`
 	Caption             string    `json:"caption,omitempty"`
@@ -85,16 +85,16 @@ type CopyMessageP struct {
 }
 
 func (api *API) CopyMessage(params CopyMessageP) (int, error) {
-	req := NewRequest[int]("copyMessage", params)
+	req := NewRequestWithChatID[int]("copyMessage", params, params.ChatID)
 	return req.Do(api)
 }
 
 type CopyMessagesP struct {
-	ChatID                int `json:"chat_id"`
-	MessageThreadID       int `json:"message_thread_id,omitempty"`
-	DirectMessagesTopicID int `json:"direct_messages_topic_id,omitempty"`
+	ChatID                int64 `json:"chat_id"`
+	MessageThreadID       int   `json:"message_thread_id,omitempty"`
+	DirectMessagesTopicID int   `json:"direct_messages_topic_id,omitempty"`
 
-	FromChatID          int   `json:"from_chat_id,omitempty"`
+	FromChatID          int64 `json:"from_chat_id,omitempty"`
 	MessageIDs          []int `json:"message_ids,omitempty"`
 	DisableNotification bool  `json:"disable_notification,omitempty"`
 	ProtectContent      bool  `json:"protect_content,omitempty"`
@@ -102,15 +102,15 @@ type CopyMessagesP struct {
 }
 
 func (api *API) CopyMessages(params CopyMessagesP) ([]int, error) {
-	req := NewRequest[[]int]("copyMessages", params)
+	req := NewRequestWithChatID[[]int]("copyMessages", params, params.ChatID)
 	return req.Do(api)
 }
 
 type SendLocationP struct {
-	BusinessConnectionID  int `json:"business_connection_id,omitempty"`
-	ChatID                int `json:"chat_id"`
-	MessageThreadID       int `json:"message_thread_id,omitempty"`
-	DirectMessagesTopicID int `json:"direct_messages_topic_id,omitempty"`
+	BusinessConnectionID  int   `json:"business_connection_id,omitempty"`
+	ChatID                int64 `json:"chat_id"`
+	MessageThreadID       int   `json:"message_thread_id,omitempty"`
+	DirectMessagesTopicID int   `json:"direct_messages_topic_id,omitempty"`
 
 	Latitude             float64 `json:"latitude"`
 	Longitude            float64 `json:"longitude"`
@@ -130,15 +130,15 @@ type SendLocationP struct {
 }
 
 func (api *API) SendLocation(params SendLocationP) (Message, error) {
-	req := NewRequest[Message]("sendLocation", params)
+	req := NewRequestWithChatID[Message]("sendLocation", params, params.ChatID)
 	return req.Do(api)
 }
 
 type SendVenueP struct {
-	BusinessConnectionID  int `json:"business_connection_id,omitempty"`
-	ChatID                int `json:"chat_id"`
-	MessageThreadID       int `json:"message_thread_id,omitempty"`
-	DirectMessagesTopicID int `json:"direct_messages_topic_id,omitempty"`
+	BusinessConnectionID  int   `json:"business_connection_id,omitempty"`
+	ChatID                int64 `json:"chat_id"`
+	MessageThreadID       int   `json:"message_thread_id,omitempty"`
+	DirectMessagesTopicID int   `json:"direct_messages_topic_id,omitempty"`
 
 	Latitude        float64 `json:"latitude"`
 	Longitude       float64 `json:"longitude"`
@@ -160,15 +160,15 @@ type SendVenueP struct {
 }
 
 func (api *API) SendVenue(params SendVenueP) (Message, error) {
-	req := NewRequest[Message]("sendVenue", params)
+	req := NewRequestWithChatID[Message]("sendVenue", params, params.ChatID)
 	return req.Do(api)
 }
 
 type SendContactP struct {
-	BusinessConnectionID  int `json:"business_connection_id,omitempty"`
-	ChatID                int `json:"chat_id"`
-	MessageThreadID       int `json:"message_thread_id,omitempty"`
-	DirectMessagesTopicID int `json:"direct_messages_topic_id,omitempty"`
+	BusinessConnectionID  int   `json:"business_connection_id,omitempty"`
+	ChatID                int64 `json:"chat_id"`
+	MessageThreadID       int   `json:"message_thread_id,omitempty"`
+	DirectMessagesTopicID int   `json:"direct_messages_topic_id,omitempty"`
 
 	PhoneNumber string `json:"phone_number"`
 	FirstName   string `json:"first_name"`
@@ -186,14 +186,14 @@ type SendContactP struct {
 }
 
 func (api *API) SendContact(params SendContactP) (Message, error) {
-	req := NewRequest[Message]("sendContact", params)
+	req := NewRequestWithChatID[Message]("sendContact", params, params.ChatID)
 	return req.Do(api)
 }
 
 type SendPollP struct {
-	BusinessConnectionID int `json:"business_connection_id,omitempty"`
-	ChatID               int `json:"chat_id"`
-	MessageThreadID      int `json:"message_thread_id,omitempty"`
+	BusinessConnectionID int   `json:"business_connection_id,omitempty"`
+	ChatID               int64 `json:"chat_id"`
+	MessageThreadID      int   `json:"message_thread_id,omitempty"`
 
 	Question              string            `json:"question"`
 	QuestionParseMode     ParseMode         `json:"question_mode,omitempty"`
@@ -220,13 +220,13 @@ type SendPollP struct {
 }
 
 func (api *API) SendPoll(params SendPollP) (Message, error) {
-	req := NewRequest[Message]("sendPoll", params)
+	req := NewRequestWithChatID[Message]("sendPoll", params, params.ChatID)
 	return req.Do(api)
 }
 
 type SendChecklistP struct {
 	BusinessConnectionID int            `json:"business_connection_id"`
-	ChatID               int            `json:"chat_id"`
+	ChatID               int64          `json:"chat_id"`
 	Checklist            InputChecklist `json:"checklist"`
 
 	DisableNotification bool   `json:"disable_notification,omitempty"`
@@ -238,15 +238,15 @@ type SendChecklistP struct {
 }
 
 func (api *API) SendChecklist(params SendChecklistP) (Message, error) {
-	req := NewRequest[Message]("sendChecklist", params)
+	req := NewRequestWithChatID[Message]("sendChecklist", params, params.ChatID)
 	return req.Do(api)
 }
 
 type SendDiceP struct {
-	BusinessConnectionID  int `json:"business_connection_id,omitempty"`
-	ChatID                int `json:"chat_id"`
-	MessageThreadID       int `json:"message_thread_id,omitempty"`
-	DirectMessagesTopicID int `json:"direct_messages_topic_id,omitempty"`
+	BusinessConnectionID  int   `json:"business_connection_id,omitempty"`
+	ChatID                int64 `json:"chat_id"`
+	MessageThreadID       int   `json:"message_thread_id,omitempty"`
+	DirectMessagesTopicID int   `json:"direct_messages_topic_id,omitempty"`
 
 	Emoji string `json:"emoji,omitempty"`
 
@@ -261,7 +261,7 @@ type SendDiceP struct {
 }
 
 func (api *API) SendDice(params SendDiceP) (Message, error) {
-	req := NewRequest[Message]("sendDice", params)
+	req := NewRequestWithChatID[Message]("sendDice", params, params.ChatID)
 	return req.Do(api)
 }
 
@@ -287,19 +287,19 @@ type SendChatActionP struct {
 }
 
 func (api *API) SendChatAction(params SendChatActionP) (bool, error) {
-	req := NewRequest[bool]("sendChatAction", params)
+	req := NewRequestWithChatID[bool]("sendChatAction", params, params.ChatID)
 	return req.Do(api)
 }
 
 type SetMessageReactionP struct {
-	ChatId    int            `json:"chat_id"`
+	ChatID    int64          `json:"chat_id"`
 	MessageId int            `json:"message_id"`
 	Reaction  []ReactionType `json:"reaction"`
 	IsBig     bool           `json:"is_big,omitempty"`
 }
 
 func (api *API) SetMessageReaction(params SetMessageReactionP) (bool, error) {
-	req := NewRequest[bool]("setMessageReaction", params)
+	req := NewRequestWithChatID[bool]("setMessageReaction", params, params.ChatID)
 	return req.Do(api)
 }
 
@@ -320,11 +320,11 @@ type EditMessageTextP struct {
 func (api *API) EditMessageText(params EditMessageTextP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
-		req := NewRequest[bool]("editMessageText", params)
+		req := NewRequestWithChatID[bool]("editMessageText", params, params.ChatID)
 		res, err := req.Do(api)
 		return zero, res, err
 	}
-	req := NewRequest[Message]("editMessageText", params)
+	req := NewRequestWithChatID[Message]("editMessageText", params, params.ChatID)
 	res, err := req.Do(api)
 	return res, false, err
 }
@@ -344,18 +344,18 @@ type EditMessageCaptionP struct {
 func (api *API) EditMessageCaption(params EditMessageCaptionP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
-		req := NewRequest[bool]("editMessageCaption", params)
+		req := NewRequestWithChatID[bool]("editMessageCaption", params, params.ChatID)
 		res, err := req.Do(api)
 		return zero, res, err
 	}
-	req := NewRequest[Message]("editMessageCaption", params)
+	req := NewRequestWithChatID[Message]("editMessageCaption", params, params.ChatID)
 	res, err := req.Do(api)
 	return res, false, err
 }
 
 type EditMessageMediaP struct {
 	BusinessConnectionID string                `json:"business_connection_id,omitempty"`
-	ChatID               int                   `json:"chat_id,omitempty"`
+	ChatID               int64                 `json:"chat_id,omitempty"`
 	MessageID            int                   `json:"message_id,omitempty"`
 	InlineMessageID      string                `json:"inline_message_id,omitempty"`
 	Message              InputMedia            `json:"message"`
@@ -367,18 +367,18 @@ type EditMessageMediaP struct {
 func (api *API) EditMessageMedia(params EditMessageMediaP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
-		req := NewRequest[bool]("editMessageMedia", params)
+		req := NewRequestWithChatID[bool]("editMessageMedia", params, params.ChatID)
 		res, err := req.Do(api)
 		return zero, res, err
 	}
-	req := NewRequest[Message]("editMessageMedia", params)
+	req := NewRequestWithChatID[Message]("editMessageMedia", params, params.ChatID)
 	res, err := req.Do(api)
 	return res, false, err
 }
 
 type EditMessageLiveLocationP struct {
 	BusinessConnectionID string `json:"business_connection_id,omitempty"`
-	ChatID               int    `json:"chat_id,omitempty"`
+	ChatID               int64  `json:"chat_id,omitempty"`
 	MessageID            int    `json:"message_id,omitempty"`
 	InlineMessageID      string `json:"inline_message_id,omitempty"`
 
@@ -396,18 +396,18 @@ type EditMessageLiveLocationP struct {
 func (api *API) EditMessageLiveLocation(params EditMessageLiveLocationP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
-		req := NewRequest[bool]("editMessageLiveLocation", params)
+		req := NewRequestWithChatID[bool]("editMessageLiveLocation", params, params.ChatID)
 		res, err := req.Do(api)
 		return zero, res, err
 	}
-	req := NewRequest[Message]("editMessageLiveLocation", params)
+	req := NewRequestWithChatID[Message]("editMessageLiveLocation", params, params.ChatID)
 	res, err := req.Do(api)
 	return res, false, err
 }
 
 type StopMessageLiveLocationP struct {
 	BusinessConnectionID string                `json:"business_connection_id,omitempty"`
-	ChatID               int                   `json:"chat_id,omitempty"`
+	ChatID               int64                 `json:"chat_id,omitempty"`
 	MessageID            int                   `json:"message_id,omitempty"`
 	InlineMessageID      string                `json:"inline_message_id,omitempty"`
 	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
@@ -418,31 +418,31 @@ type StopMessageLiveLocationP struct {
 func (api *API) StopMessageLiveLocation(params StopMessageLiveLocationP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
-		req := NewRequest[bool]("stopMessageLiveLocation", params)
+		req := NewRequestWithChatID[bool]("stopMessageLiveLocation", params, params.ChatID)
 		res, err := req.Do(api)
 		return zero, res, err
 	}
-	req := NewRequest[Message]("stopMessageLiveLocation", params)
+	req := NewRequestWithChatID[Message]("stopMessageLiveLocation", params, params.ChatID)
 	res, err := req.Do(api)
 	return res, false, err
 }
 
 type EditMessageChecklistP struct {
 	BusinessConnectionID string                `json:"business_connection_id"`
-	ChatID               int                   `json:"chat_id"`
+	ChatID               int64                 `json:"chat_id"`
 	MessageID            int                   `json:"message_id"`
 	Checklist            InputChecklist        `json:"checklist"`
 	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
 func (api *API) EditMessageChecklist(params EditMessageChecklistP) (Message, error) {
-	req := NewRequest[Message]("editMessageChecklist", params)
+	req := NewRequestWithChatID[Message]("editMessageChecklist", params, params.ChatID)
 	return req.Do(api)
 }
 
 type EditMessageReplyMarkupP struct {
 	BusinessConnectionID string                `json:"business_connection_id,omitempty"`
-	ChatID               int                   `json:"chat_id,omitempty"`
+	ChatID               int64                 `json:"chat_id,omitempty"`
 	MessageID            int                   `json:"message_id,omitempty"`
 	InlineMessageID      string                `json:"inline_message_id,omitempty"`
 	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
@@ -451,46 +451,46 @@ type EditMessageReplyMarkupP struct {
 func (api *API) EditMessageReplyMarkup(params EditMessageReplyMarkupP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
-		req := NewRequest[bool]("editMessageReplyMarkup", params)
+		req := NewRequestWithChatID[bool]("editMessageReplyMarkup", params, params.ChatID)
 		res, err := req.Do(api)
 		return zero, res, err
 	}
-	req := NewRequest[Message]("editMessageReplyMarkup", params)
+	req := NewRequestWithChatID[Message]("editMessageReplyMarkup", params, params.ChatID)
 	res, err := req.Do(api)
 	return res, false, err
 }
 
 type StopPollP struct {
 	BusinessConnectionID string `json:"business_connection_id,omitempty"`
-	ChatID               int    `json:"chat_id"`
+	ChatID               int64  `json:"chat_id"`
 	MessageID            int    `json:"message_id"`
 	InlineMessageID      string `json:"inline_message_id,omitempty"`
 }
 
 func (api *API) StopPoll(params StopPollP) (Poll, error) {
-	req := NewRequest[Poll]("stopPoll", params)
+	req := NewRequestWithChatID[Poll]("stopPoll", params, params.ChatID)
 	return req.Do(api)
 }
 
 type ApproveSuggestedPostP struct {
-	ChatID    int `json:"chat_id"`
-	MessageID int `json:"message_id"`
-	SendDate  int `json:"send_date,omitempty"`
+	ChatID    int64 `json:"chat_id"`
+	MessageID int   `json:"message_id"`
+	SendDate  int   `json:"send_date,omitempty"`
 }
 
 func (api *API) ApproveSuggestedPost(params ApproveSuggestedPostP) (bool, error) {
-	req := NewRequest[bool]("approveSuggestedPost", params)
+	req := NewRequestWithChatID[bool]("approveSuggestedPost", params, params.ChatID)
 	return req.Do(api)
 }
 
 type DeclineSuggestedPostP struct {
-	ChatID    int    `json:"chat_id"`
+	ChatID    int64  `json:"chat_id"`
 	MessageID int    `json:"message_id"`
 	Comment   string `json:"comment,omitempty"`
 }
 
 func (api *API) DeclineSuggestedPost(params DeclineSuggestedPostP) (bool, error) {
-	req := NewRequest[bool]("declineSuggestedPost", params)
+	req := NewRequestWithChatID[bool]("declineSuggestedPost", params, params.ChatID)
 	return req.Do(api)
 }
 
@@ -500,17 +500,17 @@ type DeleteMessageP struct {
 }
 
 func (api *API) DeleteMessage(params DeleteMessageP) (bool, error) {
-	req := NewRequest[bool]("deleteMessage", params)
+	req := NewRequestWithChatID[bool]("deleteMessage", params, params.ChatID)
 	return req.Do(api)
 }
 
 type DeleteMessagesP struct {
-	ChatID     int   `json:"chat_id"`
+	ChatID     int64 `json:"chat_id"`
 	MessageIDs []int `json:"message_ids"`
 }
 
 func (api *API) DeleteMessages(params DeleteMessagesP) (bool, error) {
-	req := NewRequest[bool]("deleteMessages", params)
+	req := NewRequestWithChatID[bool]("deleteMessages", params, params.ChatID)
 	return req.Do(api)
 }
 

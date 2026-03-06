@@ -74,6 +74,7 @@ type Bot[T DbContext] struct {
 	token         string
 	debug         bool
 	errorTemplate string
+	username      string
 
 	logger        *slog.Logger
 	RequestLogger *slog.Logger
@@ -139,6 +140,10 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 	if err != nil {
 		_ = bot.Close()
 		bot.logger.Fatal(err)
+	}
+	bot.username = Val(u.Username, "")
+	if bot.username == "" {
+		bot.logger.Warn("Can't get bot username. Named command wouldn't work!")
 	}
 	bot.logger.Infof("Authorized as %s\n", u.FirstName)
 

@@ -24,13 +24,13 @@ type SendPhotoP struct {
 }
 
 func (api *API) SendPhoto(params SendPhotoP) (Message, error) {
-	req := NewRequest[Message]("sendPhoto", params)
+	req := NewRequestWithChatID[Message]("sendPhoto", params, params.ChatID)
 	return req.Do(api)
 }
 
 type SendAudioP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
@@ -53,13 +53,13 @@ type SendAudioP struct {
 }
 
 func (api *API) SendAudio(params SendAudioP) (Message, error) {
-	req := NewRequest[Message]("sendAudio", params)
+	req := NewRequestWithChatID[Message]("sendAudio", params, params.ChatID)
 	return req.Do(api)
 }
 
 type SendDocumentP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
@@ -79,13 +79,13 @@ type SendDocumentP struct {
 }
 
 func (api *API) SendDocument(params SendDocumentP) (Message, error) {
-	req := NewRequest[Message]("sendDocument", params)
+	req := NewRequestWithChatID[Message]("sendDocument", params, params.ChatID)
 	return req.Do(api)
 }
 
 type SendVideoP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
@@ -114,13 +114,13 @@ type SendVideoP struct {
 }
 
 func (api *API) SendVideo(params SendVideoP) (Message, error) {
-	req := NewRequest[Message]("sendVideo", params)
+	req := NewRequestWithChatID[Message]("sendVideo", params, params.ChatID)
 	return req.Do(api)
 }
 
 type SendAnimationP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
@@ -145,13 +145,13 @@ type SendAnimationP struct {
 }
 
 func (api *API) SendAnimation(params SendAnimationP) (Message, error) {
-	req := NewRequest[Message]("sendAnimation", params)
+	req := NewRequestWithChatID[Message]("sendAnimation", params, params.ChatID)
 	return req.Do(api)
 }
 
 type SendVoiceP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
@@ -171,13 +171,13 @@ type SendVoiceP struct {
 }
 
 func (api *API) SendVoice(params *SendVoiceP) (Message, error) {
-	req := NewRequest[Message]("sendVoice", params)
+	req := NewRequestWithChatID[Message]("sendVoice", params, params.ChatID)
 	return req.Do(api)
 }
 
 type SendVideoNoteP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
@@ -195,13 +195,13 @@ type SendVideoNoteP struct {
 }
 
 func (api *API) SendVideoNote(params SendVideoNoteP) (Message, error) {
-	req := NewRequest[Message]("sendVideoNote", params)
+	req := NewRequestWithChatID[Message]("sendVideoNote", params, params.ChatID)
 	return req.Do(api)
 }
 
 type SendPaidMediaP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 	StarCount             int    `json:"star_count,omitempty"`
@@ -222,13 +222,13 @@ type SendPaidMediaP struct {
 }
 
 func (api *API) SendPaidMedia(params SendPaidMediaP) (Message, error) {
-	req := NewRequest[Message]("sendPaidMedia", params)
+	req := NewRequestWithChatID[Message]("sendPaidMedia", params, params.ChatID)
 	return req.Do(api)
 }
 
 type SendMediaGroupP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
@@ -241,6 +241,6 @@ type SendMediaGroupP struct {
 }
 
 func (api *API) SendMediaGroup(params SendMediaGroupP) (Message, error) {
-	req := NewRequest[Message]("sendMediaGroup", params)
+	req := NewRequestWithChatID[Message]("sendMediaGroup", params, params.ChatID)
 	return req.Do(api)
 }

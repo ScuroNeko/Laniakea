@@ -49,34 +49,34 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 	ctx.From = update.Message.From
 	ctx.Msg = update.Message
 
+	// Убираем префикс
 	text = strings.TrimSpace(text[len(prefix):])
 
+	// Извлекаем команду как первое слово
+	spaceIndex := strings.Index(text, " ")
+	var cmd string
+	var args string
+
+	if spaceIndex == -1 {
+		cmd = text
+		args = ""
+	} else {
+		cmd = text[:spaceIndex]
+		args = strings.TrimSpace(text[spaceIndex:])
+	}
+
+	if strings.Contains(cmd, "@") {
+		botUsername := bot.username
+		if botUsername != "" && strings.HasSuffix(cmd, "@"+botUsername) {
+			cmd = cmd[:len(cmd)-len("@"+botUsername)] // убираем @botname
+		}
+	}
+
+	// Ищем команду по точному совпадению
 	for _, plugin := range bot.plugins {
-		for cmd := range plugin.commands {
-			if !strings.HasPrefix(text, cmd) {
-				continue
-			}
-			requestParts := strings.Split(text, " ")
-			cmdParts := strings.Split(cmd, " ")
-			isValid := true
-			for i, part := range cmdParts {
-				if part != requestParts[i] {
-					isValid = false
-					break
-				}
-			}
-
-			if !isValid {
-				continue
-			}
-
-			ctx.Text = strings.TrimSpace(text[len(cmd):])
-			if ctx.Text == "" {
-				ctx.Args = []string{}
-			} else {
-				ctx.Args = strings.Split(ctx.Text, " ")
-			}
-
+		if _, exists := plugin.commands[cmd]; exists {
+			ctx.Text = args
+			ctx.Args = strings.Fields(args) // Убирает лишние пробелы
 			if !plugin.executeMiddlewares(ctx, bot.dbContext) {
 				return
 			}

@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"time"
 
 	"git.nix13.pw/scuroneko/laniakea/utils"
 	"git.nix13.pw/scuroneko/slog"
@@ -59,24 +60,17 @@ type UploaderRequest[R, P any] struct {
 	method string
 	files  []UploaderFile
 	params P
+	chatId int64
 }
 
 func NewUploaderRequest[R, P any](method string, params P, files ...UploaderFile) UploaderRequest[R, P] {
-	return UploaderRequest[R, P]{method, files, params}
+	return UploaderRequest[R, P]{method: method, files: files, params: params, chatId: 0}
+}
+func NewUploaderRequestWithChatID[R, P any](method string, params P, chatId int64, files ...UploaderFile) UploaderRequest[R, P] {
+	return UploaderRequest[R, P]{method: method, files: files, params: params, chatId: chatId}
 }
 func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, error) {
 	var zero R
-	if up.api.Limiter != nil {
-		if up.api.dropOverflowLimit {
-			if !up.api.Limiter.GlobalAllow() {
-				return zero, errors.New("rate limited")
-			}
-		} else {
-			if err := up.api.Limiter.GlobalWait(ctx); err != nil {
-				return zero, err
-			}
-		}
-	}
 
 	buf, contentType, err := prepareMultipart(r.files, r.params)
 	if err != nil {
@@ -95,25 +89,58 @@ func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, 
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", fmt.Sprintf("Laniakea/%s", utils.VersionString))
+	req.Header.Set("Accept-Encoding", "gzip")
+	req.ContentLength = int64(buf.Len())
 
-	up.logger.Debugln("UPLOADER REQ", r.method)
-	res, err := up.api.client.Do(req)
-	if err != nil {
-		return zero, err
-	}
-	defer res.Body.Close()
+	for {
+		if up.api.Limiter != nil {
+			if up.api.dropOverflowLimit {
+				if !up.api.Limiter.GlobalAllow() {
+					return zero, errors.New("rate limited")
+				}
+			} else {
+				if err := up.api.Limiter.GlobalWait(ctx); err != nil {
+					return zero, err
+				}
+			}
+		}
 
-	body, err := readBody(res.Body)
-	up.logger.Debugln("UPLOADER RES", r.method, string(body))
-	if res.StatusCode != http.StatusOK {
-		return zero, fmt.Errorf("unexpected status code: %d, %s", res.StatusCode, string(body))
-	}
+		up.logger.Debugln("UPLOADER REQ", r.method)
+		resp, err := up.api.client.Do(req)
+		if err != nil {
+			return zero, err
+		}
 
-	respBody, err := parseBody[R](body)
-	if err != nil {
-		return zero, err
+		body, err := readBody(resp.Body)
+		_ = resp.Body.Close()
+		up.logger.Debugln("UPLOADER RES", r.method, string(body))
+
+		response, err := parseBody[R](body)
+		if err != nil {
+			return zero, err
+		}
+
+		if !response.Ok {
+			if response.ErrorCode == 429 && response.Parameters != nil && response.Parameters.RetryAfter != nil {
+				after := *response.Parameters.RetryAfter
+				up.logger.Warnf("Rate limited, retry after %d seconds (chat: %d)", after, r.chatId)
+				if r.chatId > 0 {
+					up.api.Limiter.SetChatLock(r.chatId, after)
+				} else {
+					up.api.Limiter.SetGlobalLock(after)
+				}
+
+				select {
+				case <-ctx.Done():
+					return zero, ctx.Err()
+				case <-time.After(time.Duration(after) * time.Second):
+					continue // Повторяем запрос
+				}
+			}
+			return zero, fmt.Errorf("[%d] %s", response.ErrorCode, response.Description)
+		}
+		return response.Result, nil
 	}
-	return respBody.Result, nil
 }
 func (r UploaderRequest[R, P]) DoWithContext(ctx context.Context, up *Uploader) (R, error) {
 	var zero R
@@ -149,24 +176,29 @@ func prepareMultipart[P any](files []UploaderFile, params P) (*bytes.Buffer, str
 	for _, file := range files {
 		fw, err := w.CreateFormFile(string(file.field), file.filename)
 		if err != nil {
-			_ = w.Close()
-			return buf, w.FormDataContentType(), err
+			_ = w.Close() // Закрываем, чтобы не было утечки
+			return nil, "", err
 		}
 
 		_, err = fw.Write(file.data)
 		if err != nil {
 			_ = w.Close()
-			return buf, w.FormDataContentType(), err
+			return nil, "", err
 		}
 	}
 
-	err := utils.Encode(w, params)
+	err := utils.Encode(w, params) // Предполагается, что это записывает в w
 	if err != nil {
 		_ = w.Close()
-		return buf, w.FormDataContentType(), err
+		return nil, "", err
 	}
-	err = w.Close()
-	return buf, w.FormDataContentType(), err
+
+	err = w.Close() // ✅ ОБЯЗАТЕЛЬНО вызвать в конце — иначе запрос битый!
+	if err != nil {
+		return nil, "", err
+	}
+
+	return buf, w.FormDataContentType(), nil
 }
 
 func uploaderTypeByExt(filename string) UploaderFileType {

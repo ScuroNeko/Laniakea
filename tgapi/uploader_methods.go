@@ -23,13 +23,13 @@ type UploadPhotoP struct {
 }
 
 func (u *Uploader) UploadPhoto(params UploadPhotoP, file UploaderFile) (Message, error) {
-	req := NewUploaderRequest[Message]("sendPhoto", params, file)
+	req := NewUploaderRequestWithChatID[Message]("sendPhoto", params, params.ChatID, file)
 	return req.Do(u)
 }
 
 type UploadAudioP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
@@ -52,13 +52,13 @@ type UploadAudioP struct {
 }
 
 func (u *Uploader) UploadAudio(params UploadAudioP, files ...UploaderFile) (Message, error) {
-	req := NewUploaderRequest[Message]("sendAudio", params, files...)
+	req := NewUploaderRequestWithChatID[Message]("sendAudio", params, params.ChatID, files...)
 	return req.Do(u)
 }
 
 type UploadDocumentP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
@@ -84,7 +84,7 @@ func (u *Uploader) UploadDocument(params UploadDocumentP, files ...UploaderFile)
 
 type UploadVideoP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
@@ -117,7 +117,7 @@ func (u *Uploader) UploadVideo(params UploadVideoP, files ...UploaderFile) (Mess
 
 type UploadAnimationP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
@@ -148,7 +148,7 @@ func (u *Uploader) UploadAnimation(params UploadAnimationP, files ...UploaderFil
 
 type UploadVoiceP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
@@ -174,7 +174,7 @@ func (u *Uploader) UploadVoice(params UploadVoiceP, files ...UploaderFile) (Mess
 
 type UploadVideoNoteP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
-	ChatID                int    `json:"chat_id"`
+	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
@@ -197,7 +197,7 @@ func (u *Uploader) UploadVideoNote(params UploadVideoNoteP, files ...UploaderFil
 }
 
 type UploadChatPhotoP struct {
-	ChatID int `json:"chat_id"`
+	ChatID int64 `json:"chat_id"`
 }
 
 func (u *Uploader) UploadChatPhoto(params UploadChatPhotoP, photo UploaderFile) (Message, error) {
