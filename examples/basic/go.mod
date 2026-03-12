@@ -2,7 +2,11 @@ module example/basic
 
 go 1.26.1
 
-require git.nix13.pw/scuroneko/laniakea v1.0.0-beta.12
+require git.nix13.pw/scuroneko/laniakea v1.0.0-beta.13
+
+replace (
+	git.nix13.pw/scuroneko/laniakea v1.0.0-beta.13 => ../../
+)
 
 require (
 	git.nix13.pw/scuroneko/extypes v1.2.1 // indirect

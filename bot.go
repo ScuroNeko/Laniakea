@@ -226,18 +226,23 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 
 	updateQueue := make(chan *tgapi.Update, 512)
 
-	var limiter *utils.RateLimiter
-	if opts.RateLimit > 0 {
-		limiter = utils.NewRateLimiter()
-	}
+	//var limiter *utils.RateLimiter
+	//if opts.RateLimit > 0 {
+	//	limiter = utils.NewRateLimiter()
+	//}
+	limiter := utils.NewRateLimiter()
 
 	apiOpts := tgapi.NewAPIOpts(opts.Token).
 		SetAPIUrl(opts.APIUrl).
 		UseTestServer(opts.UseTestServer).
 		SetLimiter(limiter)
 	api := tgapi.NewAPI(apiOpts)
-
 	uploader := tgapi.NewUploader(api)
+
+	prefixes := opts.Prefixes
+	if len(prefixes) == 0 {
+		prefixes = []string{"/"}
+	}
 
 	bot := &Bot[T]{
 		updateOffset:  0,
@@ -246,7 +251,7 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 		api:           api,
 		uploader:      uploader,
 		debug:         opts.Debug,
-		prefixes:      opts.Prefixes,
+		prefixes:      prefixes,
 		token:         opts.Token,
 		plugins:       make([]Plugin[T], 0),
 		updateTypes:   make([]tgapi.UpdateType, 0),
@@ -277,7 +282,7 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 	if bot.username == "" {
 		bot.logger.Warn("Can't get bot username. Named command handlers won't work!")
 	}
-	bot.logger.Infof("Authorized as %s (@%s)\n", u.FirstName, Val(u.Username, "unknown"))
+	bot.logger.Infoln(fmt.Sprintf("Authorized as %s (@%s)", u.FirstName, Val(u.Username, "unknown")))
 
 	return bot
 }

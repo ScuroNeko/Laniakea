@@ -1,7 +1,7 @@
 git.nix13.pw/scuroneko/extypes v1.2.1 h1:IYrOjnWKL2EAuJYtYNa+luB1vBe6paE8VY/YD+5/RpQ=
 git.nix13.pw/scuroneko/extypes v1.2.1/go.mod h1:uZVs8Yo3RrYAG9dMad6qR6lsYY67t+459D9c65QAYAw=
-git.nix13.pw/scuroneko/laniakea v1.0.0-beta.12 h1:IpcLF5OTZKOsYhj7AULDsDPrCUdtSnS5LgApOyMIRYU=
-git.nix13.pw/scuroneko/laniakea v1.0.0-beta.12/go.mod h1:M8jwm195hzAl9bj9Bkl95WfHmWvuBX6micsdtOs/gmE=
+git.nix13.pw/scuroneko/laniakea v1.0.0-beta.13 h1:mRVxYh7CNrm8ccob+u6XxLzZRbs1fLNRg/nXaXY78yw=
+git.nix13.pw/scuroneko/laniakea v1.0.0-beta.13/go.mod h1:M8jwm195hzAl9bj9Bkl95WfHmWvuBX6micsdtOs/gmE=
 git.nix13.pw/scuroneko/slog v1.0.2 h1:vZyUROygxC2d5FJHUQM/30xFEHY1JT/aweDZXA4rm2g=
 git.nix13.pw/scuroneko/slog v1.0.2/go.mod h1:3Qm2wzkR5KjwOponMfG7TcGSDjmYaFqRAmLvSPTuWJI=
 github.com/alitto/pond/v2 v2.7.0 h1:c76L+yN916m/DRXjGCeUBHHu92uWnh/g1bwVk4zyyXg=
