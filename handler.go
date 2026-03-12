@@ -3,10 +3,13 @@ package laniakea
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
+
+var ErrInvalidPayloadType = errors.New("invalid payload type")
 
 func (bot *Bot[T]) handle(u *tgapi.Update) {
 	ctx := &MsgContext{
@@ -15,6 +18,7 @@ func (bot *Bot[T]) handle(u *tgapi.Update) {
 		errorTemplate: bot.errorTemplate,
 		l10n:          bot.l10n,
 		draftProvider: bot.draftProvider,
+		payloadType:   bot.payloadType,
 	}
 	for _, middleware := range bot.middlewares {
 		middleware.Execute(ctx, bot.dbContext)
@@ -87,8 +91,7 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 }
 
 func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) {
-	data := new(CallbackData)
-	err := json.Unmarshal([]byte(update.CallbackQuery.Data), data)
+	data, err := bot.decodePayload(update.CallbackQuery.Data)
 	if err != nil {
 		bot.logger.Errorln(err)
 		return
@@ -151,4 +154,30 @@ func decodeBase64Payload(s string) (CallbackData, error) {
 		return CallbackData{}, err
 	}
 	return decodeJsonPayload(string(b))
+}
+
+//	func encodePayload(payloadType BotPayloadType, d CallbackData) (string, error) {
+//		switch payloadType {
+//		case BotPayloadBase64:
+//			return encodeBase64Payload(d)
+//		case BotPayloadJson:
+//			return encodeJsonPayload(d)
+//		}
+//		return "", ErrInvalidPayloadType
+//	}
+func decodePayload(payloadType BotPayloadType, s string) (CallbackData, error) {
+	switch payloadType {
+	case BotPayloadBase64:
+		return decodeBase64Payload(s)
+	case BotPayloadJson:
+		return decodeJsonPayload(s)
+	}
+	return CallbackData{}, ErrInvalidPayloadType
+}
+
+//	func (bot *Bot[T]) encodePayload(d CallbackData) (string, error) {
+//		return encodePayload(bot.payloadType, d)
+//	}
+func (bot *Bot[T]) decodePayload(s string) (CallbackData, error) {
+	return decodePayload(bot.payloadType, s)
 }

@@ -2,15 +2,20 @@ package tgapi
 
 import "git.nix13.pw/scuroneko/extypes"
 
+// MessageReplyMarkup represents an inline keyboard markup for a message.
+// It is used in the Message type.
 type MessageReplyMarkup struct {
 	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard"`
 }
 
+// DirectMessageTopic represents a forum topic in a direct message.
 type DirectMessageTopic struct {
 	TopicID int64 `json:"topic_id"`
 	User    *User `json:"user,omitempty"`
 }
 
+// Message represents a Telegram message.
+// See https://core.telegram.org/bots/api#message
 type Message struct {
 	MessageID            int                 `json:"message_id"`
 	MessageThreadID      int                 `json:"message_thread_id,omitempty"`
@@ -51,14 +56,19 @@ type Message struct {
 	EffectID string `json:"effect_id,omitempty"`
 }
 
+// InaccessibleMessage describes a message that was deleted or is otherwise inaccessible.
+// See https://core.telegram.org/bots/api#inaccessiblemessage
 type InaccessibleMessage struct {
 	Chat      Chat `json:"chat"`
 	MessageID int  `json:"message_id"`
 	Date      int  `json:"date"`
 }
 
+// MaybeInaccessibleMessage is a union type that can be either Message or InaccessibleMessage.
+// See https://core.telegram.org/bots/api#maybeinaccessiblemessage
 type MaybeInaccessibleMessage interface{ Message | InaccessibleMessage }
 
+// MessageEntityType represents the type of a message entity.
 type MessageEntityType string
 
 const (
@@ -84,6 +94,8 @@ const (
 	MessageEntityDateTime             MessageEntityType = "date_time"
 )
 
+// MessageEntity represents one special entity in a text message.
+// See https://core.telegram.org/bots/api#messageentity
 type MessageEntity struct {
 	Type MessageEntityType `json:"type"`
 
@@ -98,6 +110,8 @@ type MessageEntity struct {
 	DateTimeFormat string `json:"date_time_format,omitempty"`
 }
 
+// ReplyParameters describes the parameters to use when replying to a message.
+// See https://core.telegram.org/bots/api#replyparameters
 type ReplyParameters struct {
 	MessageID int `json:"message_id"`
 	ChatID    int `json:"chat_id,omitempty"`
@@ -110,6 +124,8 @@ type ReplyParameters struct {
 	ChecklistTaskID          int              `json:"checklist_task_id,omitempty"`
 }
 
+// LinkPreviewOptions describes the options used for link preview generation.
+// See https://core.telegram.org/bots/api#linkpreviewoptions
 type LinkPreviewOptions struct {
 	IsDisabled       bool   `json:"is_disabled,omitempty"`
 	URL              string `json:"url,omitempty"`
@@ -118,6 +134,8 @@ type LinkPreviewOptions struct {
 	ShowAboveText    bool   `json:"show_above_text,omitempty"`
 }
 
+// ReplyMarkup represents a custom keyboard or inline keyboard.
+// See https://core.telegram.org/bots/api#replymarkup
 type ReplyMarkup struct {
 	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard,omitempty"`
 
@@ -132,11 +150,18 @@ type ReplyMarkup struct {
 
 	ForceReply bool `json:"force_reply,omitempty"`
 }
+
+// InlineKeyboardMarkup represents an inline keyboard that appears right next to the message it belongs to.
+// See https://core.telegram.org/bots/api#inlinekeyboardmarkup
 type InlineKeyboardMarkup struct {
 	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard,omitempty"`
 }
 
+// KeyboardButtonStyle represents the style of a keyboard button.
 type KeyboardButtonStyle string
+
+// InlineKeyboardButton represents one button of an inline keyboard.
+// See https://core.telegram.org/bots/api#inlinekeyboardbutton
 type InlineKeyboardButton struct {
 	Text              string              `json:"text"`
 	URL               string              `json:"url,omitempty"`
@@ -145,10 +170,14 @@ type InlineKeyboardButton struct {
 	IconCustomEmojiID string              `json:"icon_custom_emoji_id,omitempty"`
 }
 
+// ReplyKeyboardMarkup represents a custom keyboard with reply options.
+// See https://core.telegram.org/bots/api#replykeyboardmarkup
 type ReplyKeyboardMarkup struct {
 	Keyboard [][]int `json:"keyboard"`
 }
 
+// CallbackQuery represents an incoming callback query from a callback button in an inline keyboard.
+// See https://core.telegram.org/bots/api#callbackquery
 type CallbackQuery struct {
 	ID      string  `json:"id"`
 	From    User    `json:"from"`
@@ -157,11 +186,15 @@ type CallbackQuery struct {
 	Data string `json:"data"`
 }
 
+// InputPollOption contains information about one answer option in a poll to be sent.
+// See https://core.telegram.org/bots/api#inputpolloption
 type InputPollOption struct {
 	Text          string           `json:"text"`
 	TextParseMode ParseMode        `json:"text_parse_mode,omitempty"`
 	TextEntities  []*MessageEntity `json:"text_entities,omitempty"`
 }
+
+// PollType represents the type of a poll.
 type PollType string
 
 const (
@@ -169,12 +202,15 @@ const (
 	PollTypeQuiz    PollType = "quiz"
 )
 
+// InputChecklistTask describes a task in a checklist.
 type InputChecklistTask struct {
 	ID           int              `json:"id"`
 	Text         string           `json:"text"`
 	ParseMode    ParseMode        `json:"parse_mode,omitempty"`
 	TextEntities []*MessageEntity `json:"text_entities,omitempty"`
 }
+
+// InputChecklist represents a checklist to be sent.
 type InputChecklist struct {
 	Title                   string               `json:"title"`
 	ParseMode               ParseMode            `json:"parse_mode,omitempty"`
@@ -184,6 +220,7 @@ type InputChecklist struct {
 	OtherCanMarkTasksAsDone bool                 `json:"other_can_mark_tasks_as_done,omitempty"`
 }
 
+// ChatActionType represents the type of chat action.
 type ChatActionType string
 
 const (
@@ -197,6 +234,8 @@ const (
 	ChatActionUploadVideoNone ChatActionType = "upload_video_none"
 )
 
+// MessageReactionUpdated represents a change of a reaction on a message.
+// See https://core.telegram.org/bots/api#messagereactionupdated
 type MessageReactionUpdated struct {
 	Chat        *Chat          `json:"chat"`
 	MessageID   int            `json:"message_id"`
@@ -207,12 +246,17 @@ type MessageReactionUpdated struct {
 	NewReaction []ReactionType `json:"new_reaction"`
 }
 
+// MessageReactionCountUpdated represents a change in the count of reactions on a message.
+// See https://core.telegram.org/bots/api#messagereactioncountupdated
 type MessageReactionCountUpdated struct {
 	Chat      *Chat            `json:"chat"`
 	MessageID int              `json:"message_id"`
 	Date      int              `json:"date"`
 	Reactions []*ReactionCount `json:"reactions"`
 }
+
+// ReactionType describes the type of a reaction.
+// See https://core.telegram.org/bots/api#reactiontype
 type ReactionType struct {
 	Type string `json:"type"`
 	// ReactionTypeEmoji
@@ -220,20 +264,29 @@ type ReactionType struct {
 	// ReactionTypeCustomEmoji
 	CustomEmojiID *string `json:"custom_emoji_id,omitempty"`
 }
+
+// ReactionCount represents a reaction added to a message along with the number of times it was added.
+// See https://core.telegram.org/bots/api#reactioncount
 type ReactionCount struct {
 	Type       ReactionType `json:"type"`
 	TotalCount int          `json:"total_count"`
 }
 
+// SuggestedPostPrice represents the price of a suggested post.
 type SuggestedPostPrice struct {
 	Currency string `json:"currency"`
 	Amount   int    `json:"amount"`
 }
+
+// SuggestedPostInfo contains information about a suggested post.
+// See https://core.telegram.org/bots/api#suggestedpostinfo
 type SuggestedPostInfo struct {
-	State    string             `json:"state"` //State of the suggested post. Currently, it can be one of “pending”, “approved”, “declined”.
+	State    string             `json:"state"` // "pending", "approved", or "declined"
 	Price    SuggestedPostPrice `json:"price"`
 	SendDate int                `json:"send_date"`
 }
+
+// SuggestedPostParameters holds parameters for suggesting a post.
 type SuggestedPostParameters struct {
 	Price    SuggestedPostPrice `json:"price"`
 	SendDate int                `json:"send_date"`

@@ -46,6 +46,7 @@ type MsgContext struct {
 	botLogger     *slog.Logger
 	l10n          *L10n
 	draftProvider *DraftProvider
+	payloadType   BotPayloadType
 }
 
 // AnswerMessage represents a message sent or edited via MsgContext.

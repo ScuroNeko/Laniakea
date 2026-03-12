@@ -1,5 +1,7 @@
 package tgapi
 
+// Chat represents a chat (private, group, supergroup, channel).
+// See https://core.telegram.org/bots/api#chat
 type Chat struct {
 	ID               int64   `json:"id"`
 	Type             string  `json:"type"`
@@ -11,6 +13,7 @@ type Chat struct {
 	IsDirectMessages *bool   `json:"is_direct_messages,omitempty"`
 }
 
+// ChatType represents the type of a chat.
 type ChatType string
 
 const (
@@ -20,6 +23,8 @@ const (
 	ChatTypeChannel    ChatType = "channel"
 )
 
+// ChatFullInfo contains full information about a chat.
+// See https://core.telegram.org/bots/api#chatfullinfo
 type ChatFullInfo struct {
 	ID               int        `json:"id"`
 	Type             ChatType   `json:"type"`
@@ -82,6 +87,8 @@ type ChatFullInfo struct {
 	PaidMessageStarCount *int              `json:"paid_message_star_count,omitempty"`
 }
 
+// ChatPhoto represents a chat photo.
+// See https://core.telegram.org/bots/api#chatphoto
 type ChatPhoto struct {
 	SmallFileID       string `json:"small_file_id"`
 	SmallFileUniqueID string `json:"small_file_unique_id"`
@@ -89,6 +96,8 @@ type ChatPhoto struct {
 	BigFileUniqueID   string `json:"big_file_unique_id"`
 }
 
+// ChatPermissions describes actions that a non‑administrator user is allowed to take in a chat.
+// See https://core.telegram.org/bots/api#chatpermissions
 type ChatPermissions struct {
 	CanSendMessages      bool `json:"can_send_messages"`
 	CanSendAudios        bool `json:"can_send_audios"`
@@ -99,16 +108,22 @@ type ChatPermissions struct {
 	CanSendPolls         bool `json:"can_send_polls"`
 	CanSendOtherMessages bool `json:"can_send_other_messages"`
 	CanAddWebPagePreview bool `json:"can_add_web_page_preview"`
-	CatEditTag           bool `json:"cat_edit_tag"`
+	CatEditTag           bool `json:"cat_edit_tag"` // Note: field name likely a typo, should be "can_edit_tag"
 	CanChangeInfo        bool `json:"can_change_info"`
 	CanInviteUsers       bool `json:"can_invite_users"`
 	CanPinMessages       bool `json:"can_pin_messages"`
 	CanManageTopics      bool `json:"can_manage_topics"`
 }
+
+// ChatLocation represents a location to which a chat is connected.
+// See https://core.telegram.org/bots/api#chatlocation
 type ChatLocation struct {
 	Location Location `json:"location"`
 	Address  string   `json:"address"`
 }
+
+// ChatInviteLink represents an invite link for a chat.
+// See https://core.telegram.org/bots/api#chatinvitelink
 type ChatInviteLink struct {
 	InviteLink        string `json:"invite_link"`
 	Creator           User   `json:"creator"`
@@ -124,6 +139,7 @@ type ChatInviteLink struct {
 	SubscriptionPrice       *int    `json:"subscription_price,omitempty"`
 }
 
+// ChatMemberStatusType indicates the status of a chat member.
 type ChatMemberStatusType string
 
 const (
@@ -135,6 +151,8 @@ const (
 	ChatMemberStatusBanned        ChatMemberStatusType = "kicked"
 )
 
+// ChatMember contains information about one member of a chat.
+// See https://core.telegram.org/bots/api#chatmember
 type ChatMember struct {
 	Status ChatMemberStatusType `json:"status"`
 	User   User                 `json:"user"`
@@ -181,6 +199,8 @@ type ChatMember struct {
 	CanEditTag           *bool `json:"can_edit_tag,omitempty"`
 }
 
+// ChatBoostSource describes the source of a chat boost.
+// See https://core.telegram.org/bots/api#chatboostsource
 type ChatBoostSource struct {
 	Source string `json:"source"`
 	User   User   `json:"user"`
@@ -191,16 +211,23 @@ type ChatBoostSource struct {
 	IsUnclaimed       *bool `json:"is_unclaimed,omitempty"`
 }
 
+// ChatBoost represents a boost added to a chat.
+// See https://core.telegram.org/bots/api#chatboost
 type ChatBoost struct {
 	BoostID        int             `json:"boost_id"`
 	AddDate        int             `json:"add_date"`
 	ExpirationDate int             `json:"expiration_date"`
 	Source         ChatBoostSource `json:"source"`
 }
+
+// UserChatBoosts represents a list of boosts a user has given to a chat.
+// See https://core.telegram.org/bots/api#userchatboosts
 type UserChatBoosts struct {
 	Boosts []ChatBoost `json:"boosts"`
 }
 
+// ChatAdministratorRights represents the rights of an administrator in a chat.
+// See https://core.telegram.org/bots/api#chatadministratorrights
 type ChatAdministratorRights struct {
 	IsAnonymous         bool `json:"is_anonymous"`
 	CanManageChat       bool `json:"can_manage_chat"`
@@ -222,11 +249,15 @@ type ChatAdministratorRights struct {
 	CanManageTags           *bool `json:"can_manage_tags,omitempty"`
 }
 
+// ChatBoostUpdated represents a boost added to a chat or changed.
+// See https://core.telegram.org/bots/api#chatboostupdated
 type ChatBoostUpdated struct {
 	Chat  Chat      `json:"chat"`
 	Boost ChatBoost `json:"boost"`
 }
 
+// ChatBoostRemoved represents a boost removed from a chat.
+// See https://core.telegram.org/bots/api#chatboostremoved
 type ChatBoostRemoved struct {
 	Chat       Chat            `json:"chat"`
 	BoostID    string          `json:"boost_id"`

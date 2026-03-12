@@ -13,9 +13,9 @@
 // Example usage:
 //
 //	provider := laniakea.NewRandomDraftProvider(api)
-//	provider.SetChat(-1001234567890, 0).SetParseMode(tgapi.ParseModeHTML)
 //
 //	draft := provider.NewDraft(tgapi.ParseModeMarkdown)
+//	draft.SetChat(-1001234567890, 0)
 //	draft.Push("*Hello*").Push(" **world**!")
 //	err := draft.Flush() // Sends message and deletes draft
 //	if err != nil {

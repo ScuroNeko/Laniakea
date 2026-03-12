@@ -1,5 +1,7 @@
 package tgapi
 
+// SendMessageP holds parameters for the sendMessage method.
+// See https://core.telegram.org/bots/api#sendmessage
 type SendMessageP struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
 	ChatID                int64  `json:"chat_id"`
@@ -20,11 +22,15 @@ type SendMessageP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
+// SendMessage sends a text message.
+// See https://core.telegram.org/bots/api#sendmessage
 func (api *API) SendMessage(params SendMessageP) (Message, error) {
 	req := NewRequestWithChatID[Message, SendMessageP]("sendMessage", params, params.ChatID)
 	return req.Do(api)
 }
 
+// ForwardMessageP holds parameters for the forwardMessage method.
+// See https://core.telegram.org/bots/api#forwardmessage
 type ForwardMessageP struct {
 	ChatID                int64 `json:"chat_id"`
 	MessageThreadID       int   `json:"message_thread_id,omitempty"`
@@ -40,11 +46,15 @@ type ForwardMessageP struct {
 	SuggestedPostParameters *SuggestedPostParameters `json:"suggested_post_parameters,omitempty"`
 }
 
+// ForwardMessage forwards a message.
+// See https://core.telegram.org/bots/api#forwardmessage
 func (api *API) ForwardMessage(params ForwardMessageP) (Message, error) {
 	req := NewRequestWithChatID[Message]("forwardMessage", params, params.ChatID)
 	return req.Do(api)
 }
 
+// ForwardMessagesP holds parameters for the forwardMessages method.
+// See https://core.telegram.org/bots/api#forwardmessages
 type ForwardMessagesP struct {
 	ChatID                int64 `json:"chat_id"`
 	MessageThreadID       int   `json:"message_thread_id,omitempty"`
@@ -56,11 +66,16 @@ type ForwardMessagesP struct {
 	ProtectContent      bool  `json:"protect_content,omitempty"`
 }
 
+// ForwardMessages forwards multiple messages.
+// Returns an array of message IDs of the sent messages.
+// See https://core.telegram.org/bots/api#forwardmessages
 func (api *API) ForwardMessages(params ForwardMessagesP) ([]int, error) {
 	req := NewRequestWithChatID[[]int]("forwardMessages", params, params.ChatID)
 	return req.Do(api)
 }
 
+// CopyMessageP holds parameters for the copyMessage method.
+// See https://core.telegram.org/bots/api#copymessage
 type CopyMessageP struct {
 	ChatID                int64 `json:"chat_id"`
 	MessageThreadID       int   `json:"message_thread_id,omitempty"`
@@ -84,11 +99,16 @@ type CopyMessageP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
+// CopyMessage copies a message.
+// Returns the MessageID of the sent copy.
+// See https://core.telegram.org/bots/api#copymessage
 func (api *API) CopyMessage(params CopyMessageP) (int, error) {
 	req := NewRequestWithChatID[int]("copyMessage", params, params.ChatID)
 	return req.Do(api)
 }
 
+// CopyMessagesP holds parameters for the copyMessages method.
+// See https://core.telegram.org/bots/api#copymessages
 type CopyMessagesP struct {
 	ChatID                int64 `json:"chat_id"`
 	MessageThreadID       int   `json:"message_thread_id,omitempty"`
@@ -101,11 +121,16 @@ type CopyMessagesP struct {
 	RemoveCaption       bool  `json:"remove_caption,omitempty"`
 }
 
+// CopyMessages copies multiple messages.
+// Returns an array of message IDs of the sent copies.
+// See https://core.telegram.org/bots/api#copymessages
 func (api *API) CopyMessages(params CopyMessagesP) ([]int, error) {
 	req := NewRequestWithChatID[[]int]("copyMessages", params, params.ChatID)
 	return req.Do(api)
 }
 
+// SendLocationP holds parameters for the sendLocation method.
+// See https://core.telegram.org/bots/api#sendlocation
 type SendLocationP struct {
 	BusinessConnectionID  int   `json:"business_connection_id,omitempty"`
 	ChatID                int64 `json:"chat_id"`
@@ -129,11 +154,15 @@ type SendLocationP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
+// SendLocation sends a point on the map.
+// See https://core.telegram.org/bots/api#sendlocation
 func (api *API) SendLocation(params SendLocationP) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendLocation", params, params.ChatID)
 	return req.Do(api)
 }
 
+// SendVenueP holds parameters for the sendVenue method.
+// See https://core.telegram.org/bots/api#sendvenue
 type SendVenueP struct {
 	BusinessConnectionID  int   `json:"business_connection_id,omitempty"`
 	ChatID                int64 `json:"chat_id"`
@@ -159,11 +188,15 @@ type SendVenueP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
+// SendVenue sends information about a venue.
+// See https://core.telegram.org/bots/api#sendvenue
 func (api *API) SendVenue(params SendVenueP) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendVenue", params, params.ChatID)
 	return req.Do(api)
 }
 
+// SendContactP holds parameters for the sendContact method.
+// See https://core.telegram.org/bots/api#sendcontact
 type SendContactP struct {
 	BusinessConnectionID  int   `json:"business_connection_id,omitempty"`
 	ChatID                int64 `json:"chat_id"`
@@ -185,11 +218,15 @@ type SendContactP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
+// SendContact sends a phone contact.
+// See https://core.telegram.org/bots/api#sendcontact
 func (api *API) SendContact(params SendContactP) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendContact", params, params.ChatID)
 	return req.Do(api)
 }
 
+// SendPollP holds parameters for the sendPoll method.
+// See https://core.telegram.org/bots/api#sendpoll
 type SendPollP struct {
 	BusinessConnectionID int   `json:"business_connection_id,omitempty"`
 	ChatID               int64 `json:"chat_id"`
@@ -219,11 +256,15 @@ type SendPollP struct {
 	ReplyMarkup     *ReplyMarkup     `json:"reply_markup,omitempty"`
 }
 
+// SendPoll sends a native poll.
+// See https://core.telegram.org/bots/api#sendpoll
 func (api *API) SendPoll(params SendPollP) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendPoll", params, params.ChatID)
 	return req.Do(api)
 }
 
+// SendChecklistP holds parameters for the sendChecklist method.
+// See https://core.telegram.org/bots/api#sendchecklist
 type SendChecklistP struct {
 	BusinessConnectionID int            `json:"business_connection_id"`
 	ChatID               int64          `json:"chat_id"`
@@ -237,11 +278,15 @@ type SendChecklistP struct {
 	ReplyMarkup     *ReplyMarkup     `json:"reply_markup,omitempty"`
 }
 
+// SendChecklist sends a checklist.
+// See https://core.telegram.org/bots/api#sendchecklist
 func (api *API) SendChecklist(params SendChecklistP) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendChecklist", params, params.ChatID)
 	return req.Do(api)
 }
 
+// SendDiceP holds parameters for the sendDice method.
+// See https://core.telegram.org/bots/api#senddice
 type SendDiceP struct {
 	BusinessConnectionID  int   `json:"business_connection_id,omitempty"`
 	ChatID                int64 `json:"chat_id"`
@@ -260,11 +305,14 @@ type SendDiceP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
+// SendDice sends a dice, which will have a random value.
+// See https://core.telegram.org/bots/api#senddice
 func (api *API) SendDice(params SendDiceP) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendDice", params, params.ChatID)
 	return req.Do(api)
 }
 
+// SendMessageDraftP holds parameters for the sendMessageDraft method.
 type SendMessageDraftP struct {
 	ChatID          int64           `json:"chat_id"`
 	MessageThreadID int             `json:"message_thread_id,omitempty"`
@@ -274,11 +322,14 @@ type SendMessageDraftP struct {
 	Entities        []MessageEntity `json:"entities,omitempty"`
 }
 
+// SendMessageDraft sends a previously saved draft message.
 func (api *API) SendMessageDraft(params SendMessageDraftP) (bool, error) {
 	req := NewRequestWithChatID[bool]("sendMessageDraft", params, params.ChatID)
 	return req.Do(api)
 }
 
+// SendChatActionP holds parameters for the sendChatAction method.
+// See https://core.telegram.org/bots/api#sendchataction
 type SendChatActionP struct {
 	BusinessConnectionID string         `json:"business_connection_id,omitempty"`
 	ChatID               int64          `json:"chat_id"`
@@ -286,11 +337,16 @@ type SendChatActionP struct {
 	Action               ChatActionType `json:"action"`
 }
 
+// SendChatAction sends a chat action (typing, uploading photo, etc.).
+// Returns True on success.
+// See https://core.telegram.org/bots/api#sendchataction
 func (api *API) SendChatAction(params SendChatActionP) (bool, error) {
 	req := NewRequestWithChatID[bool]("sendChatAction", params, params.ChatID)
 	return req.Do(api)
 }
 
+// SetMessageReactionP holds parameters for the setMessageReaction method.
+// See https://core.telegram.org/bots/api#setmessagereaction
 type SetMessageReactionP struct {
 	ChatID    int64          `json:"chat_id"`
 	MessageId int            `json:"message_id"`
@@ -298,13 +354,16 @@ type SetMessageReactionP struct {
 	IsBig     bool           `json:"is_big,omitempty"`
 }
 
+// SetMessageReaction changes the chosen reaction on a message.
+// Returns True on success.
+// See https://core.telegram.org/bots/api#setmessagereaction
 func (api *API) SetMessageReaction(params SetMessageReactionP) (bool, error) {
 	req := NewRequestWithChatID[bool]("setMessageReaction", params, params.ChatID)
 	return req.Do(api)
 }
 
-// Message update methods
-
+// EditMessageTextP holds parameters for the editMessageText method.
+// See https://core.telegram.org/bots/api#editmessagetext
 type EditMessageTextP struct {
 	BusinessConnectionID string       `json:"business_connection_id,omitempty"`
 	ChatID               int64        `json:"chat_id,omitempty"`
@@ -315,8 +374,10 @@ type EditMessageTextP struct {
 	ReplyMarkup          *ReplyMarkup `json:"reply_markup,omitempty"`
 }
 
-// EditMessageText If inline message, first return will be zero-valued, and second will boolean
-// Otherwise, first return will be Message, and second false
+// EditMessageText edits text messages.
+// If inline_message_id is provided, returns a boolean success flag;
+// otherwise returns the edited Message.
+// See https://core.telegram.org/bots/api#editmessagetext
 func (api *API) EditMessageText(params EditMessageTextP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
@@ -329,6 +390,8 @@ func (api *API) EditMessageText(params EditMessageTextP) (Message, bool, error) 
 	return res, false, err
 }
 
+// EditMessageCaptionP holds parameters for the editMessageCaption method.
+// See https://core.telegram.org/bots/api#editmessagecaption
 type EditMessageCaptionP struct {
 	BusinessConnectionID string       `json:"business_connection_id,omitempty"`
 	ChatID               int64        `json:"chat_id,omitempty"`
@@ -339,8 +402,10 @@ type EditMessageCaptionP struct {
 	ReplyMarkup          *ReplyMarkup `json:"reply_markup,omitempty"`
 }
 
-// EditMessageCaption If inline message, first return will be zero-valued, and second will boolean
-// Otherwise, first return will be Message, and second false
+// EditMessageCaption edits captions of messages.
+// If inline_message_id is provided, returns a boolean success flag;
+// otherwise returns the edited Message.
+// See https://core.telegram.org/bots/api#editmessagecaption
 func (api *API) EditMessageCaption(params EditMessageCaptionP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
@@ -353,6 +418,8 @@ func (api *API) EditMessageCaption(params EditMessageCaptionP) (Message, bool, e
 	return res, false, err
 }
 
+// EditMessageMediaP holds parameters for the editMessageMedia method.
+// See https://core.telegram.org/bots/api#editmessagemedia
 type EditMessageMediaP struct {
 	BusinessConnectionID string                `json:"business_connection_id,omitempty"`
 	ChatID               int64                 `json:"chat_id,omitempty"`
@@ -362,8 +429,10 @@ type EditMessageMediaP struct {
 	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
-// EditMessageMedia If inline message, first return will be zero-valued, and second will boolean
-// Otherwise, first return will be Message, and second false
+// EditMessageMedia edits media messages.
+// If inline_message_id is provided, returns a boolean success flag;
+// otherwise returns the edited Message.
+// See https://core.telegram.org/bots/api#editmessagemedia
 func (api *API) EditMessageMedia(params EditMessageMediaP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
@@ -376,6 +445,8 @@ func (api *API) EditMessageMedia(params EditMessageMediaP) (Message, bool, error
 	return res, false, err
 }
 
+// EditMessageLiveLocationP holds parameters for the editMessageLiveLocation method.
+// See https://core.telegram.org/bots/api#editmessagelivelocation
 type EditMessageLiveLocationP struct {
 	BusinessConnectionID string `json:"business_connection_id,omitempty"`
 	ChatID               int64  `json:"chat_id,omitempty"`
@@ -391,8 +462,10 @@ type EditMessageLiveLocationP struct {
 	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
-// EditMessageLiveLocation If inline message, first return will be zero-valued, and second will boolean
-// Otherwise, first return will be Message, and second false
+// EditMessageLiveLocation edits live location messages.
+// If inline_message_id is provided, returns a boolean success flag;
+// otherwise returns the edited Message.
+// See https://core.telegram.org/bots/api#editmessagelivelocation
 func (api *API) EditMessageLiveLocation(params EditMessageLiveLocationP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
@@ -405,6 +478,8 @@ func (api *API) EditMessageLiveLocation(params EditMessageLiveLocationP) (Messag
 	return res, false, err
 }
 
+// StopMessageLiveLocationP holds parameters for the stopMessageLiveLocation method.
+// See https://core.telegram.org/bots/api#stopmessagelivelocation
 type StopMessageLiveLocationP struct {
 	BusinessConnectionID string                `json:"business_connection_id,omitempty"`
 	ChatID               int64                 `json:"chat_id,omitempty"`
@@ -413,8 +488,10 @@ type StopMessageLiveLocationP struct {
 	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
-// StopMessageLiveLocation If inline message, first return will be zero-valued, and second will boolean
-// Otherwise, first return will be Message, and second false
+// StopMessageLiveLocation stops a live location message.
+// If inline_message_id is provided, returns a boolean success flag;
+// otherwise returns the edited Message.
+// See https://core.telegram.org/bots/api#stopmessagelivelocation
 func (api *API) StopMessageLiveLocation(params StopMessageLiveLocationP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
@@ -427,6 +504,7 @@ func (api *API) StopMessageLiveLocation(params StopMessageLiveLocationP) (Messag
 	return res, false, err
 }
 
+// EditMessageChecklistP holds parameters for the editMessageChecklist method.
 type EditMessageChecklistP struct {
 	BusinessConnectionID string                `json:"business_connection_id"`
 	ChatID               int64                 `json:"chat_id"`
@@ -435,11 +513,15 @@ type EditMessageChecklistP struct {
 	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
+// EditMessageChecklist edits a checklist message.
+// See https://core.telegram.org/bots/api#editmessagechecklist
 func (api *API) EditMessageChecklist(params EditMessageChecklistP) (Message, error) {
 	req := NewRequestWithChatID[Message]("editMessageChecklist", params, params.ChatID)
 	return req.Do(api)
 }
 
+// EditMessageReplyMarkupP holds parameters for the editMessageReplyMarkup method.
+// See https://core.telegram.org/bots/api#editmessagereplymarkup
 type EditMessageReplyMarkupP struct {
 	BusinessConnectionID string                `json:"business_connection_id,omitempty"`
 	ChatID               int64                 `json:"chat_id,omitempty"`
@@ -448,6 +530,10 @@ type EditMessageReplyMarkupP struct {
 	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
+// EditMessageReplyMarkup edits only the reply markup of messages.
+// If inline_message_id is provided, returns a boolean success flag;
+// otherwise returns the edited Message.
+// See https://core.telegram.org/bots/api#editmessagereplymarkup
 func (api *API) EditMessageReplyMarkup(params EditMessageReplyMarkupP) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
@@ -460,6 +546,8 @@ func (api *API) EditMessageReplyMarkup(params EditMessageReplyMarkupP) (Message,
 	return res, false, err
 }
 
+// StopPollP holds parameters for the stopPoll method.
+// See https://core.telegram.org/bots/api#stoppoll
 type StopPollP struct {
 	BusinessConnectionID string `json:"business_connection_id,omitempty"`
 	ChatID               int64  `json:"chat_id"`
@@ -467,53 +555,78 @@ type StopPollP struct {
 	InlineMessageID      string `json:"inline_message_id,omitempty"`
 }
 
+// StopPoll stops a poll that was sent by the bot.
+// Returns the stopped Poll.
+// See https://core.telegram.org/bots/api#stoppoll
 func (api *API) StopPoll(params StopPollP) (Poll, error) {
 	req := NewRequestWithChatID[Poll]("stopPoll", params, params.ChatID)
 	return req.Do(api)
 }
 
+// ApproveSuggestedPostP holds parameters for the approveSuggestedPost method.
+// See https://core.telegram.org/bots/api#approvesuggestedpost
 type ApproveSuggestedPostP struct {
 	ChatID    int64 `json:"chat_id"`
 	MessageID int   `json:"message_id"`
 	SendDate  int   `json:"send_date,omitempty"`
 }
 
+// ApproveSuggestedPost approves a suggested channel post.
+// Returns True on success.
+// See https://core.telegram.org/bots/api#approvesuggestedpost
 func (api *API) ApproveSuggestedPost(params ApproveSuggestedPostP) (bool, error) {
 	req := NewRequestWithChatID[bool]("approveSuggestedPost", params, params.ChatID)
 	return req.Do(api)
 }
 
+// DeclineSuggestedPostP holds parameters for the declineSuggestedPost method.
+// See https://core.telegram.org/bots/api#declinesuggestedpost
 type DeclineSuggestedPostP struct {
 	ChatID    int64  `json:"chat_id"`
 	MessageID int    `json:"message_id"`
 	Comment   string `json:"comment,omitempty"`
 }
 
+// DeclineSuggestedPost declines a suggested channel post.
+// Returns True on success.
+// See https://core.telegram.org/bots/api#declinesuggestedpost
 func (api *API) DeclineSuggestedPost(params DeclineSuggestedPostP) (bool, error) {
 	req := NewRequestWithChatID[bool]("declineSuggestedPost", params, params.ChatID)
 	return req.Do(api)
 }
 
+// DeleteMessageP holds parameters for the deleteMessage method.
+// See https://core.telegram.org/bots/api#deletemessage
 type DeleteMessageP struct {
 	ChatID    int64 `json:"chat_id"`
 	MessageID int   `json:"message_id"`
 }
 
+// DeleteMessage deletes a message.
+// Returns True on success.
+// See https://core.telegram.org/bots/api#deletemessage
 func (api *API) DeleteMessage(params DeleteMessageP) (bool, error) {
 	req := NewRequestWithChatID[bool]("deleteMessage", params, params.ChatID)
 	return req.Do(api)
 }
 
+// DeleteMessagesP holds parameters for the deleteMessages method.
+// See https://core.telegram.org/bots/api#deletemessages
 type DeleteMessagesP struct {
 	ChatID     int64 `json:"chat_id"`
 	MessageIDs []int `json:"message_ids"`
 }
 
+// DeleteMessages deletes multiple messages at once.
+// Returns True on success.
+// See https://core.telegram.org/bots/api#deletemessages
 func (api *API) DeleteMessages(params DeleteMessagesP) (bool, error) {
 	req := NewRequestWithChatID[bool]("deleteMessages", params, params.ChatID)
 	return req.Do(api)
 }
 
+// AnswerCallbackQueryP holds parameters for the answerCallbackQuery method.
+// See https://core.telegram.org/bots/api#answercallbackquery
 type AnswerCallbackQueryP struct {
 	CallbackQueryID string `json:"callback_query_id"`
 	Text            string `json:"text,omitempty"`
@@ -522,6 +635,9 @@ type AnswerCallbackQueryP struct {
 	CacheTime       int    `json:"cache_time,omitempty"`
 }
 
+// AnswerCallbackQuery sends answers to callback queries sent from inline keyboards.
+// Returns True on success.
+// See https://core.telegram.org/bots/api#answercallbackquery
 func (api *API) AnswerCallbackQuery(params AnswerCallbackQueryP) (bool, error) {
 	req := NewRequest[bool]("answerCallbackQuery", params)
 	return req.Do(api)

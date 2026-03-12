@@ -1,35 +1,61 @@
 package tgapi
 
+// UpdateType represents the type of an incoming update.
 type UpdateType string
 
 const (
-	UpdateTypeMessage              UpdateType = "message"
-	UpdateTypeEditedMessage        UpdateType = "edited_message"
-	UpdateTypeChannelPost          UpdateType = "channel_post"
-	UpdateTypeEditedChannelPost    UpdateType = "edited_channel_post"
-	UpdateTypeMessageReaction      UpdateType = "message_reaction"
+	// UpdateTypeMessage is a regular message update.
+	UpdateTypeMessage UpdateType = "message"
+	// UpdateTypeEditedMessage is an edited message update.
+	UpdateTypeEditedMessage UpdateType = "edited_message"
+	// UpdateTypeChannelPost is a channel post update.
+	UpdateTypeChannelPost UpdateType = "channel_post"
+	// UpdateTypeEditedChannelPost is an edited channel post update.
+	UpdateTypeEditedChannelPost UpdateType = "edited_channel_post"
+	// UpdateTypeMessageReaction is a message reaction update.
+	UpdateTypeMessageReaction UpdateType = "message_reaction"
+	// UpdateTypeMessageReactionCount is a message reaction count update.
 	UpdateTypeMessageReactionCount UpdateType = "message_reaction_count"
 
-	UpdateTypeBusinessConnection     UpdateType = "business_connection"
-	UpdateTypeBusinessMessage        UpdateType = "business_message"
-	UpdateTypeEditedBusinessMessage  UpdateType = "edited_business_message"
+	// UpdateTypeBusinessConnection is a business connection update.
+	UpdateTypeBusinessConnection UpdateType = "business_connection"
+	// UpdateTypeBusinessMessage is a business message update.
+	UpdateTypeBusinessMessage UpdateType = "business_message"
+	// UpdateTypeEditedBusinessMessage is an edited business message update.
+	UpdateTypeEditedBusinessMessage UpdateType = "edited_business_message"
+	// UpdateTypeDeletedBusinessMessage is a deleted business message update.
 	UpdateTypeDeletedBusinessMessage UpdateType = "deleted_business_message"
 
-	UpdateTypeInlineQuery        UpdateType = "inline_query"
+	// UpdateTypeInlineQuery is an inline query update.
+	UpdateTypeInlineQuery UpdateType = "inline_query"
+	// UpdateTypeChosenInlineResult is a chosen inline result update.
 	UpdateTypeChosenInlineResult UpdateType = "chosen_inline_result"
-	UpdateTypeCallbackQuery      UpdateType = "callback_query"
-	UpdateTypeShippingQuery      UpdateType = "shipping_query"
-	UpdateTypePreCheckoutQuery   UpdateType = "pre_checkout_query"
+	// UpdateTypeCallbackQuery is a callback query update.
+	UpdateTypeCallbackQuery UpdateType = "callback_query"
+	// UpdateTypeShippingQuery is a shipping query update.
+	UpdateTypeShippingQuery UpdateType = "shipping_query"
+	// UpdateTypePreCheckoutQuery is a pre-checkout query update.
+	UpdateTypePreCheckoutQuery UpdateType = "pre_checkout_query"
+	// UpdateTypePurchasedPaidMedia is a purchased paid media update.
 	UpdateTypePurchasedPaidMedia UpdateType = "purchased_paid_media"
-	UpdateTypePoll               UpdateType = "poll"
-	UpdateTypePollAnswer         UpdateType = "poll_answer"
-	UpdateTypeMyChatMember       UpdateType = "my_chat_member"
-	UpdateTypeChatMember         UpdateType = "chat_member"
-	UpdateTypeChatJoinRequest    UpdateType = "chat_join_request"
-	UpdateTypeChatBoost          UpdateType = "chat_boost"
-	UpdateTypeRemovedChatBoost   UpdateType = "removed_chat_boost"
+	// UpdateTypePoll is a poll update.
+	UpdateTypePoll UpdateType = "poll"
+	// UpdateTypePollAnswer is a poll answer update.
+	UpdateTypePollAnswer UpdateType = "poll_answer"
+	// UpdateTypeMyChatMember is a my chat member update.
+	UpdateTypeMyChatMember UpdateType = "my_chat_member"
+	// UpdateTypeChatMember is a chat member update.
+	UpdateTypeChatMember UpdateType = "chat_member"
+	// UpdateTypeChatJoinRequest is a chat join request update.
+	UpdateTypeChatJoinRequest UpdateType = "chat_join_request"
+	// UpdateTypeChatBoost is a chat boost update.
+	UpdateTypeChatBoost UpdateType = "chat_boost"
+	// UpdateTypeRemovedChatBoost is a removed chat boost update.
+	UpdateTypeRemovedChatBoost UpdateType = "removed_chat_boost"
 )
 
+// Update represents an incoming update from Telegram.
+// See https://core.telegram.org/bots/api#update
 type Update struct {
 	UpdateID          int      `json:"update_id"`
 	Message           *Message `json:"message,omitempty"`
@@ -60,6 +86,8 @@ type Update struct {
 	RemovedChatBoost *ChatBoostRemoved  `json:"removed_chat_boost,omitempty"`
 }
 
+// InlineQuery represents an incoming inline query.
+// See https://core.telegram.org/bots/api#inlinequery
 type InlineQuery struct {
 	ID       string    `json:"id"`
 	From     User      `json:"from"`
@@ -68,6 +96,9 @@ type InlineQuery struct {
 	ChatType *ChatType `json:"chat_type,omitempty"`
 	Location *Location `json:"location,omitempty"`
 }
+
+// ChosenInlineResult represents a result of an inline query that was chosen by the user.
+// See https://core.telegram.org/bots/api#choseninlineresult
 type ChosenInlineResult struct {
 	ResultID        string    `json:"result_id"`
 	From            User      `json:"from"`
@@ -76,12 +107,17 @@ type ChosenInlineResult struct {
 	Query           string    `json:"query"`
 }
 
+// ShippingQuery represents an incoming shipping query.
+// See https://core.telegram.org/bots/api#shippingquery
 type ShippingQuery struct {
 	ID              string          `json:"id"`
 	From            User            `json:"from"`
 	InvoicePayload  string          `json:"invoice_payload"`
 	ShippingAddress ShippingAddress `json:"shipping_address"`
 }
+
+// ShippingAddress represents a shipping address.
+// See https://core.telegram.org/bots/api#shippingaddress
 type ShippingAddress struct {
 	CountryCode string `json:"country_code"`
 	State       string `json:"state"`
@@ -91,12 +127,17 @@ type ShippingAddress struct {
 	PostCode    string `json:"post_code"`
 }
 
+// OrderInfo represents information about an order.
+// See https://core.telegram.org/bots/api#orderinfo
 type OrderInfo struct {
 	Name            string          `json:"name"`
 	PhoneNumber     string          `json:"phone_number"`
 	Email           string          `json:"email"`
 	ShippingAddress ShippingAddress `json:"shipping_address"`
 }
+
+// PreCheckoutQuery represents an incoming pre-checkout query.
+// See https://core.telegram.org/bots/api#precheckoutquery
 type PreCheckoutQuery struct {
 	ID               string     `json:"id"`
 	From             User       `json:"from"`
@@ -107,11 +148,15 @@ type PreCheckoutQuery struct {
 	OrderInfo        *OrderInfo `json:"order_info,omitempty"`
 }
 
+// PaidMediaPurchased represents a purchased paid media.
+// See https://core.telegram.org/bots/api#paidmediapurchased
 type PaidMediaPurchased struct {
 	From             User   `json:"from"`
 	PaidMediaPayload string `json:"paid_media_payload"`
 }
 
+// File represents a file ready to be downloaded.
+// See https://core.telegram.org/bots/api#file
 type File struct {
 	FileId       string `json:"file_id"`
 	FileUniqueID string `json:"file_unique_id"`
@@ -119,6 +164,8 @@ type File struct {
 	FilePath     string `json:"file_path,omitempty"`
 }
 
+// Audio represents an audio file to be treated as music by the Telegram clients.
+// See https://core.telegram.org/bots/api#audio
 type Audio struct {
 	FileID       string `json:"file_id"`
 	FileUniqueID string `json:"file_unique_id"`
@@ -132,11 +179,16 @@ type Audio struct {
 	Thumbnail *PhotoSize `json:"thumbnail,omitempty"`
 }
 
+// PollOption contains information about one answer option in a poll.
+// See https://core.telegram.org/bots/api#polloption
 type PollOption struct {
 	Text         string          `json:"text"`
 	TextEntities []MessageEntity `json:"text_entities"`
 	VoterCount   int             `json:"voter_count"`
 }
+
+// Poll contains information about a poll.
+// See https://core.telegram.org/bots/api#poll
 type Poll struct {
 	ID               string          `json:"id"`
 	Question         string          `json:"question"`
@@ -154,12 +206,18 @@ type Poll struct {
 	OpenPeriod            int             `json:"open_period,omitempty"`
 	CloseDate             int             `json:"close_date,omitempty"`
 }
+
+// PollAnswer represents an answer of a user in a poll.
+// See https://core.telegram.org/bots/api#pollanswer
 type PollAnswer struct {
 	PollID    string `json:"poll_id"`
 	VoterChat Chat   `json:"voter_chat"`
 	User      User   `json:"user"`
 	OptionIDS []int  `json:"option_ids"`
 }
+
+// ChatMemberUpdated represents changes in the status of a chat member.
+// See https://core.telegram.org/bots/api#chatmemberupdated
 type ChatMemberUpdated struct {
 	Chat                    Chat            `json:"chat"`
 	From                    User            `json:"from"`
@@ -171,6 +229,8 @@ type ChatMemberUpdated struct {
 	ViaChatFolderInviteLink *bool           `json:"via_chat_folder_invite_link,omitempty"`
 }
 
+// ChatJoinRequest represents a join request sent to a chat.
+// See https://core.telegram.org/bots/api#chatjoinrequest
 type ChatJoinRequest struct {
 	Chat       Chat            `json:"chat"`
 	From       User            `json:"from"`
@@ -180,6 +240,8 @@ type ChatJoinRequest struct {
 	InviteLink *ChatInviteLink `json:"invite_link,omitempty"`
 }
 
+// Location represents a point on the map.
+// See https://core.telegram.org/bots/api#location
 type Location struct {
 	Latitude             float64 `json:"latitude"`
 	Longitude            float64 `json:"longitude"`
@@ -188,12 +250,17 @@ type Location struct {
 	Heading              int     `json:"heading"`
 	ProximityAlertRadius int     `json:"proximity_alert_radius"`
 }
+
+// LocationAddress represents a human-readable address of a location.
 type LocationAddress struct {
 	CountryCode string  `json:"country_code"`
 	State       *string `json:"state,omitempty"`
 	City        *string `json:"city,omitempty"`
 	Street      *string `json:"street,omitempty"`
 }
+
+// Venue represents a venue.
+// See https://core.telegram.org/bots/api#venue
 type Venue struct {
 	Location        Location `json:"location"`
 	Title           string   `json:"title"`
@@ -204,22 +271,25 @@ type Venue struct {
 	GooglePlaceType string   `json:"google_place_type,omitempty"`
 }
 
+// WebAppInfo contains information about a Web App.
+// See https://core.telegram.org/bots/api#webappinfo
 type WebAppInfo struct {
 	URL string `json:"url"`
 }
 
+// StarAmount represents an amount of Telegram Stars.
 type StarAmount struct {
 	Amount         int `json:"amount"`
 	NanostarAmount int `json:"nanostar_amount"`
 }
 
+// Story represents a story.
 type Story struct {
 	Chat Chat `json:"chat"`
 	ID   int  `json:"id"`
 }
 
-// Gifts
-
+// AcceptedGiftTypes represents the types of gifts accepted by a user or chat.
 type AcceptedGiftTypes struct {
 	UnlimitedGifts      bool `json:"unlimited_gifts"`
 	LimitedGifts        bool `json:"limited_gifts"`
@@ -228,6 +298,7 @@ type AcceptedGiftTypes struct {
 	GiftsFromChannels   bool `json:"gifts_from_channels"`
 }
 
+// UniqueGiftColors represents color information for a unique gift.
 type UniqueGiftColors struct {
 	ModelCustomEmojiID    string `json:"model_custom_emoji_id"`
 	SymbolCustomEmojiID   string `json:"symbol_custom_emoji_id"`
@@ -237,11 +308,14 @@ type UniqueGiftColors struct {
 	DarkThemeOtherColors  []int  `json:"dark_theme_other_colors"`
 }
 
+// GiftBackground represents the background of a gift.
 type GiftBackground struct {
 	CenterColor int `json:"center_color"`
 	EdgeColor   int `json:"edge_color"`
 	TextColor   int `json:"text_color"`
 }
+
+// Gift represents a gift that can be sent.
 type Gift struct {
 	ID                     string         `json:"id"`
 	Sticker                Sticker        `json:"sticker"`
@@ -257,10 +331,13 @@ type Gift struct {
 	UniqueGiftVariantColor *int           `json:"unique_gift_variant_color,omitempty"`
 	PublisherChat          *Chat          `json:"publisher_chat,omitempty"`
 }
+
+// Gifts represents a list of gifts.
 type Gifts struct {
 	Gifts []Gift `json:"gifts"`
 }
 
+// OwnedGiftType represents the type of an owned gift.
 type OwnedGiftType string
 
 const (
@@ -268,13 +345,14 @@ const (
 	OwnedGiftUniqueType  OwnedGiftType = "unique"
 )
 
+// OwnedGift represents a gift owned by a user or chat.
 type OwnedGift struct {
 	Type        OwnedGiftType `json:"type"`
 	OwnerGiftID *string       `json:"owner_gift_id,omitempty"`
 	SendDate    *int          `json:"send_date,omitempty"`
 	IsSaved     *bool         `json:"is_saved,omitempty"`
 
-	// Поля, характерные для "regular"
+	// Fields specific to "regular" type
 	Gift                    Gift            `json:"gift"`
 	SenderUser              User            `json:"sender_user,omitempty"`
 	Text                    string          `json:"text,omitempty"`
@@ -287,12 +365,13 @@ type OwnedGift struct {
 	IsUpgradeSeparate       *bool           `json:"is_upgrade_separate,omitempty"`
 	UniqueGiftNumber        *int            `json:"unique_gift_number,omitempty"`
 
-	// Поля, характерные для "unique"
+	// Fields specific to "unique" type
 	CanBeTransferred  *bool `json:"can_be_transferred,omitempty"`
 	TransferStarCount *int  `json:"transfer_star_count,omitempty"`
 	NextTransferDate  *int  `json:"next_transfer_date,omitempty"`
 }
 
+// OwnedGifts represents a list of owned gifts with pagination.
 type OwnedGifts struct {
 	TotalCount int         `json:"total_count"`
 	Gifts      []OwnedGift `json:"gifts"`

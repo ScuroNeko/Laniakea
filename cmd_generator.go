@@ -12,10 +12,13 @@ package laniakea
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
+
+var CmdRegexp = regexp.MustCompile("^[a-zA-Z0-9]+$")
 
 // ErrTooManyCommands is returned when the total number of registered commands
 // exceeds Telegram's limit of 100 bot commands per bot.
@@ -38,8 +41,8 @@ var ErrTooManyCommands = errors.New("too many commands. max 100")
 //
 //	Command{command: "start", description: "Start the bot", args: []Arg{{text: "name", required: false}}}
 //	→ Description: "Start the bot. Usage: /start [name]"
-func generateBotCommand[T any](cmd Command[T]) tgapi.BotCommand {
-	desc := cmd.command
+func generateBotCommand[T any](cmd *Command[T]) tgapi.BotCommand {
+	desc := ""
 	if len(cmd.description) > 0 {
 		desc = cmd.description
 	}
@@ -53,8 +56,18 @@ func generateBotCommand[T any](cmd Command[T]) tgapi.BotCommand {
 		}
 	}
 
-	desc = fmt.Sprintf("%s. Usage: /%s %s", desc, cmd.command, strings.Join(descArgs, " "))
+	if desc != "" {
+		desc = fmt.Sprintf("%s. Usage: /%s %s", desc, cmd.command, strings.Join(descArgs, " "))
+	} else {
+		desc = fmt.Sprintf("Usage: /%s %s", cmd.command, strings.Join(descArgs, " "))
+	}
 	return tgapi.BotCommand{Command: cmd.command, Description: desc}
+}
+
+// checkCmdRegex check if command satisfy regexp [a-zA-Z0-9]+
+// Return true if satisfy, else false.
+func checkCmdRegex(cmd string) bool {
+	return CmdRegexp.MatchString(cmd)
 }
 
 // generateBotCommandForPlugin collects all non-skipped commands from a Plugin[T]
@@ -67,6 +80,9 @@ func generateBotCommandForPlugin[T any](pl Plugin[T]) []tgapi.BotCommand {
 	commands := make([]tgapi.BotCommand, 0)
 	for _, cmd := range pl.commands {
 		if cmd.skipAutoCmd {
+			continue
+		}
+		if !checkCmdRegex(cmd.command) {
 			continue
 		}
 		commands = append(commands, generateBotCommand(cmd))

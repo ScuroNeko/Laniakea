@@ -94,7 +94,13 @@ type Command[T DbContext] struct {
 // NewCommand creates a new Command with the given executor, command string, and arguments.
 // The command string should not include the leading slash (e.g., "start", not "/start").
 func NewCommand[T any](exec CommandExecutor[T], command string, args ...CommandArg) *Command[T] {
-	return &Command[T]{command, "", exec, extypes.Slice[CommandArg](args), make(extypes.Slice[Middleware[T]], 0), false}
+	return &Command[T]{command, "", exec, args, make(extypes.Slice[Middleware[T]], 0), false}
+}
+
+// NewPayload creates a new Command with the given executor, command payload string, and arguments.
+// The command string can POTENTIALLY contain any symbols, but recommended to use only "_", "-", ".", a-Z, 0-9
+func NewPayload[T any](exec CommandExecutor[T], command string, args ...CommandArg) *Command[T] {
+	return &Command[T]{command, "", exec, args, make(extypes.Slice[Middleware[T]], 0), false}
 }
 
 // Use adds a middleware to the command's execution chain.
@@ -147,8 +153,8 @@ func (c *Command[T]) validateArgs(args []string) error {
 // with shared middleware and configuration.
 type Plugin[T DbContext] struct {
 	name        string                       // Name of the plugin (e.g., "admin", "user")
-	commands    map[string]Command[T]        // Registered commands (triggered by message)
-	payloads    map[string]Command[T]        // Registered payloads (triggered by callback data)
+	commands    map[string]*Command[T]       // Registered commands (triggered by message)
+	payloads    map[string]*Command[T]       // Registered payloads (triggered by callback data)
 	middlewares extypes.Slice[Middleware[T]] // Shared middlewares for all commands/payloads
 	skipAutoCmd bool                         // If true, all commands in this plugin are excluded from auto-help
 }
@@ -156,15 +162,15 @@ type Plugin[T DbContext] struct {
 // NewPlugin creates a new Plugin with the given name.
 func NewPlugin[T DbContext](name string) *Plugin[T] {
 	return &Plugin[T]{
-		name, make(map[string]Command[T]),
-		make(map[string]Command[T]), extypes.Slice[Middleware[T]]{}, false,
+		name, make(map[string]*Command[T]),
+		make(map[string]*Command[T]), extypes.Slice[Middleware[T]]{}, false,
 	}
 }
 
 // AddCommand registers a command in the plugin.
 // The command's .command field is used as the key.
 func (p *Plugin[T]) AddCommand(command *Command[T]) *Plugin[T] {
-	p.commands[command.command] = *command
+	p.commands[command.command] = command
 	return p
 }
 
@@ -172,14 +178,23 @@ func (p *Plugin[T]) AddCommand(command *Command[T]) *Plugin[T] {
 // Returns the created command for further configuration.
 func (p *Plugin[T]) NewCommand(exec CommandExecutor[T], command string, args ...CommandArg) *Command[T] {
 	cmd := NewCommand(exec, command, args...)
+	p.AddCommand(cmd)
 	return cmd
 }
 
 // AddPayload registers a payload (e.g., callback query data) in the plugin.
 // Payloads are triggered by inline button callback_data, not by message text.
 func (p *Plugin[T]) AddPayload(command *Command[T]) *Plugin[T] {
-	p.payloads[command.command] = *command
+	p.payloads[command.command] = command
 	return p
+}
+
+// NewPayload creates and immediately adds a new payload command to the plugin.
+// Returns the created payload command for further configuration.
+func (p *Plugin[T]) NewPayload(exec CommandExecutor[T], command string, args ...CommandArg) *Command[T] {
+	cmd := NewPayload(exec, command, args...)
+	p.AddPayload(cmd)
+	return cmd
 }
 
 // AddMiddleware adds a middleware to the plugin's global middleware chain.

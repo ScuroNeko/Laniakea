@@ -1,5 +1,7 @@
 package tgapi
 
+// User represents a Telegram user or bot.
+// See https://core.telegram.org/bots/api#user
 type User struct {
 	ID                        int     `json:"id"`
 	IsBot                     bool    `json:"is_bot"`
@@ -18,21 +20,31 @@ type User struct {
 	AllowsUsersToCreateTopics *bool   `json:"allows_users_to_create_topics,omitempty"`
 }
 
+// UserProfilePhotos represents a user's profile photos.
+// See https://core.telegram.org/bots/api#userprofilephotos
 type UserProfilePhotos struct {
 	TotalCount int           `json:"total_count"`
 	Photos     [][]PhotoSize `json:"photos"`
 }
+
+// UserProfileAudios represents a user's profile audios.
+// See https://core.telegram.org/bots/api#userprofileaudios
 type UserProfileAudios struct {
 	TotalCount int     `json:"total_count"`
 	Audios     []Audio `json:"audios"`
 }
 
+// UserRating represents a user's rating with level progression.
+// See https://core.telegram.org/bots/api#userrating
 type UserRating struct {
 	Level              int `json:"level"`
 	Rating             int `json:"rating"`
 	CurrentLevelRating int `json:"current_level_rating"`
 	NextLevelRating    int `json:"next_level_rating"`
 }
+
+// Birthdate represents a user's birthdate.
+// See https://core.telegram.org/bots/api#birthdate
 type Birthdate struct {
 	Day   int `json:"day"`
 	Month int `json:"month"`

@@ -25,7 +25,6 @@
 //		AddL10n(l10n.New())
 //
 //	go bot.Run()
-//	<-ctx.Done() // wait for shutdown signal
 //
 // All methods are thread-safe except direct field access. Use provided accessors
 // (e.g., GetDBContext, SetUpdateOffset) for safe concurrent access.
@@ -170,6 +169,16 @@ type DbContext interface{}
 // Use Bot[NoDB] to indicate no dependency injection is required.
 type NoDB struct{ DbContext }
 
+// BotPayloadType defines the serialization format for callback data payloads.
+type BotPayloadType string
+
+var (
+	// BotPayloadBase64 encodes callback data as a Base64 string.
+	BotPayloadBase64 BotPayloadType = "base64"
+	// BotPayloadJson encodes callback data as a JSON string.
+	BotPayloadJson BotPayloadType = "json"
+)
+
 // Bot is the core Telegram bot instance.
 //
 // Manages:
@@ -185,6 +194,7 @@ type Bot[T DbContext] struct {
 	debug         bool
 	errorTemplate string
 	username      string
+	payloadType   BotPayloadType
 
 	logger        *slog.Logger                // Main bot logger (JSON stdout + optional file)
 	RequestLogger *slog.Logger                // Optional request-level API logging
@@ -430,6 +440,14 @@ func (bot *Bot[T]) UpdateTypes(t ...tgapi.UpdateType) *Bot[T] {
 	return bot
 }
 
+// SetPayloadType sets the type, that bot will use for payload
+// json - string `{"cmd": "command", "args": [...]}
+// base64 - same json, but encoded in base64 string
+func (bot *Bot[T]) SetPayloadType(t BotPayloadType) *Bot[T] {
+	bot.payloadType = t
+	return bot
+}
+
 // AddUpdateType adds one or more update types to the list.
 // Does not overwrite existing types.
 func (bot *Bot[T]) AddUpdateType(t ...tgapi.UpdateType) *Bot[T] {
@@ -548,22 +566,6 @@ func (bot *Bot[T]) AddL10n(l *L10n) *Bot[T] {
 	}
 	bot.l10n = l
 	return bot
-}
-
-// enqueueUpdate attempts to add an update to the internal processing queue.
-//
-// Returns extypes.QueueFullErr if the queue is full and the update cannot be enqueued.
-// This is non-blocking and used to implement rate-limiting behavior.
-//
-// When DropRLOverflow is enabled, this error is ignored and the update is dropped.
-// Otherwise, the update is retried via the main update loop.
-func (bot *Bot[T]) enqueueUpdate(u *tgapi.Update) error {
-	select {
-	case bot.updateQueue <- u:
-		return nil
-	default:
-		return extypes.QueueFullErr
-	}
 }
 
 // RunWithContext starts the bot with a given context for graceful shutdown.
