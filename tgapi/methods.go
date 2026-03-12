@@ -12,6 +12,7 @@ const (
 	ParseMDV2 ParseMode = "MarkdownV2"
 	ParseHTML ParseMode = "HTML"
 	ParseMD   ParseMode = "Markdown"
+	ParseNone ParseMode = "None"
 )
 
 type EmptyParams struct{}

@@ -1,58 +1,123 @@
+// Package laniakea provides a system for managing background and one-time
+// runner functions that operate on a Bot instance, with support for
+// asynchronous execution, timeouts, and lifecycle control.
+//
+// Runners are used for periodic tasks (e.g., cleanup, stats updates) or
+// one-time initialization logic. They are executed via Bot.ExecRunners().
+//
+// Important: Runners are not thread-safe for concurrent modification.
+// Builder methods (Onetime, Async, Timeout) must be called sequentially
+// and only before Execute().
 package laniakea
 
 import (
 	"time"
 )
 
+// RunnerFn is the function type for a runner. It receives a pointer to
+// the Bot and returns an error if execution fails.
 type RunnerFn[T DbContext] func(*Bot[T]) error
+
+// Runner represents a configurable background or one-time task to be
+// executed by a Bot.
+//
+// Runners are configured using builder methods: Onetime(), Async(), Timeout().
+// Once Execute() is called, the Runner should not be modified.
+//
+// Execution semantics:
+//   - onetime=true, async=false: Run once synchronously (blocks).
+//   - onetime=true, async=true:  Run once in a goroutine (non-blocking).
+//   - onetime=false, async=true: Run repeatedly in a goroutine with timeout.
+//   - onetime=false, async=false: Invalid configuration — ignored with warning.
 type Runner[T DbContext] struct {
-	name    string
-	onetime bool
-	async   bool
-	timeout time.Duration
-	fn      RunnerFn[T]
+	name    string        // Human-readable name for logging
+	onetime bool          // If true, runs once; if false, runs periodically
+	async   bool          // If true, runs in a goroutine; else, runs synchronously
+	timeout time.Duration // Duration to wait between periodic executions (ignored if onetime=true)
+	fn      RunnerFn[T]   // The function to execute
 }
 
-// NewRunner creates a new Runner with async=true by default.
-// Builder methods (Onetime, Async, Timeout) modify the Runner in-place.
+// NewRunner creates a new Runner with the given name and function.
+// By default, the Runner is configured as async=true (non-blocking).
+//
+// Builder methods (Onetime, Async, Timeout) can be chained to customize behavior.
 // DO NOT call builder methods concurrently or after Execute().
 func NewRunner[T DbContext](name string, fn RunnerFn[T]) *Runner[T] {
 	return &Runner[T]{
-		name: name, fn: fn, async: true,
+		name:    name,
+		fn:      fn,
+		async:   true, // Default: run asynchronously
+		timeout: 0,    // Default: no timeout (ignored if onetime=true)
 	}
 }
-func (b *Runner[T]) Onetime(onetime bool) *Runner[T] {
-	b.onetime = onetime
-	return b
-}
-func (b *Runner[T]) Async(async bool) *Runner[T] {
-	b.async = async
-	return b
-}
-func (b *Runner[T]) Timeout(timeout time.Duration) *Runner[T] {
-	b.timeout = timeout
-	return b
+
+// Onetime sets whether the runner executes once or repeatedly.
+// If true, the runner runs only once.
+// If false, the runner runs in a loop with the configured timeout.
+func (r *Runner[T]) Onetime(onetime bool) *Runner[T] {
+	r.onetime = onetime
+	return r
 }
 
+// Async sets whether the runner executes synchronously or asynchronously.
+// If true, the runner runs in a goroutine (non-blocking).
+// If false, the runner blocks the caller during execution.
+//
+// Note: If onetime=false and async=false, the runner will be skipped with a warning.
+func (r *Runner[T]) Async(async bool) *Runner[T] {
+	r.async = async
+	return r
+}
+
+// Timeout sets the duration to wait between repeated executions for
+// non-onetime runners.
+//
+// If onetime=true, this value is ignored.
+// If onetime=false and async=true, this timeout determines the sleep interval
+// between loop iterations.
+//
+// A zero value (time.Duration(0)) is allowed but may trigger a warning
+// if used with a background (non-onetime) async runner.
+func (r *Runner[T]) Timeout(timeout time.Duration) *Runner[T] {
+	r.timeout = timeout
+	return r
+}
+
+// ExecRunners executes all runners registered on the Bot.
+//
+// It logs warnings for misconfigured runners:
+//   - Sync, non-onetime runners are skipped (invalid configuration).
+//   - Background (non-onetime, async) runners without a timeout trigger a warning.
+//
+// Execution logic:
+//   - onetime + async: Runs once in a goroutine.
+//   - onetime + sync:  Runs once synchronously; warns if slower than 2 seconds.
+//   - !onetime + async: Runs in an infinite loop with timeout between iterations.
+//   - !onetime + sync: Skipped with warning.
+//
+// This method is typically called once during bot startup.
 func (bot *Bot[T]) ExecRunners() {
 	bot.logger.Infoln("Executing runners...")
 	for _, runner := range bot.runners {
+		// Validate configuration
 		if !runner.onetime && !runner.async {
-			bot.logger.Warnf("Runner %s not onetime, but sync\n", runner.name)
+			bot.logger.Warnf("Runner %s not onetime, but sync — skipping\n", runner.name)
 			continue
 		}
-		if !runner.onetime && runner.async && runner.timeout == (time.Second*0) {
-			bot.logger.Warnf("Background runner \"%s\" should have timeout", runner.name)
+		if !runner.onetime && runner.async && runner.timeout == 0 {
+			bot.logger.Warnf("Background runner \"%s\" has no timeout — may cause tight loop\n", runner.name)
 		}
 
-		if runner.async && runner.onetime {
-			go func() {
-				err := runner.fn(bot)
+		if runner.onetime && runner.async {
+			// One-time async: fire and forget
+			go func(r Runner[T]) {
+				err := r.fn(bot)
 				if err != nil {
-					bot.logger.Warnf("Runner %s failed: %s\n", runner.name, err)
+					bot.logger.Warnf("Runner %s failed: %s\n", r.name, err)
 				}
-			}()
-		} else if !runner.async && runner.onetime {
+			}(runner)
+		} else if runner.onetime && !runner.async {
+			// One-time sync: block until done
 			t := time.Now()
 			err := runner.fn(bot)
 			if err != nil {
@@ -60,18 +125,20 @@ func (bot *Bot[T]) ExecRunners() {
 			}
 			elapsed := time.Since(t)
 			if elapsed > time.Second*2 {
-				bot.logger.Warnf("Runner %s too slow. Elapsed time %s>=2s", runner.name, elapsed)
+				bot.logger.Warnf("Runner %s too slow. Elapsed time %v >= 2s\n", runner.name, elapsed)
 			}
-		} else if !runner.onetime {
-			go func() {
+		} else if !runner.onetime && runner.async {
+			// Background loop: periodic execution
+			go func(r Runner[T]) {
 				for {
-					err := runner.fn(bot)
+					err := r.fn(bot)
 					if err != nil {
-						bot.logger.Warnf("Runner %s failed: %s\n", runner.name, err)
+						bot.logger.Warnf("Runner %s failed: %s\n", r.name, err)
 					}
-					time.Sleep(runner.timeout)
+					time.Sleep(r.timeout)
 				}
-			}()
+			}(runner)
 		}
+		// Note: !onetime && !async is already skipped above
 	}
 }

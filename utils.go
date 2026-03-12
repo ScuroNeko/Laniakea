@@ -48,4 +48,10 @@ func EscapePunctuation(s string) string {
 	return s
 }
 
-const VersionString = utils.VersionString
+const (
+	VersionString = utils.VersionString
+	VersionMajor  = utils.VersionMajor
+	VersionMinor  = utils.VersionMinor
+	VersionPatch  = utils.VersionPatch
+	VersionBeta   = utils.VersionBeta
+)

@@ -1,3 +1,13 @@
+// Package laniakea provides a fluent builder system for constructing Telegram
+// inline keyboards with callback data and custom styling.
+//
+// This package supports:
+//   - Button builders with style (danger/success/primary), icons, URLs, and callbacks
+//   - Line-based keyboard layout with configurable max row size
+//   - Structured, JSON-serialized callback data for bot command routing
+//
+// Keyboard construction is stateful and builder-style: methods return the receiver
+// to enable chaining. Call Get() to finalize and retrieve the tgapi.ReplyMarkup.
 package laniakea
 
 import (
@@ -8,12 +18,26 @@ import (
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
 
+// ButtonStyleDanger, ButtonStyleSuccess, ButtonStylePrimary are predefined
+// Telegram keyboard button styles for visual feedback.
+//
+// These values map directly to Telegram Bot API's InlineKeyboardButton style field.
 const (
 	ButtonStyleDanger  tgapi.KeyboardButtonStyle = "danger"
 	ButtonStyleSuccess tgapi.KeyboardButtonStyle = "success"
 	ButtonStylePrimary tgapi.KeyboardButtonStyle = "primary"
 )
 
+// InlineKbButtonBuilder is a fluent builder for creating a single inline keyboard button.
+//
+// Use NewInlineKbButton() to start, then chain methods to configure:
+//   - SetIconCustomEmojiId() — adds a custom emoji icon
+//   - SetStyle() — sets visual style (danger/success/primary)
+//   - SetUrl() — makes button open a URL
+//   - SetCallbackData() — attaches structured command + args for bot handling
+//
+// Call build() to produce the final tgapi.InlineKeyboardButton.
+// Builder methods are immutable — each returns a copy.
 type InlineKbButtonBuilder struct {
 	text              string
 	iconCustomEmojiID string
@@ -22,26 +46,48 @@ type InlineKbButtonBuilder struct {
 	callbackData      string
 }
 
+// NewInlineKbButton creates a new button builder with the given display text.
+// The button will have no URL, no style, and no callback data by default.
 func NewInlineKbButton(text string) InlineKbButtonBuilder {
 	return InlineKbButtonBuilder{text: text}
 }
+
+// SetIconCustomEmojiId sets a custom emoji ID to display as the button's icon.
+// This is a Telegram Bot API feature for custom emoji icons.
 func (b InlineKbButtonBuilder) SetIconCustomEmojiId(id string) InlineKbButtonBuilder {
 	b.iconCustomEmojiID = id
 	return b
 }
+
+// SetStyle sets the visual style of the button.
+// Valid values: ButtonStyleDanger, ButtonStyleSuccess, ButtonStylePrimary.
+// If not set, the button uses the default style.
 func (b InlineKbButtonBuilder) SetStyle(style tgapi.KeyboardButtonStyle) InlineKbButtonBuilder {
 	b.style = style
 	return b
 }
+
+// SetUrl sets a URL that will be opened when the button is pressed.
+// If both URL and CallbackData are set, Telegram will prioritize URL.
 func (b InlineKbButtonBuilder) SetUrl(url string) InlineKbButtonBuilder {
 	b.url = url
 	return b
 }
+
+// SetCallbackData sets a structured callback payload that will be sent to the bot
+// when the button is pressed. The command and arguments are serialized as JSON.
+//
+// Args are converted to strings using fmt.Sprint. Non-string types (e.g., int, bool)
+// are safely serialized, but complex structs may not serialize usefully.
+//
+// Example: SetCallbackData("delete_user", 123, "confirm") → {"cmd":"delete_user","args":["123","confirm"]}
 func (b InlineKbButtonBuilder) SetCallbackData(cmd string, args ...any) InlineKbButtonBuilder {
 	b.callbackData = NewCallbackData(cmd, args...).ToJson()
 	return b
 }
 
+// build converts the builder state into a tgapi.InlineKeyboardButton.
+// This method is typically called internally by InlineKeyboard.AddButton().
 func (b InlineKbButtonBuilder) build() tgapi.InlineKeyboardButton {
 	return tgapi.InlineKeyboardButton{
 		Text:              b.text,
@@ -52,12 +98,22 @@ func (b InlineKbButtonBuilder) build() tgapi.InlineKeyboardButton {
 	}
 }
 
+// InlineKeyboard is a stateful builder for constructing Telegram inline keyboard layouts.
+//
+// Buttons are added row-by-row. When a row reaches maxRow, it is automatically flushed.
+// Call AddLine() to manually end a row, or Get() to finalize and retrieve the markup.
+//
+// The keyboard is not thread-safe. Build it in a single goroutine.
 type InlineKeyboard struct {
-	CurrentLine extypes.Slice[tgapi.InlineKeyboardButton]
-	Lines       [][]tgapi.InlineKeyboardButton
-	maxRow      int
+	CurrentLine extypes.Slice[tgapi.InlineKeyboardButton] // Current row being built
+	Lines       [][]tgapi.InlineKeyboardButton            // Completed rows
+	maxRow      int                                       // Max buttons per row (e.g., 3 or 4)
 }
 
+// NewInlineKeyboard creates a new keyboard builder with the specified maximum
+// number of buttons per row.
+//
+// Example: NewInlineKeyboard(3) creates a keyboard with at most 3 buttons per line.
 func NewInlineKeyboard(maxRow int) *InlineKeyboard {
 	return &InlineKeyboard{
 		CurrentLine: make(extypes.Slice[tgapi.InlineKeyboardButton], 0),
@@ -66,6 +122,8 @@ func NewInlineKeyboard(maxRow int) *InlineKeyboard {
 	}
 }
 
+// append adds a button to the current line. If the line is full, it auto-flushes.
+// This is an internal helper used by other builder methods.
 func (in *InlineKeyboard) append(button tgapi.InlineKeyboardButton) *InlineKeyboard {
 	if in.CurrentLine.Len() == in.maxRow {
 		in.AddLine()
@@ -74,27 +132,45 @@ func (in *InlineKeyboard) append(button tgapi.InlineKeyboardButton) *InlineKeybo
 	return in
 }
 
+// AddUrlButton adds a button that opens a URL when pressed.
+// No callback data is attached.
 func (in *InlineKeyboard) AddUrlButton(text, url string) *InlineKeyboard {
 	return in.append(tgapi.InlineKeyboardButton{Text: text, URL: url})
 }
+
+// AddUrlButtonStyle adds a button with a visual style that opens a URL.
+// Style must be one of: ButtonStyleDanger, ButtonStyleSuccess, ButtonStylePrimary.
 func (in *InlineKeyboard) AddUrlButtonStyle(text string, style tgapi.KeyboardButtonStyle, url string) *InlineKeyboard {
 	return in.append(tgapi.InlineKeyboardButton{Text: text, Style: style, URL: url})
 }
+
+// AddCallbackButton adds a button that sends a structured callback payload to the bot.
+// The command and args are serialized as JSON using NewCallbackData.
 func (in *InlineKeyboard) AddCallbackButton(text string, cmd string, args ...any) *InlineKeyboard {
 	return in.append(tgapi.InlineKeyboardButton{
-		Text: text, CallbackData: NewCallbackData(cmd, args...).ToJson(),
-	})
-}
-func (in *InlineKeyboard) AddCallbackButtonStyle(text string, style tgapi.KeyboardButtonStyle, cmd string, args ...any) *InlineKeyboard {
-	return in.append(tgapi.InlineKeyboardButton{
-		Text: text, Style: style,
+		Text:         text,
 		CallbackData: NewCallbackData(cmd, args...).ToJson(),
 	})
 }
+
+// AddCallbackButtonStyle adds a styled callback button.
+// Style affects visual appearance; callback data is sent to bot on press.
+func (in *InlineKeyboard) AddCallbackButtonStyle(text string, style tgapi.KeyboardButtonStyle, cmd string, args ...any) *InlineKeyboard {
+	return in.append(tgapi.InlineKeyboardButton{
+		Text:         text,
+		Style:        style,
+		CallbackData: NewCallbackData(cmd, args...).ToJson(),
+	})
+}
+
+// AddButton adds a button pre-configured via InlineKbButtonBuilder.
+// This is the most flexible way to create buttons with custom emoji, style, URL, and callback.
 func (in *InlineKeyboard) AddButton(b InlineKbButtonBuilder) *InlineKeyboard {
 	return in.append(b.build())
 }
 
+// AddLine manually ends the current row and starts a new one.
+// If the current row is empty, nothing happens.
 func (in *InlineKeyboard) AddLine() *InlineKeyboard {
 	if in.CurrentLine.Len() == 0 {
 		return in
@@ -103,6 +179,11 @@ func (in *InlineKeyboard) AddLine() *InlineKeyboard {
 	in.CurrentLine = make(extypes.Slice[tgapi.InlineKeyboardButton], 0)
 	return in
 }
+
+// Get finalizes the keyboard and returns a tgapi.ReplyMarkup.
+// Automatically flushes the current line if not empty.
+//
+// Returns a pointer to a ReplyMarkup suitable for use with tgapi.SendMessage.
 func (in *InlineKeyboard) Get() *tgapi.ReplyMarkup {
 	if in.CurrentLine.Len() > 0 {
 		in.Lines = append(in.Lines, in.CurrentLine)
@@ -110,11 +191,26 @@ func (in *InlineKeyboard) Get() *tgapi.ReplyMarkup {
 	return &tgapi.ReplyMarkup{InlineKeyboard: in.Lines}
 }
 
+// CallbackData represents the structured payload sent when an inline button
+// with callback data is pressed.
+//
+// This structure is serialized to JSON and sent to the bot as a string.
+// The bot should parse this back to determine the command and arguments.
+//
+// Example:
+//
+//	{"cmd":"delete_user","args":["123","confirm"]}
 type CallbackData struct {
-	Command string   `json:"cmd"`
-	Args    []string `json:"args"`
+	Command string   `json:"cmd"`  // The command name to route to
+	Args    []string `json:"args"` // Arguments passed as strings
 }
 
+// NewCallbackData creates a new CallbackData instance with the given command and args.
+//
+// All args are converted to strings using fmt.Sprint. This is safe for primitives
+// (int, string, bool, float64) but may not serialize complex structs meaningfully.
+//
+// Use this to build callback payloads for bot command routing.
 func NewCallbackData(command string, args ...any) *CallbackData {
 	stringArgs := make([]string, len(args))
 	for i, arg := range args {
@@ -125,9 +221,18 @@ func NewCallbackData(command string, args ...any) *CallbackData {
 		Args:    stringArgs,
 	}
 }
+
+// ToJson serializes the CallbackData to a JSON string.
+//
+// If serialization fails (e.g., due to unmarshalable fields), returns a fallback
+// JSON object: {"cmd":""} to prevent breaking Telegram's API.
+//
+// This fallback ensures the bot receives a valid JSON payload even if internal
+// errors occur — avoiding "invalid callback_data" errors from Telegram.
 func (d *CallbackData) ToJson() string {
 	data, err := json.Marshal(d)
 	if err != nil {
+		// Fallback: return minimal valid JSON to avoid Telegram API rejection
 		return `{"cmd":""}`
 	}
 	return string(data)
