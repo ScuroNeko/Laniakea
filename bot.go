@@ -257,6 +257,7 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 	bot := &Bot[T]{
 		updateOffset:  0,
 		errorTemplate: "%s",
+		payloadType:   BotPayloadBase64,
 		updateQueue:   updateQueue,
 		api:           api,
 		uploader:      uploader,

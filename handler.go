@@ -148,13 +148,6 @@ func encodeBase64Payload(d CallbackData) (string, error) {
 	base64.StdEncoding.Encode(dst, []byte(data))
 	return string(dst), nil
 }
-func decodeBase64Payload(s string) (CallbackData, error) {
-	b, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		return CallbackData{}, err
-	}
-	return decodeJsonPayload(string(b))
-}
 
 //	func encodePayload(payloadType BotPayloadType, d CallbackData) (string, error) {
 //		switch payloadType {
@@ -165,6 +158,13 @@ func decodeBase64Payload(s string) (CallbackData, error) {
 //		}
 //		return "", ErrInvalidPayloadType
 //	}
+func decodeBase64Payload(s string) (CallbackData, error) {
+	b, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return CallbackData{}, err
+	}
+	return decodeJsonPayload(string(b))
+}
 func decodePayload(payloadType BotPayloadType, s string) (CallbackData, error) {
 	switch payloadType {
 	case BotPayloadBase64:
