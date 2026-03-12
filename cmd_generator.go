@@ -110,7 +110,7 @@ func (bot *Bot[T]) AutoGenerateCommands() error {
 			continue
 		}
 		commands = append(commands, generateBotCommandForPlugin(pl)...)
-		bot.logger.Debugf("Registered %d commands from plugin %s", len(pl.commands), pl.name)
+		bot.logger.Debugln(fmt.Sprintf("Registered %d commands from plugin %s", len(pl.commands), pl.name))
 	}
 
 	// Enforce Telegram's 100-command limit

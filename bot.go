@@ -277,7 +277,7 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 	if bot.username == "" {
 		bot.logger.Warn("Can't get bot username. Named command handlers won't work!")
 	}
-	bot.logger.Infof("Authorized as %s (@%s)\n", u.FirstName, u.Username)
+	bot.logger.Infof("Authorized as %s (@%s)\n", u.FirstName, Val(u.Username, "unknown"))
 
 	return bot
 }
@@ -611,7 +611,7 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) {
 
 				for _, u := range updates {
 					select {
-					case bot.updateQueue <- u:
+					case bot.updateQueue <- &u:
 					case <-ctx.Done():
 						return
 					}

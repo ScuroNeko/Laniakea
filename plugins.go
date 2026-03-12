@@ -172,7 +172,6 @@ func (p *Plugin[T]) AddCommand(command *Command[T]) *Plugin[T] {
 // Returns the created command for further configuration.
 func (p *Plugin[T]) NewCommand(exec CommandExecutor[T], command string, args ...CommandArg) *Command[T] {
 	cmd := NewCommand(exec, command, args...)
-	p.AddCommand(cmd)
 	return cmd
 }
 

@@ -224,7 +224,6 @@ func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, erro
 		}
 
 		api.logger.Debugln("REQ", url, string(data))
-
 		resp, err := api.client.Do(req)
 		if err != nil {
 			return zero, fmt.Errorf("HTTP request failed: %w", err)
