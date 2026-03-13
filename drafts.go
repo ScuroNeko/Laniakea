@@ -29,12 +29,15 @@
 package laniakea
 
 import (
+	"errors"
 	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
+
+var ErrDraftChatIDZero = errors.New("zero draft chat ID")
 
 // draftIdGenerator defines an interface for generating unique draft IDs.
 type draftIdGenerator interface {
@@ -73,12 +76,6 @@ type DraftProvider struct {
 	api       *tgapi.API
 	drafts    map[uint64]*Draft
 	generator draftIdGenerator
-
-	// Internal defaults — not exposed directly to users.
-	chatID          int64
-	messageThreadID int
-	parseMode       tgapi.ParseMode
-	entities        []tgapi.MessageEntity
 }
 
 // NewRandomDraftProvider creates a new DraftProvider using random draft IDs.
@@ -109,34 +106,6 @@ func NewLinearDraftProvider(api *tgapi.API, startValue uint64) *DraftProvider {
 	}
 }
 
-// SetChat sets the target chat and optional message thread for all drafts created
-// by this provider. Must be called before NewDraft().
-//
-// If not set, NewDraft() will create drafts with zero chatID, which will cause
-// SendMessageDraft to fail. Use this method to avoid runtime errors.
-func (p *DraftProvider) SetChat(chatID int64, messageThreadID int) *DraftProvider {
-	p.chatID = chatID
-	p.messageThreadID = messageThreadID
-	return p
-}
-
-// SetParseMode sets the default parse mode for all new drafts.
-// Overrides the parse mode passed to NewDraft() only if not specified there.
-func (p *DraftProvider) SetParseMode(mode tgapi.ParseMode) *DraftProvider {
-	p.parseMode = mode
-	return p
-}
-
-// SetEntities sets the default message entities (e.g., bold, links, mentions)
-// to be copied into every new draft.
-//
-// Entities are shallow-copied — if you mutate the slice later, it will affect
-// future drafts. For safety, pass a copy if needed.
-func (p *DraftProvider) SetEntities(entities []tgapi.MessageEntity) *DraftProvider {
-	p.entities = entities
-	return p
-}
-
 // GetDraft retrieves a draft by its ID.
 //
 // Returns the draft and true if found, or nil and false if not found.
@@ -154,12 +123,13 @@ func (p *DraftProvider) GetDraft(id uint64) (*Draft, bool) {
 //
 // After successful flush, each draft is removed from the provider and cleared.
 func (p *DraftProvider) FlushAll() error {
-	p.mu.RLock()
+	p.mu.Lock()
 	drafts := make([]*Draft, 0, len(p.drafts))
 	for _, draft := range p.drafts {
 		drafts = append(drafts, draft)
 	}
-	p.mu.RUnlock()
+	p.drafts = make(map[uint64]*Draft)
+	p.mu.Unlock()
 
 	var lastErr error
 	for _, draft := range drafts {
@@ -197,20 +167,13 @@ type Draft struct {
 //
 // Panics if chatID is zero — call SetChat() on the provider first.
 func (p *DraftProvider) NewDraft(parseMode tgapi.ParseMode) *Draft {
-	if p.chatID == 0 {
-		panic("laniakea: DraftProvider.SetChat() must be called before NewDraft()")
-	}
-
 	id := p.generator.Next()
 	draft := &Draft{
-		api:             p.api,
-		provider:        p,
-		chatID:          p.chatID,
-		messageThreadID: p.messageThreadID,
-		parseMode:       parseMode,
-		entities:        p.entities, // Shallow copy — caller must ensure immutability
-		ID:              id,
-		Message:         "",
+		api:       p.api,
+		provider:  p,
+		parseMode: parseMode,
+		ID:        id,
+		Message:   "",
 	}
 	p.mu.Lock()
 	p.drafts[id] = draft
@@ -310,6 +273,9 @@ func (d *Draft) Flush() error {
 
 // push is the internal helper for Push(). It updates the server draft via SendMessageDraft.
 func (d *Draft) push(text string) error {
+	if d.chatID == 0 {
+		return ErrDraftChatIDZero
+	}
 	d.Message += text
 	params := tgapi.SendMessageDraftP{
 		ChatID:    d.chatID,

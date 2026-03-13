@@ -61,23 +61,22 @@ func generateBotCommand[T any](cmd *Command[T]) tgapi.BotCommand {
 	usage := fmt.Sprintf("Usage: /%s %s", cmd.command, strings.Join(descArgs, " "))
 	if desc != "" {
 		desc = fmt.Sprintf("%s. %s", desc, usage)
+		return tgapi.BotCommand{Command: cmd.command, Description: desc}
 	}
-	return tgapi.BotCommand{Command: cmd.command, Description: desc}
+	return tgapi.BotCommand{Command: cmd.command, Description: usage}
 }
 
 // checkCmdRegex check if command satisfy regexp [a-zA-Z0-9]+
-// Return true if satisfy, else false.
-func checkCmdRegex(cmd string) bool {
-	return CmdRegexp.MatchString(cmd)
-}
+// Return true if satisfied, else false.
+func checkCmdRegex(cmd string) bool { return CmdRegexp.MatchString(cmd) }
 
-// generateBotCommandForPlugin collects all non-skipped commands from a Plugin[T]
+// gatherCommandsForPlugin collects all non-skipped commands from a Plugin[T]
 // and converts them into tgapi.BotCommand objects.
 //
 // Commands marked with skipAutoCmd = true are excluded from auto-registration.
 // This allows plugins to opt out of automatic command generation (e.g., for
 // internal or hidden commands).
-func generateBotCommandForPlugin[T any](pl Plugin[T]) []tgapi.BotCommand {
+func gatherCommandsForPlugin[T any](pl Plugin[T]) []tgapi.BotCommand {
 	commands := make([]tgapi.BotCommand, 0)
 	for _, cmd := range pl.commands {
 		if cmd.skipAutoCmd {
@@ -87,6 +86,21 @@ func generateBotCommandForPlugin[T any](pl Plugin[T]) []tgapi.BotCommand {
 			continue
 		}
 		commands = append(commands, generateBotCommand(cmd))
+	}
+	return commands
+}
+
+// gatherCommands collects all commands from all plugins
+// and converts them into tgapi.BotCommand objects.
+// See gatherCommandsForPlugin
+func gatherCommands[T any](bot *Bot[T]) []tgapi.BotCommand {
+	commands := make([]tgapi.BotCommand, 0)
+	for _, pl := range bot.plugins {
+		if pl.skipAutoCmd {
+			continue
+		}
+		commands = append(commands, gatherCommandsForPlugin(pl)...)
+		bot.logger.Debugln(fmt.Sprintf("Registered %d commands from plugin %s", len(pl.commands), pl.name))
 	}
 	return commands
 }
@@ -120,17 +134,7 @@ func (bot *Bot[T]) AutoGenerateCommands() error {
 		return fmt.Errorf("failed to delete existing commands: %w", err)
 	}
 
-	// Collect all non-skipped commands from all plugins
-	commands := make([]tgapi.BotCommand, 0)
-	for _, pl := range bot.plugins {
-		if pl.skipAutoCmd {
-			continue
-		}
-		commands = append(commands, generateBotCommandForPlugin(pl)...)
-		bot.logger.Debugln(fmt.Sprintf("Registered %d commands from plugin %s", len(pl.commands), pl.name))
-	}
-
-	// Enforce Telegram's 100-command limit
+	commands := gatherCommands(bot)
 	if len(commands) > 100 {
 		return ErrTooManyCommands
 	}
@@ -152,5 +156,41 @@ func (bot *Bot[T]) AutoGenerateCommands() error {
 		}
 	}
 
+	return nil
+}
+
+// AutoGenerateCommandsForScope registers all plugin-defined commands with Telegram's Bot API
+// for the specified command scope. It first deletes any existing commands in that scope
+// to ensure a clean state, then sets the new set of commands.
+//
+// The scope parameter defines where the commands should be available (e.g., private chats,
+// group chats, chat administrators). See tgapi.BotCommandScope and its predefined types.
+//
+// Returns ErrTooManyCommands if the total number of commands exceeds 100.
+// Returns any API error from Telegram (e.g., network issues, invalid scope).
+//
+// Usage:
+//
+//	privateScope := &tgapi.BotCommandScope{Type: tgapi.BotCommandScopePrivateType}
+//	if err := bot.AutoGenerateCommandsForScope(privateScope); err != nil {
+//	    log.Fatal(err)
+//	}
+func (bot *Bot[T]) AutoGenerateCommandsForScope(scope *tgapi.BotCommandScope) error {
+	_, err := bot.api.DeleteMyCommands(tgapi.DeleteMyCommandsP{Scope: scope})
+	if err != nil {
+		return fmt.Errorf("failed to delete existing commands: %w", err)
+	}
+	commands := gatherCommands(bot)
+	if len(commands) > 100 {
+		return ErrTooManyCommands
+	}
+
+	_, err = bot.api.SetMyCommands(tgapi.SetMyCommandsP{
+		Commands: commands,
+		Scope:    scope,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to set commands for scope %q: %w", scope.Type, err)
+	}
 	return nil
 }
