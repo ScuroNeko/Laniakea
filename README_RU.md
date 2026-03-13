@@ -124,11 +124,17 @@ func myHandler(ctx *laniakea.MsgContext, db *MyDB) {
 ### Контекст сообщения (MsgContext)
 Предоставляет доступ к входящему сообщению и полезные методы для ответа:
 
-- `Answer(text string)`: Отправляет обычный текст, автоматически экранируя MarkdownV2.
+- `Answer(text string)`: Отправляет сообщение с parse_mode none.
 - `AnswerMarkdown(text string)`: Отправляет сообщение, отформатированное MarkdownV2 (экранирование на вашей стороне).
-- `AnswerText(text string)`: Отправляет сообщение без parse_mode.
+- `Keyboard(text string, keyboard *InlineKeyboard) *AnswerMessage`: Отправляет сообщение с parse_mode none и Inline клавиатурой.
+- `KeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage`: Отправляет сообщение, отформатированное MarkdownV2 (экранирование на вашей стороне), и Inline клавиатурой.
+- `AnswerPhoto(photoId, text string) *AnswerMessage`: Отправляет фотографию с подписью и parse_mode none.
+- `AnswerPhotoMarkdown(photoId, text string) *AnswerMessage`: Отправляет фотографию с подписью, отформатированной MarkdownV2 (экранирование на вашей стороне).
+- `EditCallback(text string)`: Редактирует сообщение, форматируя его в MarkdownV2 (экранирование на вашей стороне), после нажатия Inline кнопки.
+- `EditCallbackMarkdown(text string)`: Редактирует сообщение с parse_mode none после нажатия Inline кнопки.
 - `SendChatAction(action string)`: Отправляет действие "печатает", "загружает фото" и т.д.
 - Поля: `Text`, `Args`, `From`, `Chat`, `Msg` и другие.
+- И много других методов и полей!
 
 ### Контекст базы данных (Database Context)
 Параметр типа `T` в `NewBot[T]` — мощная функция. Вы можете передать любой тип (например, пул соединений с БД), и он будет доступен в каждом обработчике команды и中间件.
@@ -184,10 +190,9 @@ func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 
 ### Важные замечания
 - Middleware может изменять MsgContext (например, добавлять пользовательские поля) перед запуском команды.
-- Если нужно выполнить код после команды, это можно сделать внутри самой команды или использовать отложенный вызов (defer) в middleware, который оборачивает следующий вызов (более продвинутый подход).
 
 ## ⚙️ Расширенная настройка
-**Инлайн-клавиатуры**: Создавайте клавиатуры с помощью laniakea.NewKeyboard() и AddRow().
+**Инлайн-клавиатуры**: Создавайте клавиатуры с помощью laniakea.NewKeyboard().
 **Ограничение запросов**: Передайте настроенный utils.RateLimiter через BotOpts для корректной обработки лимитов Telegram.
 **Пользовательский HTTP-клиент**: Предоставьте свой http.Client в BotOpts для точного контроля.
 

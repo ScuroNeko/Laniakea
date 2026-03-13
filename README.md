@@ -124,15 +124,21 @@ func myHandler(ctx *laniakea.MsgContext, db *MyDB) {
 
 Provides access to the incoming message and useful reply methods:
 
-- `Answer(text string)`: Sends a plain text message, automatically escaping MarkdownV2.
-- `AnswerMarkdown(text string)`: Sends a message formatted with MarkdownV2 (you handle escaping).
-- `AnswerText(text string)`: Sends a message with no parse_mode.
-- `SendChatAction(action string)`: Sends a "typing", "uploading photo", etc., action.
+- `Answer(text string) *AnswerMessage`: Sends a message with parse_mode none.
+- `AnswerMarkdown(text string) *AnswerMessage`: Sends a message formatted with MarkdownV2 (you handle escaping).
+- `Keyboard(text string, keyboard *InlineKeyboard) *AnswerMessage`: Sends a message with parse_mode none and inline keyboard.
+- `KeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage`: Sends a message formatted with MarkdownV2 (you handle escaping) and inline keyboard.
+- `AnswerPhoto(photoId, text string) *AnswerMessage`: Sends a message with photo with parse_mode none.
+- `AnswerPhotoMarkdown(photoId, text string) *AnswerMessage`: Sends a message formatted with MarkdownV2 (you handle escaping) with.
+- `EditCallback(text string)`: Edits message with parse_mode none after clicking inline button.
+- `EditCallbackMarkdown(text string)`: Edits a message formatted with MarkdownV2 (you handle escaping) after clicking inline button.
+- `SendChatAction(action string)`: Sends a “typing”, “uploading photo”, etc., action.
 - Fields: `Text`, `Args`, `From`, `Chat`, `Msg`, etc.
+- And more methods and fields!
 
 ### Database Context
 
-The `T` in `NewBot[T]` is a powerful feature. You can pass any type (like a database connection pool) and it will be available in every command and middleware handler.
+The `T` in `NewBot[T]` is a powerful feature. You can pass any type (like a database connection pool), and it will be available in every command and middleware handler.
 
 ```go
 type MyDB struct { /* ... */ }
@@ -185,16 +191,15 @@ func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 
 ### Important Notes
 - Middleware can modify the MsgContext (e.g., add custom fields) before the command runs.
-- If you need to run code after a command, you can call it from within the command itself or use a defer statement inside the middleware that wraps the next call (more advanced).
 
 ## ⚙️ Advanced Configuration
-- **Inline Keyboards**: Build keyboards using laniakea.NewKeyboard() and AddRow().
+- **Inline Keyboards**: Build keyboards using laniakea.NewKeyboard().
 - **Rate Limiting**: Pass a configured utils.RateLimiter via BotOpts to handle Telegram's rate limits gracefully.
 - **Custom HTTP Client**: Provide your own http.Client in BotOpts for fine-tuned control.
 
 ## 📝 License
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License v3.0 — see the [LICENSE](LICENSE) file for details.
 
 ## 📚 Learn More
 [GoDoc](https://pkg.go.dev/git.nix13.pw/scuroneko/laniakea)
