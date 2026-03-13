@@ -1,22 +1,3 @@
-// Package laniakea provides a high-level context-based API for handling Telegram
-// bot interactions, including message responses, callback queries, inline keyboards,
-// localization, and message drafting. It wraps tgapi and adds convenience methods
-// with built-in rate limiting, error handling, and i18n support.
-//
-// The core type is MsgContext, which encapsulates the state of a Telegram update
-// and provides methods to respond, edit, delete, and translate messages.
-//
-// # Markdown Safety Warning
-//
-// All methods that accept MarkdownV2 formatting (e.g., AnswerMarkdown, EditCallbackfMarkdown)
-// require that user-provided text be escaped using laniakea.EscapeMarkdownV2().
-// Failure to escape user input may result in Telegram API errors, malformed messages,
-// or security issues.
-//
-// Example:
-//
-//	text := laniakea.EscapeMarkdownV2(userInput)
-//	ctx.AnswerMarkdown("You said: " + text)
 package laniakea
 
 import (

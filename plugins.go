@@ -1,15 +1,3 @@
-// Package laniakea provides a structured system for defining and executing
-// bot commands and payloads with middleware support, argument validation,
-// and plugin-based organization.
-//
-// The core concepts are:
-//   - Command: A named bot command with arguments, description, and executor.
-//   - Plugin: A collection of commands and payloads, with shared middlewares.
-//   - Middleware: Interceptors that can validate, modify, or block execution.
-//   - CommandArg: Type-safe argument definitions with regex validation.
-//
-// This system is designed to be used with MsgContext from the laniakea package
-// to handle Telegram bot interactions in a modular, type-safe way.
 package laniakea
 
 import (

@@ -1,13 +1,3 @@
-// Package laniakea provides a fluent builder system for constructing Telegram
-// inline keyboards with callback data and custom styling.
-//
-// This package supports:
-//   - Button builders with style (danger/success/primary), icons, URLs, and callbacks
-//   - Line-based keyboard layout with configurable max row size
-//   - Structured, JSON-serialized callback data for bot command routing
-//
-// Keyboard construction is stateful and builder-style: methods return the receiver
-// to enable chaining. Call Get() to finalize and retrieve the tgapi.ReplyMarkup.
 package laniakea
 
 import (

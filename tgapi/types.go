@@ -1,6 +1,6 @@
 package tgapi
 
-// UpdateType represents the type of an incoming update.
+// UpdateType represents the type of incoming update.
 type UpdateType string
 
 const (

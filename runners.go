@@ -1,13 +1,3 @@
-// Package laniakea provides a system for managing background and one-time
-// runner functions that operate on a Bot instance, with support for
-// asynchronous execution, timeouts, and lifecycle control.
-//
-// Runners are used for periodic tasks (e.g., cleanup, stats updates) or
-// one-time initialization logic. They are executed via Bot.ExecRunners().
-//
-// Important: Runners are not thread-safe for concurrent modification.
-// Builder methods (Onetime, Async, Timeout) must be called sequentially
-// and only before Execute().
 package laniakea
 
 import (

@@ -1,12 +1,3 @@
-// Package laniakea provides a framework for building Telegram bots with plugin-based
-// command registration and automatic command scope management.
-//
-// This module automatically generates and registers bot commands across different
-// chat scopes (private, group, admin) based on plugin-defined commands.
-//
-// Commands are derived from Plugin and Command structs, with optional descriptions
-// and argument formatting. Automatic registration avoids manual command setup and
-// ensures consistency across chat types.
 package laniakea
 
 import (

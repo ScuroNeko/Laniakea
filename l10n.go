@@ -1,13 +1,3 @@
-// Package laniakea provides a simple, key-based localization system for
-// multi-language text translation.
-//
-// The system supports:
-//   - Multiple language entries per key (e.g., "ru", "en", "es")
-//   - Fallback language for missing translations
-//   - Key-as-fallback behavior: if a key or language is not found, returns the key itself
-//
-// This is designed for lightweight, static localization in bots or services
-// where dynamic translation services are unnecessary.
 package laniakea
 
 // DictEntry represents a single localized entry with language-to-text mappings.

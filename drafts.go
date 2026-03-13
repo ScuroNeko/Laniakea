@@ -1,31 +1,3 @@
-// Package laniakea provides a safe, high-level interface for managing Telegram
-// message drafts using the tgapi library. It allows creating, editing, and
-// flushing drafts with automatic ID generation and optional bulk flushing.
-//
-// Drafts are designed to be ephemeral, mutable buffers that can be built up
-// incrementally and then sent as final messages. The package ensures safe
-// state management by copying entities and isolating draft contexts.
-//
-// Two draft ID generation strategies are supported:
-//   - Random: Cryptographically secure random IDs (default). Ideal for distributed systems.
-//   - Linear: Monotonically increasing IDs. Useful for persistence, debugging, or recovery.
-//
-// Example usage:
-//
-//	provider := laniakea.NewRandomDraftProvider(api)
-//
-//	draft := provider.NewDraft(tgapi.ParseModeMarkdown)
-//	draft.SetChat(-1001234567890, 0)
-//	draft.Push("*Hello*").Push(" **world**!")
-//	err := draft.Flush() // Sends message and deletes draft
-//	if err != nil {
-//	    log.Printf("Failed to send draft: %v", err)
-//	}
-//
-//	// Or flush all pending drafts at once:
-//	err = provider.FlushAll() // Sends all drafts and clears them
-//
-// Note: Drafts are NOT thread-safe. Concurrent access requires external synchronization.
 package laniakea
 
 import (

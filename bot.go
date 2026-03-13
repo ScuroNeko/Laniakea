@@ -1,41 +1,9 @@
-// Package laniakea provides a modular, extensible framework for building scalable
-// Telegram bots with support for plugins, middleware, localization, draft messages,
-// rate limiting, structured logging, and dependency injection.
-//
-// The framework is designed around a fluent API for configuration and separation of concerns:
-//
-//   - Plugins: Handle specific commands or events (e.g., /start, /help)
-//   - Middleware: Intercept and modify updates before plugins run (auth, logging, validation)
-//   - Runners: Background goroutines for cleanup, cron jobs, or monitoring
-//   - DraftProvider: Safely build and resume multi-step messages
-//   - L10n: Multi-language support via key-based translation
-//   - RateLimiter: Enforces Telegram API limits to avoid bans
-//   - Structured Logging: JSON stdout + optional file output with request-level tracing
-//   - Dependency Injection: Inject custom database contexts (e.g., *gorm.DB, *sql.DB)
-//
-// Example usage:
-//
-//	bot := laniakea.NewBot[mydb.DBContext](laniakea.LoadOptsFromEnv()).
-//		DatabaseContext(&myDB).
-//		AddUpdateType(tgapi.UpdateTypeMessage).
-//		AddPrefixes("/", "!").
-//		AddPlugins(&startPlugin, &helpPlugin).
-//		AddMiddleware(&authMiddleware, &logMiddleware).
-//		AddRunner(&cleanupRunner).
-//		AddL10n(l10n.New())
-//
-//	go bot.Run()
-//
-// All methods are thread-safe except direct field access. Use provided accessors
-// (e.g., GetDBContext, SetUpdateOffset) for safe concurrent access.
 package laniakea
 
 import (
 	"context"
 	"fmt"
-	"os"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -46,113 +14,6 @@ import (
 	"git.nix13.pw/scuroneko/slog"
 	"github.com/alitto/pond/v2"
 )
-
-// BotOpts holds configuration options for initializing a Bot.
-//
-// Values are loaded from environment variables via LoadOptsFromEnv().
-// Use NewOpts() to create a zero-value struct and set fields manually.
-type BotOpts struct {
-	// Token is the Telegram bot token (required).
-	Token string
-
-	// UpdateTypes is a semicolon-separated list of update types to listen for.
-	// Example: "message;edited_message;callback_query"
-	// Defaults to empty (Telegram will return all types).
-	UpdateTypes []string
-
-	// Debug enables debug-level logging.
-	Debug bool
-
-	// ErrorTemplate is the format string used to wrap error messages sent to users.
-	// Use "%s" to insert the actual error. Example: "❌ Error: %s"
-	ErrorTemplate string
-
-	// Prefixes is a list of command prefixes (e.g., ["/", "!"]).
-	// Defaults to ["/"] if not set via environment.
-	Prefixes []string
-
-	// LoggerBasePath is the directory where log files are written.
-	// Defaults to "./".
-	LoggerBasePath string
-
-	// UseRequestLogger enables detailed logging of all Telegram API requests.
-	UseRequestLogger bool
-
-	// WriteToFile enables writing logs to files (main.log and requests.log).
-	WriteToFile bool
-
-	// UseTestServer uses Telegram's test server (https://api.test.telegram.org).
-	UseTestServer bool
-
-	// APIUrl overrides the default Telegram API endpoint (useful for proxies or self-hosted).
-	APIUrl string
-
-	// RateLimit is the maximum number of API requests per second.
-	// Telegram allows up to 30 req/s for most bots. Defaults to 30.
-	RateLimit int
-
-	// DropRLOverflow drops incoming updates when rate limit is exceeded instead of queuing.
-	// Use this to prioritize responsiveness over reliability.
-	DropRLOverflow bool
-}
-
-// NewOpts returns a new BotOpts with zero values.
-func NewOpts() *BotOpts { return new(BotOpts) }
-
-// LoadOptsFromEnv loads BotOpts from environment variables.
-//
-// Environment variables:
-//   - TG_TOKEN: Bot token (required)
-//   - UPDATE_TYPES: semicolon-separated update types (e.g., "message;callback_query")
-//   - DEBUG: "true" to enable debug logging
-//   - ERROR_TEMPLATE: format string for error messages (e.g., "❌ %s")
-//   - PREFIXES: semicolon-separated prefixes (e.g., "/;!bot")
-//   - LOGGER_BASE_PATH: directory for log files (default: "./")
-//   - USE_REQ_LOG: "true" to enable request logging
-//   - WRITE_TO_FILE: "true" to write logs to files
-//   - USE_TEST_SERVER: "true" to use Telegram test server
-//   - API_URL: custom API endpoint
-//   - RATE_LIMIT: max requests per second (default: 30)
-//   - DROP_RL_OVERFLOW: "true" to drop updates on rate limit overflow
-//
-// Returns a populated BotOpts. If TG_TOKEN is missing, behavior is undefined.
-func LoadOptsFromEnv() *BotOpts {
-	rateLimit := 30
-	if rl := os.Getenv("RATE_LIMIT"); rl != "" {
-		if n, err := strconv.Atoi(rl); err == nil {
-			rateLimit = n
-		}
-	}
-
-	return &BotOpts{
-		Token:       os.Getenv("TG_TOKEN"),
-		UpdateTypes: strings.Split(os.Getenv("UPDATE_TYPES"), ";"),
-
-		Debug:         os.Getenv("DEBUG") == "true",
-		ErrorTemplate: os.Getenv("ERROR_TEMPLATE"),
-		Prefixes:      LoadPrefixesFromEnv(),
-
-		LoggerBasePath:   os.Getenv("LOGGER_BASE_PATH"),
-		UseRequestLogger: os.Getenv("USE_REQ_LOG") == "true",
-		WriteToFile:      os.Getenv("WRITE_TO_FILE") == "true",
-
-		UseTestServer: os.Getenv("USE_TEST_SERVER") == "true",
-		APIUrl:        os.Getenv("API_URL"),
-
-		RateLimit:      rateLimit,
-		DropRLOverflow: os.Getenv("DROP_RL_OVERFLOW") == "true",
-	}
-}
-
-// LoadPrefixesFromEnv returns the PREFIXES environment variable split by semicolon.
-// Defaults to ["/"] if not set.
-func LoadPrefixesFromEnv() []string {
-	prefixesS, exists := os.LookupEnv("PREFIXES")
-	if !exists {
-		return []string{"/"}
-	}
-	return strings.Split(prefixesS, ";")
-}
 
 // DbContext is an interface representing the application's database context.
 // It is injected into plugins and middleware via Bot.DatabaseContext().
@@ -168,6 +29,10 @@ type DbContext any
 // NoDB is a placeholder type for bots that do not use a database.
 // Use Bot[NoDB] to indicate no dependency injection is required.
 type NoDB struct{ DbContext }
+
+// DbLogger is a function type that returns a slog.LoggerWriter for database logging.
+// Used to inject database-specific log output (e.g., SQL queries, ORM events).
+type DbLogger[T DbContext] func(db *T) slog.LoggerWriter
 
 // BotPayloadType defines the serialization format for callback data payloads.
 type BotPayloadType string
@@ -195,6 +60,7 @@ type Bot[T DbContext] struct {
 	errorTemplate string
 	username      string
 	payloadType   BotPayloadType
+	maxWorkers    int
 
 	logger        *slog.Logger                // Main bot logger (JSON stdout + optional file)
 	RequestLogger *slog.Logger                // Optional request-level API logging
@@ -254,10 +120,16 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 		prefixes = []string{"/"}
 	}
 
+	workers := 32
+	if opts.MaxWorkers > 0 {
+		workers = opts.MaxWorkers
+	}
+
 	bot := &Bot[T]{
 		updateOffset:  0,
 		errorTemplate: "%s",
 		payloadType:   BotPayloadBase64,
+		maxWorkers:    workers,
 		updateQueue:   updateQueue,
 		api:           api,
 		uploader:      uploader,
@@ -395,34 +267,6 @@ func (bot *Bot[T]) L10n(lang, key string) string {
 // Useful for using LinearDraftIdGenerator to persist draft IDs across restarts.
 func (bot *Bot[T]) SetDraftProvider(p *DraftProvider) *Bot[T] {
 	bot.draftProvider = p
-	return bot
-}
-
-// DbLogger is a function type that returns a slog.LoggerWriter for database logging.
-// Used to inject database-specific log output (e.g., SQL queries, ORM events).
-type DbLogger[T DbContext] func(db *T) slog.LoggerWriter
-
-// AddDatabaseLoggerWriter adds a database logger writer to all loggers.
-//
-// The writer will receive logs from:
-//   - Main bot logger
-//   - Request logger (if enabled)
-//   - API and Uploader loggers
-//
-// Example:
-//
-//	bot.AddDatabaseLoggerWriter(func(db *MyDB) slog.LoggerWriter {
-//	    return db.QueryLogger()
-//	})
-func (bot *Bot[T]) AddDatabaseLoggerWriter(writer DbLogger[T]) *Bot[T] {
-	w := writer(bot.dbContext)
-	bot.logger.AddWriter(w)
-	if bot.RequestLogger != nil {
-		bot.RequestLogger.AddWriter(w)
-	}
-	for _, l := range bot.extraLoggers {
-		l.AddWriter(w)
-	}
 	return bot
 }
 
@@ -569,13 +413,37 @@ func (bot *Bot[T]) AddL10n(l *L10n) *Bot[T] {
 	return bot
 }
 
+// AddDatabaseLoggerWriter adds a database logger writer to all loggers.
+//
+// The writer will receive logs from:
+//   - Main bot logger
+//   - Request logger (if enabled)
+//   - API and Uploader loggers
+//
+// Example:
+//
+//	bot.AddDatabaseLoggerWriter(func(db *MyDB) slog.LoggerWriter {
+//	    return db.QueryLogger()
+//	})
+func (bot *Bot[T]) AddDatabaseLoggerWriter(writer DbLogger[T]) *Bot[T] {
+	w := writer(bot.dbContext)
+	bot.logger.AddWriter(w)
+	if bot.RequestLogger != nil {
+		bot.RequestLogger.AddWriter(w)
+	}
+	for _, l := range bot.extraLoggers {
+		l.AddWriter(w)
+	}
+	return bot
+}
+
 // RunWithContext starts the bot with a given context for graceful shutdown.
 //
 // This is the main entry point for bot execution. It:
 //   - Validates required configuration (prefixes, plugins)
 //   - Starts all registered runners as background goroutines
 //   - Begins polling for updates via Telegram's GetUpdates API
-//   - Processes updates concurrently using a worker pool (16 goroutines)
+//   - Processes updates concurrently using a worker pool with size configurable via BotOpts.MaxWorkers
 //
 // The context controls graceful shutdown. When canceled, the bot:
 //   - Stops polling for new updates
@@ -636,7 +504,7 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) {
 	}()
 
 	// Start worker pool for concurrent update handling
-	pool := pond.NewPool(16)
+	pool := pond.NewPool(bot.maxWorkers)
 	for update := range bot.updateQueue {
 		u := update // capture loop variable
 		pool.Submit(func() {
