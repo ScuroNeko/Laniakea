@@ -22,6 +22,7 @@ package laniakea
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 	"git.nix13.pw/scuroneko/slog"
@@ -31,10 +32,12 @@ import (
 // It provides methods to respond, edit, delete, and translate messages, as well as
 // manage inline keyboards and message drafts.
 type MsgContext struct {
-	Api             *tgapi.API
-	Msg             *tgapi.Message
-	Update          tgapi.Update
-	From            *tgapi.User
+	Api    *tgapi.API
+	Update tgapi.Update
+
+	Msg  *tgapi.Message
+	From *tgapi.User
+
 	CallbackMsgId   int
 	CallbackQueryId string
 	FromID          int
@@ -385,7 +388,13 @@ func (ctx *MsgContext) error(err error) {
 func (ctx *MsgContext) Error(err error) { ctx.error(err) }
 
 func (ctx *MsgContext) newDraft(parseMode tgapi.ParseMode) *Draft {
-	c := context.Background()
+	if ctx.Msg == nil {
+		ctx.botLogger.Errorln("can't create draft: ctx.Msg is nil")
+		return nil
+	}
+
+	c, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	if err := ctx.Api.Limiter.Wait(c, ctx.Msg.Chat.ID); err != nil {
 		ctx.botLogger.Errorln(err)
 		return nil

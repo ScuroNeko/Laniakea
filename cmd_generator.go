@@ -41,6 +41,8 @@ var ErrTooManyCommands = errors.New("too many commands. max 100")
 //
 //	Command{command: "start", description: "Start the bot", args: []Arg{{text: "name", required: false}}}
 //	→ Description: "Start the bot. Usage: /start [name]"
+//	Command{command: "echo", description: "Echo user input", args: []Arg{{text: "name", required: true}}}
+//	→ Description: "Echo user input. Usage: /echo <input>"
 func generateBotCommand[T any](cmd *Command[T]) tgapi.BotCommand {
 	desc := ""
 	if len(cmd.description) > 0 {
@@ -50,16 +52,15 @@ func generateBotCommand[T any](cmd *Command[T]) tgapi.BotCommand {
 	var descArgs []string
 	for _, a := range cmd.args {
 		if a.required {
-			descArgs = append(descArgs, a.text)
+			descArgs = append(descArgs, fmt.Sprintf("<%s>", a.text))
 		} else {
 			descArgs = append(descArgs, fmt.Sprintf("[%s]", a.text))
 		}
 	}
 
+	usage := fmt.Sprintf("Usage: /%s %s", cmd.command, strings.Join(descArgs, " "))
 	if desc != "" {
-		desc = fmt.Sprintf("%s. Usage: /%s %s", desc, cmd.command, strings.Join(descArgs, " "))
-	} else {
-		desc = fmt.Sprintf("Usage: /%s %s", cmd.command, strings.Join(descArgs, " "))
+		desc = fmt.Sprintf("%s. %s", desc, usage)
 	}
 	return tgapi.BotCommand{Command: cmd.command, Description: desc}
 }

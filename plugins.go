@@ -33,11 +33,14 @@ const (
 	CommandValueAnyType CommandValueType = "any"
 )
 
-// CommandRegexInt matches one or more digits.
-var CommandRegexInt = regexp.MustCompile(`\d+`)
-
-// CommandRegexString matches any non-empty string.
-var CommandRegexString = regexp.MustCompile(".+")
+var (
+	// CommandRegexInt matches one or more digits.
+	CommandRegexInt = regexp.MustCompile(`\d+`)
+	// CommandRegexString matches any non-empty string.
+	CommandRegexString = regexp.MustCompile(`.+`)
+	// CommandRegexBool matches true or false
+	CommandRegexBool = regexp.MustCompile(`true|false`)
+)
 
 // ErrCmdArgCountMismatch is returned when the number of provided arguments
 // is less than the number of required arguments.
@@ -58,15 +61,22 @@ type CommandArg struct {
 // NewCommandArg creates a new CommandArg with the given text and type.
 // Uses a default regex based on the type (string or int).
 // For CommandValueAnyType, no validation is performed.
-func NewCommandArg(text string, valueType CommandValueType) *CommandArg {
+func NewCommandArg(text string) *CommandArg {
+	return &CommandArg{CommandValueAnyType, text, CommandRegexString, false}
+}
+
+func (c *CommandArg) SetValueType(t CommandValueType) *CommandArg {
 	regex := CommandRegexString
-	switch valueType {
+	switch t {
 	case CommandValueIntType:
 		regex = CommandRegexInt
+	case CommandValueBoolType:
+		regex = CommandRegexBool
 	case CommandValueAnyType:
 		regex = nil // Skip validation
 	}
-	return &CommandArg{valueType, text, regex, false}
+	c.regex = regex
+	return c
 }
 
 // SetRequired marks this argument as required.
@@ -320,7 +330,10 @@ func (m *Middleware[T]) SetAsync(async bool) *Middleware[T] {
 // Otherwise, returns the result of the executor.
 func (m *Middleware[T]) Execute(ctx *MsgContext, db *T) bool {
 	if m.async {
-		go m.executor(ctx, db)
+		ctx := *ctx // copy context to avoid race condition
+		go func(ctx MsgContext) {
+			m.executor(&ctx, db)
+		}(ctx)
 		return true
 	}
 	return m.executor(ctx, db)

@@ -163,7 +163,7 @@ func LoadPrefixesFromEnv() []string {
 //	bot := NewBot[MyDB](opts).DatabaseContext(&myDB)
 //
 // Use NoDB if no database is needed.
-type DbContext interface{}
+type DbContext any
 
 // NoDB is a placeholder type for bots that do not use a database.
 // Use Bot[NoDB] to indicate no dependency injection is required.
@@ -599,12 +599,18 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) {
 		return
 	}
 
-	bot.ExecRunners()
+	bot.ExecRunners(ctx)
 
 	bot.logger.Infoln("Bot running. Press CTRL+C to exit.")
 
 	// Start update polling in a goroutine
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				bot.logger.Errorln(fmt.Sprintf("panic in update polling: %v", r))
+			}
+			close(bot.updateQueue)
+		}()
 		for {
 			select {
 			case <-ctx.Done():
@@ -618,6 +624,7 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) {
 				}
 
 				for _, u := range updates {
+					u := u // copy loop variable to avoid race condition
 					select {
 					case bot.updateQueue <- &u:
 					case <-ctx.Done():
@@ -631,11 +638,12 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) {
 	// Start worker pool for concurrent update handling
 	pool := pond.NewPool(16)
 	for update := range bot.updateQueue {
-		update := update // capture loop variable
+		u := update // capture loop variable
 		pool.Submit(func() {
-			bot.handle(update)
+			bot.handle(u)
 		})
 	}
+	pool.Stop() // Wait for all tasks to complete and stop the pool
 }
 
 // Run starts the bot using a background context.

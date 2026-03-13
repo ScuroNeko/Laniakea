@@ -11,6 +11,7 @@
 package laniakea
 
 import (
+	"context"
 	"time"
 )
 
@@ -83,7 +84,7 @@ func (r *Runner[T]) Timeout(timeout time.Duration) *Runner[T] {
 	return r
 }
 
-// ExecRunners executes all runners registered on the Bot.
+// ExecRunners executes all runners registered on the Bot with context-based lifecycle management.
 //
 // It logs warnings for misconfigured runners:
 //   - Sync, non-onetime runners are skipped (invalid configuration).
@@ -92,11 +93,13 @@ func (r *Runner[T]) Timeout(timeout time.Duration) *Runner[T] {
 // Execution logic:
 //   - onetime + async: Runs once in a goroutine.
 //   - onetime + sync:  Runs once synchronously; warns if slower than 2 seconds.
-//   - !onetime + async: Runs in an infinite loop with timeout between iterations.
+//   - !onetime + async: Runs in a loop with timeout between iterations until ctx.Done().
 //   - !onetime + sync: Skipped with warning.
 //
-// This method is typically called once during bot startup.
-func (bot *Bot[T]) ExecRunners() {
+// Background runners listen for ctx.Done() and gracefully shut down when the context is canceled.
+//
+// This method is typically called once during bot startup in RunWithContext.
+func (bot *Bot[T]) ExecRunners(ctx context.Context) {
 	bot.logger.Infoln("Executing runners...")
 	for _, runner := range bot.runners {
 		// Validate configuration
@@ -128,14 +131,20 @@ func (bot *Bot[T]) ExecRunners() {
 				bot.logger.Warnf("Runner %s too slow. Elapsed time %v >= 2s\n", runner.name, elapsed)
 			}
 		} else if !runner.onetime && runner.async {
-			// Background loop: periodic execution
+			// Background loop: periodic execution with graceful shutdown
 			go func(r Runner[T]) {
+				ticker := time.NewTicker(r.timeout)
+				defer ticker.Stop()
 				for {
-					err := r.fn(bot)
-					if err != nil {
-						bot.logger.Warnf("Runner %s failed: %s\n", r.name, err)
+					select {
+					case <-ctx.Done():
+						return
+					case <-ticker.C:
+						err := r.fn(bot)
+						if err != nil {
+							bot.logger.Warnf("Runner %s failed: %s\n", r.name, err)
+						}
 					}
-					time.Sleep(r.timeout)
 				}
 			}(runner)
 		}

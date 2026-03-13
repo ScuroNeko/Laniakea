@@ -30,6 +30,7 @@ package laniakea
 
 import (
 	"math/rand/v2"
+	"sync"
 	"sync/atomic"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
@@ -68,6 +69,7 @@ func (g *LinearDraftIdGenerator) Next() uint64 {
 // DraftProvider is NOT thread-safe. Concurrent access from multiple goroutines
 // requires external synchronization.
 type DraftProvider struct {
+	mu        sync.RWMutex
 	api       *tgapi.API
 	drafts    map[uint64]*Draft
 	generator draftIdGenerator
@@ -139,6 +141,8 @@ func (p *DraftProvider) SetEntities(entities []tgapi.MessageEntity) *DraftProvid
 //
 // Returns the draft and true if found, or nil and false if not found.
 func (p *DraftProvider) GetDraft(id uint64) (*Draft, bool) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	draft, ok := p.drafts[id]
 	return draft, ok
 }
@@ -150,8 +154,15 @@ func (p *DraftProvider) GetDraft(id uint64) (*Draft, bool) {
 //
 // After successful flush, each draft is removed from the provider and cleared.
 func (p *DraftProvider) FlushAll() error {
-	var lastErr error
+	p.mu.RLock()
+	drafts := make([]*Draft, 0, len(p.drafts))
 	for _, draft := range p.drafts {
+		drafts = append(drafts, draft)
+	}
+	p.mu.RUnlock()
+
+	var lastErr error
+	for _, draft := range drafts {
 		if err := draft.Flush(); err != nil {
 			lastErr = err
 			break // Stop on first error to avoid partial state
@@ -201,7 +212,9 @@ func (p *DraftProvider) NewDraft(parseMode tgapi.ParseMode) *Draft {
 		ID:              id,
 		Message:         "",
 	}
+	p.mu.Lock()
 	p.drafts[id] = draft
+	p.mu.Unlock()
 	return draft
 }
 
@@ -253,7 +266,9 @@ func (d *Draft) Clear() {
 // want to cancel a draft without sending it.
 func (d *Draft) Delete() {
 	if d.provider != nil {
+		d.provider.mu.Lock()
 		delete(d.provider.drafts, d.ID)
+		d.provider.mu.Unlock()
 	}
 	d.Clear()
 }

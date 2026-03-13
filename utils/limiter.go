@@ -193,8 +193,10 @@ func (rl *RateLimiter) waitForChatUnlock(ctx context.Context, chatID int64) erro
 
 // getChatLimiter returns the rate limiter for the given chat, creating it if needed.
 // Uses 1 request per second with burst of 1 — conservative for per-user limits.
-// Must be called with rl.chatMu held.
 func (rl *RateLimiter) getChatLimiter(chatID int64) *rate.Limiter {
+	rl.chatMu.Lock()
+	defer rl.chatMu.Unlock()
+
 	if lim, ok := rl.chatLimiters[chatID]; ok {
 		return lim
 	}

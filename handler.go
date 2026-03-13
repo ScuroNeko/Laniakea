@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
@@ -12,6 +13,12 @@ import (
 var ErrInvalidPayloadType = errors.New("invalid payload type")
 
 func (bot *Bot[T]) handle(u *tgapi.Update) {
+	defer func() {
+		if r := recover(); r != nil {
+			bot.logger.Errorln(fmt.Sprintf("panic in handle: %v", r))
+		}
+	}()
+
 	ctx := &MsgContext{
 		Update: *u, Api: bot.api,
 		botLogger:     bot.logger,
@@ -84,7 +91,7 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 			if !plugin.executeMiddlewares(ctx, bot.dbContext) {
 				return
 			}
-			go plugin.executeCmd(cmd, ctx, bot.dbContext)
+			plugin.executeCmd(cmd, ctx, bot.dbContext)
 			return
 		}
 	}
@@ -113,7 +120,7 @@ func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 		if !plugin.executeMiddlewares(ctx, bot.dbContext) {
 			return
 		}
-		go plugin.executePayload(data.Command, ctx, bot.dbContext)
+		plugin.executePayload(data.Command, ctx, bot.dbContext)
 		return
 	}
 }
