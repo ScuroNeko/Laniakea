@@ -22,7 +22,7 @@ type RateLimiter struct {
 
 	chatLocks    map[int64]time.Time     // per-chat cooldown timestamps
 	chatLimiters map[int64]*rate.Limiter // per-chat token buckets (1 req/sec)
-	chatMu       sync.Mutex              // protects chatLocks and chatLimiters
+	chatMu       sync.RWMutex            // protects chatLocks and chatLimiters
 }
 
 // NewRateLimiter creates a new RateLimiter with default limits.
@@ -107,9 +107,9 @@ func (rl *RateLimiter) Allow(chatID int64) bool {
 	}
 
 	// Check chat cooldown
-	rl.chatMu.Lock()
+	rl.chatMu.RLock()
 	chatUntil, ok := rl.chatLocks[chatID]
-	rl.chatMu.Unlock()
+	rl.chatMu.RUnlock()
 	if ok && !chatUntil.IsZero() && time.Now().Before(chatUntil) {
 		return false
 	}
@@ -135,11 +135,15 @@ func (rl *RateLimiter) Allow(chatID int64) bool {
 // chatID == 0 means no specific chat context (e.g., inline query, webhook without chat).
 func (rl *RateLimiter) Check(ctx context.Context, dropOverflow bool, chatID int64) error {
 	if dropOverflow {
-		if chatID != 0 && !rl.Allow(chatID) {
-			return ErrDropOverflow
-		}
-		if !rl.GlobalAllow() {
-			return ErrDropOverflow
+		if chatID != 0 {
+			if !rl.Allow(chatID) {
+
+				return ErrDropOverflow
+			}
+		} else {
+			if !rl.GlobalAllow() {
+				return ErrDropOverflow
+			}
 		}
 	} else if chatID != 0 {
 		if err := rl.Wait(ctx, chatID); err != nil {
@@ -175,9 +179,9 @@ func (rl *RateLimiter) waitForGlobalUnlock(ctx context.Context) error {
 // waitForChatUnlock blocks until the specified chat's cooldown expires or context is done.
 // Does not check token bucket — only cooldown.
 func (rl *RateLimiter) waitForChatUnlock(ctx context.Context, chatID int64) error {
-	rl.chatMu.Lock()
+	rl.chatMu.RLock()
 	until, ok := rl.chatLocks[chatID]
-	rl.chatMu.Unlock()
+	rl.chatMu.RUnlock()
 
 	if !ok || until.IsZero() || time.Now().After(until) {
 		return nil

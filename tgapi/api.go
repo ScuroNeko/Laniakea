@@ -161,27 +161,13 @@ type TelegramRequest[R, P any] struct {
 	chatId int64
 }
 
-// NewRequest and NewRequestWithChatID are DEPRECATED.
-// They encourage unsafe, untyped usage and bypass Go's type safety.
-// Instead, define explicit, type-safe methods for each Telegram API endpoint.
-//
-// Example:
-//
-//	func (api *API) SendMessage(ctx context.Context, chatID int64, text string) (Message, error) { ... }
-//
-// This provides:
-//
-//	✅ Compile-time validation
-//	✅ IDE autocompletion
-//	✅ Clear API surface
-//	✅ Better error messages
-//
-// DO NOT use these constructors in production code.
-// This can be used ONLY for testing or if you NEED method, that wasn't added as function.
+// NewRequest creates an untyped TelegramRequest for the given method and params with no chat ID.
 func NewRequest[R, P any](method string, params P) TelegramRequest[R, P] {
 	return TelegramRequest[R, P]{method, params, 0}
 }
 
+// NewRequestWithChatID creates an untyped TelegramRequest with an associated chat ID.
+// The chat ID is used for per-chat rate limiting.
 func NewRequestWithChatID[R, P any](method string, params P, chatId int64) TelegramRequest[R, P] {
 	return TelegramRequest[R, P]{method, params, chatId}
 }
@@ -191,12 +177,10 @@ func NewRequestWithChatID[R, P any](method string, params P, chatId int64) Teleg
 // Must be called within a worker pool context if using DoWithContext.
 func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, error) {
 	var zero R
-
-	data, err := json.Marshal(r.params)
+	reqData, err := json.Marshal(r.params)
 	if err != nil {
 		return zero, fmt.Errorf("failed to marshal request: %w", err)
 	}
-	buf := bytes.NewBuffer(data)
 
 	methodPrefix := ""
 	if api.useTestServer {
@@ -204,7 +188,7 @@ func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, erro
 	}
 	url := fmt.Sprintf("%s/bot%s%s/%s", api.apiUrl, api.token, methodPrefix, r.method)
 
-	req, err := http.NewRequestWithContext(ctx, "POST", url, buf)
+	req, err := http.NewRequestWithContext(ctx, "POST", url, nil)
 	if err != nil {
 		return zero, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -213,7 +197,6 @@ func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, erro
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", fmt.Sprintf("Laniakea/%s", utils.VersionString))
 	req.Header.Set("Accept-Encoding", "gzip")
-	req.ContentLength = int64(len(data))
 
 	for {
 		// Apply rate limiting before making the request
@@ -222,22 +205,25 @@ func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, erro
 				return zero, err
 			}
 		}
+		buf := bytes.NewBuffer(reqData)
+		req.Body = io.NopCloser(buf)
+		req.ContentLength = int64(len(reqData))
 
-		api.logger.Debugln("REQ", url, string(data))
+		api.logger.Debugln("REQ", url, string(reqData))
 		resp, err := api.client.Do(req)
 		if err != nil {
 			return zero, fmt.Errorf("HTTP request failed: %w", err)
 		}
 
-		data, err = readBody(resp.Body)
+		respData, err := readBody(resp.Body)
 		_ = resp.Body.Close() // ensure body is closed
 		if err != nil {
 			return zero, fmt.Errorf("failed to read response body: %w", err)
 		}
 
-		api.logger.Debugln("RES", r.method, string(data))
+		api.logger.Debugln("RES", r.method, string(respData))
 
-		response, err := parseBody[R](data)
+		response, err := parseBody[R](respData)
 		if err != nil {
 			return zero, fmt.Errorf("failed to parse response: %w", err)
 		}
@@ -249,10 +235,12 @@ func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, erro
 				api.logger.Warnf("Rate limited by Telegram, retry after %d seconds (chat: %d)", after, r.chatId)
 
 				// Apply cooldown to global or chat-specific limiter
-				if r.chatId > 0 {
-					api.Limiter.SetChatLock(r.chatId, after)
-				} else {
-					api.Limiter.SetGlobalLock(after)
+				if api.Limiter != nil {
+					if r.chatId > 0 {
+						api.Limiter.SetChatLock(r.chatId, after)
+					} else {
+						api.Limiter.SetGlobalLock(after)
+					}
 				}
 
 				// Wait and retry
@@ -311,21 +299,13 @@ func readBody(body io.ReadCloser) ([]byte, error) {
 	return io.ReadAll(reader)
 }
 
-// parseBody unmarshals Telegram API response and returns structured result.
-// Returns ErrRateLimit internally if error_code == 429 — caller must handle via response.Ok check.
+// parseBody unmarshals a Telegram API response into a typed ApiResponse.
+// Only returns an error on malformed JSON; non-OK responses are left for the caller to handle.
 func parseBody[R any](data []byte) (ApiResponse[R], error) {
 	var resp ApiResponse[R]
 	err := json.Unmarshal(data, &resp)
 	if err != nil {
 		return resp, fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
-
-	if !resp.Ok {
-		if resp.ErrorCode == 429 {
-			return resp, ErrRateLimit // internal use only
-		}
-		return resp, fmt.Errorf("[%d] %s", resp.ErrorCode, resp.Description)
-	}
-
 	return resp, nil
 }

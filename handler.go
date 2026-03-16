@@ -151,8 +151,8 @@ func encodeBase64Payload(d CallbackData) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dst := make([]byte, base64.StdEncoding.EncodedLen(len([]byte(data))))
-	base64.StdEncoding.Encode(dst, []byte(data))
+	dst := make([]byte, base64.RawURLEncoding.EncodedLen(len([]byte(data))))
+	base64.RawURLEncoding.Encode(dst, []byte(data))
 	return string(dst), nil
 }
 
@@ -166,7 +166,7 @@ func encodeBase64Payload(d CallbackData) (string, error) {
 //		return "", ErrInvalidPayloadType
 //	}
 func decodeBase64Payload(s string) (CallbackData, error) {
-	b, err := base64.StdEncoding.DecodeString(s)
+	b, err := base64.RawURLEncoding.DecodeString(s)
 	if err != nil {
 		return CallbackData{}, err
 	}

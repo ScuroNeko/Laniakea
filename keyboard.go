@@ -109,16 +109,32 @@ type InlineKeyboard struct {
 	payloadType BotPayloadType // Serialization format for callback data (JSON or Base64)
 }
 
-// NewInlineKeyboard creates a new keyboard builder with the specified maximum
+// NewInlineKeyboardJson creates a new keyboard builder with the specified maximum
 // number of buttons per row.
 //
-// Example: NewInlineKeyboard(3) creates a keyboard with at most 3 buttons per line.
-func NewInlineKeyboard(maxRow int) *InlineKeyboard {
+// Example: NewInlineKeyboardJson(3) creates a keyboard with at most 3 buttons per line.
+func NewInlineKeyboardJson(maxRow int) *InlineKeyboard {
+	return NewInlineKeyboard(BotPayloadJson, maxRow)
+}
+
+// NewInlineKeyboardBase64 creates a new keyboard builder with the specified maximum
+// number of buttons per row, using Base64 encoding for button payloads.
+//
+// Example: NewInlineKeyboardBase64(3) creates a keyboard with at most 3 buttons per line.
+func NewInlineKeyboardBase64(maxRow int) *InlineKeyboard {
+	return NewInlineKeyboard(BotPayloadBase64, maxRow)
+}
+
+// NewInlineKeyboard creates a new keyboard builder with the specified payload encoding
+// type and maximum number of buttons per row.
+//
+// Use NewInlineKeyboardJson or NewInlineKeyboardBase64 for the common cases.
+func NewInlineKeyboard(payloadType BotPayloadType, maxRow int) *InlineKeyboard {
 	return &InlineKeyboard{
 		CurrentLine: make(extypes.Slice[tgapi.InlineKeyboardButton], 0),
 		Lines:       make([][]tgapi.InlineKeyboardButton, 0),
 		maxRow:      maxRow,
-		payloadType: BotPayloadBase64,
+		payloadType: payloadType,
 	}
 }
 

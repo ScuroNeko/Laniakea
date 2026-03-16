@@ -3,7 +3,6 @@ package tgapi
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -24,13 +23,18 @@ const (
 	UploaderThumbnailType UploaderFileType = "thumbnail"
 )
 
+// UploaderFileType represents the Telegram form field name for a file upload.
 type UploaderFileType string
+
+// UploaderFile holds the data and metadata for a single file to be uploaded.
 type UploaderFile struct {
 	filename string
 	data     []byte
 	field    UploaderFileType
 }
 
+// NewUploaderFile creates a new UploaderFile, auto-detecting the field type from the file extension.
+// If detection is incorrect, use SetType to override.
 func NewUploaderFile(name string, data []byte) UploaderFile {
 	t := uploaderTypeByExt(name)
 	return UploaderFile{filename: name, data: data, field: t}
@@ -56,6 +60,8 @@ func NewUploader(api *API) *Uploader {
 func (u *Uploader) Close() error            { return u.logger.Close() }
 func (u *Uploader) GetLogger() *slog.Logger { return u.logger }
 
+// UploaderRequest is a multipart file upload request to the Telegram API.
+// Use NewUploaderRequest or NewUploaderRequestWithChatID to construct one.
 type UploaderRequest[R, P any] struct {
 	method string
 	files  []UploaderFile
@@ -63,40 +69,30 @@ type UploaderRequest[R, P any] struct {
 	chatId int64
 }
 
+// NewUploaderRequest creates a new multipart upload request with no associated chat ID.
 func NewUploaderRequest[R, P any](method string, params P, files ...UploaderFile) UploaderRequest[R, P] {
 	return UploaderRequest[R, P]{method: method, files: files, params: params, chatId: 0}
 }
+
+// NewUploaderRequestWithChatID creates a new multipart upload request with an associated chat ID.
+// The chat ID is used for per-chat rate limiting.
 func NewUploaderRequestWithChatID[R, P any](method string, params P, chatId int64, files ...UploaderFile) UploaderRequest[R, P] {
 	return UploaderRequest[R, P]{method: method, files: files, params: params, chatId: chatId}
 }
 func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, error) {
 	var zero R
 
-	buf, contentType, err := prepareMultipart(r.files, r.params)
-	if err != nil {
-		return zero, err
-	}
-
 	methodPrefix := ""
 	if up.api.useTestServer {
 		methodPrefix = "/test"
 	}
 	url := fmt.Sprintf("%s/bot%s%s/%s", up.api.apiUrl, up.api.token, methodPrefix, r.method)
-	req, err := http.NewRequestWithContext(ctx, "POST", url, buf)
-	if err != nil {
-		return zero, err
-	}
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", fmt.Sprintf("Laniakea/%s", utils.VersionString))
-	req.Header.Set("Accept-Encoding", "gzip")
-	req.ContentLength = int64(buf.Len())
 
 	for {
 		if up.api.Limiter != nil {
 			if up.api.dropOverflowLimit {
 				if !up.api.Limiter.GlobalAllow() {
-					return zero, errors.New("rate limited")
+					return zero, utils.ErrDropOverflow
 				}
 			} else {
 				if err := up.api.Limiter.GlobalWait(ctx); err != nil {
@@ -104,6 +100,20 @@ func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, 
 				}
 			}
 		}
+
+		buf, contentType, err := prepareMultipart(r.files, r.params)
+		if err != nil {
+			return zero, err
+		}
+		req, err := http.NewRequestWithContext(ctx, "POST", url, buf)
+		if err != nil {
+			return zero, err
+		}
+		req.Header.Set("Content-Type", contentType)
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("User-Agent", fmt.Sprintf("Laniakea/%s", utils.VersionString))
+		req.Header.Set("Accept-Encoding", "gzip")
+		req.ContentLength = int64(buf.Len())
 
 		up.logger.Debugln("UPLOADER REQ", r.method)
 		resp, err := up.api.client.Do(req)
@@ -127,10 +137,12 @@ func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, 
 			if response.ErrorCode == 429 && response.Parameters != nil && response.Parameters.RetryAfter != nil {
 				after := *response.Parameters.RetryAfter
 				up.logger.Warnf("Rate limited, retry after %d seconds (chat: %d)", after, r.chatId)
-				if r.chatId > 0 {
-					up.api.Limiter.SetChatLock(r.chatId, after)
-				} else {
-					up.api.Limiter.SetGlobalLock(after)
+				if up.api.Limiter != nil {
+					if r.chatId > 0 {
+						up.api.Limiter.SetChatLock(r.chatId, after)
+					} else {
+						up.api.Limiter.SetGlobalLock(after)
+					}
 				}
 
 				select {
@@ -145,6 +157,9 @@ func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, 
 		return response.Result, nil
 	}
 }
+
+// DoWithContext executes the upload request asynchronously via the worker pool.
+// Returns the result or error. Respects context cancellation.
 func (r UploaderRequest[R, P]) DoWithContext(ctx context.Context, up *Uploader) (R, error) {
 	var zero R
 
@@ -168,10 +183,15 @@ func (r UploaderRequest[R, P]) DoWithContext(ctx context.Context, up *Uploader) 
 		return zero, ErrPoolUnexpected
 	}
 }
+
+// Do executes the upload request synchronously with a background context.
+// Use only for simple, non-critical uploads.
 func (r UploaderRequest[R, P]) Do(up *Uploader) (R, error) {
 	return r.DoWithContext(context.Background(), up)
 }
 
+// prepareMultipart builds a multipart form body from the given files and params.
+// Params are encoded via utils.Encode. The writer boundary is finalized before returning.
 func prepareMultipart[P any](files []UploaderFile, params P) (*bytes.Buffer, string, error) {
 	buf := bytes.NewBuffer(nil)
 	w := multipart.NewWriter(buf)
@@ -204,6 +224,8 @@ func prepareMultipart[P any](files []UploaderFile, params P) (*bytes.Buffer, str
 	return buf, w.FormDataContentType(), nil
 }
 
+// uploaderTypeByExt infers the Telegram upload field name from a file extension.
+// Falls back to UploaderDocumentType for unrecognized extensions.
 func uploaderTypeByExt(filename string) UploaderFileType {
 	ext := filepath.Ext(filename)
 	switch ext {

@@ -391,6 +391,9 @@ func (ctx *MsgContext) NewDraft() *Draft {
 	return ctx.newDraft(tgapi.ParseNone)
 }
 
+// NewDraftMarkdown creates a new message draft associated with the current chat,
+// with Markdown V2 parse mode enabled.
+// Uses the API limiter to avoid rate limiting.
 func (ctx *MsgContext) NewDraftMarkdown() *Draft {
 	return ctx.newDraft(tgapi.ParseMDV2)
 }
@@ -403,4 +406,10 @@ func (ctx *MsgContext) Translate(key string) string {
 	}
 	lang := Val(ctx.From.LanguageCode, ctx.l10n.GetFallbackLanguage())
 	return ctx.l10n.Translate(lang, key)
+}
+
+// NewInlineKeyboard creates a new keyboard builder with the context's payload
+// encoding type and the specified maximum number of buttons per row.
+func (ctx *MsgContext) NewInlineKeyboard(maxRow int) *InlineKeyboard {
+	return NewInlineKeyboard(ctx.payloadType, maxRow)
 }

@@ -49,11 +49,9 @@ func Encode[T any](w *multipart.Writer, req T) error {
 
 		switch field.Kind() {
 		case reflect.String:
-			if !isEmpty {
-				fw, err = w.CreateFormField(fieldName)
-				if err == nil {
-					_, err = fw.Write([]byte(field.String()))
-				}
+			fw, err = w.CreateFormField(fieldName)
+			if err == nil {
+				_, err = fw.Write([]byte(field.String()))
 			}
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			fw, err = w.CreateFormField(fieldName)
@@ -65,11 +63,17 @@ func Encode[T any](w *multipart.Writer, req T) error {
 			if err == nil {
 				_, err = fw.Write([]byte(strconv.FormatUint(field.Uint(), 10)))
 			}
-		case reflect.Float32, reflect.Float64:
+		case reflect.Float32:
+			fw, err = w.CreateFormField(fieldName)
+			if err == nil {
+				_, err = fw.Write([]byte(strconv.FormatFloat(field.Float(), 'f', -1, 32)))
+			}
+		case reflect.Float64:
 			fw, err = w.CreateFormField(fieldName)
 			if err == nil {
 				_, err = fw.Write([]byte(strconv.FormatFloat(field.Float(), 'f', -1, 64)))
 			}
+
 		case reflect.Bool:
 			fw, err = w.CreateFormField(fieldName)
 			if err == nil {
@@ -103,8 +107,12 @@ func Encode[T any](w *multipart.Writer, req T) error {
 						_, err = fw.Write([]byte(strconv.FormatUint(elem.Uint(), 10)))
 					case reflect.Bool:
 						_, err = fw.Write([]byte(strconv.FormatBool(elem.Bool())))
-					case reflect.Float32, reflect.Float64:
+					case reflect.Float32:
+						_, err = fw.Write([]byte(strconv.FormatFloat(elem.Float(), 'f', -1, 32)))
+					case reflect.Float64:
 						_, err = fw.Write([]byte(strconv.FormatFloat(elem.Float(), 'f', -1, 64)))
+					default:
+						continue
 					}
 					if err != nil {
 						break
