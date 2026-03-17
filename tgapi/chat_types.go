@@ -26,7 +26,7 @@ const (
 // ChatFullInfo contains full information about a chat.
 // See https://core.telegram.org/bots/api#chatfullinfo
 type ChatFullInfo struct {
-	ID               int        `json:"id"`
+	ID               int64      `json:"id"`
 	Type             ChatType   `json:"type"`
 	Title            string     `json:"title"`
 	Username         string     `json:"username"`
@@ -78,7 +78,7 @@ type ChatFullInfo struct {
 	StickerSetName               *string `json:"sticker_set_name,omitempty"`
 	CanSetStickerSet             *bool   `json:"can_set_sticker_set,omitempty"`
 	CustomEmojiStickerSetName    *string `json:"custom_emoji_sticker_set_name,omitempty"`
-	LinkedChatID                 *int    `json:"linked_chat_id,omitempty"`
+	LinkedChatID                 *int64  `json:"linked_chat_id,omitempty"`
 
 	Location             *ChatLocation     `json:"location,omitempty"`
 	Rating               *UserRating       `json:"rating,omitempty"`
@@ -108,7 +108,7 @@ type ChatPermissions struct {
 	CanSendPolls         bool `json:"can_send_polls"`
 	CanSendOtherMessages bool `json:"can_send_other_messages"`
 	CanAddWebPagePreview bool `json:"can_add_web_page_preview"`
-	CatEditTag           bool `json:"cat_edit_tag"` // Note: field name likely a typo, should be "can_edit_tag"
+	CanEditTag           bool `json:"can_edit_tag"`
 	CanChangeInfo        bool `json:"can_change_info"`
 	CanInviteUsers       bool `json:"can_invite_users"`
 	CanPinMessages       bool `json:"can_pin_messages"`
@@ -127,7 +127,7 @@ type ChatLocation struct {
 type ChatInviteLink struct {
 	InviteLink        string `json:"invite_link"`
 	Creator           User   `json:"creator"`
-	CreateJoinRequest bool   `json:"create_join_request"`
+	CreateJoinRequest bool   `json:"creates_join_request"`
 	IsPrimary         bool   `json:"is_primary"`
 	IsRevoked         bool   `json:"is_revoked"`
 

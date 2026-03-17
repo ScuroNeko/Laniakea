@@ -10,6 +10,7 @@ import (
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
 
+// ErrInvalidPayloadType is returned when callback payload encoding type is unknown.
 var ErrInvalidPayloadType = errors.New("invalid payload type")
 
 func (bot *Bot[T]) handle(u *tgapi.Update) {
@@ -28,7 +29,9 @@ func (bot *Bot[T]) handle(u *tgapi.Update) {
 		payloadType:   bot.payloadType,
 	}
 	for _, middleware := range bot.middlewares {
-		middleware.Execute(ctx, bot.dbContext)
+		if !middleware.Execute(ctx, bot.dbContext) {
+			return
+		}
 	}
 
 	if u.CallbackQuery != nil {
@@ -40,6 +43,9 @@ func (bot *Bot[T]) handle(u *tgapi.Update) {
 
 func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 	if update.Message == nil {
+		return
+	}
+	if update.Message.From == nil {
 		return
 	}
 
@@ -106,8 +112,13 @@ func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 
 	ctx.FromID = update.CallbackQuery.From.ID
 	ctx.From = &update.CallbackQuery.From
-	ctx.Msg = &update.CallbackQuery.Message
-	ctx.CallbackMsgId = update.CallbackQuery.Message.MessageID
+	if update.CallbackQuery.Message != nil {
+		ctx.Msg = update.CallbackQuery.Message
+		ctx.CallbackMsgId = update.CallbackQuery.Message.MessageID
+	}
+	if update.CallbackQuery.InlineMessageID != nil {
+		ctx.InlineMsgId = *update.CallbackQuery.InlineMessageID
+	}
 	ctx.CallbackQueryId = update.CallbackQuery.ID
 	ctx.Args = data.Args
 

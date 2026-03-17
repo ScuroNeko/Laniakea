@@ -31,8 +31,8 @@ const (
 // See https://core.telegram.org/bots/api#botcommandscope
 type BotCommandScope struct {
 	Type   BotCommandScopeType `json:"type"`
-	ChatID *int                `json:"chat_id,omitempty"`
-	UserID *int                `json:"user_id,omitempty"`
+	ChatID *int64              `json:"chat_id,omitempty"`
+	UserID *int64              `json:"user_id,omitempty"`
 }
 
 // BotName represents the bot's name.

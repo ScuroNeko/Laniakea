@@ -9,6 +9,7 @@ import (
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
 
+// ErrDraftChatIDZero is returned when a draft is used without setting a chat ID.
 var ErrDraftChatIDZero = errors.New("zero draft chat ID")
 
 // draftIdGenerator defines an interface for generating unique draft IDs.
@@ -90,27 +91,25 @@ func (p *DraftProvider) GetDraft(id uint64) (*Draft, bool) {
 
 // FlushAll sends all pending drafts as final messages and clears them.
 //
-// If any draft fails to send, FlushAll returns the error immediately and
-// leaves other drafts unflushed. This allows for retry logic or logging.
+// If one or more drafts fail to send, FlushAll still attempts all drafts and
+// returns the first encountered error.
 //
 // After successful flush, each draft is removed from the provider and cleared.
 func (p *DraftProvider) FlushAll() error {
-	p.mu.Lock()
+	p.mu.RLock()
 	drafts := make([]*Draft, 0, len(p.drafts))
 	for _, draft := range p.drafts {
 		drafts = append(drafts, draft)
 	}
-	p.drafts = make(map[uint64]*Draft)
-	p.mu.Unlock()
+	p.mu.RUnlock()
 
-	var lastErr error
+	var firstErr error
 	for _, draft := range drafts {
-		if err := draft.Flush(); err != nil {
-			lastErr = err
-			break // Stop on first error to avoid partial state
+		if err := draft.Flush(); err != nil && firstErr == nil {
+			firstErr = err
 		}
 	}
-	return lastErr
+	return firstErr
 }
 
 // Draft represents a single message draft that can be edited and flushed.
@@ -165,7 +164,7 @@ func (d *Draft) SetChat(chatID int64, messageThreadID int) *Draft {
 // SetEntities replaces the draft's message entities.
 //
 // Entities are stored by reference. If you plan to mutate the slice later,
-// pass a copy: `SetEntities(append([]tgapi.MessageEntity{}, myEntities...))`
+// pass a copy: `SetEntities(append([]tgapi.MessageEntity{}, myEntities...))`.
 func (d *Draft) SetEntities(entities []tgapi.MessageEntity) *Draft {
 	d.entities = entities
 	return d

@@ -76,7 +76,11 @@ func (opts *APIOpts) SetLimiterDrop(b bool) *APIOpts {
 	return opts
 }
 
-// API is the main Telegram Bot API client.
+// API is the main Telegram Bot API client for JSON requests.
+//
+// Use API methods when sending JSON payloads (for example with file_id, URL, or other
+// non-multipart fields). For multipart file uploads, use Uploader.
+//
 // It manages HTTP requests, rate limiting, retries, and connection pooling.
 type API struct {
 	token         string
@@ -102,7 +106,7 @@ func NewAPI(opts *APIOpts) *API {
 	}
 
 	pool := newWorkerPool(16, 256)
-	pool.start(context.Background())
+	pool.start()
 
 	return &API{
 		token:             opts.token,
@@ -118,12 +122,14 @@ func NewAPI(opts *APIOpts) *API {
 
 // CloseApi shuts down the internal worker pool and closes the logger.
 // Must be called to avoid resource leaks.
+// See https://core.telegram.org/bots/api
 func (api *API) CloseApi() error {
 	api.pool.stop()
 	return api.logger.Close()
 }
 
 // GetLogger returns the internal logger for custom logging.
+// See https://core.telegram.org/bots/api
 func (api *API) GetLogger() *slog.Logger {
 	return api.logger
 }

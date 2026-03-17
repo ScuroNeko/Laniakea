@@ -154,7 +154,7 @@ func (api *API) RemoveMyProfilePhoto() (bool, error) {
 // SetChatMenuButtonP holds parameters for the setChatMenuButton method.
 // See https://core.telegram.org/bots/api#setchatmenubutton
 type SetChatMenuButtonP struct {
-	ChatID     int            `json:"chat_id"`
+	ChatID     int64          `json:"chat_id"`
 	MenuButton MenuButtonType `json:"menu_button"`
 }
 
@@ -169,7 +169,7 @@ func (api *API) SetChatMenuButton(params SetChatMenuButtonP) (bool, error) {
 // GetChatMenuButtonP holds parameters for the getChatMenuButton method.
 // See https://core.telegram.org/bots/api#getchatmenubutton
 type GetChatMenuButtonP struct {
-	ChatID int `json:"chat_id"`
+	ChatID int64 `json:"chat_id"`
 }
 
 // GetChatMenuButton returns the current menu button for the given chat.
@@ -217,8 +217,8 @@ func (api *API) GetAvailableGifts() (Gifts, error) {
 // SendGiftP holds parameters for the sendGift method.
 // See https://core.telegram.org/bots/api#sendgift
 type SendGiftP struct {
-	UserID        int             `json:"user_id,omitempty"`
-	ChatID        int             `json:"chat_id,omitempty"`
+	UserID        int64           `json:"user_id,omitempty"`
+	ChatID        int64           `json:"chat_id,omitempty"`
 	GiftID        string          `json:"gift_id"`
 	PayForUpgrade bool            `json:"pay_for_upgrade"`
 	Text          string          `json:"text"`
@@ -237,7 +237,7 @@ func (api *API) SendGift(params SendGiftP) (bool, error) {
 // GiftPremiumSubscriptionP holds parameters for the giftPremiumSubscription method.
 // See https://core.telegram.org/bots/api#giftpremiumsubscription
 type GiftPremiumSubscriptionP struct {
-	UserID        int             `json:"user_id"`
+	UserID        int64           `json:"user_id"`
 	MonthCount    int             `json:"month_count"`
 	StarCount     int             `json:"star_count"`
 	Text          string          `json:"text,omitempty"`

@@ -19,9 +19,10 @@ type MsgContext struct {
 	Msg  *tgapi.Message
 	From *tgapi.User
 
+	InlineMsgId     string
 	CallbackMsgId   int
 	CallbackQueryId string
-	FromID          int
+	FromID          int64
 	Prefix          string
 	Text            string
 	Args            []string
@@ -46,10 +47,18 @@ type AnswerMessage struct {
 // Used by Edit, EditMarkdown, EditCallback, etc.
 func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	params := tgapi.EditMessageTextP{
-		MessageID: messageId,
-		ChatID:    ctx.Msg.Chat.ID,
 		Text:      text,
 		ParseMode: parseMode,
+	}
+	switch {
+	case messageId > 0 && ctx.Msg != nil:
+		params.MessageID = messageId
+		params.ChatID = ctx.Msg.Chat.ID
+	case ctx.InlineMsgId != "":
+		params.InlineMessageID = ctx.InlineMsgId
+	default:
+		ctx.botLogger.Errorln("Can't edit message: no valid message target")
+		return nil
 	}
 	if keyboard != nil {
 		params.ReplyMarkup = keyboard.Get()
@@ -59,8 +68,12 @@ func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard
 		ctx.botLogger.Errorln(err)
 		return nil
 	}
+	resultMessageID := messageId
+	if msg.MessageID > 0 {
+		resultMessageID = msg.MessageID
+	}
 	return &AnswerMessage{
-		MessageID: msg.MessageID, ctx: ctx, Text: text, IsMedia: false,
+		MessageID: resultMessageID, ctx: ctx, Text: text, IsMedia: false,
 	}
 }
 
@@ -79,9 +92,9 @@ func (m *AnswerMessage) EditMarkdown(text string) *AnswerMessage {
 }
 
 // editCallback is an internal helper to edit the message associated with a callback query.
-// Returns nil if CallbackMsgId is 0 (not a callback context).
+// Supports both regular callback messages and inline callback messages.
 func (ctx *MsgContext) editCallback(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
-	if ctx.CallbackMsgId == 0 {
+	if ctx.CallbackMsgId == 0 && ctx.InlineMsgId == "" {
 		ctx.botLogger.Errorln("Can't edit non-callback update message")
 		return nil
 	}
@@ -113,17 +126,21 @@ func (ctx *MsgContext) EditCallbackfMarkdown(format string, keyboard *InlineKeyb
 }
 
 // editPhotoText edits the caption of a photo/video message.
-// Returns nil if messageId is 0.
+// Returns nil when no valid edit target is available for the current context.
 func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
-	if messageId == 0 {
-		ctx.botLogger.Errorln("Can't edit caption message, message ID zero")
-		return nil
-	}
 	params := tgapi.EditMessageCaptionP{
-		ChatID:    ctx.Msg.Chat.ID,
-		MessageID: messageId,
 		Caption:   text,
 		ParseMode: parseMode,
+	}
+	switch {
+	case messageId > 0 && ctx.Msg != nil:
+		params.ChatID = ctx.Msg.Chat.ID
+		params.MessageID = messageId
+	case ctx.InlineMsgId != "":
+		params.InlineMessageID = ctx.InlineMsgId
+	default:
+		ctx.botLogger.Errorln("Can't edit caption: no valid message target")
+		return nil
 	}
 	if kb != nil {
 		params.ReplyMarkup = kb.Get()
@@ -132,9 +149,14 @@ func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeybo
 	msg, _, err := ctx.Api.EditMessageCaption(params)
 	if err != nil {
 		ctx.botLogger.Errorln(err)
+		return nil
+	}
+	resultMessageID := messageId
+	if msg.MessageID > 0 {
+		resultMessageID = msg.MessageID
 	}
 	return &AnswerMessage{
-		MessageID: msg.MessageID, ctx: ctx, Text: text, IsMedia: true,
+		MessageID: resultMessageID, ctx: ctx, Text: text, IsMedia: true,
 	}
 }
 
@@ -165,6 +187,10 @@ func (m *AnswerMessage) EditCaptionKeyboardMarkdown(text string, kb *InlineKeybo
 // answer sends a new message with optional keyboard and parse mode.
 // Uses API limiter to respect Telegram rate limits per chat.
 func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
+	if ctx.Msg == nil {
+		ctx.botLogger.Errorln("Can't answer message without a message")
+		return nil
+	}
 	params := tgapi.SendMessageP{
 		ChatID:    ctx.Msg.Chat.ID,
 		Text:      text,
@@ -180,11 +206,6 @@ func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard, parseMode t
 		params.DirectMessagesTopicID = ctx.Msg.DirectMessageTopic.TopicID
 	}
 
-	cont := context.Background()
-	if err := ctx.Api.Limiter.Wait(cont, ctx.Msg.Chat.ID); err != nil {
-		ctx.botLogger.Errorln(err)
-		return nil
-	}
 	msg, err := ctx.Api.SendMessage(params)
 	if err != nil {
 		ctx.botLogger.Errorln(err)
@@ -233,6 +254,10 @@ func (ctx *MsgContext) KeyboardMarkdown(text string, keyboard *InlineKeyboard) *
 
 // answerPhoto sends a photo with optional caption and keyboard.
 func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
+	if ctx.Msg == nil {
+		ctx.botLogger.Errorln("Can't answer message without a message")
+		return nil
+	}
 	params := tgapi.SendPhotoP{
 		ChatID:    ctx.Msg.Chat.ID,
 		Caption:   text,
@@ -294,6 +319,14 @@ func (ctx *MsgContext) AnswerPhotofMarkdown(photoId, template string, args ...an
 
 // delete removes a message by ID.
 func (ctx *MsgContext) delete(messageId int) {
+	if messageId == 0 {
+		ctx.botLogger.Errorln("Can't delete message: message ID zero")
+		return
+	}
+	if ctx.Msg == nil {
+		ctx.botLogger.Errorln("Can't delete message: no chat message context")
+		return
+	}
 	_, err := ctx.Api.DeleteMessage(tgapi.DeleteMessageP{
 		ChatID:    ctx.Msg.Chat.ID,
 		MessageID: messageId,
@@ -307,7 +340,13 @@ func (ctx *MsgContext) delete(messageId int) {
 func (m *AnswerMessage) Delete() { m.ctx.delete(m.MessageID) }
 
 // CallbackDelete deletes the message that triggered the callback query.
-func (ctx *MsgContext) CallbackDelete() { ctx.delete(ctx.CallbackMsgId) }
+func (ctx *MsgContext) CallbackDelete() {
+	if ctx.CallbackMsgId == 0 {
+		ctx.botLogger.Errorln("Can't delete callback message: no callback message ID")
+		return
+	}
+	ctx.delete(ctx.CallbackMsgId)
+}
 
 // answerCallbackQuery sends a response to a callback query (optional text/alert/url).
 // Does nothing if CallbackQueryId is empty.
@@ -338,6 +377,10 @@ func (ctx *MsgContext) AnswerCbQueryUrl(u string) { ctx.answerCallbackQuery(u, "
 
 // SendAction sends a chat action (typing, uploading_photo, etc.) to indicate bot activity.
 func (ctx *MsgContext) SendAction(action tgapi.ChatActionType) {
+	if ctx.Msg == nil {
+		ctx.botLogger.Errorln("Can't send action without chat message context")
+		return
+	}
 	params := tgapi.SendChatActionP{
 		ChatID: ctx.Msg.Chat.ID, Action: action,
 	}

@@ -12,7 +12,7 @@ type SendMessageP struct {
 	ParseMode            ParseMode           `json:"parse_mode,omitempty"`
 	Entities             []MessageEntity     `json:"entities,omitempty"`
 	LinkPreviewOptions   *LinkPreviewOptions `json:"link_preview_options,omitempty"`
-	DisableNotifications bool                `json:"disable_notifications,omitempty"`
+	DisableNotifications bool                `json:"disable_notification,omitempty"`
 	ProtectContent       bool                `json:"protect_content,omitempty"`
 	AllowPaidBroadcast   bool                `json:"allow_paid_broadcast,omitempty"`
 	MessageEffectID      string              `json:"message_effect_id,omitempty"`
@@ -69,8 +69,8 @@ type ForwardMessagesP struct {
 // ForwardMessages forwards multiple messages.
 // Returns an array of message IDs of the sent messages.
 // See https://core.telegram.org/bots/api#forwardmessages
-func (api *API) ForwardMessages(params ForwardMessagesP) ([]int, error) {
-	req := NewRequestWithChatID[[]int]("forwardMessages", params, params.ChatID)
+func (api *API) ForwardMessages(params ForwardMessagesP) ([]MessageID, error) {
+	req := NewRequestWithChatID[[]MessageID]("forwardMessages", params, params.ChatID)
 	return req.Do(api)
 }
 
@@ -103,8 +103,11 @@ type CopyMessageP struct {
 // Returns the MessageID of the sent copy.
 // See https://core.telegram.org/bots/api#copymessage
 func (api *API) CopyMessage(params CopyMessageP) (int, error) {
-	req := NewRequestWithChatID[int]("copyMessage", params, params.ChatID)
-	return req.Do(api)
+	msgID, err := NewRequestWithChatID[MessageID]("copyMessage", params, params.ChatID).Do(api)
+	if err != nil {
+		return 0, err
+	}
+	return msgID.MessageID, nil
 }
 
 // CopyMessagesP holds parameters for the copyMessages method.
@@ -124,18 +127,18 @@ type CopyMessagesP struct {
 // CopyMessages copies multiple messages.
 // Returns an array of message IDs of the sent copies.
 // See https://core.telegram.org/bots/api#copymessages
-func (api *API) CopyMessages(params CopyMessagesP) ([]int, error) {
-	req := NewRequestWithChatID[[]int]("copyMessages", params, params.ChatID)
+func (api *API) CopyMessages(params CopyMessagesP) ([]MessageID, error) {
+	req := NewRequestWithChatID[[]MessageID]("copyMessages", params, params.ChatID)
 	return req.Do(api)
 }
 
 // SendLocationP holds parameters for the sendLocation method.
 // See https://core.telegram.org/bots/api#sendlocation
 type SendLocationP struct {
-	BusinessConnectionID  int   `json:"business_connection_id,omitempty"`
-	ChatID                int64 `json:"chat_id"`
-	MessageThreadID       int   `json:"message_thread_id,omitempty"`
-	DirectMessagesTopicID int   `json:"direct_messages_topic_id,omitempty"`
+	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
+	ChatID                int64  `json:"chat_id"`
+	MessageThreadID       int    `json:"message_thread_id,omitempty"`
+	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
 	Latitude             float64 `json:"latitude"`
 	Longitude            float64 `json:"longitude"`
@@ -164,10 +167,10 @@ func (api *API) SendLocation(params SendLocationP) (Message, error) {
 // SendVenueP holds parameters for the sendVenue method.
 // See https://core.telegram.org/bots/api#sendvenue
 type SendVenueP struct {
-	BusinessConnectionID  int   `json:"business_connection_id,omitempty"`
-	ChatID                int64 `json:"chat_id"`
-	MessageThreadID       int   `json:"message_thread_id,omitempty"`
-	DirectMessagesTopicID int   `json:"direct_messages_topic_id,omitempty"`
+	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
+	ChatID                int64  `json:"chat_id"`
+	MessageThreadID       int    `json:"message_thread_id,omitempty"`
+	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
 	Latitude        float64 `json:"latitude"`
 	Longitude       float64 `json:"longitude"`
@@ -198,10 +201,10 @@ func (api *API) SendVenue(params SendVenueP) (Message, error) {
 // SendContactP holds parameters for the sendContact method.
 // See https://core.telegram.org/bots/api#sendcontact
 type SendContactP struct {
-	BusinessConnectionID  int   `json:"business_connection_id,omitempty"`
-	ChatID                int64 `json:"chat_id"`
-	MessageThreadID       int   `json:"message_thread_id,omitempty"`
-	DirectMessagesTopicID int   `json:"direct_messages_topic_id,omitempty"`
+	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
+	ChatID                int64  `json:"chat_id"`
+	MessageThreadID       int    `json:"message_thread_id,omitempty"`
+	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
 	PhoneNumber string `json:"phone_number"`
 	FirstName   string `json:"first_name"`
@@ -228,12 +231,12 @@ func (api *API) SendContact(params SendContactP) (Message, error) {
 // SendPollP holds parameters for the sendPoll method.
 // See https://core.telegram.org/bots/api#sendpoll
 type SendPollP struct {
-	BusinessConnectionID int   `json:"business_connection_id,omitempty"`
-	ChatID               int64 `json:"chat_id"`
-	MessageThreadID      int   `json:"message_thread_id,omitempty"`
+	BusinessConnectionID string `json:"business_connection_id,omitempty"`
+	ChatID               int64  `json:"chat_id"`
+	MessageThreadID      int    `json:"message_thread_id,omitempty"`
 
 	Question              string            `json:"question"`
-	QuestionParseMode     ParseMode         `json:"question_mode,omitempty"`
+	QuestionParseMode     ParseMode         `json:"question_parse_mode,omitempty"`
 	QuestionEntities      []MessageEntity   `json:"question_entities,omitempty"`
 	Options               []InputPollOption `json:"options"`
 	IsAnonymous           bool              `json:"is_anonymous,omitempty"`
@@ -266,7 +269,7 @@ func (api *API) SendPoll(params SendPollP) (Message, error) {
 // SendChecklistP holds parameters for the sendChecklist method.
 // See https://core.telegram.org/bots/api#sendchecklist
 type SendChecklistP struct {
-	BusinessConnectionID int            `json:"business_connection_id"`
+	BusinessConnectionID string         `json:"business_connection_id"`
 	ChatID               int64          `json:"chat_id"`
 	Checklist            InputChecklist `json:"checklist"`
 
@@ -288,10 +291,10 @@ func (api *API) SendChecklist(params SendChecklistP) (Message, error) {
 // SendDiceP holds parameters for the sendDice method.
 // See https://core.telegram.org/bots/api#senddice
 type SendDiceP struct {
-	BusinessConnectionID  int   `json:"business_connection_id,omitempty"`
-	ChatID                int64 `json:"chat_id"`
-	MessageThreadID       int   `json:"message_thread_id,omitempty"`
-	DirectMessagesTopicID int   `json:"direct_messages_topic_id,omitempty"`
+	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
+	ChatID                int64  `json:"chat_id"`
+	MessageThreadID       int    `json:"message_thread_id,omitempty"`
+	DirectMessagesTopicID int    `json:"direct_messages_topic_id,omitempty"`
 
 	Emoji string `json:"emoji,omitempty"`
 
@@ -313,6 +316,7 @@ func (api *API) SendDice(params SendDiceP) (Message, error) {
 }
 
 // SendMessageDraftP holds parameters for the sendMessageDraft method.
+// See https://core.telegram.org/bots/api#sendmessagedraft
 type SendMessageDraftP struct {
 	ChatID          int64           `json:"chat_id"`
 	MessageThreadID int             `json:"message_thread_id,omitempty"`
@@ -322,7 +326,9 @@ type SendMessageDraftP struct {
 	Entities        []MessageEntity `json:"entities,omitempty"`
 }
 
-// SendMessageDraft sends a previously saved draft message.
+// SendMessageDraft sends or updates a draft message in the target chat.
+// Returns True on success.
+// See https://core.telegram.org/bots/api#sendmessagedraft
 func (api *API) SendMessageDraft(params SendMessageDraftP) (bool, error) {
 	req := NewRequestWithChatID[bool]("sendMessageDraft", params, params.ChatID)
 	return req.Do(api)
@@ -425,7 +431,7 @@ type EditMessageMediaP struct {
 	ChatID               int64                 `json:"chat_id,omitempty"`
 	MessageID            int                   `json:"message_id,omitempty"`
 	InlineMessageID      string                `json:"inline_message_id,omitempty"`
-	Message              InputMedia            `json:"message"`
+	Media                InputMedia            `json:"media"`
 	ReplyMarkup          *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 

@@ -15,7 +15,7 @@ type SendPhotoP struct {
 
 	ShowCaptionAboveMedia bool   `json:"show_caption_above_media,omitempty"`
 	HasSpoiler            bool   `json:"has_spoiler,omitempty"`
-	DisableNotifications  bool   `json:"disable_notifications,omitempty"`
+	DisableNotifications  bool   `json:"disable_notification,omitempty"`
 	ProtectContent        bool   `json:"protect_content,omitempty"`
 	AllowPaidBroadcast    bool   `json:"allow_paid_broadcast,omitempty"`
 	MessageEffectID       string `json:"message_effect_id,omitempty"`
@@ -107,7 +107,7 @@ type SendVideoP struct {
 	Duration int    `json:"duration,omitempty"`
 	Width    int    `json:"width,omitempty"`
 	Height   int    `json:"height,omitempty"`
-	Cover    int    `json:"cover,omitempty"`
+	Cover    string `json:"cover,omitempty"`
 
 	StartTimestamp  int             `json:"start_timestamp,omitempty"`
 	Caption         string          `json:"caption,omitempty"`
@@ -276,7 +276,7 @@ type SendMediaGroupP struct {
 
 // SendMediaGroup sends a group of photos, videos, documents or audios as an album.
 // See https://core.telegram.org/bots/api#sendmediagroup
-func (api *API) SendMediaGroup(params SendMediaGroupP) (Message, error) {
-	req := NewRequestWithChatID[Message]("sendMediaGroup", params, params.ChatID)
+func (api *API) SendMediaGroup(params SendMediaGroupP) ([]Message, error) {
+	req := NewRequestWithChatID[[]Message]("sendMediaGroup", params, params.ChatID)
 	return req.Do(api)
 }

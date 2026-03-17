@@ -129,12 +129,21 @@ Provides access to the incoming message and useful reply methods:
 - `Keyboard(text string, keyboard *InlineKeyboard) *AnswerMessage`: Sends a message with parse_mode none and inline keyboard.
 - `KeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage`: Sends a message formatted with MarkdownV2 (you handle escaping) and inline keyboard.
 - `AnswerPhoto(photoId, text string) *AnswerMessage`: Sends a message with photo with parse_mode none.
-- `AnswerPhotoMarkdown(photoId, text string) *AnswerMessage`: Sends a message formatted with MarkdownV2 (you handle escaping) with.
+- `AnswerPhotoMarkdown(photoId, text string) *AnswerMessage`: Sends a photo with MarkdownV2 caption (you handle escaping).
 - `EditCallback(text string)`: Edits message with parse_mode none after clicking inline button.
 - `EditCallbackMarkdown(text string)`: Edits a message formatted with MarkdownV2 (you handle escaping) after clicking inline button.
-- `SendChatAction(action string)`: Sends a “typing”, “uploading photo”, etc., action.
-- Fields: `Text`, `Args`, `From`, `Chat`, `Msg`, etc.
+- `SendAction(action tgapi.ChatActionType)`: Sends a “typing”, “uploading photo”, etc., action.
+- Fields: `Text`, `Args`, `From`, `FromID`, `Msg`, `InlineMsgId`, `CallbackQueryId`, etc.
 - And more methods and fields!
+
+### tgapi: API and Uploader
+
+`tgapi` provides two clients:
+
+- `API` for JSON requests (e.g., `SendMessage`, `EditMessageText`, methods using file_id/URL).
+- `Uploader` for multipart uploads (e.g., `SendPhoto`, `SendDocument`, `SendVideo` with binary files).
+
+This split keeps method intent explicit: JSON-only calls go through `API`, file uploads go through `Uploader`.
 
 ### Database Context
 
@@ -193,7 +202,7 @@ func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 - Middleware can modify the MsgContext (e.g., add custom fields) before the command runs.
 
 ## ⚙️ Advanced Configuration
-- **Inline Keyboards**: Build keyboards using laniakea.NewKeyboard().
+- **Inline Keyboards**: Build keyboards using `laniakea.NewInlineKeyboardJson`, `laniakea.NewInlineKeyboardBase64`, or `laniakea.NewInlineKeyboard`.
 - **Rate Limiting**: Pass a configured utils.RateLimiter via BotOpts to handle Telegram's rate limits gracefully.
 - **Custom HTTP Client**: Provide your own http.Client in BotOpts for fine-tuned control.
 

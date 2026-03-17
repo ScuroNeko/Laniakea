@@ -81,6 +81,8 @@ type Bot[T DbContext] struct {
 	updateOffset   int                // Last processed update ID
 	updateTypes    []tgapi.UpdateType // Types of updates to fetch
 	updateQueue    chan *tgapi.Update // Internal queue for processing updates
+	runnerOnceWG   sync.WaitGroup     // Tracks one-time async runners
+	runnerBgWG     sync.WaitGroup     // Tracks background async runners
 }
 
 // NewBot creates and initializes a new Bot instance using the provided BotOpts.
@@ -107,11 +109,13 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 	//	limiter = utils.NewRateLimiter()
 	//}
 	limiter := utils.NewRateLimiter()
+	limiter.SetGlobalRate(opts.RateLimit)
 
 	apiOpts := tgapi.NewAPIOpts(opts.Token).
 		SetAPIUrl(opts.APIUrl).
 		UseTestServer(opts.UseTestServer).
-		SetLimiter(limiter)
+		SetLimiter(limiter).
+		SetLimiterDrop(opts.DropRLOverflow)
 	api := tgapi.NewAPI(apiOpts)
 	uploader := tgapi.NewUploader(api)
 
@@ -137,7 +141,7 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 		prefixes:      prefixes,
 		token:         opts.Token,
 		plugins:       make([]Plugin[T], 0),
-		updateTypes:   make([]tgapi.UpdateType, 0),
+		updateTypes:   append([]tgapi.UpdateType{}, opts.UpdateTypes...),
 		runners:       make([]Runner[T], 0),
 		extraLoggers:  make([]*slog.Logger, 0),
 		l10n:          &L10n{},
@@ -285,9 +289,9 @@ func (bot *Bot[T]) UpdateTypes(t ...tgapi.UpdateType) *Bot[T] {
 	return bot
 }
 
-// SetPayloadType sets the type, that bot will use for payload
-// json - string `{"cmd": "command", "args": [...]}
-// base64 - same json, but encoded in base64 string
+// SetPayloadType sets the payload encoding type used for callback data.
+// JSON stores payload as a string: `{"cmd":"command","args":[...]}`.
+// Base64 stores the same JSON encoded as a Base64URL string.
 func (bot *Bot[T]) SetPayloadType(t BotPayloadType) *Bot[T] {
 	bot.payloadType = t
 	return bot
@@ -309,7 +313,7 @@ func (bot *Bot[T]) AddPrefixes(prefixes ...string) *Bot[T] {
 
 // ErrorTemplate sets the format string for error messages sent to users.
 // Use "%s" to insert the error message.
-// Example: "❌ Error: %s" → "❌ Error: Command not found"
+// Example: "❌ Error: %s" → "❌ Error: Command not found".
 func (bot *Bot[T]) ErrorTemplate(s string) *Bot[T] {
 	bot.errorTemplate = s
 	return bot
@@ -408,6 +412,7 @@ func (bot *Bot[T]) AddRunner(runner Runner[T]) *Bot[T] {
 func (bot *Bot[T]) AddL10n(l *L10n) *Bot[T] {
 	if l == nil {
 		bot.logger.Warn("AddL10n called with nil L10n; localization will be disabled")
+		return bot
 	}
 	bot.l10n = l
 	return bot
@@ -457,6 +462,12 @@ func (bot *Bot[T]) AddDatabaseLoggerWriter(writer DbLogger[T]) *Bot[T] {
 //	// ... later ...
 //	cancel() // triggers graceful shutdown
 func (bot *Bot[T]) RunWithContext(ctx context.Context) {
+	defer func() {
+		if err := bot.Close(); err != nil {
+			bot.logger.Errorln(err)
+		}
+	}()
+
 	if len(bot.prefixes) == 0 {
 		bot.logger.Fatalln("no prefixes defined")
 		return
@@ -512,6 +523,8 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) {
 		})
 	}
 	pool.Stop() // Wait for all tasks to complete and stop the pool
+	bot.runnerOnceWG.Wait()
+	bot.runnerBgWG.Wait()
 }
 
 // Run starts the bot using a background context.

@@ -54,7 +54,7 @@ type BusinessBotRights struct {
 type BusinessConnection struct {
 	ID         string             `json:"id"`
 	User       User               `json:"user"`
-	UserChatID int                `json:"user_chat_id"`
+	UserChatID int64              `json:"user_chat_id"`
 	Date       int                `json:"date"`
 	Rights     *BusinessBotRights `json:"rights,omitempty"`
 	IsEnabled  bool               `json:"is_enabled"`

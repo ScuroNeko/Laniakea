@@ -160,7 +160,7 @@ type PaidMediaPurchased struct {
 type File struct {
 	FileId       string `json:"file_id"`
 	FileUniqueID string `json:"file_unique_id"`
-	FileSize     int    `json:"file_size,omitempty"`
+	FileSize     int64  `json:"file_size,omitempty"`
 	FilePath     string `json:"file_path,omitempty"`
 }
 
@@ -175,7 +175,7 @@ type Audio struct {
 	Title     string     `json:"title,omitempty"`
 	FileName  string     `json:"file_name,omitempty"`
 	MimeType  string     `json:"mime_type,omitempty"`
-	FileSize  int        `json:"file_size,omitempty"`
+	FileSize  int64      `json:"file_size,omitempty"`
 	Thumbnail *PhotoSize `json:"thumbnail,omitempty"`
 }
 
@@ -234,7 +234,7 @@ type ChatMemberUpdated struct {
 type ChatJoinRequest struct {
 	Chat       Chat            `json:"chat"`
 	From       User            `json:"from"`
-	UserChatID int             `json:"user_chat_id"`
+	UserChatID int64           `json:"user_chat_id"`
 	Date       int64           `json:"date"`
 	Bio        *string         `json:"bio,omitempty"`
 	InviteLink *ChatInviteLink `json:"invite_link,omitempty"`

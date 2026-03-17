@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+// Encode writes struct fields into multipart form-data using json tags as field names.
 func Encode[T any](w *multipart.Writer, req T) error {
 	v := reflect.ValueOf(req)
 	if v.Kind() == reflect.Ptr {

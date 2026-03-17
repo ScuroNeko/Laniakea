@@ -3,7 +3,7 @@ package tgapi
 // VerifyUserP holds parameters for the verifyUser method.
 // See https://core.telegram.org/bots/api#verifyuser
 type VerifyUserP struct {
-	UserID            int    `json:"user_id"`
+	UserID            int64  `json:"user_id"`
 	CustomDescription string `json:"custom_description,omitempty"`
 }
 
@@ -18,7 +18,7 @@ func (api *API) VerifyUser(params VerifyUserP) (bool, error) {
 // VerifyChatP holds parameters for the verifyChat method.
 // See https://core.telegram.org/bots/api#verifychat
 type VerifyChatP struct {
-	ChatID            int    `json:"chat_id"`
+	ChatID            int64  `json:"chat_id"`
 	CustomDescription string `json:"custom_description,omitempty"`
 }
 
@@ -33,7 +33,7 @@ func (api *API) VerifyChat(params VerifyChatP) (bool, error) {
 // RemoveUserVerificationP holds parameters for the removeUserVerification method.
 // See https://core.telegram.org/bots/api#removeuserverification
 type RemoveUserVerificationP struct {
-	UserID int `json:"user_id"`
+	UserID int64 `json:"user_id"`
 }
 
 // RemoveUserVerification removes a user's verification.
@@ -47,7 +47,7 @@ func (api *API) RemoveUserVerification(params RemoveUserVerificationP) (bool, er
 // RemoveChatVerificationP holds parameters for the removeChatVerification method.
 // See https://core.telegram.org/bots/api#removechatverification
 type RemoveChatVerificationP struct {
-	ChatID int `json:"chat_id"`
+	ChatID int64 `json:"chat_id"`
 }
 
 // RemoveChatVerification removes a chat's verification.
@@ -62,7 +62,7 @@ func (api *API) RemoveChatVerification(params RemoveChatVerificationP) (bool, er
 // See https://core.telegram.org/bots/api#readbusinessmessage
 type ReadBusinessMessageP struct {
 	BusinessConnectionID string `json:"business_connection_id"`
-	ChatID               int    `json:"chat_id"`
+	ChatID               int64  `json:"chat_id"`
 	MessageID            int    `json:"message_id"`
 }
 
@@ -74,18 +74,31 @@ func (api *API) ReadBusinessMessage(params ReadBusinessMessageP) (bool, error) {
 	return req.Do(api)
 }
 
-// DeleteBusinessMessageP holds parameters for the deleteBusinessMessage method.
-// See https://core.telegram.org/bots/api#deletebusinessmessage
-type DeleteBusinessMessageP struct {
+// GetBusinessConnectionP holds parameters for the getBusinessConnection method.
+// See https://core.telegram.org/bots/api#getbusinessconnection
+type GetBusinessConnectionP struct {
+	BusinessConnectionID string `json:"business_connection_id"`
+}
+
+// GetBusinessConnection returns information about a business connection.
+// See https://core.telegram.org/bots/api#getbusinessconnection
+func (api *API) GetBusinessConnection(params GetBusinessConnectionP) (BusinessConnection, error) {
+	req := NewRequest[BusinessConnection]("getBusinessConnection", params)
+	return req.Do(api)
+}
+
+// DeleteBusinessMessagesP holds parameters for the deleteBusinessMessages method.
+// See https://core.telegram.org/bots/api#deletebusinessmessages
+type DeleteBusinessMessagesP struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 	MessageIDs           []int  `json:"message_ids"`
 }
 
-// DeleteBusinessMessage deletes business messages.
+// DeleteBusinessMessages deletes business messages.
 // Returns true on success.
-// See https://core.telegram.org/bots/api#deletebusinessmessage
-func (api *API) DeleteBusinessMessage(params DeleteBusinessMessageP) (bool, error) {
-	req := NewRequest[bool]("deleteBusinessMessage", params)
+// See https://core.telegram.org/bots/api#deletebusinessmessages
+func (api *API) DeleteBusinessMessages(params DeleteBusinessMessagesP) (bool, error) {
+	req := NewRequest[bool]("deleteBusinessMessages", params)
 	return req.Do(api)
 }
 
@@ -191,22 +204,22 @@ type GetBusinessAccountStarBalanceP struct {
 // GetBusinessAccountStarBalance returns the star balance of a business account.
 // See https://core.telegram.org/bots/api#getbusinessaccountstarbalance
 func (api *API) GetBusinessAccountStarBalance(params GetBusinessAccountStarBalanceP) (StarAmount, error) {
-	req := NewRequest[StarAmount]("getBusinessAccountGiftSettings", params) // Note: method name in call is incorrect, should be "getBusinessAccountStarBalance". We'll keep as is, but comment refers to correct.
+	req := NewRequest[StarAmount]("getBusinessAccountStarBalance", params)
 	return req.Do(api)
 }
 
-// TransferBusinessAccountStartP holds parameters for the transferBusinessAccountStart method.
-// See https://core.telegram.org/bots/api#transferbusinessaccountstart
-type TransferBusinessAccountStartP struct {
+// TransferBusinessAccountStarsP holds parameters for the transferBusinessAccountStars method.
+// See https://core.telegram.org/bots/api#transferbusinessaccountstars
+type TransferBusinessAccountStarsP struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 	StarCount            int    `json:"star_count"`
 }
 
-// TransferBusinessAccountStart transfers stars from a business account.
+// TransferBusinessAccountStars transfers stars from a business account.
 // Returns true on success.
-// See https://core.telegram.org/bots/api#transferbusinessaccountstart
-func (api *API) TransferBusinessAccountStart(params TransferBusinessAccountStartP) (bool, error) {
-	req := NewRequest[bool]("transferBusinessAccountStart", params)
+// See https://core.telegram.org/bots/api#transferbusinessaccountstars
+func (api *API) TransferBusinessAccountStars(params TransferBusinessAccountStarsP) (bool, error) {
+	req := NewRequest[bool]("transferBusinessAccountStars", params)
 	return req.Do(api)
 }
 
@@ -270,7 +283,7 @@ func (api *API) UpgradeGift(params UpgradeGiftP) (bool, error) {
 type TransferGiftP struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 	OwnedGiftID          string `json:"owned_gift_id"`
-	NewOwnerChatID       int    `json:"new_owner_chat_id"`
+	NewOwnerChatID       int64  `json:"new_owner_chat_id"`
 	StarCount            int    `json:"star_count,omitempty"`
 }
 
@@ -316,7 +329,7 @@ func (api *API) PostStoryVideo(params PostStoryP) (Story, error) {
 // See https://core.telegram.org/bots/api#repoststory
 type RepostStoryP struct {
 	BusinessConnectionID string `json:"business_connection_id"`
-	FromChatID           int    `json:"from_chat_id"`
+	FromChatID           int64  `json:"from_chat_id"`
 	FromStoryID          int    `json:"from_story_id"`
 	ActivePeriod         int    `json:"active_period"`
 	PostToChatPage       bool   `json:"post_to_chat_page,omitempty"`

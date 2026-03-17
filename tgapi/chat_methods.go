@@ -4,7 +4,7 @@ package tgapi
 // See https://core.telegram.org/bots/api#banchatmember
 type BanChatMemberP struct {
 	ChatID         int64 `json:"chat_id"`
-	UserID         int   `json:"user_id"`
+	UserID         int64 `json:"user_id"`
 	UntilDate      int   `json:"until_date,omitempty"`
 	RevokeMessages bool  `json:"revoke_messages,omitempty"`
 }
@@ -21,7 +21,7 @@ func (api *API) BanChatMember(params BanChatMemberP) (bool, error) {
 // See https://core.telegram.org/bots/api#unbanchatmember
 type UnbanChatMemberP struct {
 	ChatID       int64 `json:"chat_id"`
-	UserID       int   `json:"user_id"`
+	UserID       int64 `json:"user_id"`
 	OnlyIfBanned bool  `json:"only_if_banned"`
 }
 
@@ -37,7 +37,7 @@ func (api *API) UnbanChatMember(params UnbanChatMemberP) (bool, error) {
 // See https://core.telegram.org/bots/api#restrictchatmember
 type RestrictChatMemberP struct {
 	ChatID                        int64           `json:"chat_id"`
-	UserID                        int             `json:"user_id"`
+	UserID                        int64           `json:"user_id"`
 	Permissions                   ChatPermissions `json:"permissions"`
 	UseIndependentChatPermissions bool            `json:"use_independent_chat_permissions,omitempty"`
 	UntilDate                     int             `json:"until_date,omitempty"`
@@ -55,7 +55,7 @@ func (api *API) RestrictChatMember(params RestrictChatMemberP) (bool, error) {
 // See https://core.telegram.org/bots/api#promotechatmember
 type PromoteChatMember struct {
 	ChatID      int64 `json:"chat_id"`
-	UserID      int   `json:"user_id"`
+	UserID      int64 `json:"user_id"`
 	IsAnonymous bool  `json:"is_anonymous,omitempty"`
 
 	CanManageChat           bool `json:"can_manage_chat,omitempty"`
@@ -88,7 +88,7 @@ func (api *API) PromoteChatMember(params PromoteChatMember) (bool, error) {
 // See https://core.telegram.org/bots/api#setchatadministratorcustomtitle
 type SetChatAdministratorCustomTitleP struct {
 	ChatID      int64  `json:"chat_id"`
-	UserID      int    `json:"user_id"`
+	UserID      int64  `json:"user_id"`
 	CustomTitle string `json:"custom_title"`
 }
 
@@ -104,7 +104,7 @@ func (api *API) SetChatAdministratorCustomTitle(params SetChatAdministratorCusto
 // See https://core.telegram.org/bots/api#setchatmembertag
 type SetChatMemberTagP struct {
 	ChatID int64  `json:"chat_id"`
-	UserID int    `json:"user_id"`
+	UserID int64  `json:"user_id"`
 	Tag    string `json:"tag,omitempty"`
 }
 
@@ -183,7 +183,7 @@ type CreateChatInviteLinkP struct {
 	Name               *string `json:"name,omitempty"`
 	ExpireDate         int     `json:"expire_date,omitempty"`
 	MemberLimit        int     `json:"member_limit,omitempty"`
-	CreatesJoinRequest int     `json:"creates_join_request,omitempty"`
+	CreatesJoinRequest bool    `json:"creates_join_request,omitempty"`
 }
 
 // CreateChatInviteLink creates an additional invite link for a chat.
@@ -203,7 +203,7 @@ type EditChatInviteLinkP struct {
 	Name               string `json:"name,omitempty"`
 	ExpireDate         int    `json:"expire_date,omitempty"`
 	MemberLimit        int    `json:"member_limit,omitempty"`
-	CreatesJoinRequest int    `json:"creates_join_request,omitempty"`
+	CreatesJoinRequest bool   `json:"creates_join_request,omitempty"`
 }
 
 // EditChatInviteLink edits a non‑primary invite link.
@@ -266,7 +266,7 @@ func (api *API) RevokeChatInviteLink(params RevokeChatInviteLinkP) (ChatInviteLi
 // See https://core.telegram.org/bots/api#approvechatjoinrequest
 type ApproveChatJoinRequestP struct {
 	ChatID int64 `json:"chat_id"`
-	UserID int   `json:"user_id"`
+	UserID int64 `json:"user_id"`
 }
 
 // ApproveChatJoinRequest approves a chat join request.
@@ -281,7 +281,7 @@ func (api *API) ApproveChatJoinRequest(params ApproveChatJoinRequestP) (bool, er
 // See https://core.telegram.org/bots/api#declinechatjoinrequest
 type DeclineChatJoinRequestP struct {
 	ChatID int64 `json:"chat_id"`
-	UserID int   `json:"user_id"`
+	UserID int64 `json:"user_id"`
 }
 
 // DeclineChatJoinRequest declines a chat join request.
@@ -292,13 +292,23 @@ func (api *API) DeclineChatJoinRequest(params DeclineChatJoinRequestP) (bool, er
 	return req.Do(api)
 }
 
-// SetChatPhoto is a stub method (needs implementation).
-// Currently incomplete.
-func (api *API) SetChatPhoto() {
+// SetChatPhotoP holds parameters for the setChatPhoto method.
+// See https://core.telegram.org/bots/api#setchatphoto
+type SetChatPhotoP struct {
+	ChatID int64 `json:"chat_id"`
+}
+
+// SetChatPhoto changes the chat photo.
+// photo is the file to upload as the new photo.
+// Returns True on success.
+// See https://core.telegram.org/bots/api#setchatphoto
+func (api *API) SetChatPhoto(params SetChatPhotoP, photo UploaderFile) (bool, error) {
 	uploader := NewUploader(api)
 	defer func() {
 		_ = uploader.Close()
 	}()
+	req := NewUploaderRequestWithChatID[bool]("setChatPhoto", params, params.ChatID, photo.SetType(UploaderPhotoType))
+	return req.Do(uploader)
 }
 
 // DeleteChatPhotoP holds parameters for the deleteChatPhoto method.
@@ -449,7 +459,7 @@ func (api *API) GetChatMemberCount(params GetChatMembersCountP) (int, error) {
 // See https://core.telegram.org/bots/api#getchatmember
 type GetChatMemberP struct {
 	ChatID int64 `json:"chat_id"`
-	UserID int   `json:"user_id"`
+	UserID int64 `json:"user_id"`
 }
 
 // GetChatMember returns information about a member of a chat.
@@ -492,7 +502,7 @@ func (api *API) DeleteChatStickerSet(params DeleteChatStickerSetP) (bool, error)
 // See https://core.telegram.org/bots/api#getuserchatboosts
 type GetUserChatBoostsP struct {
 	ChatID int64 `json:"chat_id"`
-	UserID int   `json:"user_id"`
+	UserID int64 `json:"user_id"`
 }
 
 // GetUserChatBoosts returns the list of boosts a user has given to a chat.

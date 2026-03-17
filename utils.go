@@ -6,7 +6,10 @@ import (
 	"git.nix13.pw/scuroneko/laniakea/utils"
 )
 
+// Ptr returns a pointer to v.
 func Ptr[T any](v T) *T { return &v }
+
+// Val returns dereferenced pointer value or def when p is nil.
 func Val[T any](p *T, def T) T {
 	if p != nil {
 		return *p
@@ -14,8 +17,8 @@ func Val[T any](p *T, def T) T {
 	return def
 }
 
-// EscapeMarkdown
-// Deprecated. Use MarkdownV2
+// EscapeMarkdown escapes special characters for legacy Telegram Markdown.
+// Deprecated: Use EscapeMarkdownV2.
 func EscapeMarkdown(s string) string {
 	s = strings.ReplaceAll(s, "_", `\_`)
 	s = strings.ReplaceAll(s, "*", `\*`)
@@ -40,6 +43,8 @@ func EscapeMarkdownV2(s string) string {
 	}
 	return s
 }
+
+// EscapePunctuation escapes '.', '!' and '-' for MarkdownV2 fragments.
 func EscapePunctuation(s string) string {
 	symbols := []string{".", "!", "-"}
 	for _, symbol := range symbols {
@@ -48,6 +53,7 @@ func EscapePunctuation(s string) string {
 	return s
 }
 
+// Version constants mirror values from the internal utils/version package.
 const (
 	VersionString = utils.VersionString
 	VersionMajor  = utils.VersionMajor

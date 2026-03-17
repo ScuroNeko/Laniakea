@@ -9,6 +9,7 @@ import (
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
 
+// CmdRegexp matches command names allowed for Telegram command registration.
 var CmdRegexp = regexp.MustCompile("^[a-zA-Z0-9]+$")
 
 // ErrTooManyCommands is returned when the total number of registered commands
@@ -19,21 +20,7 @@ var CmdRegexp = regexp.MustCompile("^[a-zA-Z0-9]+$")
 // bot initialization.
 var ErrTooManyCommands = errors.New("too many commands. max 100")
 
-// generateBotCommand converts a Command[T] into a tgapi.BotCommand with a
-// formatted description that includes usage instructions.
-//
-// The description is built as:
-//
-//	"<original_description>. Usage: /<command> <arg1> [<arg2>] ..."
-//
-// Required arguments are shown as-is; optional arguments are wrapped in square brackets.
-//
-// Example:
-//
-//	Command{command: "start", description: "Start the bot", args: []Arg{{text: "name", required: false}}}
-//	→ Description: "Start the bot. Usage: /start [name]"
-//	Command{command: "echo", description: "Echo user input", args: []Arg{{text: "name", required: true}}}
-//	→ Description: "Echo user input. Usage: /echo <input>"
+// generateBotCommand builds a BotCommand description with generated usage text.
 func generateBotCommand[T any](cmd *Command[T]) tgapi.BotCommand {
 	desc := ""
 	if len(cmd.description) > 0 {
@@ -57,16 +44,10 @@ func generateBotCommand[T any](cmd *Command[T]) tgapi.BotCommand {
 	return tgapi.BotCommand{Command: cmd.command, Description: usage}
 }
 
-// checkCmdRegex check if command satisfy regexp [a-zA-Z0-9]+
-// Return true if satisfied, else false.
+// checkCmdRegex reports whether cmd matches CmdRegexp.
 func checkCmdRegex(cmd string) bool { return CmdRegexp.MatchString(cmd) }
 
-// gatherCommandsForPlugin collects all non-skipped commands from a Plugin[T]
-// and converts them into tgapi.BotCommand objects.
-//
-// Commands marked with skipAutoCmd = true are excluded from auto-registration.
-// This allows plugins to opt out of automatic command generation (e.g., for
-// internal or hidden commands).
+// gatherCommandsForPlugin collects non-skipped, valid commands from one plugin.
 func gatherCommandsForPlugin[T any](pl Plugin[T]) []tgapi.BotCommand {
 	commands := make([]tgapi.BotCommand, 0)
 	for _, cmd := range pl.commands {
@@ -83,7 +64,7 @@ func gatherCommandsForPlugin[T any](pl Plugin[T]) []tgapi.BotCommand {
 
 // gatherCommands collects all commands from all plugins
 // and converts them into tgapi.BotCommand objects.
-// See gatherCommandsForPlugin
+// See gatherCommandsForPlugin.
 func gatherCommands[T any](bot *Bot[T]) []tgapi.BotCommand {
 	commands := make([]tgapi.BotCommand, 0)
 	for _, pl := range bot.plugins {

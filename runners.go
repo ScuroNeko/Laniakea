@@ -98,12 +98,15 @@ func (bot *Bot[T]) ExecRunners(ctx context.Context) {
 			continue
 		}
 		if !runner.onetime && runner.async && runner.timeout == 0 {
-			bot.logger.Warnf("Background runner \"%s\" has no timeout — may cause tight loop\n", runner.name)
+			bot.logger.Warnf("Background runner \"%s\" has no timeout — skipping\n", runner.name)
+			continue
 		}
 
 		if runner.onetime && runner.async {
 			// One-time async: fire and forget
+			bot.runnerOnceWG.Add(1)
 			go func(r Runner[T]) {
+				defer bot.runnerOnceWG.Done()
 				err := r.fn(bot)
 				if err != nil {
 					bot.logger.Warnf("Runner %s failed: %s\n", r.name, err)
@@ -122,7 +125,9 @@ func (bot *Bot[T]) ExecRunners(ctx context.Context) {
 			}
 		} else if !runner.onetime && runner.async {
 			// Background loop: periodic execution with graceful shutdown
+			bot.runnerBgWG.Add(1)
 			go func(r Runner[T]) {
+				defer bot.runnerBgWG.Done()
 				ticker := time.NewTicker(r.timeout)
 				defer ticker.Stop()
 				for {

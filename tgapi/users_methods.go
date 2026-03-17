@@ -3,9 +3,9 @@ package tgapi
 // GetUserProfilePhotosP holds parameters for the GetUserProfilePhotos method.
 // See https://core.telegram.org/bots/api#getuserprofilephotos
 type GetUserProfilePhotosP struct {
-	UserID int `json:"user_id"`
-	Offset int `json:"offset,omitempty"`
-	Limit  int `json:"limit,omitempty"`
+	UserID int64 `json:"user_id"`
+	Offset int   `json:"offset,omitempty"`
+	Limit  int   `json:"limit,omitempty"`
 }
 
 // GetUserProfilePhotos returns a list of profile pictures for a user.
@@ -18,9 +18,9 @@ func (api *API) GetUserProfilePhotos(params GetUserProfilePhotosP) (UserProfileP
 // GetUserProfileAudiosP holds parameters for the GetUserProfileAudios method.
 // See https://core.telegram.org/bots/api#getuserprofileaudios
 type GetUserProfileAudiosP struct {
-	UserID int `json:"user_id"`
-	Offset int `json:"offset,omitempty"`
-	Limit  int `json:"limit,omitempty"`
+	UserID int64 `json:"user_id"`
+	Offset int   `json:"offset,omitempty"`
+	Limit  int   `json:"limit,omitempty"`
 }
 
 // GetUserProfileAudios returns a list of profile audios for a user.
@@ -33,7 +33,7 @@ func (api *API) GetUserProfileAudios(params GetUserProfileAudiosP) (UserProfileA
 // SetUserEmojiStatusP holds parameters for the SetUserEmojiStatus method.
 // See https://core.telegram.org/bots/api#setuseremojistatus
 type SetUserEmojiStatusP struct {
-	UserID         int    `json:"user_id"`
+	UserID         int64  `json:"user_id"`
 	EmojiID        string `json:"emoji_status_custom_emoji_id,omitempty"`
 	ExpirationDate int    `json:"emoji_status_expiration_date,omitempty"`
 }
@@ -49,7 +49,7 @@ func (api *API) SetUserEmojiStatus(params SetUserEmojiStatusP) (bool, error) {
 // GetUserGiftsP holds parameters for the GetUserGifts method.
 // See https://core.telegram.org/bots/api#getusergifts
 type GetUserGiftsP struct {
-	UserID                      int    `json:"user_id"`
+	UserID                      int64  `json:"user_id"`
 	ExcludeUnlimited            bool   `json:"exclude_unlimited,omitempty"`
 	ExcludeLimitedUpgradable    bool   `json:"exclude_limited_upgradable,omitempty"`
 	ExcludeLimitedNonUpgradable bool   `json:"exclude_limited_non_upgradable,omitempty"`

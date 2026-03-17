@@ -14,13 +14,22 @@ import (
 )
 
 const (
-	UploaderPhotoType     UploaderFileType = "photo"
-	UploaderVideoType     UploaderFileType = "video"
-	UploaderAudioType     UploaderFileType = "audio"
-	UploaderDocumentType  UploaderFileType = "document"
-	UploaderVoiceType     UploaderFileType = "voice"
+	// UploaderPhotoType is the multipart field name for photo uploads.
+	UploaderPhotoType UploaderFileType = "photo"
+	// UploaderVideoType is the multipart field name for video uploads.
+	UploaderVideoType UploaderFileType = "video"
+	// UploaderAudioType is the multipart field name for audio uploads.
+	UploaderAudioType UploaderFileType = "audio"
+	// UploaderDocumentType is the multipart field name for document uploads.
+	UploaderDocumentType UploaderFileType = "document"
+	// UploaderVoiceType is the multipart field name for voice uploads.
+	UploaderVoiceType UploaderFileType = "voice"
+	// UploaderVideoNoteType is the multipart field name for video-note uploads.
 	UploaderVideoNoteType UploaderFileType = "video_note"
+	// UploaderThumbnailType is the multipart field name for thumbnail uploads.
 	UploaderThumbnailType UploaderFileType = "thumbnail"
+	// UploaderStickerType is the multipart field name for sticker uploads.
+	UploaderStickerType UploaderFileType = "sticker"
 )
 
 // UploaderFileType represents the Telegram form field name for a file upload.
@@ -40,24 +49,35 @@ func NewUploaderFile(name string, data []byte) UploaderFile {
 	return UploaderFile{filename: name, data: data, field: t}
 }
 
-// SetType used when auto-detect failed.
-// i.e. you sending a voice message, but it detects as audio, or if you send audio with thumbnail
+// SetType overrides the auto-detected upload field type.
+// For example, use it when a voice file is detected as audio.
 func (f UploaderFile) SetType(t UploaderFileType) UploaderFile {
 	f.field = t
 	return f
 }
 
+// Uploader is a Telegram Bot API client specialized for multipart file uploads.
+//
+// Use Uploader methods when you need to upload binary files directly
+// (InputFile/multipart). For JSON-only calls (file_id, URL, plain params), use API.
 type Uploader struct {
 	api    *API
 	logger *slog.Logger
 }
 
+// NewUploader creates a multipart uploader bound to an API client.
 func NewUploader(api *API) *Uploader {
 	logger := slog.CreateLogger().Level(utils.GetLoggerLevel()).Prefix("UPLOADER")
 	logger.AddWriter(logger.CreateJsonStdoutWriter())
 	return &Uploader{api, logger}
 }
-func (u *Uploader) Close() error            { return u.logger.Close() }
+
+// Close flushes and closes uploader logger resources.
+// See https://core.telegram.org/bots/api
+func (u *Uploader) Close() error { return u.logger.Close() }
+
+// GetLogger returns uploader logger instance.
+// See https://core.telegram.org/bots/api
 func (u *Uploader) GetLogger() *slog.Logger { return u.logger }
 
 // UploaderRequest is a multipart file upload request to the Telegram API.
@@ -90,14 +110,8 @@ func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, 
 
 	for {
 		if up.api.Limiter != nil {
-			if up.api.dropOverflowLimit {
-				if !up.api.Limiter.GlobalAllow() {
-					return zero, utils.ErrDropOverflow
-				}
-			} else {
-				if err := up.api.Limiter.GlobalWait(ctx); err != nil {
-					return zero, err
-				}
+			if err := up.api.Limiter.Check(ctx, up.api.dropOverflowLimit, r.chatId); err != nil {
+				return zero, err
 			}
 		}
 

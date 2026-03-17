@@ -14,13 +14,16 @@ type workerPool struct {
 	workers   int                  // количество воркеров (горутин)
 	wg        sync.WaitGroup       // синхронизирует завершение всех воркеров при остановке
 	quit      chan struct{}        // канал для сигнала остановки
+	stopOnce  sync.Once            // гарантирует идемпотентную остановку пула
 	started   bool                 // флаг, указывающий, запущен ли пул
+	stopped   bool                 // флаг, указывающий, что пул остановлен
 	startedMu sync.Mutex           // мьютекс для безопасного доступа к started
 }
 
 // requestEnvelope — приватная структура, инкапсулирующая задачу и канал для результата.
 // Используется только внутри пакета для передачи задач воркерам.
 type requestEnvelope struct {
+	ctx      context.Context                    // контекст конкретной задачи
 	doFunc   func(context.Context) (any, error) // функция, выполняющая запрос
 	resultCh chan requestResult                 // канал, через который воркер вернёт результат
 }
@@ -53,7 +56,7 @@ func newWorkerPool(workers int, queueSize int) *workerPool {
 // start запускает воркеры (горутины), которые будут обрабатывать задачи из очереди.
 // Метод идемпотентен: если пул уже запущен — ничего не делает.
 // Должен вызываться перед первым вызовом submit.
-func (p *workerPool) start(ctx context.Context) {
+func (p *workerPool) start() {
 	p.startedMu.Lock()
 	defer p.startedMu.Unlock()
 	if p.started {
@@ -64,7 +67,7 @@ func (p *workerPool) start(ctx context.Context) {
 	// Запускаем воркеры — каждый будет обрабатывать задачи в бесконечном цикле
 	for i := 0; i < p.workers; i++ {
 		p.wg.Add(1)
-		go p.worker(ctx) // запускаем горутину с контекстом
+		go p.worker() // запускаем горутину
 	}
 }
 
@@ -72,8 +75,15 @@ func (p *workerPool) start(ctx context.Context) {
 // Отправляет сигнал остановки через quit-канал и ждёт завершения всех активных задач.
 // Безопасно вызывать многократно — после остановки повторные вызовы не имеют эффекта.
 func (p *workerPool) stop() {
-	close(p.quit) // сигнал для всех воркеров — выйти из цикла
-	p.wg.Wait()   // ждём, пока все воркеры завершатся
+	p.stopOnce.Do(func() {
+		p.startedMu.Lock()
+		p.stopped = true
+		p.started = false
+		close(p.quit) // сигнал для всех воркеров — выйти из цикла
+		p.startedMu.Unlock()
+
+		p.wg.Wait() // ждём, пока все воркеры завершатся
+	})
 }
 
 // submit отправляет задачу в очередь и возвращает канал, через который будет получен результат.
@@ -81,8 +91,15 @@ func (p *workerPool) stop() {
 // Канал результата имеет буфер 1, чтобы не блокировать воркера при записи.
 // Контекст используется для отмены задачи, если клиент отменил запрос до отправки.
 func (p *workerPool) submit(ctx context.Context, do func(context.Context) (any, error)) (<-chan requestResult, error) {
+	p.startedMu.Lock()
+	if p.stopped || !p.started {
+		p.startedMu.Unlock()
+		return nil, ErrPoolStopped
+	}
+
 	// Проверяем, не превышена ли очередь
 	if len(p.taskCh) >= p.queueSize {
+		p.startedMu.Unlock()
 		return nil, ErrPoolQueueFull
 	}
 
@@ -91,6 +108,7 @@ func (p *workerPool) submit(ctx context.Context, do func(context.Context) (any, 
 
 	// Создаём обёртку задачи
 	envelope := requestEnvelope{
+		ctx:      ctx,
 		doFunc:   do,
 		resultCh: resultCh,
 	}
@@ -98,12 +116,15 @@ func (p *workerPool) submit(ctx context.Context, do func(context.Context) (any, 
 	// Пытаемся отправить задачу в очередь
 	select {
 	case <-ctx.Done():
+		p.startedMu.Unlock()
 		// Клиент отменил операцию до отправки — возвращаем ошибку отмены
 		return nil, ctx.Err()
 	case p.taskCh <- envelope:
+		p.startedMu.Unlock()
 		// Успешно отправлено — возвращаем канал для чтения результата
 		return resultCh, nil
 	default:
+		p.startedMu.Unlock()
 		// Очередь переполнена — не должно происходить при проверке len(p.taskCh), но на всякий случай
 		return nil, ErrPoolQueueFull
 	}
@@ -117,26 +138,38 @@ func (p *workerPool) submit(ctx context.Context, do func(context.Context) (any, 
 //   - закрывает канал, чтобы клиент мог прочитать и завершить
 //
 // После закрытия quit-канала — воркер завершает работу.
-func (p *workerPool) worker(ctx context.Context) {
+func (p *workerPool) worker() {
 	defer p.wg.Done() // уменьшаем WaitGroup при завершении горутины
 
 	for {
 		select {
 		case <-p.quit:
-			// Получен сигнал остановки — выходим из цикла
-			return
+			// Получен сигнал остановки — дренируем очередь и выходим.
+			// После stop() новые задачи не принимаются.
+			for {
+				select {
+				case envelope := <-p.taskCh:
+					p.executeEnvelope(envelope)
+				default:
+					return
+				}
+			}
 
 		case envelope := <-p.taskCh:
-			// Выполняем задачу с переданным контекстом (клиентский или общий)
-			value, err := envelope.doFunc(ctx)
-
-			// Записываем результат в канал — не блокируем, т.к. буфер 1
-			envelope.resultCh <- requestResult{
-				value: value,
-				err:   err,
-			}
-			// Закрываем канал — клиент знает, что результат пришёл и больше не будет
-			close(envelope.resultCh)
+			p.executeEnvelope(envelope)
 		}
 	}
+}
+
+func (p *workerPool) executeEnvelope(envelope requestEnvelope) {
+	// Выполняем задачу с переданным контекстом (клиентский или общий)
+	value, err := envelope.doFunc(envelope.ctx)
+
+	// Записываем результат в канал — не блокируем, т.к. буфер 1
+	envelope.resultCh <- requestResult{
+		value: value,
+		err:   err,
+	}
+	// Закрываем канал — клиент знает, что результат пришёл и больше не будет
+	close(envelope.resultCh)
 }

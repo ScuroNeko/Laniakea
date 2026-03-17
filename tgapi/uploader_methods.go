@@ -24,10 +24,10 @@ type UploadPhotoP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-// UploadPhoto uploads a photo and sends it as a message.
+// SendPhoto uploads a photo via multipart and sends it as a message.
 // file is the photo file to upload.
 // See https://core.telegram.org/bots/api#sendphoto
-func (u *Uploader) UploadPhoto(params UploadPhotoP, file UploaderFile) (Message, error) {
+func (u *Uploader) SendPhoto(params UploadPhotoP, file UploaderFile) (Message, error) {
 	req := NewUploaderRequestWithChatID[Message]("sendPhoto", params, params.ChatID, file)
 	return req.Do(u)
 }
@@ -58,10 +58,10 @@ type UploadAudioP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-// UploadAudio uploads an audio file and sends it as a message.
+// SendAudio uploads an audio file via multipart and sends it as a message.
 // files are the audio file(s) to upload (typically one file).
 // See https://core.telegram.org/bots/api#sendaudio
-func (u *Uploader) UploadAudio(params UploadAudioP, files ...UploaderFile) (Message, error) {
+func (u *Uploader) SendAudio(params UploadAudioP, files ...UploaderFile) (Message, error) {
 	req := NewUploaderRequestWithChatID[Message]("sendAudio", params, params.ChatID, files...)
 	return req.Do(u)
 }
@@ -89,11 +89,11 @@ type UploadDocumentP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-// UploadDocument uploads a document and sends it as a message.
+// SendDocument uploads a document via multipart and sends it as a message.
 // files are the document file(s) to upload (typically one file).
 // See https://core.telegram.org/bots/api#senddocument
-func (u *Uploader) UploadDocument(params UploadDocumentP, files ...UploaderFile) (Message, error) {
-	req := NewUploaderRequest[Message]("sendDocument", params, files...)
+func (u *Uploader) SendDocument(params UploadDocumentP, files ...UploaderFile) (Message, error) {
+	req := NewUploaderRequestWithChatID[Message]("sendDocument", params, params.ChatID, files...)
 	return req.Do(u)
 }
 
@@ -127,11 +127,11 @@ type UploadVideoP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-// UploadVideo uploads a video and sends it as a message.
+// SendVideo uploads a video via multipart and sends it as a message.
 // files are the video file(s) to upload (typically one file).
 // See https://core.telegram.org/bots/api#sendvideo
-func (u *Uploader) UploadVideo(params UploadVideoP, files ...UploaderFile) (Message, error) {
-	req := NewUploaderRequest[Message]("sendVideo", params, files...)
+func (u *Uploader) SendVideo(params UploadVideoP, files ...UploaderFile) (Message, error) {
+	req := NewUploaderRequestWithChatID[Message]("sendVideo", params, params.ChatID, files...)
 	return req.Do(u)
 }
 
@@ -163,11 +163,11 @@ type UploadAnimationP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-// UploadAnimation uploads an animation (GIF or H.264/MPEG-4 AVC video without sound) and sends it as a message.
+// SendAnimation uploads an animation via multipart and sends it as a message.
 // files are the animation file(s) to upload (typically one file).
 // See https://core.telegram.org/bots/api#sendanimation
-func (u *Uploader) UploadAnimation(params UploadAnimationP, files ...UploaderFile) (Message, error) {
-	req := NewUploaderRequest[Message]("sendAnimation", params, files...)
+func (u *Uploader) SendAnimation(params UploadAnimationP, files ...UploaderFile) (Message, error) {
+	req := NewUploaderRequestWithChatID[Message]("sendAnimation", params, params.ChatID, files...)
 	return req.Do(u)
 }
 
@@ -194,11 +194,11 @@ type UploadVoiceP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-// UploadVoice uploads a voice note and sends it as a message.
+// SendVoice uploads a voice note via multipart and sends it as a message.
 // files are the voice file(s) to upload (typically one file).
 // See https://core.telegram.org/bots/api#sendvoice
-func (u *Uploader) UploadVoice(params UploadVoiceP, files ...UploaderFile) (Message, error) {
-	req := NewUploaderRequest[Message]("sendVoice", params, files...)
+func (u *Uploader) SendVoice(params UploadVoiceP, files ...UploaderFile) (Message, error) {
+	req := NewUploaderRequestWithChatID[Message]("sendVoice", params, params.ChatID, files...)
 	return req.Do(u)
 }
 
@@ -223,11 +223,11 @@ type UploadVideoNoteP struct {
 	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
-// UploadVideoNote uploads a video note (rounded video) and sends it as a message.
+// SendVideoNote uploads a video note via multipart and sends it as a message.
 // files are the video note file(s) to upload (typically one file).
 // See https://core.telegram.org/bots/api#sendvideonote
-func (u *Uploader) UploadVideoNote(params UploadVideoNoteP, files ...UploaderFile) (Message, error) {
-	req := NewUploaderRequest[Message]("sendVideoNote", params, files...)
+func (u *Uploader) SendVideoNote(params UploadVideoNoteP, files ...UploaderFile) (Message, error) {
+	req := NewUploaderRequestWithChatID[Message]("sendVideoNote", params, params.ChatID, files...)
 	return req.Do(u)
 }
 
@@ -237,10 +237,10 @@ type UploadChatPhotoP struct {
 	ChatID int64 `json:"chat_id"`
 }
 
-// UploadChatPhoto uploads a new chat photo.
+// SetChatPhoto uploads a new chat photo.
 // photo is the photo file to upload.
 // See https://core.telegram.org/bots/api#setchatphoto
-func (u *Uploader) UploadChatPhoto(params UploadChatPhotoP, photo UploaderFile) (Message, error) {
-	req := NewUploaderRequest[Message]("sendChatPhoto", params, photo)
+func (u *Uploader) SetChatPhoto(params UploadChatPhotoP, photo UploaderFile) (bool, error) {
+	req := NewUploaderRequestWithChatID[bool]("setChatPhoto", params, params.ChatID, photo)
 	return req.Do(u)
 }

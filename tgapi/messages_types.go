@@ -2,6 +2,11 @@ package tgapi
 
 import "git.nix13.pw/scuroneko/extypes"
 
+// MessageID represents a message identifier wrapper returned by some API methods.
+type MessageID struct {
+	MessageID int `json:"message_id"`
+}
+
 // MessageReplyMarkup represents an inline keyboard markup for a message.
 // It is used in the Message type.
 type MessageReplyMarkup struct {
@@ -113,8 +118,8 @@ type MessageEntity struct {
 // ReplyParameters describes the parameters to use when replying to a message.
 // See https://core.telegram.org/bots/api#replyparameters
 type ReplyParameters struct {
-	MessageID int `json:"message_id"`
-	ChatID    int `json:"chat_id,omitempty"`
+	MessageID int   `json:"message_id"`
+	ChatID    int64 `json:"chat_id,omitempty"`
 
 	AllowSendingWithoutReply bool             `json:"allow_sending_without_reply,omitempty"`
 	Quote                    string           `json:"quote,omitempty"`
@@ -179,11 +184,13 @@ type ReplyKeyboardMarkup struct {
 // CallbackQuery represents an incoming callback query from a callback button in an inline keyboard.
 // See https://core.telegram.org/bots/api#callbackquery
 type CallbackQuery struct {
-	ID      string  `json:"id"`
-	From    User    `json:"from"`
-	Message Message `json:"message"`
-
-	Data string `json:"data"`
+	ID              string   `json:"id"`
+	From            User     `json:"from"`
+	Message         *Message `json:"message,omitempty"`
+	InlineMessageID *string  `json:"inline_message_id,omitempty"`
+	ChatInstance    string   `json:"chat_instance,omitempty"`
+	Data            string   `json:"data,omitempty"`
+	GameShortName   string   `json:"game_short_name,omitempty"`
 }
 
 // InputPollOption contains information about one answer option in a poll to be sent.

@@ -36,6 +36,17 @@ func NewRateLimiter() *RateLimiter {
 	}
 }
 
+// SetGlobalRate overrides global request-per-second limit and burst.
+// If rps <= 0, current settings are kept.
+func (rl *RateLimiter) SetGlobalRate(rps int) {
+	if rps <= 0 {
+		return
+	}
+	rl.globalMu.Lock()
+	defer rl.globalMu.Unlock()
+	rl.globalLimiter = rate.NewLimiter(rate.Limit(rps), rps)
+}
+
 // SetGlobalLock sets a global cooldown period (e.g., after receiving 429 from Telegram).
 // If retryAfter <= 0, no lock is applied.
 func (rl *RateLimiter) SetGlobalLock(retryAfter int) {
@@ -64,7 +75,11 @@ func (rl *RateLimiter) GlobalWait(ctx context.Context) error {
 	if err := rl.waitForGlobalUnlock(ctx); err != nil {
 		return err
 	}
-	return rl.globalLimiter.Wait(ctx)
+	limiter := rl.getGlobalLimiter()
+	if limiter == nil {
+		return nil
+	}
+	return limiter.Wait(ctx)
 }
 
 // Wait blocks until a request for the given chat can be made.
@@ -77,8 +92,21 @@ func (rl *RateLimiter) Wait(ctx context.Context, chatID int64) error {
 	if err := rl.waitForGlobalUnlock(ctx); err != nil {
 		return err
 	}
-	limiter := rl.getChatLimiter(chatID)
-	return limiter.Wait(ctx)
+	limiter := rl.getGlobalLimiter()
+	if limiter != nil {
+		if err := limiter.Wait(ctx); err != nil {
+			return err
+		}
+	}
+	chatLimiter := rl.getChatLimiter(chatID)
+	return chatLimiter.Wait(ctx)
+}
+
+// getGlobalLimiter returns the global limiter safely under read lock.
+func (rl *RateLimiter) getGlobalLimiter() *rate.Limiter {
+	rl.globalMu.RLock()
+	defer rl.globalMu.RUnlock()
+	return rl.globalLimiter
 }
 
 // GlobalAllow checks if a global request can be made without blocking.
@@ -91,7 +119,11 @@ func (rl *RateLimiter) GlobalAllow() bool {
 	if !until.IsZero() && time.Now().Before(until) {
 		return false
 	}
-	return rl.globalLimiter.Allow()
+	limiter := rl.getGlobalLimiter()
+	if limiter == nil {
+		return true
+	}
+	return limiter.Allow()
 }
 
 // Allow checks if a request for the given chat can be made without blocking.
@@ -115,13 +147,14 @@ func (rl *RateLimiter) Allow(chatID int64) bool {
 	}
 
 	// Check global token bucket
-	if !rl.globalLimiter.Allow() {
+	limiter := rl.getGlobalLimiter()
+	if limiter != nil && !limiter.Allow() {
 		return false
 	}
 
 	// Check chat token bucket
-	limiter := rl.getChatLimiter(chatID)
-	return limiter.Allow()
+	chatLimiter := rl.getChatLimiter(chatID)
+	return chatLimiter.Allow()
 }
 
 // Check applies rate limiting based on configuration.

@@ -1,7 +1,7 @@
 package laniakea
 
 // DictEntry represents a single localized entry with language-to-text mappings.
-// Example: {"ru": "Привет", "en": "Hello"}
+// Example: {"ru": "Привет", "en": "Hello"}.
 type DictEntry map[string]string
 
 // L10n is a localization manager that maps keys to language-specific strings.

@@ -26,7 +26,7 @@ var (
 	CommandRegexInt = regexp.MustCompile(`\d+`)
 	// CommandRegexString matches any non-empty string.
 	CommandRegexString = regexp.MustCompile(`.+`)
-	// CommandRegexBool matches true or false
+	// CommandRegexBool matches true or false.
 	CommandRegexBool = regexp.MustCompile(`true|false`)
 )
 
@@ -53,6 +53,7 @@ func NewCommandArg(text string) *CommandArg {
 	return &CommandArg{CommandValueAnyType, text, CommandRegexString, false}
 }
 
+// SetValueType sets expected value type and switches built-in validation regexp.
 func (c *CommandArg) SetValueType(t CommandValueType) *CommandArg {
 	regex := CommandRegexString
 	switch t {
@@ -96,7 +97,7 @@ func NewCommand[T any](exec CommandExecutor[T], command string, args ...CommandA
 }
 
 // NewPayload creates a new Command with the given executor, command payload string, and arguments.
-// The command string can POTENTIALLY contain any symbols, but recommended to use only "_", "-", ".", a-Z, 0-9
+// The command string can contain any symbols, but it is recommended to use only "_", "-", ".", a-z, A-Z, and 0-9.
 func NewPayload[T any](exec CommandExecutor[T], command string, args ...CommandArg) *Command[T] {
 	return &Command[T]{command, "", exec, args, make(extypes.Slice[Middleware[T]], 0), false}
 }
@@ -223,11 +224,6 @@ func (p *Plugin[T]) executeCmd(cmd string, ctx *MsgContext, dbContext *T) {
 		return
 	}
 
-	// Run plugin middlewares
-	if !p.executeMiddlewares(ctx, dbContext) {
-		return
-	}
-
 	// Run command-specific middlewares
 	for _, m := range command.middlewares {
 		if !m.Execute(ctx, dbContext) {
@@ -251,11 +247,6 @@ func (p *Plugin[T]) executePayload(payload string, ctx *MsgContext, dbContext *T
 
 	if err := command.validateArgs(ctx.Args); err != nil {
 		ctx.error(err)
-		return
-	}
-
-	// Run plugin middlewares
-	if !p.executeMiddlewares(ctx, dbContext) {
 		return
 	}
 

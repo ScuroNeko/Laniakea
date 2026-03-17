@@ -6,26 +6,6 @@ import (
 	"net/http"
 )
 
-// ParseMode represents the text formatting mode for message parsing.
-type ParseMode string
-
-const (
-	// ParseMDV2 enables MarkdownV2 style parsing.
-	ParseMDV2 ParseMode = "MarkdownV2"
-	// ParseHTML enables HTML style parsing.
-	ParseHTML ParseMode = "HTML"
-	// ParseMD enables legacy Markdown style parsing.
-	ParseMD ParseMode = "Markdown"
-	// ParseNone disables any parsing.
-	ParseNone ParseMode = "None"
-)
-
-// EmptyParams is a placeholder for methods that take no parameters.
-type EmptyParams struct{}
-
-// NoParams is a convenient instance of EmptyParams.
-var NoParams = EmptyParams{}
-
 // UpdateParams holds parameters for the getUpdates method.
 // See https://core.telegram.org/bots/api#getupdates
 type UpdateParams struct {
@@ -62,6 +42,47 @@ func (api *API) Close() (bool, error) {
 // See https://core.telegram.org/bots/api#getupdates
 func (api *API) GetUpdates(params UpdateParams) ([]Update, error) {
 	req := NewRequest[[]Update]("getUpdates", params)
+	return req.Do(api)
+}
+
+// SetWebhookP holds parameters for the setWebhook method.
+// See https://core.telegram.org/bots/api#setwebhook
+type SetWebhookP struct {
+	URL                string       `json:"url"`
+	Certificate        string       `json:"certificate,omitempty"`
+	IPAddress          string       `json:"ip_address,omitempty"`
+	MaxConnections     int          `json:"max_connections,omitempty"`
+	AllowedUpdates     []UpdateType `json:"allowed_updates,omitempty"`
+	DropPendingUpdates bool         `json:"drop_pending_updates,omitempty"`
+	SecretToken        string       `json:"secret_token,omitempty"`
+}
+
+// SetWebhook sets a webhook URL for incoming updates.
+// Returns true on success.
+// See https://core.telegram.org/bots/api#setwebhook
+func (api *API) SetWebhook(params SetWebhookP) (bool, error) {
+	req := NewRequest[bool]("setWebhook", params)
+	return req.Do(api)
+}
+
+// DeleteWebhookP holds parameters for the deleteWebhook method.
+// See https://core.telegram.org/bots/api#deletewebhook
+type DeleteWebhookP struct {
+	DropPendingUpdates bool `json:"drop_pending_updates,omitempty"`
+}
+
+// DeleteWebhook removes the current webhook integration.
+// Returns true on success.
+// See https://core.telegram.org/bots/api#deletewebhook
+func (api *API) DeleteWebhook(params DeleteWebhookP) (bool, error) {
+	req := NewRequest[bool]("deleteWebhook", params)
+	return req.Do(api)
+}
+
+// GetWebhookInfo returns the current webhook status.
+// See https://core.telegram.org/bots/api#getwebhookinfo
+func (api *API) GetWebhookInfo() (WebhookInfo, error) {
+	req := NewRequest[WebhookInfo]("getWebhookInfo", NoParams)
 	return req.Do(api)
 }
 

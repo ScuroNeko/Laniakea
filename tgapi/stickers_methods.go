@@ -49,10 +49,29 @@ func (api *API) GetCustomEmojiStickers(params GetCustomEmojiStickersP) ([]Sticke
 	return req.Do(api)
 }
 
+// UploadStickerFileP holds parameters for the uploadStickerFile method.
+// See https://core.telegram.org/bots/api#uploadstickerfile
+type UploadStickerFileP struct {
+	UserID        int64              `json:"user_id"`
+	StickerFormat InputStickerFormat `json:"sticker_format"`
+}
+
+// UploadStickerFile uploads a sticker file for later use in sticker set methods.
+// sticker is the file to upload.
+// See https://core.telegram.org/bots/api#uploadstickerfile
+func (api *API) UploadStickerFile(params UploadStickerFileP, sticker UploaderFile) (File, error) {
+	uploader := NewUploader(api)
+	defer func() {
+		_ = uploader.Close()
+	}()
+	req := NewUploaderRequest[File]("uploadStickerFile", params, sticker.SetType(UploaderStickerType))
+	return req.Do(uploader)
+}
+
 // CreateNewStickerSetP holds parameters for the createNewStickerSet method.
 // See https://core.telegram.org/bots/api#createnewstickerset
 type CreateNewStickerSetP struct {
-	UserID int    `json:"user_id"`
+	UserID int64  `json:"user_id"`
 	Name   string `json:"name"`
 	Title  string `json:"title"`
 
@@ -72,7 +91,7 @@ func (api *API) CreateNewStickerSet(params CreateNewStickerSetP) (bool, error) {
 // AddStickerToSetP holds parameters for the addStickerToSet method.
 // See https://core.telegram.org/bots/api#addstickertoset
 type AddStickerToSetP struct {
-	UserID  int          `json:"user_id"`
+	UserID  int64        `json:"user_id"`
 	Name    string       `json:"name"`
 	Sticker InputSticker `json:"sticker"`
 }
@@ -117,7 +136,7 @@ func (api *API) DeleteStickerFromSet(params DeleteStickerFromSetP) (bool, error)
 // ReplaceStickerInSetP holds parameters for the replaceStickerInSet method.
 // See https://core.telegram.org/bots/api#replacestickerinset
 type ReplaceStickerInSetP struct {
-	UserID     int          `json:"user_id"`
+	UserID     int64        `json:"user_id"`
 	Name       string       `json:"name"`
 	OldSticker string       `json:"old_sticker"`
 	Sticker    InputSticker `json:"sticker"`
@@ -195,7 +214,7 @@ func (api *API) SetStickerSetTitle(params SetStickerSetTitleP) (bool, error) {
 // See https://core.telegram.org/bots/api#setstickersetthumbnail
 type SetStickerSetThumbnailP struct {
 	Name      string             `json:"name"`
-	UserID    int                `json:"user_id"`
+	UserID    int64              `json:"user_id"`
 	Thumbnail string             `json:"thumbnail"`
 	Format    InputStickerFormat `json:"format"`
 }
@@ -218,9 +237,7 @@ type SetCustomEmojiStickerSetThumbnailP struct {
 // SetCustomEmojiStickerSetThumbnail sets the thumbnail of a custom emoji sticker set.
 // Returns True on success.
 // See https://core.telegram.org/bots/api#setcustomemojistickersetthumbnail
-//
-// Note: This method uses SetStickerSetThumbnailP as its parameter type, which might be inconsistent.
-func (api *API) SetCustomEmojiStickerSetThumbnail(params SetStickerSetThumbnailP) (bool, error) {
+func (api *API) SetCustomEmojiStickerSetThumbnail(params SetCustomEmojiStickerSetThumbnailP) (bool, error) {
 	req := NewRequest[bool]("setCustomEmojiStickerSetThumbnail", params)
 	return req.Do(api)
 }

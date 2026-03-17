@@ -52,7 +52,7 @@ type Sticker struct {
 	MaskPosition   *MaskPosition `json:"mask_position,omitempty"`
 	CustomEmojiID  *string       `json:"custom_emoji_id,omitempty"`
 	NeedRepainting *bool         `json:"need_repainting,omitempty"`
-	FileSize       *int          `json:"file_size,omitempty"`
+	FileSize       *int64        `json:"file_size,omitempty"`
 }
 
 // StickerSet represents a sticker set.

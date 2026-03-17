@@ -119,7 +119,7 @@ func (opts *BotOpts) SetToken(token string) *BotOpts {
 
 // SetUpdateTypes sets the list of update types to listen for.
 // If empty (default), Telegram will return all update types.
-// Example: opts.SetUpdateTypes("message", "callback_query")
+// Example: opts.SetUpdateTypes("message", "callback_query").
 func (opts *BotOpts) SetUpdateTypes(types ...tgapi.UpdateType) *BotOpts {
 	opts.UpdateTypes = types
 	return opts

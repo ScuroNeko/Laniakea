@@ -69,7 +69,7 @@ func (b InlineKbButtonBuilder) SetUrl(url string) InlineKbButtonBuilder {
 // Args are converted to strings using fmt.Sprint. Non-string types (e.g., int, bool)
 // are safely serialized, but complex structs may not serialize usefully.
 //
-// Example: SetCallbackDataJson("delete_user", 123, "confirm") → {"cmd":"delete_user","args":["123","confirm"]}
+// Example: SetCallbackDataJson("delete_user", 123, "confirm") → {"cmd":"delete_user","args":["123","confirm"]}.
 func (b InlineKbButtonBuilder) SetCallbackDataJson(cmd string, args ...any) InlineKbButtonBuilder {
 	b.callbackData = NewCallbackData(cmd, args...).ToJson()
 	return b
@@ -210,7 +210,7 @@ func (in *InlineKeyboard) AddLine() *InlineKeyboard {
 // Returns a pointer to a ReplyMarkup suitable for use with tgapi.SendMessage.
 func (in *InlineKeyboard) Get() *tgapi.ReplyMarkup {
 	if in.CurrentLine.Len() > 0 {
-		in.Lines = append(in.Lines, in.CurrentLine)
+		in.AddLine()
 	}
 	return &tgapi.ReplyMarkup{InlineKeyboard: in.Lines}
 }
