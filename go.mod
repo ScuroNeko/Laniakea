@@ -3,8 +3,8 @@ module git.nix13.pw/scuroneko/laniakea
 go 1.26
 
 require (
-	git.nix13.pw/scuroneko/extypes v1.2.1
-	git.nix13.pw/scuroneko/slog v1.0.2
+	git.nix13.pw/scuroneko/extypes v1.2.2
+	git.nix13.pw/scuroneko/slog v1.1.2
 	github.com/alitto/pond/v2 v2.7.0
 	golang.org/x/time v0.15.0
 )

@@ -1,5 +1,7 @@
 package tgapi
 
+import "encoding/json"
+
 // UpdateType represents the type of incoming update.
 type UpdateType string
 
@@ -23,8 +25,10 @@ const (
 	UpdateTypeBusinessMessage UpdateType = "business_message"
 	// UpdateTypeEditedBusinessMessage is an edited business message update.
 	UpdateTypeEditedBusinessMessage UpdateType = "edited_business_message"
-	// UpdateTypeDeletedBusinessMessage is a deleted business message update.
-	UpdateTypeDeletedBusinessMessage UpdateType = "deleted_business_message"
+	// UpdateTypeDeletedBusinessMessages is a deleted business messages update.
+	UpdateTypeDeletedBusinessMessages UpdateType = "deleted_business_messages"
+	// UpdateTypeDeletedBusinessMessage is kept as a backward-compatible alias.
+	UpdateTypeDeletedBusinessMessage UpdateType = UpdateTypeDeletedBusinessMessages
 
 	// UpdateTypeInlineQuery is an inline query update.
 	UpdateTypeInlineQuery UpdateType = "inline_query"
@@ -63,17 +67,18 @@ type Update struct {
 	ChannelPost       *Message `json:"channel_post,omitempty"`
 	EditedChannelPost *Message `json:"edited_channel_post,omitempty"`
 
-	BusinessConnection     *BusinessConnection          `json:"business_connection,omitempty"`
-	BusinessMessage        *Message                     `json:"business_message,omitempty"`
-	EditedBusinessMessage  *Message                     `json:"edited_business_message,omitempty"`
-	DeletedBusinessMessage *Message                     `json:"deleted_business_messages,omitempty"`
-	MessageReaction        *MessageReactionUpdated      `json:"message_reaction,omitempty"`
-	MessageReactionCount   *MessageReactionCountUpdated `json:"message_reaction_count,omitempty"`
+	BusinessConnection      *BusinessConnection          `json:"business_connection,omitempty"`
+	BusinessMessage         *Message                     `json:"business_message,omitempty"`
+	EditedBusinessMessage   *Message                     `json:"edited_business_message,omitempty"`
+	DeletedBusinessMessages *BusinessMessagesDeleted     `json:"deleted_business_messages,omitempty"`
+	DeletedBusinessMessage  *BusinessMessagesDeleted     `json:"-"`
+	MessageReaction         *MessageReactionUpdated      `json:"message_reaction,omitempty"`
+	MessageReactionCount    *MessageReactionCountUpdated `json:"message_reaction_count,omitempty"`
 
 	InlineQuery        *InlineQuery        `json:"inline_query,omitempty"`
 	ChosenInlineResult *ChosenInlineResult `json:"chosen_inline_result,omitempty"`
 	CallbackQuery      *CallbackQuery      `json:"callback_query,omitempty"`
-	ShippingQuery      ShippingQuery       `json:"shipping_query,omitempty"`
+	ShippingQuery      *ShippingQuery      `json:"shipping_query,omitempty"`
 	PreCheckoutQuery   *PreCheckoutQuery   `json:"pre_checkout_query,omitempty"`
 	PurchasedPaidMedia *PaidMediaPurchased `json:"purchased_paid_media,omitempty"`
 
@@ -84,6 +89,35 @@ type Update struct {
 	ChatJoinRequest  *ChatJoinRequest   `json:"chat_join_request,omitempty"`
 	ChatBoost        *ChatBoostUpdated  `json:"chat_boost,omitempty"`
 	RemovedChatBoost *ChatBoostRemoved  `json:"removed_chat_boost,omitempty"`
+}
+
+func (u *Update) syncDeletedBusinessMessages() {
+	if u.DeletedBusinessMessages != nil {
+		u.DeletedBusinessMessage = u.DeletedBusinessMessages
+		return
+	}
+	if u.DeletedBusinessMessage != nil {
+		u.DeletedBusinessMessages = u.DeletedBusinessMessage
+	}
+}
+
+// UnmarshalJSON keeps the deprecated DeletedBusinessMessage alias in sync.
+func (u *Update) UnmarshalJSON(data []byte) error {
+	type alias Update
+	var aux alias
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	*u = Update(aux)
+	u.syncDeletedBusinessMessages()
+	return nil
+}
+
+// MarshalJSON emits the canonical deleted_business_messages field.
+func (u Update) MarshalJSON() ([]byte, error) {
+	u.syncDeletedBusinessMessages()
+	type alias Update
+	return json.Marshal(alias(u))
 }
 
 // InlineQuery represents an incoming inline query.

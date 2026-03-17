@@ -1,9 +1,12 @@
 package tgapi
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
+
+	"git.nix13.pw/scuroneko/laniakea/utils"
 )
 
 // UpdateParams holds parameters for the getUpdates method.
@@ -12,7 +15,7 @@ type UpdateParams struct {
 	Offset         *int         `json:"offset,omitempty"`
 	Limit          *int         `json:"limit,omitempty"`
 	Timeout        *int         `json:"timeout,omitempty"`
-	AllowedUpdates []UpdateType `json:"allowed_updates"`
+	AllowedUpdates []UpdateType `json:"allowed_updates,omitempty"`
 }
 
 // GetMe returns basic information about the bot.
@@ -103,13 +106,31 @@ func (api *API) GetFile(params GetFileP) (File, error) {
 // The link is usually obtained from File.FilePath.
 // See https://core.telegram.org/bots/api#file
 func (api *API) GetFileByLink(link string) ([]byte, error) {
-	u := fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", api.token, link)
-	res, err := http.Get(u)
+	methodPrefix := ""
+	if api.useTestServer {
+		methodPrefix = "/test"
+	}
+	u := fmt.Sprintf("%s/file/bot%s%s/%s", api.apiUrl, api.token, methodPrefix, link)
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", fmt.Sprintf("Laniakea/%s", utils.VersionString))
+
+	res, err := api.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer func() {
 		_ = res.Body.Close()
 	}()
+	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusMultipleChoices {
+		body, readErr := io.ReadAll(io.LimitReader(res.Body, 4<<10))
+		if readErr != nil {
+			return nil, fmt.Errorf("unexpected status %d", res.StatusCode)
+		}
+		return nil, fmt.Errorf("unexpected status %d: %s", res.StatusCode, string(body))
+	}
 	return io.ReadAll(res.Body)
 }

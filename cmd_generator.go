@@ -100,15 +100,15 @@ func gatherCommands[T any](bot *Bot[T]) []tgapi.BotCommand {
 //	    log.Fatal(err)
 //	}
 func (bot *Bot[T]) AutoGenerateCommands() error {
+	commands := gatherCommands(bot)
+	if len(commands) > 100 {
+		return ErrTooManyCommands
+	}
+
 	// Clear existing commands to avoid duplication or stale entries
 	_, err := bot.api.DeleteMyCommands(tgapi.DeleteMyCommandsP{})
 	if err != nil {
 		return fmt.Errorf("failed to delete existing commands: %w", err)
-	}
-
-	commands := gatherCommands(bot)
-	if len(commands) > 100 {
-		return ErrTooManyCommands
 	}
 
 	// Register commands for each scope
@@ -148,13 +148,14 @@ func (bot *Bot[T]) AutoGenerateCommands() error {
 //	    log.Fatal(err)
 //	}
 func (bot *Bot[T]) AutoGenerateCommandsForScope(scope *tgapi.BotCommandScope) error {
-	_, err := bot.api.DeleteMyCommands(tgapi.DeleteMyCommandsP{Scope: scope})
-	if err != nil {
-		return fmt.Errorf("failed to delete existing commands: %w", err)
-	}
 	commands := gatherCommands(bot)
 	if len(commands) > 100 {
 		return ErrTooManyCommands
+	}
+
+	_, err := bot.api.DeleteMyCommands(tgapi.DeleteMyCommandsP{Scope: scope})
+	if err != nil {
+		return fmt.Errorf("failed to delete existing commands: %w", err)
 	}
 
 	_, err = bot.api.SetMyCommands(tgapi.SetMyCommandsP{

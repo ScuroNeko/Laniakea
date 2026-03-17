@@ -138,6 +138,9 @@ func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 
 func (bot *Bot[T]) checkPrefixes(text string) (string, bool) {
 	for _, prefix := range bot.prefixes {
+		if prefix == "" {
+			continue
+		}
 		if strings.HasPrefix(text, prefix) {
 			return prefix, true
 		}

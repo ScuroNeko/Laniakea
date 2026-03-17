@@ -60,6 +60,14 @@ type BusinessConnection struct {
 	IsEnabled  bool               `json:"is_enabled"`
 }
 
+// BusinessMessagesDeleted is received when messages are deleted from a connected business account.
+// See https://core.telegram.org/bots/api#businessmessagesdeleted
+type BusinessMessagesDeleted struct {
+	BusinessConnectionID string `json:"business_connection_id"`
+	Chat                 Chat   `json:"chat"`
+	MessageIDs           []int  `json:"message_ids"`
+}
+
 // InputStoryContentType indicates the type of input story content.
 type InputStoryContentType string
 

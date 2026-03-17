@@ -270,6 +270,9 @@ func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard, par
 	if ctx.Msg.MessageThreadID > 0 {
 		params.MessageThreadID = ctx.Msg.MessageThreadID
 	}
+	if ctx.Msg.DirectMessageTopic != nil {
+		params.DirectMessagesTopicID = int(ctx.Msg.DirectMessageTopic.TopicID)
+	}
 
 	msg, err := ctx.Api.SendPhoto(params)
 	if err != nil {

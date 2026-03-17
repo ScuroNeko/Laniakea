@@ -184,21 +184,34 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 //
 // Returns the first error encountered, if any.
 func (bot *Bot[T]) Close() error {
+	var firstErr error
+
 	if err := bot.uploader.Close(); err != nil {
 		bot.logger.Errorln(err)
+		if firstErr == nil {
+			firstErr = err
+		}
 	}
 	if err := bot.api.CloseApi(); err != nil {
 		bot.logger.Errorln(err)
+		if firstErr == nil {
+			firstErr = err
+		}
 	}
 	if bot.RequestLogger != nil {
 		if err := bot.RequestLogger.Close(); err != nil {
 			bot.logger.Errorln(err)
+			if firstErr == nil {
+				firstErr = err
+			}
 		}
 	}
 	if err := bot.logger.Close(); err != nil {
-		return err
+		if firstErr == nil {
+			firstErr = err
+		}
 	}
-	return nil
+	return firstErr
 }
 
 // initLoggers configures the main and optional request loggers.

@@ -144,12 +144,12 @@ type LinkPreviewOptions struct {
 type ReplyMarkup struct {
 	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard,omitempty"`
 
-	Keyboard              [][]int `json:"keyboard,omitempty"`
-	IsPersistent          bool    `json:"is_persistent,omitempty"`
-	ResizeKeyboard        bool    `json:"resize_keyboard,omitempty"`
-	OneTimeKeyboard       bool    `json:"one_time_keyboard,omitempty"`
-	InputFieldPlaceholder string  `json:"input_field_placeholder,omitempty"`
-	Selective             bool    `json:"selective,omitempty"`
+	Keyboard              [][]KeyboardButton `json:"keyboard,omitempty"`
+	IsPersistent          bool               `json:"is_persistent,omitempty"`
+	ResizeKeyboard        bool               `json:"resize_keyboard,omitempty"`
+	OneTimeKeyboard       bool               `json:"one_time_keyboard,omitempty"`
+	InputFieldPlaceholder string             `json:"input_field_placeholder,omitempty"`
+	Selective             bool               `json:"selective,omitempty"`
 
 	RemoveKeyboard bool `json:"remove_keyboard,omitempty"`
 
@@ -165,6 +165,60 @@ type InlineKeyboardMarkup struct {
 // KeyboardButtonStyle represents the style of a keyboard button.
 type KeyboardButtonStyle string
 
+const (
+	KeyboardButtonStyleDanger  KeyboardButtonStyle = "danger"
+	KeyboardButtonStyleSuccess KeyboardButtonStyle = "success"
+	KeyboardButtonStylePrimary KeyboardButtonStyle = "primary"
+)
+
+// KeyboardButton represents one button of the reply keyboard.
+// See https://core.telegram.org/bots/api#keyboardbutton
+type KeyboardButton struct {
+	Text              string                      `json:"text"`
+	IconCustomEmojiID string                      `json:"icon_custom_emoji_id,omitempty"`
+	Style             KeyboardButtonStyle         `json:"style,omitempty"`
+	RequestUsers      *KeyboardButtonRequestUsers `json:"request_users,omitempty"`
+	RequestChat       *KeyboardButtonRequestChat  `json:"request_chat,omitempty"`
+	RequestContact    bool                        `json:"request_contact,omitempty"`
+	RequestLocation   bool                        `json:"request_location,omitempty"`
+	RequestPoll       *KeyboardButtonPollType     `json:"request_poll,omitempty"`
+	WebApp            *WebAppInfo                 `json:"web_app,omitempty"`
+}
+
+// KeyboardButtonRequestUsers defines criteria used to request suitable users.
+// See https://core.telegram.org/bots/api#keyboardbuttonrequestusers
+type KeyboardButtonRequestUsers struct {
+	RequestID       int   `json:"request_id"`
+	UserIsBot       *bool `json:"user_is_bot,omitempty"`
+	UserIsPremium   *bool `json:"user_is_premium,omitempty"`
+	MaxQuantity     int   `json:"max_quantity,omitempty"`
+	RequestName     bool  `json:"request_name,omitempty"`
+	RequestUsername bool  `json:"request_username,omitempty"`
+	RequestPhoto    bool  `json:"request_photo,omitempty"`
+}
+
+// KeyboardButtonRequestChat defines criteria used to request a suitable chat.
+// See https://core.telegram.org/bots/api#keyboardbuttonrequestchat
+type KeyboardButtonRequestChat struct {
+	RequestID               int                      `json:"request_id"`
+	ChatIsChannel           bool                     `json:"chat_is_channel"`
+	ChatIsForum             *bool                    `json:"chat_is_forum,omitempty"`
+	ChatHasUsername         *bool                    `json:"chat_has_username,omitempty"`
+	ChatIsCreated           *bool                    `json:"chat_is_created,omitempty"`
+	UserAdministratorRights *ChatAdministratorRights `json:"user_administrator_rights,omitempty"`
+	BotAdministratorRights  *ChatAdministratorRights `json:"bot_administrator_rights,omitempty"`
+	BotIsMember             bool                     `json:"bot_is_member,omitempty"`
+	RequestTitle            bool                     `json:"request_title,omitempty"`
+	RequestUsername         bool                     `json:"request_username,omitempty"`
+	RequestPhoto            bool                     `json:"request_photo,omitempty"`
+}
+
+// KeyboardButtonPollType represents the type of a poll that may be created from a keyboard button.
+// See https://core.telegram.org/bots/api#keyboardbuttonpolltype
+type KeyboardButtonPollType struct {
+	Type PollType `json:"type,omitempty"`
+}
+
 // InlineKeyboardButton represents one button of an inline keyboard.
 // See https://core.telegram.org/bots/api#inlinekeyboardbutton
 type InlineKeyboardButton struct {
@@ -178,7 +232,12 @@ type InlineKeyboardButton struct {
 // ReplyKeyboardMarkup represents a custom keyboard with reply options.
 // See https://core.telegram.org/bots/api#replykeyboardmarkup
 type ReplyKeyboardMarkup struct {
-	Keyboard [][]int `json:"keyboard"`
+	Keyboard              [][]KeyboardButton `json:"keyboard"`
+	IsPersistent          bool               `json:"is_persistent,omitempty"`
+	ResizeKeyboard        bool               `json:"resize_keyboard,omitempty"`
+	OneTimeKeyboard       bool               `json:"one_time_keyboard,omitempty"`
+	InputFieldPlaceholder string             `json:"input_field_placeholder,omitempty"`
+	Selective             bool               `json:"selective,omitempty"`
 }
 
 // CallbackQuery represents an incoming callback query from a callback button in an inline keyboard.
@@ -238,7 +297,8 @@ const (
 	ChatActionUploadDocument  ChatActionType = "upload_document"
 	ChatActionChooseSticker   ChatActionType = "choose_sticker"
 	ChatActionFindLocation    ChatActionType = "find_location"
-	ChatActionUploadVideoNone ChatActionType = "upload_video_none"
+	ChatActionUploadVideoNote ChatActionType = "upload_video_note"
+	ChatActionUploadVideoNone ChatActionType = ChatActionUploadVideoNote
 )
 
 // MessageReactionUpdated represents a change of a reaction on a message.

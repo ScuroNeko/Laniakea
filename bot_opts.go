@@ -85,10 +85,10 @@ func LoadOptsFromEnv() *BotOpts {
 		}
 	}
 
-	stringUpdateTypes := strings.Split(os.Getenv("UPDATE_TYPES"), ";")
-	updateTypes := make([]tgapi.UpdateType, len(stringUpdateTypes))
-	for i, updateType := range stringUpdateTypes {
-		updateTypes[i] = tgapi.UpdateType(updateType)
+	stringUpdateTypes := splitEnvList(os.Getenv("UPDATE_TYPES"))
+	updateTypes := make([]tgapi.UpdateType, 0, len(stringUpdateTypes))
+	for _, updateType := range stringUpdateTypes {
+		updateTypes = append(updateTypes, tgapi.UpdateType(updateType))
 	}
 
 	return &BotOpts{
@@ -222,5 +222,25 @@ func LoadPrefixesFromEnv() []string {
 	if !exists {
 		return []string{"/"}
 	}
-	return strings.Split(prefixesS, ";")
+	prefixes := splitEnvList(prefixesS)
+	if len(prefixes) == 0 {
+		return []string{"/"}
+	}
+	return prefixes
+}
+
+func splitEnvList(value string) []string {
+	if value == "" {
+		return nil
+	}
+	parts := strings.Split(value, ";")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		out = append(out, part)
+	}
+	return out
 }

@@ -126,7 +126,6 @@ func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, 
 		req.Header.Set("Content-Type", contentType)
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("User-Agent", fmt.Sprintf("Laniakea/%s", utils.VersionString))
-		req.Header.Set("Accept-Encoding", "gzip")
 		req.ContentLength = int64(buf.Len())
 
 		up.logger.Debugln("UPLOADER REQ", r.method)

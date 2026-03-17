@@ -23,11 +23,11 @@ const (
 
 var (
 	// CommandRegexInt matches one or more digits.
-	CommandRegexInt = regexp.MustCompile(`\d+`)
+	CommandRegexInt = regexp.MustCompile(`^\d+$`)
 	// CommandRegexString matches any non-empty string.
-	CommandRegexString = regexp.MustCompile(`.+`)
+	CommandRegexString = regexp.MustCompile(`^.+$`)
 	// CommandRegexBool matches true or false.
-	CommandRegexBool = regexp.MustCompile(`true|false`)
+	CommandRegexBool = regexp.MustCompile(`^(true|false)$`)
 )
 
 // ErrCmdArgCountMismatch is returned when the number of provided arguments
@@ -64,6 +64,7 @@ func (c *CommandArg) SetValueType(t CommandValueType) *CommandArg {
 	case CommandValueAnyType:
 		regex = nil // Skip validation
 	}
+	c.valueType = t
 	c.regex = regex
 	return c
 }

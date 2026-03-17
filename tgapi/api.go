@@ -202,7 +202,6 @@ func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, erro
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", fmt.Sprintf("Laniakea/%s", utils.VersionString))
-	req.Header.Set("Accept-Encoding", "gzip")
 
 	for {
 		// Apply rate limiting before making the request
