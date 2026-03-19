@@ -48,6 +48,11 @@ func (api *API) GetUpdates(params UpdateParams) ([]Update, error) {
 	return req.Do(api)
 }
 
+func (api *API) GetUpdatesWithContext(ctx context.Context, params UpdateParams) ([]Update, error) {
+	req := NewRequest[[]Update]("getUpdates", params)
+	return req.DoWithContext(ctx, api)
+}
+
 // SetWebhookP holds parameters for the setWebhook method.
 // See https://core.telegram.org/bots/api#setwebhook
 type SetWebhookP struct {

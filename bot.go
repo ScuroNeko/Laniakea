@@ -2,6 +2,7 @@ package laniakea
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -174,7 +175,7 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 	return bot
 }
 
-// Close gracefully shuts down the bot.
+// Close gracefully shuts down bot-owned resources.
 //
 // Closes:
 //   - Uploader (waits for pending uploads)
@@ -182,36 +183,31 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 //   - RequestLogger (if enabled)
 //   - Main logger
 //
-// Returns the first error encountered, if any.
+// RunWithContext does not call Close automatically. The caller is responsible
+// for invoking Close after RunWithContext returns to release these resources.
+//
+// Returns a joined error containing all shutdown failures, if any.
 func (bot *Bot[T]) Close() error {
-	var firstErr error
+	var e []error
 
 	if err := bot.uploader.Close(); err != nil {
 		bot.logger.Errorln(err)
-		if firstErr == nil {
-			firstErr = err
-		}
+		e = append(e, err)
 	}
 	if err := bot.api.CloseApi(); err != nil {
 		bot.logger.Errorln(err)
-		if firstErr == nil {
-			firstErr = err
-		}
+		e = append(e, err)
 	}
 	if bot.RequestLogger != nil {
 		if err := bot.RequestLogger.Close(); err != nil {
 			bot.logger.Errorln(err)
-			if firstErr == nil {
-				firstErr = err
-			}
+			e = append(e, err)
 		}
 	}
 	if err := bot.logger.Close(); err != nil {
-		if firstErr == nil {
-			firstErr = err
-		}
+		e = append(e, err)
 	}
-	return firstErr
+	return errors.Join(e...)
 }
 
 // initLoggers configures the main and optional request loggers.
@@ -466,7 +462,10 @@ func (bot *Bot[T]) AddDatabaseLoggerWriter(writer DbLogger[T]) *Bot[T] {
 // The context controls graceful shutdown. When canceled, the bot:
 //   - Stops polling for new updates
 //   - Finishes processing currently queued updates
-//   - Closes all resources (API, uploader, loggers)
+//   - Waits for registered runners to exit
+//
+// RunWithContext does not close API, uploader, or logger resources on return.
+// The caller must invoke Close after RunWithContext finishes.
 //
 // Example:
 //
@@ -474,13 +473,8 @@ func (bot *Bot[T]) AddDatabaseLoggerWriter(writer DbLogger[T]) *Bot[T] {
 //	go bot.RunWithContext(ctx)
 //	// ... later ...
 //	cancel() // triggers graceful shutdown
+//	_ = bot.Close()
 func (bot *Bot[T]) RunWithContext(ctx context.Context) {
-	defer func() {
-		if err := bot.Close(); err != nil {
-			bot.logger.Errorln(err)
-		}
-	}()
-
 	if len(bot.prefixes) == 0 {
 		bot.logger.Fatalln("no prefixes defined")
 		return
@@ -508,15 +502,15 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			default:
-				updates, err := bot.Updates()
+				updates, err := bot.Updates(ctx)
 				if err != nil {
 					bot.logger.Errorln("failed to fetch updates:", err)
-					time.Sleep(2 * time.Second) // exponential backoff
+					time.Sleep(time.Second) // exponential backoff
 					continue
 				}
 
-				for _, u := range updates {
-					u := u // copy loop variable to avoid race condition
+				for _, update := range updates {
+					u := update // copy loop variable to avoid race condition
 					select {
 					case bot.updateQueue <- &u:
 					case <-ctx.Done():

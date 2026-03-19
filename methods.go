@@ -1,6 +1,7 @@
 package laniakea
 
 import (
+	"context"
 	"encoding/json"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
@@ -12,7 +13,7 @@ import (
 // through AllowedUpdates and includes optional request logging.
 //
 // Parameters:
-//   - None (uses bot's internal state for offset and allowed updates)
+//   - ctx: request context used to cancel the in-flight long polling request
 //
 // Returns:
 //   - []tgapi.Update: slice of received updates (empty if none available)
@@ -26,19 +27,20 @@ import (
 //  5. Automatically updates the offset to the last received update ID + 1
 //  6. Returns all received updates (empty slice if none)
 //
-// Note: This is a blocking call that waits up to 30 seconds for new updates.
-// For non-blocking behavior, consider using webhooks instead.
+// Note: This is a blocking call that waits up to 30 seconds for new updates,
+// unless ctx is canceled earlier. For non-blocking behavior, consider using
+// webhooks instead.
 //
 // Example:
 //
-//	updates, err := bot.Updates()
+//	updates, err := bot.Updates(ctx)
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
 //	for _, update := range updates {
 //	    // process update
 //	}
-func (bot *Bot[T]) Updates() ([]tgapi.Update, error) {
+func (bot *Bot[T]) Updates(ctx context.Context) ([]tgapi.Update, error) {
 	offset := bot.GetUpdateOffset()
 	params := tgapi.UpdateParams{
 		Offset:         Ptr(offset),
@@ -46,7 +48,7 @@ func (bot *Bot[T]) Updates() ([]tgapi.Update, error) {
 		AllowedUpdates: bot.GetUpdateTypes(),
 	}
 
-	updates, err := bot.api.GetUpdates(params)
+	updates, err := bot.api.GetUpdatesWithContext(ctx, params)
 	if err != nil {
 		return nil, err
 	}
