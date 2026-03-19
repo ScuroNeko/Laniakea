@@ -1,5 +1,7 @@
 package tgapi
 
+import "context"
+
 // GetStarTransactionsP holds parameters for the getStarTransactions method.
 // See https://core.telegram.org/bots/api#getstartransactions
 type GetStarTransactionsP struct {
@@ -14,11 +16,27 @@ func (api *API) GetMyStarBalance() (StarAmount, error) {
 	return req.Do(api)
 }
 
+// GetMyStarBalanceWithContext is the context-aware variant of GetMyStarBalance.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#getmystarbalance
+func (api *API) GetMyStarBalanceWithContext(ctx context.Context) (StarAmount, error) {
+	req := NewRequest[StarAmount]("getMyStarBalance", NoParams)
+	return req.DoWithContext(ctx, api)
+}
+
 // GetStarTransactions returns Telegram Star transactions for the bot.
 // See https://core.telegram.org/bots/api#getstartransactions
 func (api *API) GetStarTransactions(params GetStarTransactionsP) (StarTransactions, error) {
 	req := NewRequest[StarTransactions]("getStarTransactions", params)
 	return req.Do(api)
+}
+
+// GetStarTransactionsWithContext is the context-aware variant of GetStarTransactions.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#getstartransactions
+func (api *API) GetStarTransactionsWithContext(ctx context.Context, params GetStarTransactionsP) (StarTransactions, error) {
+	req := NewRequest[StarTransactions]("getStarTransactions", params)
+	return req.DoWithContext(ctx, api)
 }
 
 // RefundStarPaymentP holds parameters for the refundStarPayment method.
@@ -36,6 +54,14 @@ func (api *API) RefundStarPayment(params RefundStarPaymentP) (bool, error) {
 	return req.Do(api)
 }
 
+// RefundStarPaymentWithContext is the context-aware variant of RefundStarPayment.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#refundstarpayment
+func (api *API) RefundStarPaymentWithContext(ctx context.Context, params RefundStarPaymentP) (bool, error) {
+	req := NewRequest[bool]("refundStarPayment", params)
+	return req.DoWithContext(ctx, api)
+}
+
 // EditUserStarSubscriptionP holds parameters for the editUserStarSubscription method.
 // See https://core.telegram.org/bots/api#edituserstarsubscription
 type EditUserStarSubscriptionP struct {
@@ -50,4 +76,12 @@ type EditUserStarSubscriptionP struct {
 func (api *API) EditUserStarSubscription(params EditUserStarSubscriptionP) (bool, error) {
 	req := NewRequest[bool]("editUserStarSubscription", params)
 	return req.Do(api)
+}
+
+// EditUserStarSubscriptionWithContext is the context-aware variant of EditUserStarSubscription.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#edituserstarsubscription
+func (api *API) EditUserStarSubscriptionWithContext(ctx context.Context, params EditUserStarSubscriptionP) (bool, error) {
+	req := NewRequest[bool]("editUserStarSubscription", params)
+	return req.DoWithContext(ctx, api)
 }

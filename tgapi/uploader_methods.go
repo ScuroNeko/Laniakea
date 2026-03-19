@@ -1,5 +1,7 @@
 package tgapi
 
+import "context"
+
 // UploadPhotoP holds parameters for uploading a photo using the Uploader.
 // See https://core.telegram.org/bots/api#sendphoto
 type UploadPhotoP struct {
@@ -30,6 +32,16 @@ type UploadPhotoP struct {
 func (u *Uploader) SendPhoto(params UploadPhotoP, file UploaderFile) (Message, error) {
 	req := NewUploaderRequestWithChatID[Message]("sendPhoto", params, params.ChatID, file)
 	return req.Do(u)
+}
+
+// SendPhotoWithContext is the context-aware variant of SendPhoto.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// SendPhotoWithContext is the context-aware variant of SendPhoto.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#sendphoto
+func (u *Uploader) SendPhotoWithContext(ctx context.Context, params UploadPhotoP, file UploaderFile) (Message, error) {
+	req := NewUploaderRequestWithChatID[Message]("sendPhoto", params, params.ChatID, file)
+	return req.DoWithContext(ctx, u)
 }
 
 // UploadAudioP holds parameters for uploading an audio file using the Uploader.
@@ -66,6 +78,16 @@ func (u *Uploader) SendAudio(params UploadAudioP, files ...UploaderFile) (Messag
 	return req.Do(u)
 }
 
+// SendAudioWithContext is the context-aware variant of SendAudio.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// SendAudioWithContext is the context-aware variant of SendAudio.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#sendaudio
+func (u *Uploader) SendAudioWithContext(ctx context.Context, params UploadAudioP, files ...UploaderFile) (Message, error) {
+	req := NewUploaderRequestWithChatID[Message]("sendAudio", params, params.ChatID, files...)
+	return req.DoWithContext(ctx, u)
+}
+
 // UploadDocumentP holds parameters for uploading a document using the Uploader.
 // See https://core.telegram.org/bots/api#senddocument
 type UploadDocumentP struct {
@@ -95,6 +117,16 @@ type UploadDocumentP struct {
 func (u *Uploader) SendDocument(params UploadDocumentP, files ...UploaderFile) (Message, error) {
 	req := NewUploaderRequestWithChatID[Message]("sendDocument", params, params.ChatID, files...)
 	return req.Do(u)
+}
+
+// SendDocumentWithContext is the context-aware variant of SendDocument.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// SendDocumentWithContext is the context-aware variant of SendDocument.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#senddocument
+func (u *Uploader) SendDocumentWithContext(ctx context.Context, params UploadDocumentP, files ...UploaderFile) (Message, error) {
+	req := NewUploaderRequestWithChatID[Message]("sendDocument", params, params.ChatID, files...)
+	return req.DoWithContext(ctx, u)
 }
 
 // UploadVideoP holds parameters for uploading a video using the Uploader.
@@ -135,6 +167,16 @@ func (u *Uploader) SendVideo(params UploadVideoP, files ...UploaderFile) (Messag
 	return req.Do(u)
 }
 
+// SendVideoWithContext is the context-aware variant of SendVideo.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// SendVideoWithContext is the context-aware variant of SendVideo.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#sendvideo
+func (u *Uploader) SendVideoWithContext(ctx context.Context, params UploadVideoP, files ...UploaderFile) (Message, error) {
+	req := NewUploaderRequestWithChatID[Message]("sendVideo", params, params.ChatID, files...)
+	return req.DoWithContext(ctx, u)
+}
+
 // UploadAnimationP holds parameters for uploading an animation using the Uploader.
 // See https://core.telegram.org/bots/api#sendanimation
 type UploadAnimationP struct {
@@ -171,6 +213,16 @@ func (u *Uploader) SendAnimation(params UploadAnimationP, files ...UploaderFile)
 	return req.Do(u)
 }
 
+// SendAnimationWithContext is the context-aware variant of SendAnimation.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// SendAnimationWithContext is the context-aware variant of SendAnimation.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#sendanimation
+func (u *Uploader) SendAnimationWithContext(ctx context.Context, params UploadAnimationP, files ...UploaderFile) (Message, error) {
+	req := NewUploaderRequestWithChatID[Message]("sendAnimation", params, params.ChatID, files...)
+	return req.DoWithContext(ctx, u)
+}
+
 // UploadVoiceP holds parameters for uploading a voice note using the Uploader.
 // See https://core.telegram.org/bots/api#sendvoice
 type UploadVoiceP struct {
@@ -202,6 +254,16 @@ func (u *Uploader) SendVoice(params UploadVoiceP, files ...UploaderFile) (Messag
 	return req.Do(u)
 }
 
+// SendVoiceWithContext is the context-aware variant of SendVoice.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// SendVoiceWithContext is the context-aware variant of SendVoice.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#sendvoice
+func (u *Uploader) SendVoiceWithContext(ctx context.Context, params UploadVoiceP, files ...UploaderFile) (Message, error) {
+	req := NewUploaderRequestWithChatID[Message]("sendVoice", params, params.ChatID, files...)
+	return req.DoWithContext(ctx, u)
+}
+
 // UploadVideoNoteP holds parameters for uploading a video note (rounded video) using the Uploader.
 // See https://core.telegram.org/bots/api#sendvideonote
 type UploadVideoNoteP struct {
@@ -231,6 +293,16 @@ func (u *Uploader) SendVideoNote(params UploadVideoNoteP, files ...UploaderFile)
 	return req.Do(u)
 }
 
+// SendVideoNoteWithContext is the context-aware variant of SendVideoNote.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// SendVideoNoteWithContext is the context-aware variant of SendVideoNote.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#sendvideonote
+func (u *Uploader) SendVideoNoteWithContext(ctx context.Context, params UploadVideoNoteP, files ...UploaderFile) (Message, error) {
+	req := NewUploaderRequestWithChatID[Message]("sendVideoNote", params, params.ChatID, files...)
+	return req.DoWithContext(ctx, u)
+}
+
 // UploadChatPhotoP holds parameters for uploading a chat photo using the Uploader.
 // See https://core.telegram.org/bots/api#setchatphoto
 type UploadChatPhotoP struct {
@@ -243,4 +315,42 @@ type UploadChatPhotoP struct {
 func (u *Uploader) SetChatPhoto(params UploadChatPhotoP, photo UploaderFile) (bool, error) {
 	req := NewUploaderRequestWithChatID[bool]("setChatPhoto", params, params.ChatID, photo)
 	return req.Do(u)
+}
+
+// SetChatPhotoWithContext is the context-aware variant of SetChatPhoto.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// SetChatPhotoWithContext is the context-aware variant of SetChatPhoto.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#setchatphoto
+func (u *Uploader) SetChatPhotoWithContext(ctx context.Context, params UploadChatPhotoP, photo UploaderFile) (bool, error) {
+	req := NewUploaderRequestWithChatID[bool]("setChatPhoto", params, params.ChatID, photo)
+	return req.DoWithContext(ctx, u)
+}
+
+// UploadSetWebhookP holds multipart parameters for the setWebhook method.
+// Use this type when uploading a self-signed certificate file.
+// See https://core.telegram.org/bots/api#setwebhook
+type UploadSetWebhookP struct {
+	URL                string       `json:"url"`
+	IPAddress          string       `json:"ip_address,omitempty"`
+	MaxConnections     int          `json:"max_connections,omitempty"`
+	AllowedUpdates     []UpdateType `json:"allowed_updates,omitempty"`
+	DropPendingUpdates bool         `json:"drop_pending_updates,omitempty"`
+	SecretToken        string       `json:"secret_token,omitempty"`
+}
+
+// SetWebhook uploads a certificate and sets a webhook URL.
+// certificate maps to the multipart field \"certificate\".
+// See https://core.telegram.org/bots/api#setwebhook
+func (u *Uploader) SetWebhook(params UploadSetWebhookP, certificate UploaderFile) (bool, error) {
+	req := NewUploaderRequest[bool]("setWebhook", params, certificate.SetType(UploaderCertificateType))
+	return req.Do(u)
+}
+
+// SetWebhookWithContext is the context-aware variant of SetWebhook.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#setwebhook
+func (u *Uploader) SetWebhookWithContext(ctx context.Context, params UploadSetWebhookP, certificate UploaderFile) (bool, error) {
+	req := NewUploaderRequest[bool]("setWebhook", params, certificate.SetType(UploaderCertificateType))
+	return req.DoWithContext(ctx, u)
 }

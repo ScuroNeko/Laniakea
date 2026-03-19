@@ -1,5 +1,7 @@
 package tgapi
 
+import "context"
+
 // SendStickerP holds parameters for the sendSticker method.
 // See https://core.telegram.org/bots/api#sendsticker
 type SendStickerP struct {
@@ -14,6 +16,10 @@ type SendStickerP struct {
 	ProtectContent      bool   `json:"protect_content,omitempty"`
 	AllowPaidBroadcast  bool   `json:"allow_paid_broadcast,omitempty"`
 	MessageEffectID     string `json:"message_effect_id,omitempty"`
+
+	SuggestedPostParameters *SuggestedPostParameters `json:"suggested_post_parameters,omitempty"`
+	ReplyParameters         *ReplyParameters         `json:"reply_parameters,omitempty"`
+	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
 }
 
 // SendSticker sends a static .WEBP, animated .TGS, or video .WEBM sticker.
@@ -21,6 +27,14 @@ type SendStickerP struct {
 func (api *API) SendSticker(params SendStickerP) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendSticker", params, params.ChatID)
 	return req.Do(api)
+}
+
+// SendStickerWithContext is the context-aware variant of SendSticker.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#sendsticker
+func (api *API) SendStickerWithContext(ctx context.Context, params SendStickerP) (Message, error) {
+	req := NewRequestWithChatID[Message]("sendSticker", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
 }
 
 // GetStickerSetP holds parameters for the getStickerSet method.
@@ -36,6 +50,14 @@ func (api *API) GetStickerSet(params GetStickerSetP) (StickerSet, error) {
 	return req.Do(api)
 }
 
+// GetStickerSetWithContext is the context-aware variant of GetStickerSet.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#getstickerset
+func (api *API) GetStickerSetWithContext(ctx context.Context, params GetStickerSetP) (StickerSet, error) {
+	req := NewRequest[StickerSet]("getStickerSet", params)
+	return req.DoWithContext(ctx, api)
+}
+
 // GetCustomEmojiStickersP holds parameters for the getCustomEmojiStickers method.
 // See https://core.telegram.org/bots/api#getcustomemojistickers
 type GetCustomEmojiStickersP struct {
@@ -47,6 +69,14 @@ type GetCustomEmojiStickersP struct {
 func (api *API) GetCustomEmojiStickers(params GetCustomEmojiStickersP) ([]Sticker, error) {
 	req := NewRequest[[]Sticker]("getCustomEmojiStickers", params)
 	return req.Do(api)
+}
+
+// GetCustomEmojiStickersWithContext is the context-aware variant of GetCustomEmojiStickers.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#getcustomemojistickers
+func (api *API) GetCustomEmojiStickersWithContext(ctx context.Context, params GetCustomEmojiStickersP) ([]Sticker, error) {
+	req := NewRequest[[]Sticker]("getCustomEmojiStickers", params)
+	return req.DoWithContext(ctx, api)
 }
 
 // UploadStickerFileP holds parameters for the uploadStickerFile method.
@@ -66,6 +96,18 @@ func (api *API) UploadStickerFile(params UploadStickerFileP, sticker UploaderFil
 	}()
 	req := NewUploaderRequest[File]("uploadStickerFile", params, sticker.SetType(UploaderStickerType))
 	return req.Do(uploader)
+}
+
+// UploadStickerFileWithContext is the context-aware variant of UploadStickerFile.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#uploadstickerfile
+func (api *API) UploadStickerFileWithContext(ctx context.Context, params UploadStickerFileP, sticker UploaderFile) (File, error) {
+	uploader := NewUploader(api)
+	defer func() {
+		_ = uploader.Close()
+	}()
+	req := NewUploaderRequest[File]("uploadStickerFile", params, sticker.SetType(UploaderStickerType))
+	return req.DoWithContext(ctx, uploader)
 }
 
 // CreateNewStickerSetP holds parameters for the createNewStickerSet method.
@@ -88,6 +130,14 @@ func (api *API) CreateNewStickerSet(params CreateNewStickerSetP) (bool, error) {
 	return req.Do(api)
 }
 
+// CreateNewStickerSetWithContext is the context-aware variant of CreateNewStickerSet.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#createnewstickerset
+func (api *API) CreateNewStickerSetWithContext(ctx context.Context, params CreateNewStickerSetP) (bool, error) {
+	req := NewRequest[bool]("createNewStickerSet", params)
+	return req.DoWithContext(ctx, api)
+}
+
 // AddStickerToSetP holds parameters for the addStickerToSet method.
 // See https://core.telegram.org/bots/api#addstickertoset
 type AddStickerToSetP struct {
@@ -102,6 +152,14 @@ type AddStickerToSetP struct {
 func (api *API) AddStickerToSet(params AddStickerToSetP) (bool, error) {
 	req := NewRequest[bool]("addStickerToSet", params)
 	return req.Do(api)
+}
+
+// AddStickerToSetWithContext is the context-aware variant of AddStickerToSet.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#addstickertoset
+func (api *API) AddStickerToSetWithContext(ctx context.Context, params AddStickerToSetP) (bool, error) {
+	req := NewRequest[bool]("addStickerToSet", params)
+	return req.DoWithContext(ctx, api)
 }
 
 // SetStickerPositionInSetP holds parameters for the setStickerPositionInSet method.
@@ -119,6 +177,14 @@ func (api *API) SetStickerPositionInSet(params SetStickerPositionInSetP) (bool, 
 	return req.Do(api)
 }
 
+// SetStickerPositionInSetWithContext is the context-aware variant of SetStickerPositionInSet.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#setstickerpositioninset
+func (api *API) SetStickerPositionInSetWithContext(ctx context.Context, params SetStickerPositionInSetP) (bool, error) {
+	req := NewRequest[bool]("setStickerPositionInSet", params)
+	return req.DoWithContext(ctx, api)
+}
+
 // DeleteStickerFromSetP holds parameters for the deleteStickerFromSet method.
 // See https://core.telegram.org/bots/api#deletestickerfromset
 type DeleteStickerFromSetP struct {
@@ -131,6 +197,14 @@ type DeleteStickerFromSetP struct {
 func (api *API) DeleteStickerFromSet(params DeleteStickerFromSetP) (bool, error) {
 	req := NewRequest[bool]("deleteStickerFromSet", params)
 	return req.Do(api)
+}
+
+// DeleteStickerFromSetWithContext is the context-aware variant of DeleteStickerFromSet.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#deletestickerfromset
+func (api *API) DeleteStickerFromSetWithContext(ctx context.Context, params DeleteStickerFromSetP) (bool, error) {
+	req := NewRequest[bool]("deleteStickerFromSet", params)
+	return req.DoWithContext(ctx, api)
 }
 
 // ReplaceStickerInSetP holds parameters for the replaceStickerInSet method.
@@ -150,6 +224,14 @@ func (api *API) ReplaceStickerInSet(params ReplaceStickerInSetP) (bool, error) {
 	return req.Do(api)
 }
 
+// ReplaceStickerInSetWithContext is the context-aware variant of ReplaceStickerInSet.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#replacestickerinset
+func (api *API) ReplaceStickerInSetWithContext(ctx context.Context, params ReplaceStickerInSetP) (bool, error) {
+	req := NewRequest[bool]("replaceStickerInSet", params)
+	return req.DoWithContext(ctx, api)
+}
+
 // SetStickerEmojiListP holds parameters for the setStickerEmojiList method.
 // See https://core.telegram.org/bots/api#setstickeremojilist
 type SetStickerEmojiListP struct {
@@ -163,6 +245,14 @@ type SetStickerEmojiListP struct {
 func (api *API) SetStickerEmojiList(params SetStickerEmojiListP) (bool, error) {
 	req := NewRequest[bool]("setStickerEmojiList", params)
 	return req.Do(api)
+}
+
+// SetStickerEmojiListWithContext is the context-aware variant of SetStickerEmojiList.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#setstickeremojilist
+func (api *API) SetStickerEmojiListWithContext(ctx context.Context, params SetStickerEmojiListP) (bool, error) {
+	req := NewRequest[bool]("setStickerEmojiList", params)
+	return req.DoWithContext(ctx, api)
 }
 
 // SetStickerKeywordsP holds parameters for the setStickerKeywords method.
@@ -180,6 +270,14 @@ func (api *API) SetStickerKeywords(params SetStickerKeywordsP) (bool, error) {
 	return req.Do(api)
 }
 
+// SetStickerKeywordsWithContext is the context-aware variant of SetStickerKeywords.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#setstickerkeywords
+func (api *API) SetStickerKeywordsWithContext(ctx context.Context, params SetStickerKeywordsP) (bool, error) {
+	req := NewRequest[bool]("setStickerKeywords", params)
+	return req.DoWithContext(ctx, api)
+}
+
 // SetStickerMaskPositionP holds parameters for the setStickerMaskPosition method.
 // See https://core.telegram.org/bots/api#setstickermaskposition
 type SetStickerMaskPositionP struct {
@@ -195,6 +293,14 @@ func (api *API) SetStickerMaskPosition(params SetStickerMaskPositionP) (bool, er
 	return req.Do(api)
 }
 
+// SetStickerMaskPositionWithContext is the context-aware variant of SetStickerMaskPosition.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#setstickermaskposition
+func (api *API) SetStickerMaskPositionWithContext(ctx context.Context, params SetStickerMaskPositionP) (bool, error) {
+	req := NewRequest[bool]("setStickerMaskPosition", params)
+	return req.DoWithContext(ctx, api)
+}
+
 // SetStickerSetTitleP holds parameters for the setStickerSetTitle method.
 // See https://core.telegram.org/bots/api#setstickersettitle
 type SetStickerSetTitleP struct {
@@ -208,6 +314,14 @@ type SetStickerSetTitleP struct {
 func (api *API) SetStickerSetTitle(params SetStickerSetTitleP) (bool, error) {
 	req := NewRequest[bool]("setStickerSetTitle", params)
 	return req.Do(api)
+}
+
+// SetStickerSetTitleWithContext is the context-aware variant of SetStickerSetTitle.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#setstickersettitle
+func (api *API) SetStickerSetTitleWithContext(ctx context.Context, params SetStickerSetTitleP) (bool, error) {
+	req := NewRequest[bool]("setStickerSetTitle", params)
+	return req.DoWithContext(ctx, api)
 }
 
 // SetStickerSetThumbnailP holds parameters for the setStickerSetThumbnail method.
@@ -227,6 +341,14 @@ func (api *API) SetStickerSetThumbnail(params SetStickerSetThumbnailP) (bool, er
 	return req.Do(api)
 }
 
+// SetStickerSetThumbnailWithContext is the context-aware variant of SetStickerSetThumbnail.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#setstickersetthumbnail
+func (api *API) SetStickerSetThumbnailWithContext(ctx context.Context, params SetStickerSetThumbnailP) (bool, error) {
+	req := NewRequest[bool]("setStickerSetThumbnail", params)
+	return req.DoWithContext(ctx, api)
+}
+
 // SetCustomEmojiStickerSetThumbnailP holds parameters for the setCustomEmojiStickerSetThumbnail method.
 // See https://core.telegram.org/bots/api#setcustomemojistickersetthumbnail
 type SetCustomEmojiStickerSetThumbnailP struct {
@@ -242,6 +364,14 @@ func (api *API) SetCustomEmojiStickerSetThumbnail(params SetCustomEmojiStickerSe
 	return req.Do(api)
 }
 
+// SetCustomEmojiStickerSetThumbnailWithContext is the context-aware variant of SetCustomEmojiStickerSetThumbnail.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#setcustomemojistickersetthumbnail
+func (api *API) SetCustomEmojiStickerSetThumbnailWithContext(ctx context.Context, params SetCustomEmojiStickerSetThumbnailP) (bool, error) {
+	req := NewRequest[bool]("setCustomEmojiStickerSetThumbnail", params)
+	return req.DoWithContext(ctx, api)
+}
+
 // DeleteStickerSetP holds parameters for the deleteStickerSet method.
 // See https://core.telegram.org/bots/api#deletestickerset
 type DeleteStickerSetP struct {
@@ -254,4 +384,12 @@ type DeleteStickerSetP struct {
 func (api *API) DeleteStickerSet(params DeleteStickerSetP) (bool, error) {
 	req := NewRequest[bool]("deleteStickerSet", params)
 	return req.Do(api)
+}
+
+// DeleteStickerSetWithContext is the context-aware variant of DeleteStickerSet.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#deletestickerset
+func (api *API) DeleteStickerSetWithContext(ctx context.Context, params DeleteStickerSetP) (bool, error) {
+	req := NewRequest[bool]("deleteStickerSet", params)
+	return req.DoWithContext(ctx, api)
 }

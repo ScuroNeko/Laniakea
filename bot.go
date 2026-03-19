@@ -193,6 +193,10 @@ func (bot *Bot[T]) Close() error {
 		bot.logger.Errorln(err)
 		e = append(e, err)
 	}
+	if _, err := bot.api.Close(); err != nil {
+		bot.logger.Errorln(err)
+		e = append(e, err)
+	}
 	if err := bot.api.CloseApi(); err != nil {
 		bot.logger.Errorln(err)
 		e = append(e, err)

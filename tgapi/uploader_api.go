@@ -30,6 +30,8 @@ const (
 	UploaderThumbnailType UploaderFileType = "thumbnail"
 	// UploaderStickerType is the multipart field name for sticker uploads.
 	UploaderStickerType UploaderFileType = "sticker"
+	// UploaderCertificateType is the multipart field name for webhook certificate uploads.
+	UploaderCertificateType UploaderFileType = "certificate"
 )
 
 // UploaderFileType represents the Telegram form field name for a file upload.

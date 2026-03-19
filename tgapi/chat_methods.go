@@ -1,5 +1,7 @@
 package tgapi
 
+import "context"
+
 // BanChatMemberP holds parameters for the banChatMember method.
 // See https://core.telegram.org/bots/api#banchatmember
 type BanChatMemberP struct {
@@ -15,6 +17,14 @@ type BanChatMemberP struct {
 func (api *API) BanChatMember(params BanChatMemberP) (bool, error) {
 	req := NewRequestWithChatID[bool]("banChatMember", params, params.ChatID)
 	return req.Do(api)
+}
+
+// BanChatMemberWithContext is the context-aware variant of BanChatMember.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#banchatmember
+func (api *API) BanChatMemberWithContext(ctx context.Context, params BanChatMemberP) (bool, error) {
+	req := NewRequestWithChatID[bool]("banChatMember", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
 }
 
 // UnbanChatMemberP holds parameters for the unbanChatMember method.
@@ -33,6 +43,14 @@ func (api *API) UnbanChatMember(params UnbanChatMemberP) (bool, error) {
 	return req.Do(api)
 }
 
+// UnbanChatMemberWithContext is the context-aware variant of UnbanChatMember.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#unbanchatmember
+func (api *API) UnbanChatMemberWithContext(ctx context.Context, params UnbanChatMemberP) (bool, error) {
+	req := NewRequestWithChatID[bool]("unbanChatMember", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
+}
+
 // RestrictChatMemberP holds parameters for the restrictChatMember method.
 // See https://core.telegram.org/bots/api#restrictchatmember
 type RestrictChatMemberP struct {
@@ -49,6 +67,14 @@ type RestrictChatMemberP struct {
 func (api *API) RestrictChatMember(params RestrictChatMemberP) (bool, error) {
 	req := NewRequestWithChatID[bool]("restrictChatMember", params, params.ChatID)
 	return req.Do(api)
+}
+
+// RestrictChatMemberWithContext is the context-aware variant of RestrictChatMember.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#restrictchatmember
+func (api *API) RestrictChatMemberWithContext(ctx context.Context, params RestrictChatMemberP) (bool, error) {
+	req := NewRequestWithChatID[bool]("restrictChatMember", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
 }
 
 // PromoteChatMember holds parameters for the promoteChatMember method.
@@ -84,6 +110,14 @@ func (api *API) PromoteChatMember(params PromoteChatMember) (bool, error) {
 	return req.Do(api)
 }
 
+// PromoteChatMemberWithContext is the context-aware variant of PromoteChatMember.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#promotechatmember
+func (api *API) PromoteChatMemberWithContext(ctx context.Context, params PromoteChatMember) (bool, error) {
+	req := NewRequestWithChatID[bool]("promoteChatMember", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
+}
+
 // SetChatAdministratorCustomTitleP holds parameters for the setChatAdministratorCustomTitle method.
 // See https://core.telegram.org/bots/api#setchatadministratorcustomtitle
 type SetChatAdministratorCustomTitleP struct {
@@ -98,6 +132,14 @@ type SetChatAdministratorCustomTitleP struct {
 func (api *API) SetChatAdministratorCustomTitle(params SetChatAdministratorCustomTitleP) (bool, error) {
 	req := NewRequestWithChatID[bool]("setChatAdministratorCustomTitle", params, params.ChatID)
 	return req.Do(api)
+}
+
+// SetChatAdministratorCustomTitleWithContext is the context-aware variant of SetChatAdministratorCustomTitle.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#setchatadministratorcustomtitle
+func (api *API) SetChatAdministratorCustomTitleWithContext(ctx context.Context, params SetChatAdministratorCustomTitleP) (bool, error) {
+	req := NewRequestWithChatID[bool]("setChatAdministratorCustomTitle", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
 }
 
 // SetChatMemberTagP holds parameters for the setChatMemberTag method.
@@ -116,6 +158,14 @@ func (api *API) SetChatMemberTag(params SetChatMemberTagP) (bool, error) {
 	return req.Do(api)
 }
 
+// SetChatMemberTagWithContext is the context-aware variant of SetChatMemberTag.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#setchatmembertag
+func (api *API) SetChatMemberTagWithContext(ctx context.Context, params SetChatMemberTagP) (bool, error) {
+	req := NewRequestWithChatID[bool]("setChatMemberTag", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
+}
+
 // BanChatSenderChatP holds parameters for the banChatSenderChat method.
 // See https://core.telegram.org/bots/api#banchatsenderchat
 type BanChatSenderChatP struct {
@@ -131,6 +181,14 @@ func (api *API) BanChatSenderChat(params BanChatSenderChatP) (bool, error) {
 	return req.Do(api)
 }
 
+// BanChatSenderChatWithContext is the context-aware variant of BanChatSenderChat.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#banchatsenderchat
+func (api *API) BanChatSenderChatWithContext(ctx context.Context, params BanChatSenderChatP) (bool, error) {
+	req := NewRequestWithChatID[bool]("banChatSenderChat", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
+}
+
 // UnbanChatSenderChatP holds parameters for the unbanChatSenderChat method.
 // See https://core.telegram.org/bots/api#unbanchatsenderchat
 type UnbanChatSenderChatP struct {
@@ -144,6 +202,14 @@ type UnbanChatSenderChatP struct {
 func (api *API) UnbanChatSenderChat(params UnbanChatSenderChatP) (bool, error) {
 	req := NewRequestWithChatID[bool]("unbanChatSenderChat", params, params.ChatID)
 	return req.Do(api)
+}
+
+// UnbanChatSenderChatWithContext is the context-aware variant of UnbanChatSenderChat.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#unbanchatsenderchat
+func (api *API) UnbanChatSenderChatWithContext(ctx context.Context, params UnbanChatSenderChatP) (bool, error) {
+	req := NewRequestWithChatID[bool]("unbanChatSenderChat", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
 }
 
 // SetChatPermissionsP holds parameters for the setChatPermissions method.
@@ -162,6 +228,14 @@ func (api *API) SetChatPermissions(params SetChatPermissionsP) (bool, error) {
 	return req.Do(api)
 }
 
+// SetChatPermissionsWithContext is the context-aware variant of SetChatPermissions.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#setchatpermissions
+func (api *API) SetChatPermissionsWithContext(ctx context.Context, params SetChatPermissionsP) (bool, error) {
+	req := NewRequestWithChatID[bool]("setChatPermissions", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
+}
+
 // ExportChatInviteLinkP holds parameters for the exportChatInviteLink method.
 // See https://core.telegram.org/bots/api#exportchatinvitelink
 type ExportChatInviteLinkP struct {
@@ -174,6 +248,14 @@ type ExportChatInviteLinkP struct {
 func (api *API) ExportChatInviteLink(params ExportChatInviteLinkP) (string, error) {
 	req := NewRequestWithChatID[string]("exportChatInviteLink", params, params.ChatID)
 	return req.Do(api)
+}
+
+// ExportChatInviteLinkWithContext is the context-aware variant of ExportChatInviteLink.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#exportchatinvitelink
+func (api *API) ExportChatInviteLinkWithContext(ctx context.Context, params ExportChatInviteLinkP) (string, error) {
+	req := NewRequestWithChatID[string]("exportChatInviteLink", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
 }
 
 // CreateChatInviteLinkP holds parameters for the createChatInviteLink method.
@@ -192,6 +274,14 @@ type CreateChatInviteLinkP struct {
 func (api *API) CreateChatInviteLink(params CreateChatInviteLinkP) (ChatInviteLink, error) {
 	req := NewRequestWithChatID[ChatInviteLink]("createChatInviteLink", params, params.ChatID)
 	return req.Do(api)
+}
+
+// CreateChatInviteLinkWithContext is the context-aware variant of CreateChatInviteLink.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#createchatinvitelink
+func (api *API) CreateChatInviteLinkWithContext(ctx context.Context, params CreateChatInviteLinkP) (ChatInviteLink, error) {
+	req := NewRequestWithChatID[ChatInviteLink]("createChatInviteLink", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
 }
 
 // EditChatInviteLinkP holds parameters for the editChatInviteLink method.
@@ -214,6 +304,14 @@ func (api *API) EditChatInviteLink(params EditChatInviteLinkP) (ChatInviteLink, 
 	return req.Do(api)
 }
 
+// EditChatInviteLinkWithContext is the context-aware variant of EditChatInviteLink.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#editchatinvitelink
+func (api *API) EditChatInviteLinkWithContext(ctx context.Context, params EditChatInviteLinkP) (ChatInviteLink, error) {
+	req := NewRequestWithChatID[ChatInviteLink]("editChatInviteLink", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
+}
+
 // CreateChatSubscriptionInviteLinkP holds parameters for the createChatSubscriptionInviteLink method.
 // See https://core.telegram.org/bots/api#createchatsubscriptioninvitelink
 type CreateChatSubscriptionInviteLinkP struct {
@@ -229,6 +327,14 @@ type CreateChatSubscriptionInviteLinkP struct {
 func (api *API) CreateChatSubscriptionInviteLink(params CreateChatSubscriptionInviteLinkP) (ChatInviteLink, error) {
 	req := NewRequestWithChatID[ChatInviteLink]("createChatSubscriptionInviteLink", params, params.ChatID)
 	return req.Do(api)
+}
+
+// CreateChatSubscriptionInviteLinkWithContext is the context-aware variant of CreateChatSubscriptionInviteLink.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#createchatsubscriptioninvitelink
+func (api *API) CreateChatSubscriptionInviteLinkWithContext(ctx context.Context, params CreateChatSubscriptionInviteLinkP) (ChatInviteLink, error) {
+	req := NewRequestWithChatID[ChatInviteLink]("createChatSubscriptionInviteLink", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
 }
 
 // EditChatSubscriptionInviteLinkP holds parameters for the editChatSubscriptionInviteLink method.
@@ -247,6 +353,14 @@ func (api *API) EditChatSubscriptionInviteLink(params EditChatSubscriptionInvite
 	return req.Do(api)
 }
 
+// EditChatSubscriptionInviteLinkWithContext is the context-aware variant of EditChatSubscriptionInviteLink.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#editchatsubscriptioninvitelink
+func (api *API) EditChatSubscriptionInviteLinkWithContext(ctx context.Context, params EditChatSubscriptionInviteLinkP) (ChatInviteLink, error) {
+	req := NewRequestWithChatID[ChatInviteLink]("editChatSubscriptionInviteLink", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
+}
+
 // RevokeChatInviteLinkP holds parameters for the revokeChatInviteLink method.
 // See https://core.telegram.org/bots/api#revokechatinvitelink
 type RevokeChatInviteLinkP struct {
@@ -260,6 +374,14 @@ type RevokeChatInviteLinkP struct {
 func (api *API) RevokeChatInviteLink(params RevokeChatInviteLinkP) (ChatInviteLink, error) {
 	req := NewRequestWithChatID[ChatInviteLink]("revokeChatInviteLink", params, params.ChatID)
 	return req.Do(api)
+}
+
+// RevokeChatInviteLinkWithContext is the context-aware variant of RevokeChatInviteLink.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#revokechatinvitelink
+func (api *API) RevokeChatInviteLinkWithContext(ctx context.Context, params RevokeChatInviteLinkP) (ChatInviteLink, error) {
+	req := NewRequestWithChatID[ChatInviteLink]("revokeChatInviteLink", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
 }
 
 // ApproveChatJoinRequestP holds parameters for the approveChatJoinRequest method.
@@ -277,6 +399,14 @@ func (api *API) ApproveChatJoinRequest(params ApproveChatJoinRequestP) (bool, er
 	return req.Do(api)
 }
 
+// ApproveChatJoinRequestWithContext is the context-aware variant of ApproveChatJoinRequest.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#approvechatjoinrequest
+func (api *API) ApproveChatJoinRequestWithContext(ctx context.Context, params ApproveChatJoinRequestP) (bool, error) {
+	req := NewRequestWithChatID[bool]("approveChatJoinRequest", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
+}
+
 // DeclineChatJoinRequestP holds parameters for the declineChatJoinRequest method.
 // See https://core.telegram.org/bots/api#declinechatjoinrequest
 type DeclineChatJoinRequestP struct {
@@ -290,6 +420,14 @@ type DeclineChatJoinRequestP struct {
 func (api *API) DeclineChatJoinRequest(params DeclineChatJoinRequestP) (bool, error) {
 	req := NewRequestWithChatID[bool]("declineChatJoinRequest", params, params.ChatID)
 	return req.Do(api)
+}
+
+// DeclineChatJoinRequestWithContext is the context-aware variant of DeclineChatJoinRequest.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#declinechatjoinrequest
+func (api *API) DeclineChatJoinRequestWithContext(ctx context.Context, params DeclineChatJoinRequestP) (bool, error) {
+	req := NewRequestWithChatID[bool]("declineChatJoinRequest", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
 }
 
 // SetChatPhotoP holds parameters for the setChatPhoto method.
@@ -325,6 +463,14 @@ func (api *API) DeleteChatPhoto(params DeleteChatPhotoP) (bool, error) {
 	return req.Do(api)
 }
 
+// DeleteChatPhotoWithContext is the context-aware variant of DeleteChatPhoto.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#deletechatphoto
+func (api *API) DeleteChatPhotoWithContext(ctx context.Context, params DeleteChatPhotoP) (bool, error) {
+	req := NewRequestWithChatID[bool]("deleteChatPhoto", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
+}
+
 // SetChatTitleP holds parameters for the setChatTitle method.
 // See https://core.telegram.org/bots/api#setchattitle
 type SetChatTitleP struct {
@@ -340,6 +486,14 @@ func (api *API) SetChatTitle(params SetChatTitleP) (bool, error) {
 	return req.Do(api)
 }
 
+// SetChatTitleWithContext is the context-aware variant of SetChatTitle.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#setchattitle
+func (api *API) SetChatTitleWithContext(ctx context.Context, params SetChatTitleP) (bool, error) {
+	req := NewRequestWithChatID[bool]("setChatTitle", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
+}
+
 // SetChatDescriptionP holds parameters for the setChatDescription method.
 // See https://core.telegram.org/bots/api#setchatdescription
 type SetChatDescriptionP struct {
@@ -353,6 +507,14 @@ type SetChatDescriptionP struct {
 func (api *API) SetChatDescription(params SetChatDescriptionP) (bool, error) {
 	req := NewRequestWithChatID[bool]("setChatDescription", params, params.ChatID)
 	return req.Do(api)
+}
+
+// SetChatDescriptionWithContext is the context-aware variant of SetChatDescription.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#setchatdescription
+func (api *API) SetChatDescriptionWithContext(ctx context.Context, params SetChatDescriptionP) (bool, error) {
+	req := NewRequestWithChatID[bool]("setChatDescription", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
 }
 
 // PinChatMessageP holds parameters for the pinChatMessage method.
@@ -372,6 +534,14 @@ func (api *API) PinChatMessage(params PinChatMessageP) (bool, error) {
 	return req.Do(api)
 }
 
+// PinChatMessageWithContext is the context-aware variant of PinChatMessage.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#pinchatmessage
+func (api *API) PinChatMessageWithContext(ctx context.Context, params PinChatMessageP) (bool, error) {
+	req := NewRequestWithChatID[bool]("pinChatMessage", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
+}
+
 // UnpinChatMessageP holds parameters for the unpinChatMessage method.
 // See https://core.telegram.org/bots/api#unpinchatmessage
 type UnpinChatMessageP struct {
@@ -388,6 +558,14 @@ func (api *API) UnpinChatMessage(params UnpinChatMessageP) (bool, error) {
 	return req.Do(api)
 }
 
+// UnpinChatMessageWithContext is the context-aware variant of UnpinChatMessage.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#unpinchatmessage
+func (api *API) UnpinChatMessageWithContext(ctx context.Context, params UnpinChatMessageP) (bool, error) {
+	req := NewRequestWithChatID[bool]("unpinChatMessage", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
+}
+
 // UnpinAllChatMessagesP holds parameters for the unpinAllChatMessages method.
 // See https://core.telegram.org/bots/api#unpinallchatmessages
 type UnpinAllChatMessagesP struct {
@@ -400,6 +578,14 @@ type UnpinAllChatMessagesP struct {
 func (api *API) UnpinAllChatMessages(params UnpinAllChatMessagesP) (bool, error) {
 	req := NewRequestWithChatID[bool]("unpinAllChatMessages", params, params.ChatID)
 	return req.Do(api)
+}
+
+// UnpinAllChatMessagesWithContext is the context-aware variant of UnpinAllChatMessages.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#unpinallchatmessages
+func (api *API) UnpinAllChatMessagesWithContext(ctx context.Context, params UnpinAllChatMessagesP) (bool, error) {
+	req := NewRequestWithChatID[bool]("unpinAllChatMessages", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
 }
 
 // LeaveChatP holds parameters for the leaveChat method.
@@ -416,6 +602,14 @@ func (api *API) LeaveChat(params LeaveChatP) (bool, error) {
 	return req.Do(api)
 }
 
+// LeaveChatWithContext is the context-aware variant of LeaveChat.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#leavechat
+func (api *API) LeaveChatWithContext(ctx context.Context, params LeaveChatP) (bool, error) {
+	req := NewRequestWithChatID[bool]("leaveChat", params, params.ChatID) // fixed method name
+	return req.DoWithContext(ctx, api)
+}
+
 // GetChatP holds parameters for the getChat method.
 // See https://core.telegram.org/bots/api#getchat
 type GetChatP struct {
@@ -427,6 +621,14 @@ type GetChatP struct {
 func (api *API) GetChat(params GetChatP) (ChatFullInfo, error) {
 	req := NewRequestWithChatID[ChatFullInfo]("getChat", params, params.ChatID) // fixed method name
 	return req.Do(api)
+}
+
+// GetChatWithContext is the context-aware variant of GetChat.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#getchat
+func (api *API) GetChatWithContext(ctx context.Context, params GetChatP) (ChatFullInfo, error) {
+	req := NewRequestWithChatID[ChatFullInfo]("getChat", params, params.ChatID) // fixed method name
+	return req.DoWithContext(ctx, api)
 }
 
 // GetChatAdministratorsP holds parameters for the getChatAdministrators method.
@@ -442,6 +644,14 @@ func (api *API) GetChatAdministrators(params GetChatAdministratorsP) ([]ChatMemb
 	return req.Do(api)
 }
 
+// GetChatAdministratorsWithContext is the context-aware variant of GetChatAdministrators.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#getchatadministrators
+func (api *API) GetChatAdministratorsWithContext(ctx context.Context, params GetChatAdministratorsP) ([]ChatMember, error) {
+	req := NewRequestWithChatID[[]ChatMember]("getChatAdministrators", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
+}
+
 // GetChatMembersCountP holds parameters for the getChatMemberCount method.
 // See https://core.telegram.org/bots/api#getchatmembercount
 type GetChatMembersCountP struct {
@@ -453,6 +663,14 @@ type GetChatMembersCountP struct {
 func (api *API) GetChatMemberCount(params GetChatMembersCountP) (int, error) {
 	req := NewRequestWithChatID[int]("getChatMemberCount", params, params.ChatID)
 	return req.Do(api)
+}
+
+// GetChatMemberCountWithContext is the context-aware variant of GetChatMemberCount.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#getchatmembercount
+func (api *API) GetChatMemberCountWithContext(ctx context.Context, params GetChatMembersCountP) (int, error) {
+	req := NewRequestWithChatID[int]("getChatMemberCount", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
 }
 
 // GetChatMemberP holds parameters for the getChatMember method.
@@ -467,6 +685,14 @@ type GetChatMemberP struct {
 func (api *API) GetChatMember(params GetChatMemberP) (ChatMember, error) {
 	req := NewRequestWithChatID[ChatMember]("getChatMember", params, params.ChatID)
 	return req.Do(api)
+}
+
+// GetChatMemberWithContext is the context-aware variant of GetChatMember.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#getchatmember
+func (api *API) GetChatMemberWithContext(ctx context.Context, params GetChatMemberP) (ChatMember, error) {
+	req := NewRequestWithChatID[ChatMember]("getChatMember", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
 }
 
 // SetChatStickerSetP holds parameters for the setChatStickerSet method.
@@ -484,6 +710,14 @@ func (api *API) SetChatStickerSet(params SetChatStickerSetP) (bool, error) {
 	return req.Do(api)
 }
 
+// SetChatStickerSetWithContext is the context-aware variant of SetChatStickerSet.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#setchatstickerset
+func (api *API) SetChatStickerSetWithContext(ctx context.Context, params SetChatStickerSetP) (bool, error) {
+	req := NewRequestWithChatID[bool]("setChatStickerSet", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
+}
+
 // DeleteChatStickerSetP holds parameters for the deleteChatStickerSet method.
 // See https://core.telegram.org/bots/api#deletechatstickerset
 type DeleteChatStickerSetP struct {
@@ -498,6 +732,14 @@ func (api *API) DeleteChatStickerSet(params DeleteChatStickerSetP) (bool, error)
 	return req.Do(api)
 }
 
+// DeleteChatStickerSetWithContext is the context-aware variant of DeleteChatStickerSet.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#deletechatstickerset
+func (api *API) DeleteChatStickerSetWithContext(ctx context.Context, params DeleteChatStickerSetP) (bool, error) {
+	req := NewRequestWithChatID[bool]("deleteChatStickerSet", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
+}
+
 // GetUserChatBoostsP holds parameters for the getUserChatBoosts method.
 // See https://core.telegram.org/bots/api#getuserchatboosts
 type GetUserChatBoostsP struct {
@@ -510,6 +752,14 @@ type GetUserChatBoostsP struct {
 func (api *API) GetUserChatBoosts(params GetUserChatBoostsP) (UserChatBoosts, error) {
 	req := NewRequestWithChatID[UserChatBoosts]("getUserChatBoosts", params, params.ChatID)
 	return req.Do(api)
+}
+
+// GetUserChatBoostsWithContext is the context-aware variant of GetUserChatBoosts.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#getuserchatboosts
+func (api *API) GetUserChatBoostsWithContext(ctx context.Context, params GetUserChatBoostsP) (UserChatBoosts, error) {
+	req := NewRequestWithChatID[UserChatBoosts]("getUserChatBoosts", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
 }
 
 // GetChatGiftsP holds parameters for the getChatGifts method.
@@ -533,4 +783,12 @@ type GetChatGiftsP struct {
 func (api *API) GetChatGifts(params GetChatGiftsP) (OwnedGifts, error) {
 	req := NewRequestWithChatID[OwnedGifts]("getChatGifts", params, params.ChatID)
 	return req.Do(api)
+}
+
+// GetChatGiftsWithContext is the context-aware variant of GetChatGifts.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#getchatgifts
+func (api *API) GetChatGiftsWithContext(ctx context.Context, params GetChatGiftsP) (OwnedGifts, error) {
+	req := NewRequestWithChatID[OwnedGifts]("getChatGifts", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
 }

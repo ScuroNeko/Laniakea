@@ -1,5 +1,7 @@
 package tgapi
 
+import "context"
+
 // GetUserProfilePhotosP holds parameters for the GetUserProfilePhotos method.
 // See https://core.telegram.org/bots/api#getuserprofilephotos
 type GetUserProfilePhotosP struct {
@@ -13,6 +15,14 @@ type GetUserProfilePhotosP struct {
 func (api *API) GetUserProfilePhotos(params GetUserProfilePhotosP) (UserProfilePhotos, error) {
 	req := NewRequest[UserProfilePhotos]("getUserProfilePhotos", params)
 	return req.Do(api)
+}
+
+// GetUserProfilePhotosWithContext is the context-aware variant of GetUserProfilePhotos.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#getuserprofilephotos
+func (api *API) GetUserProfilePhotosWithContext(ctx context.Context, params GetUserProfilePhotosP) (UserProfilePhotos, error) {
+	req := NewRequest[UserProfilePhotos]("getUserProfilePhotos", params)
+	return req.DoWithContext(ctx, api)
 }
 
 // GetUserProfileAudiosP holds parameters for the GetUserProfileAudios method.
@@ -30,6 +40,14 @@ func (api *API) GetUserProfileAudios(params GetUserProfileAudiosP) (UserProfileA
 	return req.Do(api)
 }
 
+// GetUserProfileAudiosWithContext is the context-aware variant of GetUserProfileAudios.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#getuserprofileaudios
+func (api *API) GetUserProfileAudiosWithContext(ctx context.Context, params GetUserProfileAudiosP) (UserProfileAudios, error) {
+	req := NewRequest[UserProfileAudios]("getUserProfileAudios", params)
+	return req.DoWithContext(ctx, api)
+}
+
 // SetUserEmojiStatusP holds parameters for the SetUserEmojiStatus method.
 // See https://core.telegram.org/bots/api#setuseremojistatus
 type SetUserEmojiStatusP struct {
@@ -44,6 +62,14 @@ type SetUserEmojiStatusP struct {
 func (api *API) SetUserEmojiStatus(params SetUserEmojiStatusP) (bool, error) {
 	req := NewRequest[bool]("setUserEmojiStatus", params)
 	return req.Do(api)
+}
+
+// SetUserEmojiStatusWithContext is the context-aware variant of SetUserEmojiStatus.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#setuseremojistatus
+func (api *API) SetUserEmojiStatusWithContext(ctx context.Context, params SetUserEmojiStatusP) (bool, error) {
+	req := NewRequest[bool]("setUserEmojiStatus", params)
+	return req.DoWithContext(ctx, api)
 }
 
 // GetUserGiftsP holds parameters for the GetUserGifts method.
@@ -65,4 +91,12 @@ type GetUserGiftsP struct {
 func (api *API) GetUserGifts(params GetUserGiftsP) (OwnedGifts, error) {
 	req := NewRequest[OwnedGifts]("getUserGifts", params)
 	return req.Do(api)
+}
+
+// GetUserGiftsWithContext is the context-aware variant of GetUserGifts.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#getusergifts
+func (api *API) GetUserGiftsWithContext(ctx context.Context, params GetUserGiftsP) (OwnedGifts, error) {
+	req := NewRequest[OwnedGifts]("getUserGifts", params)
+	return req.DoWithContext(ctx, api)
 }
