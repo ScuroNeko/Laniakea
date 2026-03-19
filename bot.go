@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"git.nix13.pw/scuroneko/extypes"
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
@@ -504,8 +503,10 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) {
 			default:
 				updates, err := bot.Updates(ctx)
 				if err != nil {
+					if errors.Is(err, context.Canceled) {
+						return
+					}
 					bot.logger.Errorln("failed to fetch updates:", err)
-					time.Sleep(time.Second) // exponential backoff
 					continue
 				}
 
