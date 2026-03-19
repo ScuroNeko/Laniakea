@@ -29,6 +29,12 @@
 go get git.nix13.pw/scuroneko/laniakea
 ```
 
+или
+
+```bash
+go get github.com/scuroneko/laniakea
+```
+
 ## 🚀 Быстрый старт (с пошаговыми комментариями)
 Вот минимальный пример бота "echo/ping" с подробными комментариями.
 

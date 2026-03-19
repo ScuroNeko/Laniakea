@@ -28,6 +28,12 @@ A lightweight, easy-to-use, and performant Telegram Bot API wrapper for Go. It s
 go get git.nix13.pw/scuroneko/laniakea
 ```
 
+or
+
+```bash
+go get github.com/scuroneko/laniakea
+```
+
 ## 🚀 Quick Start (with step-by-step explanation)
 
 Here is a minimal echo/ping bot example with detailed comments.
