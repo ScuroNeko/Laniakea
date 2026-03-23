@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"git.nix13.pw/scuroneko/extypes"
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
@@ -162,7 +163,9 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 	// Fetch bot info to validate token and get username
 	u, err := api.GetMe()
 	if err != nil {
-		_ = bot.Close()
+		closeCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+		_ = bot.Close(closeCtx)
 		bot.logger.Fatal(err)
 	}
 	bot.username = Val(u.Username, "")
@@ -176,24 +179,28 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 
 // Close gracefully shuts down bot-owned resources.
 //
-// Closes:
+// The provided context is used to close the API client's long-polling request.
+// Upload shutdown is not context-aware and still waits for pending uploads.
+//
+// Close shuts down, in order:
 //   - Uploader (waits for pending uploads)
-//   - API client
+//   - API client long-poll request via ctx
+//   - API client internals
 //   - RequestLogger (if enabled)
 //   - Main logger
 //
 // RunWithContext does not call Close automatically. The caller is responsible
 // for invoking Close after RunWithContext returns to release these resources.
 //
-// Returns a joined error containing all shutdown failures, if any.
-func (bot *Bot[T]) Close() error {
+// Close returns a joined error containing all shutdown failures, if any.
+func (bot *Bot[T]) Close(ctx context.Context) error {
 	var e []error
 
 	if err := bot.uploader.Close(); err != nil {
 		bot.logger.Errorln(err)
 		e = append(e, err)
 	}
-	if _, err := bot.api.Close(); err != nil {
+	if _, err := bot.api.CloseWithContext(ctx); err != nil {
 		bot.logger.Errorln(err)
 		e = append(e, err)
 	}
@@ -476,7 +483,7 @@ func (bot *Bot[T]) AddDatabaseLoggerWriter(writer DbLogger[T]) *Bot[T] {
 //	go bot.RunWithContext(ctx)
 //	// ... later ...
 //	cancel() // triggers graceful shutdown
-//	_ = bot.Close()
+//	_ = bot.Close(context.Background())
 func (bot *Bot[T]) RunWithContext(ctx context.Context) {
 	if len(bot.prefixes) == 0 {
 		bot.logger.Fatalln("no prefixes defined")

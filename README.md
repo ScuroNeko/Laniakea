@@ -1,5 +1,7 @@
 # Laniakea
 
+![Laniakea](assets/logo.jpg)
+
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go&style=flat-square)](https://go.dev/)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%203.0-blue.svg?style=flat-square)](LICENSE)
 ![Gitea Release](https://img.shields.io/gitea/v/release/ScuroNeko/Laniakea?gitea_url=https%3A%2F%2Fgit.nix13.pw&sort=semver&display_name=release&style=flat-square&color=purple&link=https%3A%2F%2Fgit.nix13.pw%2FScuroNeko%2FLaniakea%2Freleases)
