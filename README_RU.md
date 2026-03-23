@@ -6,7 +6,7 @@
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%203.0-blue.svg?style=flat-square)](LICENSE)
 ![Gitea Release](https://img.shields.io/gitea/v/release/ScuroNeko/Laniakea?gitea_url=https%3A%2F%2Fgit.nix13.pw&sort=semver&display_name=release&style=flat-square&color=purple&link=https%3A%2F%2Fgit.nix13.pw%2FScuroNeko%2FLaniakea%2Freleases)
 
-Легковесная, простая в использовании и производительная обёртка для Telegram Bot API на Go. Она упрощает разработку ботов благодаря чистой системе плагинов, поддержке中间件, автоматической генерации команд и встроенному ограничителю скорости запросов.
+Легковесная, простая в использовании и производительная обёртка для Telegram Bot API на Go. Она упрощает разработку ботов благодаря чистой системе плагинов, поддержке Middleware, автоматической генерации команд и встроенному рейтлимитеру.
 
 [English](README.md)
 
