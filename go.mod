@@ -2,6 +2,8 @@ module git.nix13.pw/scuroneko/laniakea
 
 go 1.26
 
+retract v1.0.0-rc.5
+
 require (
 	git.nix13.pw/scuroneko/extypes v1.2.2
 	git.nix13.pw/scuroneko/slog v1.1.2
