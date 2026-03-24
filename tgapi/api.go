@@ -95,10 +95,9 @@ type API struct {
 }
 
 // NewAPI creates a new API client from options.
-// Always call CloseApi() when done to release resources.
+// Always call Close() when done to release resources.
 func NewAPI(opts *APIOpts) *API {
-	l := slog.CreateLogger().Level(utils.GetLoggerLevel()).Prefix("API")
-	l.AddWriter(l.CreateJsonStdoutWriter())
+	l := utils.CreateLogger("API", utils.GetLoggerLevel())
 
 	client := opts.client
 	if client == nil {
@@ -120,10 +119,10 @@ func NewAPI(opts *APIOpts) *API {
 	}
 }
 
-// CloseApi shuts down the internal worker pool and closes the logger.
+// Close shuts down the internal worker pool and closes the logger.
 // Must be called to avoid resource leaks.
 // See https://core.telegram.org/bots/api
-func (api *API) CloseApi() error {
+func (api *API) Close() error {
 	api.pool.stop()
 	return api.logger.Close()
 }

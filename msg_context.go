@@ -19,6 +19,10 @@ type MsgContext struct {
 	Msg  *tgapi.Message
 	From *tgapi.User
 
+	// Logger is the logger assigned by the matched plugin for the current handler call.
+	// It may fall back to the bot logger when the plugin has no dedicated logger.
+	Logger *slog.Logger
+
 	InlineMsgId     string
 	CallbackMsgId   int
 	CallbackQueryId string

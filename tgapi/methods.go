@@ -49,18 +49,18 @@ func (api *API) LogOutWithContext(ctx context.Context) (bool, error) {
 	return req.DoWithContext(ctx, api)
 }
 
-// Close closes the bot instance on the local server.
+// CloseRemote closes the bot instance on the local server.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#close
-func (api *API) Close() (bool, error) {
+func (api *API) CloseRemote() (bool, error) {
 	req := NewRequest[bool, EmptyParams]("close", NoParams)
 	return req.Do(api)
 }
 
-// CloseWithContext is the context-aware variant of Close.
+// CloseRemoteWithContext is the context-aware variant of CloseRemote.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#close
-func (api *API) CloseWithContext(ctx context.Context) (bool, error) {
+func (api *API) CloseRemoteWithContext(ctx context.Context) (bool, error) {
 	req := NewRequest[bool, EmptyParams]("close", NoParams)
 	return req.DoWithContext(ctx, api)
 }

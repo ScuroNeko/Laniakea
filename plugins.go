@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"git.nix13.pw/scuroneko/extypes"
+	"git.nix13.pw/scuroneko/slog"
 )
 
 // CommandValueType defines the expected type of a command argument.
@@ -151,19 +152,30 @@ func (c *Command[T]) validateArgs(args []string) error {
 
 // Plugin represents a collection of commands and payloads (e.g., callback handlers),
 // with shared middleware and configuration.
+//
+// A Plugin is intended to be fully configured before it is passed to Bot.AddPlugins.
+// After registration, treat the plugin as committed and do not mutate it further.
+// Post-registration changes through the original *Plugin are not a supported API.
 type Plugin[T DbContext] struct {
 	name        string                       // Name of the plugin (e.g., "admin", "user")
 	commands    map[string]*Command[T]       // Registered commands (triggered by message)
 	payloads    map[string]*Command[T]       // Registered payloads (triggered by callback data)
 	middlewares extypes.Slice[Middleware[T]] // Shared middlewares for all commands/payloads
 	skipAutoCmd bool                         // If true, all commands in this plugin are excluded from auto-help
+	logger      *slog.Logger
+
+	onClose func() error
 }
 
 // NewPlugin creates a new Plugin with the given name.
 func NewPlugin[T DbContext](name string) *Plugin[T] {
 	return &Plugin[T]{
-		name, make(map[string]*Command[T]),
-		make(map[string]*Command[T]), extypes.Slice[Middleware[T]]{}, false,
+		name:        name,
+		commands:    make(map[string]*Command[T]),
+		payloads:    make(map[string]*Command[T]),
+		middlewares: make(extypes.Slice[Middleware[T]], 0),
+		skipAutoCmd: false,
+		logger:      nil,
 	}
 }
 
@@ -208,6 +220,51 @@ func (p *Plugin[T]) AddMiddleware(middleware Middleware[T]) *Plugin[T] {
 func (p *Plugin[T]) SkipCommandAutoGen() *Plugin[T] {
 	p.skipAutoCmd = true
 	return p
+}
+
+// SetLogger sets the logger used for this plugin's handlers.
+//
+// Call this before Bot.AddPlugins. If the plugin is already registered, changing
+// the original *Plugin does not update the Bot's internal copy.
+func (p *Plugin[T]) SetLogger(l *slog.Logger) *Plugin[T] {
+	p.logger = l
+	return p
+}
+
+// RemoveLogger clears the custom logger for this plugin.
+//
+// Call this before Bot.AddPlugins. If the plugin is already registered, changing
+// the original *Plugin does not update the Bot's internal copy.
+func (p *Plugin[T]) RemoveLogger() *Plugin[T] {
+	p.logger = nil
+	return p
+}
+
+// SetOnClose registers a callback invoked from Plugin.Close after the plugin
+// logger is closed.
+//
+// Call this before Bot.AddPlugins. If the plugin is already registered, changing
+// the original *Plugin does not update the Bot's internal copy.
+func (p *Plugin[T]) SetOnClose(f func() error) *Plugin[T] {
+	p.onClose = f
+	return p
+}
+
+// Close releases plugin-owned resources such as its logger and optional
+// OnClose callback.
+func (p *Plugin[T]) Close() error {
+	var e []error
+	if p.logger != nil {
+		if err := p.logger.Close(); err != nil {
+			e = append(e, err)
+		}
+	}
+	if p.onClose != nil {
+		if err := p.onClose(); err != nil {
+			e = append(e, err)
+		}
+	}
+	return errors.Join(e...)
 }
 
 // executeCmd finds and executes a command by its trigger string.

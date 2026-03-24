@@ -97,6 +97,11 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 			if !plugin.executeMiddlewares(ctx, bot.dbContext) {
 				return
 			}
+
+			ctx.Logger = plugin.logger
+			if ctx.Logger == nil {
+				ctx.Logger = ctx.botLogger
+			}
 			plugin.executeCmd(cmd, ctx, bot.dbContext)
 			return
 		}
@@ -130,6 +135,10 @@ func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 
 		if !plugin.executeMiddlewares(ctx, bot.dbContext) {
 			return
+		}
+		ctx.Logger = plugin.logger
+		if ctx.Logger == nil {
+			ctx.Logger = ctx.botLogger
 		}
 		plugin.executePayload(data.Command, ctx, bot.dbContext)
 		return

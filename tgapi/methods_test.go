@@ -27,8 +27,8 @@ func TestGetFileByLinkUsesConfiguredAPIURL(t *testing.T) {
 			SetHTTPClient(client),
 	)
 	defer func() {
-		if err := api.CloseApi(); err != nil {
-			t.Fatalf("CloseApi returned error: %v", err)
+		if err := api.Close(); err != nil {
+			t.Fatalf("Close returned error: %v", err)
 		}
 	}()
 
@@ -60,8 +60,8 @@ func TestGetFileByLinkReturnsHTTPStatusError(t *testing.T) {
 			SetHTTPClient(client),
 	)
 	defer func() {
-		if err := api.CloseApi(); err != nil {
-			t.Fatalf("CloseApi returned error: %v", err)
+		if err := api.Close(); err != nil {
+			t.Fatalf("Close returned error: %v", err)
 		}
 	}()
 
@@ -97,8 +97,8 @@ func TestGetUpdatesOmitsAllowedUpdatesWhenEmpty(t *testing.T) {
 			SetHTTPClient(client),
 	)
 	defer func() {
-		if err := api.CloseApi(); err != nil {
-			t.Fatalf("CloseApi returned error: %v", err)
+		if err := api.Close(); err != nil {
+			t.Fatalf("Close returned error: %v", err)
 		}
 	}()
 

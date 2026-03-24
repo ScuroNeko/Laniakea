@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"git.nix13.pw/scuroneko/extypes"
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
@@ -163,9 +162,7 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 	// Fetch bot info to validate token and get username
 	u, err := api.GetMe()
 	if err != nil {
-		closeCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-		defer cancel()
-		_ = bot.Close(closeCtx)
+		_ = bot.Close()
 		bot.logger.Fatal(err)
 	}
 	bot.username = Val(u.Username, "")
@@ -179,12 +176,9 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 
 // Close gracefully shuts down bot-owned resources.
 //
-// The provided context is used to close the API client's long-polling request.
-// Upload shutdown is not context-aware and still waits for pending uploads.
-//
 // Close shuts down, in order:
+//   - Registered plugins via Plugin.Close
 //   - Uploader (waits for pending uploads)
-//   - API client long-poll request via ctx
 //   - API client internals
 //   - RequestLogger (if enabled)
 //   - Main logger
@@ -193,18 +187,19 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 // for invoking Close after RunWithContext returns to release these resources.
 //
 // Close returns a joined error containing all shutdown failures, if any.
-func (bot *Bot[T]) Close(ctx context.Context) error {
+func (bot *Bot[T]) Close() error {
 	var e []error
 
+	for _, p := range bot.plugins {
+		if err := p.Close(); err != nil {
+			e = append(e, err)
+		}
+	}
 	if err := bot.uploader.Close(); err != nil {
 		bot.logger.Errorln(err)
 		e = append(e, err)
 	}
-	if _, err := bot.api.CloseWithContext(ctx); err != nil {
-		bot.logger.Errorln(err)
-		e = append(e, err)
-	}
-	if err := bot.api.CloseApi(); err != nil {
+	if err := bot.api.Close(); err != nil {
 		bot.logger.Errorln(err)
 		e = append(e, err)
 	}
@@ -220,6 +215,17 @@ func (bot *Bot[T]) Close(ctx context.Context) error {
 	return errors.Join(e...)
 }
 
+// CloseRemote sends Telegram Bot API "close" request for the current bot
+// instance using ctx for cancellation and deadlines.
+//
+// This is separate from Bot.Close(), which only releases local resources.
+func (bot *Bot[T]) CloseRemote(ctx context.Context) error {
+	if _, err := bot.api.CloseRemoteWithContext(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
 // initLoggers configures the main and optional request loggers.
 //
 // Uses DEBUG flag to set log level (DEBUG if true, FATAL otherwise).
@@ -231,27 +237,25 @@ func (bot *Bot[T]) initLoggers(opts *BotOpts) {
 		level = slog.DEBUG
 	}
 
-	bot.logger = slog.CreateLogger().Level(level).Prefix("BOT")
-	bot.logger.AddWriter(bot.logger.CreateJsonStdoutWriter())
+	bot.logger = utils.CreateLogger("BOT", level)
 	if opts.WriteToFile {
 		path := fmt.Sprintf("%s/main.log", strings.TrimRight(opts.LoggerBasePath, "/"))
-		fileWriter, err := bot.logger.CreateTextFileWriter(path)
+		logger, err := utils.CreateFileLogger("BOT", level, path)
 		if err != nil {
 			bot.logger.Fatal(err)
 		}
-		bot.logger.AddWriter(fileWriter)
+		bot.logger = logger
 	}
 
 	if opts.UseRequestLogger {
-		bot.RequestLogger = slog.CreateLogger().Level(level).Prefix("REQUESTS")
-		bot.RequestLogger.AddWriter(bot.RequestLogger.CreateJsonStdoutWriter())
+		bot.RequestLogger = utils.CreateLogger("REQUESTS", level)
 		if opts.WriteToFile {
 			path := fmt.Sprintf("%s/requests.log", strings.TrimRight(opts.LoggerBasePath, "/"))
-			fileWriter, err := bot.RequestLogger.CreateTextFileWriter(path)
+			logger, err := utils.CreateFileLogger("REQUESTS", level, path)
 			if err != nil {
 				bot.logger.Fatal(err)
 			}
-			bot.RequestLogger.AddWriter(fileWriter)
+			bot.RequestLogger = logger
 		}
 	}
 }
@@ -279,6 +283,16 @@ func (bot *Bot[T]) GetLogger() *slog.Logger { return bot.logger }
 // GetDBContext returns the injected database context.
 // Returns nil if not set via DatabaseContext().
 func (bot *Bot[T]) GetDBContext() *T { return bot.dbContext }
+
+// GetLoggerLevel returns the effective log level derived from the bot's debug
+// flag.
+func (bot *Bot[T]) GetLoggerLevel() slog.LogLevel {
+	level := slog.FATAL
+	if bot.debug {
+		level = slog.DEBUG
+	}
+	return level
+}
 
 // L10n translates a key in the given language.
 // Returns empty string if translation not found.
@@ -341,13 +355,38 @@ func (bot *Bot[T]) ErrorTemplate(s string) *Bot[T] {
 // Debug enables or disables debug logging.
 func (bot *Bot[T]) Debug(debug bool) *Bot[T] {
 	bot.debug = debug
+	level := slog.FATAL
+	if debug {
+		level = slog.DEBUG
+	}
+
+	bot.logger.Level(level)
+	if bot.RequestLogger != nil {
+		bot.RequestLogger.Level(level)
+	}
+	for _, p := range bot.plugins {
+		if p.logger == nil {
+			continue
+		}
+		p.logger.Level(level)
+	}
 	return bot
 }
 
 // AddPlugins registers one or more plugins.
 // Plugins are executed in registration order unless filtered by middleware.
+//
+// Registration is a commit point for plugin configuration. The Bot stores
+// plugin metadata internally, so plugins must be fully configured before they
+// are passed here. Post-registration mutation through the original *Plugin is
+// not a supported API, even if some changes appear to work due to shared maps.
 func (bot *Bot[T]) AddPlugins(plugin ...*Plugin[T]) *Bot[T] {
+	level := bot.GetLoggerLevel()
 	for _, p := range plugin {
+		if p.logger == nil {
+			logger := utils.CreateLogger(p.name, level)
+			p.SetLogger(logger)
+		}
 		bot.plugins = append(bot.plugins, *p)
 		bot.logger.Debugln(fmt.Sprintf("plugins with name \"%s\" registered", p.name))
 	}
@@ -443,6 +482,11 @@ func (bot *Bot[T]) AddL10n(l *L10n) *Bot[T] {
 //   - Main bot logger
 //   - Request logger (if enabled)
 //   - API and Uploader loggers
+//   - Already registered plugin loggers
+//
+// Call this after AddPlugins if plugin loggers should also receive the writer.
+// Plugins registered later do not automatically inherit previously added
+// database writers; call AddDatabaseLoggerWriter again after adding them.
 //
 // Example:
 //
@@ -457,6 +501,11 @@ func (bot *Bot[T]) AddDatabaseLoggerWriter(writer DbLogger[T]) *Bot[T] {
 	}
 	for _, l := range bot.extraLoggers {
 		l.AddWriter(w)
+	}
+	for _, p := range bot.plugins {
+		if p.logger != nil {
+			p.logger.AddWriter(w)
+		}
 	}
 	return bot
 }
