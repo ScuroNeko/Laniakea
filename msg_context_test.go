@@ -48,7 +48,7 @@ func TestAnswerPhotoIncludesDirectMessagesTopicID(t *testing.T) {
 			Chat:               &tgapi.Chat{ID: 42, Type: string(tgapi.ChatTypePrivate)},
 			DirectMessageTopic: &tgapi.DirectMessageTopic{TopicID: 77},
 		},
-		botLogger: slog.CreateLogger(),
+		Logger: slog.CreateLogger(),
 	}
 
 	answer := ctx.AnswerPhoto("photo-id", "caption")

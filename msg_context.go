@@ -32,7 +32,6 @@ type MsgContext struct {
 	Args            []string
 
 	errorTemplate string
-	botLogger     *slog.Logger
 	l10n          *L10n
 	draftProvider *DraftProvider
 	payloadType   BotPayloadType
@@ -61,7 +60,7 @@ func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard
 	case ctx.InlineMsgId != "":
 		params.InlineMessageID = ctx.InlineMsgId
 	default:
-		ctx.botLogger.Errorln("Can't edit message: no valid message target")
+		ctx.Logger.Errorln("Can't edit message: no valid message target")
 		return nil
 	}
 	if keyboard != nil {
@@ -69,7 +68,7 @@ func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard
 	}
 	msg, _, err := ctx.Api.EditMessageText(params)
 	if err != nil {
-		ctx.botLogger.Errorln(err)
+		ctx.Logger.Errorln(err)
 		return nil
 	}
 	resultMessageID := messageId
@@ -99,7 +98,7 @@ func (m *AnswerMessage) EditMarkdown(text string) *AnswerMessage {
 // Supports both regular callback messages and inline callback messages.
 func (ctx *MsgContext) editCallback(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if ctx.CallbackMsgId == 0 && ctx.InlineMsgId == "" {
-		ctx.botLogger.Errorln("Can't edit non-callback update message")
+		ctx.Logger.Errorln("Can't edit non-callback update message")
 		return nil
 	}
 	return ctx.edit(ctx.CallbackMsgId, text, keyboard, parseMode)
@@ -143,7 +142,7 @@ func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeybo
 	case ctx.InlineMsgId != "":
 		params.InlineMessageID = ctx.InlineMsgId
 	default:
-		ctx.botLogger.Errorln("Can't edit caption: no valid message target")
+		ctx.Logger.Errorln("Can't edit caption: no valid message target")
 		return nil
 	}
 	if kb != nil {
@@ -152,7 +151,7 @@ func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeybo
 
 	msg, _, err := ctx.Api.EditMessageCaption(params)
 	if err != nil {
-		ctx.botLogger.Errorln(err)
+		ctx.Logger.Errorln(err)
 		return nil
 	}
 	resultMessageID := messageId
@@ -192,7 +191,7 @@ func (m *AnswerMessage) EditCaptionKeyboardMarkdown(text string, kb *InlineKeybo
 // Uses API limiter to respect Telegram rate limits per chat.
 func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if ctx.Msg == nil {
-		ctx.botLogger.Errorln("Can't answer message without a message")
+		ctx.Logger.Errorln("Can't answer message without a message")
 		return nil
 	}
 	params := tgapi.SendMessageP{
@@ -212,7 +211,7 @@ func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard, parseMode t
 
 	msg, err := ctx.Api.SendMessage(params)
 	if err != nil {
-		ctx.botLogger.Errorln(err)
+		ctx.Logger.Errorln(err)
 		return nil
 	}
 	return &AnswerMessage{
@@ -259,7 +258,7 @@ func (ctx *MsgContext) KeyboardMarkdown(text string, keyboard *InlineKeyboard) *
 // answerPhoto sends a photo with optional caption and keyboard.
 func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if ctx.Msg == nil {
-		ctx.botLogger.Errorln("Can't answer message without a message")
+		ctx.Logger.Errorln("Can't answer message without a message")
 		return nil
 	}
 	params := tgapi.SendPhotoP{
@@ -280,7 +279,7 @@ func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard, par
 
 	msg, err := ctx.Api.SendPhoto(params)
 	if err != nil {
-		ctx.botLogger.Errorln(err)
+		ctx.Logger.Errorln(err)
 		return nil
 	}
 	return &AnswerMessage{
@@ -327,11 +326,11 @@ func (ctx *MsgContext) AnswerPhotofMarkdown(photoId, template string, args ...an
 // delete removes a message by ID.
 func (ctx *MsgContext) delete(messageId int) {
 	if messageId == 0 {
-		ctx.botLogger.Errorln("Can't delete message: message ID zero")
+		ctx.Logger.Errorln("Can't delete message: message ID zero")
 		return
 	}
 	if ctx.Msg == nil {
-		ctx.botLogger.Errorln("Can't delete message: no chat message context")
+		ctx.Logger.Errorln("Can't delete message: no chat message context")
 		return
 	}
 	_, err := ctx.Api.DeleteMessage(tgapi.DeleteMessageP{
@@ -339,7 +338,7 @@ func (ctx *MsgContext) delete(messageId int) {
 		MessageID: messageId,
 	})
 	if err != nil {
-		ctx.botLogger.Errorln(err)
+		ctx.Logger.Errorln(err)
 	}
 }
 
@@ -349,7 +348,7 @@ func (m *AnswerMessage) Delete() { m.ctx.delete(m.MessageID) }
 // CallbackDelete deletes the message that triggered the callback query.
 func (ctx *MsgContext) CallbackDelete() {
 	if ctx.CallbackMsgId == 0 {
-		ctx.botLogger.Errorln("Can't delete callback message: no callback message ID")
+		ctx.Logger.Errorln("Can't delete callback message: no callback message ID")
 		return
 	}
 	ctx.delete(ctx.CallbackMsgId)
@@ -366,7 +365,7 @@ func (ctx *MsgContext) answerCallbackQuery(url, text string, showAlert bool) {
 		Text:            text, ShowAlert: showAlert, URL: url,
 	})
 	if err != nil {
-		ctx.botLogger.Errorln(err)
+		ctx.Logger.Errorln(err)
 	}
 }
 
@@ -385,7 +384,7 @@ func (ctx *MsgContext) AnswerCbQueryUrl(u string) { ctx.answerCallbackQuery(u, "
 // SendAction sends a chat action (typing, uploading_photo, etc.) to indicate bot activity.
 func (ctx *MsgContext) SendAction(action tgapi.ChatActionType) {
 	if ctx.Msg == nil {
-		ctx.botLogger.Errorln("Can't send action without chat message context")
+		ctx.Logger.Errorln("Can't send action without chat message context")
 		return
 	}
 	params := tgapi.SendChatActionP{
@@ -396,7 +395,7 @@ func (ctx *MsgContext) SendAction(action tgapi.ChatActionType) {
 	}
 	_, err := ctx.Api.SendChatAction(params)
 	if err != nil {
-		ctx.botLogger.Errorln(err)
+		ctx.Logger.Errorln(err)
 	}
 }
 
@@ -412,7 +411,7 @@ func (ctx *MsgContext) error(err error) {
 	} else {
 		ctx.answer(text, nil, tgapi.ParseNone)
 	}
-	ctx.botLogger.Errorln(err)
+	ctx.Logger.Errorln(err)
 }
 
 // Error is an alias for error().
@@ -420,14 +419,14 @@ func (ctx *MsgContext) Error(err error) { ctx.error(err) }
 
 func (ctx *MsgContext) newDraft(parseMode tgapi.ParseMode) *Draft {
 	if ctx.Msg == nil {
-		ctx.botLogger.Errorln("can't create draft: ctx.Msg is nil")
+		ctx.Logger.Errorln("can't create draft: ctx.Msg is nil")
 		return nil
 	}
 
 	c, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := ctx.Api.Limiter.Wait(c, ctx.Msg.Chat.ID); err != nil {
-		ctx.botLogger.Errorln(err)
+		ctx.Logger.Errorln(err)
 		return nil
 	}
 

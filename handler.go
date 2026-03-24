@@ -22,7 +22,6 @@ func (bot *Bot[T]) handle(u *tgapi.Update) {
 
 	ctx := &MsgContext{
 		Update: *u, Api: bot.api,
-		botLogger:     bot.logger,
 		errorTemplate: bot.errorTemplate,
 		l10n:          bot.l10n,
 		draftProvider: bot.draftProvider,
@@ -100,7 +99,7 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 
 			ctx.Logger = plugin.logger
 			if ctx.Logger == nil {
-				ctx.Logger = ctx.botLogger
+				ctx.Logger = bot.logger
 			}
 			plugin.executeCmd(cmd, ctx, bot.dbContext)
 			return
@@ -138,7 +137,7 @@ func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 		}
 		ctx.Logger = plugin.logger
 		if ctx.Logger == nil {
-			ctx.Logger = ctx.botLogger
+			ctx.Logger = bot.logger
 		}
 		plugin.executePayload(data.Command, ctx, bot.dbContext)
 		return
