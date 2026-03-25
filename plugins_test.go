@@ -22,3 +22,19 @@ func TestValidateArgsRequiresFullMatch(t *testing.T) {
 		t.Fatalf("expected ErrCmdArgRegexpMismatch for partial bool match, got %v", err)
 	}
 }
+
+func TestValidateArgsEnforcesRequiredArgIndex(t *testing.T) {
+	cmd := NewCommand[NoDB](
+		func(ctx *MsgContext, db *NoDB) {},
+		"mixed",
+		*NewCommandArg("optional"),
+		*NewCommandArg("required").SetRequired(),
+	)
+
+	if err := cmd.validateArgs([]string{"only-optional"}); !errors.Is(err, ErrCmdArgCountMismatch) {
+		t.Fatalf("expected ErrCmdArgCountMismatch when required second arg is missing, got %v", err)
+	}
+	if err := cmd.validateArgs([]string{"optional", "required"}); err != nil {
+		t.Fatalf("expected both args to validate, got %v", err)
+	}
+}

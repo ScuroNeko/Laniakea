@@ -10,7 +10,7 @@ import (
 )
 
 // CmdRegexp matches command names allowed for Telegram command registration.
-var CmdRegexp = regexp.MustCompile("^[a-zA-Z0-9]+$")
+var CmdRegexp = regexp.MustCompile("^[_a-z0-9]+$")
 
 // ErrTooManyCommands is returned when the total number of registered commands
 // exceeds Telegram's limit of 100 bot commands per bot.

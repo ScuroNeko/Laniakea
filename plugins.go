@@ -127,10 +127,10 @@ func (c *Command[T]) SkipCommandAutoGen() *Command[T] {
 // Returns ErrCmdArgCountMismatch if too few arguments are provided.
 // Returns ErrCmdArgRegexpMismatch if any argument fails regex validation.
 func (c *Command[T]) validateArgs(args []string) error {
-	// Count required args
-	requiredCount := c.args.Filter(func(a CommandArg) bool { return a.required }).Len()
-	if len(args) < requiredCount {
-		return ErrCmdArgCountMismatch
+	for i := range c.args.Len() {
+		if i >= len(args) && c.args.Get(i).required {
+			return ErrCmdArgCountMismatch
+		}
 	}
 
 	// Validate each argument against its regex

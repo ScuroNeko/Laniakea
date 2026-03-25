@@ -244,7 +244,7 @@ func (api *API) RemoveMyProfilePhotoWithContext(ctx context.Context) (bool, erro
 // SetChatMenuButtonP holds parameters for the setChatMenuButton method.
 // See https://core.telegram.org/bots/api#setchatmenubutton
 type SetChatMenuButtonP struct {
-	ChatID     int64          `json:"chat_id"`
+	ChatID     int64          `json:"chat_id,omitempty"`
 	MenuButton MenuButtonType `json:"menu_button"`
 }
 
