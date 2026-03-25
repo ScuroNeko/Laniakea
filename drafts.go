@@ -38,12 +38,9 @@ func (g *LinearDraftIdGenerator) Next() uint64 {
 	return g.lastId.Add(1)
 }
 
-// DraftProvider manages a collection of Drafts and provides methods to create and
-// configure them. It holds shared configuration (chat, parse mode, entities) and
-// a draft ID generator.
+// DraftProvider manages a collection of Drafts and a shared draft ID generator.
 //
-// DraftProvider is NOT thread-safe. Concurrent access from multiple goroutines
-// requires external synchronization.
+// DraftProvider is safe for concurrent use.
 type DraftProvider struct {
 	mu        sync.RWMutex
 	api       *tgapi.API
@@ -133,10 +130,7 @@ type Draft struct {
 
 // NewDraft creates a new draft with the provided parse mode.
 //
-// The draft inherits the provider's chatID, messageThreadID, and entities.
-// If parseMode is zero, the provider's default parseMode is used.
-//
-// Panics if chatID is zero — call SetChat() on the provider first.
+// The caller must set a chat with SetChat before Push or Flush.
 func (p *DraftProvider) NewDraft(parseMode tgapi.ParseMode) *Draft {
 	id := p.generator.Next()
 	draft := &Draft{
@@ -223,6 +217,9 @@ func (d *Draft) Delete() {
 func (d *Draft) Flush() error {
 	if d.Message == "" {
 		return nil
+	}
+	if d.chatID == 0 {
+		return ErrDraftChatIDZero
 	}
 
 	params := tgapi.SendMessageP{

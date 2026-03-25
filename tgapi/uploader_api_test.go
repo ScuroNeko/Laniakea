@@ -104,6 +104,27 @@ func TestUploaderEncodesJSONFieldsAndLeavesAcceptEncodingToHTTPTransport(t *test
 	}
 }
 
+func TestNewUploaderFileDetectsFileTypeCaseInsensitively(t *testing.T) {
+	tests := []struct {
+		name     string
+		filename string
+		want     UploaderFileType
+	}{
+		{name: "uppercase photo", filename: "PHOTO.JPG", want: UploaderPhotoType},
+		{name: "uppercase voice", filename: "voice.OGG", want: UploaderVoiceType},
+		{name: "unknown defaults to document", filename: "archive.BIN", want: UploaderDocumentType},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			file := NewUploaderFile(tt.filename, []byte("x"))
+			if file.field != tt.want {
+				t.Fatalf("unexpected uploader field: got %q want %q", file.field, tt.want)
+			}
+		})
+	}
+}
+
 func readMultipartRequest(req *http.Request) (map[string]string, string, []byte, error) {
 	_, params, err := mime.ParseMediaType(req.Header.Get("Content-Type"))
 	if err != nil {

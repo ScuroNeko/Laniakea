@@ -422,12 +422,22 @@ func (ctx *MsgContext) newDraft(parseMode tgapi.ParseMode) *Draft {
 		ctx.Logger.Errorln("can't create draft: ctx.Msg is nil")
 		return nil
 	}
-
-	c, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := ctx.Api.Limiter.Wait(c, ctx.Msg.Chat.ID); err != nil {
-		ctx.Logger.Errorln(err)
+	if ctx.Api == nil {
+		ctx.Logger.Errorln("can't create draft: ctx.Api is nil")
 		return nil
+	}
+	if ctx.draftProvider == nil {
+		ctx.Logger.Errorln("can't create draft: ctx.draftProvider is nil")
+		return nil
+	}
+
+	if ctx.Api.Limiter != nil {
+		c, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := ctx.Api.Limiter.Wait(c, ctx.Msg.Chat.ID); err != nil {
+			ctx.Logger.Errorln(err)
+			return nil
+		}
 	}
 
 	draft := ctx.draftProvider.NewDraft(parseMode).SetChat(ctx.Msg.Chat.ID, ctx.Msg.MessageThreadID)

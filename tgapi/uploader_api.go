@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"git.nix13.pw/scuroneko/laniakea/utils"
@@ -241,7 +242,7 @@ func prepareMultipart[P any](files []UploaderFile, params P) (*bytes.Buffer, str
 // uploaderTypeByExt infers the Telegram upload field name from a file extension.
 // Falls back to UploaderDocumentType for unrecognized extensions.
 func uploaderTypeByExt(filename string) UploaderFileType {
-	ext := filepath.Ext(filename)
+	ext := strings.ToLower(filepath.Ext(filename))
 	switch ext {
 	case ".jpg", ".jpeg", ".png", ".webp", ".bmp":
 		return UploaderPhotoType

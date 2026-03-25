@@ -242,9 +242,10 @@ func (bot *Bot[T]) initLoggers(opts *BotOpts) {
 		path := fmt.Sprintf("%s/main.log", strings.TrimRight(opts.LoggerBasePath, "/"))
 		logger, err := utils.CreateFileLogger("BOT", level, path)
 		if err != nil {
-			bot.logger.Fatal(err)
+			bot.logger.Errorln(err)
+		} else {
+			bot.logger = logger
 		}
-		bot.logger = logger
 	}
 
 	if opts.UseRequestLogger {
@@ -253,9 +254,10 @@ func (bot *Bot[T]) initLoggers(opts *BotOpts) {
 			path := fmt.Sprintf("%s/requests.log", strings.TrimRight(opts.LoggerBasePath, "/"))
 			logger, err := utils.CreateFileLogger("REQUESTS", level, path)
 			if err != nil {
-				bot.logger.Fatal(err)
+				bot.logger.Errorln(err)
+			} else {
+				bot.RequestLogger = logger
 			}
-			bot.RequestLogger = logger
 		}
 	}
 }
@@ -275,7 +277,9 @@ func (bot *Bot[T]) SetUpdateOffset(offset int) {
 }
 
 // GetUpdateTypes returns the list of update types the bot is configured to receive.
-func (bot *Bot[T]) GetUpdateTypes() []tgapi.UpdateType { return bot.updateTypes }
+func (bot *Bot[T]) GetUpdateTypes() []tgapi.UpdateType {
+	return append([]tgapi.UpdateType(nil), bot.updateTypes...)
+}
 
 // GetLogger returns the main bot logger.
 func (bot *Bot[T]) GetLogger() *slog.Logger { return bot.logger }
@@ -383,12 +387,12 @@ func (bot *Bot[T]) Debug(debug bool) *Bot[T] {
 func (bot *Bot[T]) AddPlugins(plugin ...*Plugin[T]) *Bot[T] {
 	level := bot.GetLoggerLevel()
 	for _, p := range plugin {
-		if p.logger == nil {
-			logger := utils.CreateLogger(p.name, level)
-			p.SetLogger(logger)
+		cloned := clonePlugin(p)
+		if cloned.logger == nil {
+			cloned.logger = utils.CreateLogger(cloned.name, level)
 		}
-		bot.plugins = append(bot.plugins, *p)
-		bot.logger.Debugln(fmt.Sprintf("plugins with name \"%s\" registered", p.name))
+		bot.plugins = append(bot.plugins, cloned)
+		bot.logger.Debugln(fmt.Sprintf("plugins with name \"%s\" registered", cloned.name))
 	}
 	return bot
 }
@@ -535,12 +539,12 @@ func (bot *Bot[T]) AddDatabaseLoggerWriter(writer DbLogger[T]) *Bot[T] {
 //	_ = bot.Close(context.Background())
 func (bot *Bot[T]) RunWithContext(ctx context.Context) {
 	if len(bot.prefixes) == 0 {
-		bot.logger.Fatalln("no prefixes defined")
+		bot.logger.Errorln("no prefixes defined")
 		return
 	}
 
 	if len(bot.plugins) == 0 {
-		bot.logger.Fatalln("no plugins defined")
+		bot.logger.Errorln("no plugins defined")
 		return
 	}
 
@@ -603,4 +607,36 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) {
 // For production use, prefer RunWithContext to handle SIGINT/SIGTERM gracefully.
 func (bot *Bot[T]) Run() {
 	bot.RunWithContext(context.Background())
+}
+
+func clonePlugin[T DbContext](p *Plugin[T]) Plugin[T] {
+	cloned := Plugin[T]{
+		name:        p.name,
+		commands:    make(map[string]*Command[T], len(p.commands)),
+		payloads:    make(map[string]*Command[T], len(p.payloads)),
+		middlewares: append(extypes.Slice[Middleware[T]](nil), p.middlewares...),
+		skipAutoCmd: p.skipAutoCmd,
+		logger:      p.logger,
+		onClose:     p.onClose,
+	}
+
+	for name, command := range p.commands {
+		cloned.commands[name] = cloneCommand(command)
+	}
+	for name, command := range p.payloads {
+		cloned.payloads[name] = cloneCommand(command)
+	}
+
+	return cloned
+}
+
+func cloneCommand[T DbContext](command *Command[T]) *Command[T] {
+	if command == nil {
+		return nil
+	}
+
+	cloned := *command
+	cloned.args = append(extypes.Slice[CommandArg](nil), command.args...)
+	cloned.middlewares = append(extypes.Slice[Middleware[T]](nil), command.middlewares...)
+	return &cloned
 }

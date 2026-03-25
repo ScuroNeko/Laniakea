@@ -10,8 +10,8 @@ const (
 	ParseHTML ParseMode = "HTML"
 	// ParseMD enables legacy Markdown style parsing.
 	ParseMD ParseMode = "Markdown"
-	// ParseNone disables any parsing.
-	ParseNone ParseMode = "None"
+	// ParseNone disables parse_mode and leaves plain-text requests unannotated.
+	ParseNone ParseMode = ""
 )
 
 // EmptyParams is a placeholder for methods that take no parameters.
