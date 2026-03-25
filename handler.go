@@ -93,13 +93,13 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 		if _, exists := plugin.commands[cmd]; exists {
 			ctx.Text = args
 			ctx.Args = strings.Fields(args) // Убирает лишние пробелы
-			if !plugin.executeMiddlewares(ctx, bot.dbContext) {
-				return
-			}
 
 			ctx.Logger = plugin.logger
 			if ctx.Logger == nil {
 				ctx.Logger = bot.logger
+			}
+			if !plugin.executeMiddlewares(ctx, bot.dbContext) {
+				return
 			}
 			plugin.executeCmd(cmd, ctx, bot.dbContext)
 			return
@@ -132,12 +132,12 @@ func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 			continue
 		}
 
-		if !plugin.executeMiddlewares(ctx, bot.dbContext) {
-			return
-		}
 		ctx.Logger = plugin.logger
 		if ctx.Logger == nil {
 			ctx.Logger = bot.logger
+		}
+		if !plugin.executeMiddlewares(ctx, bot.dbContext) {
+			return
 		}
 		plugin.executePayload(data.Command, ctx, bot.dbContext)
 		return
