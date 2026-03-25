@@ -224,7 +224,7 @@ type ChatBoostSource struct {
 // ChatBoost represents a boost added to a chat.
 // See https://core.telegram.org/bots/api#chatboost
 type ChatBoost struct {
-	BoostID        int             `json:"boost_id"`
+	BoostID        string          `json:"boost_id"`
 	AddDate        int             `json:"add_date"`
 	ExpirationDate int             `json:"expiration_date"`
 	Source         ChatBoostSource `json:"source"`

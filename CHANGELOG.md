@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## v1.0.0-rc.11
+
+### Fixed
+- `chat_boost` update decoding now accepts string `boost_id` values, matching the current Telegram Bot API schema and preventing polling failures on boosted-chat updates.
+
+## v1.0.0-rc.10
 
 ### Added
 - `Plugin.AddUpdateHandler` for routing non-command Telegram updates by `tgapi.UpdateType`.

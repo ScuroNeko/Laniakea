@@ -38,8 +38,27 @@ func TestUpdateUnmarshalSetsType(t *testing.T) {
 			want: UpdateTypeCallbackQuery,
 		},
 		{
+			name: "chat boost",
+			body: `{
+				"update_id": 3,
+				"chat_boost": {
+					"chat": {"id": -1001, "type": "supergroup", "title": "Boosted"},
+					"boost": {
+						"boost_id": "boost-1",
+						"add_date": 1735689600,
+						"expiration_date": 1738291600,
+						"source": {
+							"source": "premium",
+							"user": {"id": 1, "is_bot": false, "first_name": "Test"}
+						}
+					}
+				}
+			}`,
+			want: UpdateTypeChatBoost,
+		},
+		{
 			name: "unknown",
-			body: `{"update_id":3}`,
+			body: `{"update_id":4}`,
 			want: UpdateTypeUnknown,
 		},
 	}
@@ -52,6 +71,9 @@ func TestUpdateUnmarshalSetsType(t *testing.T) {
 			}
 			if update.Type != tt.want {
 				t.Fatalf("unexpected update type: got %q want %q", update.Type, tt.want)
+			}
+			if tt.want == UpdateTypeChatBoost && update.ChatBoost.Boost.BoostID != "boost-1" {
+				t.Fatalf("unexpected boost id: got %q want %q", update.ChatBoost.Boost.BoostID, "boost-1")
 			}
 		})
 	}
