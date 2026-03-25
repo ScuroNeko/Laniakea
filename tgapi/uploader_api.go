@@ -82,8 +82,12 @@ func (u *Uploader) Close() error { return u.logger.Close() }
 // See https://core.telegram.org/bots/api
 func (u *Uploader) GetLogger() *slog.Logger { return u.logger }
 
-// UploaderRequest is a multipart file upload request to the Telegram API.
-// Use NewUploaderRequest or NewUploaderRequestWithChatID to construct one.
+// UploaderRequest is a low-level multipart upload request wrapper.
+//
+// Prefer method-specific helpers such as SendPhoto or SetWebhook. UploaderRequest
+// is intended for advanced use cases where callers manage the method name, files,
+// and request/response types themselves. In that sense it is an unsafe escape
+// hatch compared with the typed uploader API.
 type UploaderRequest[R, P any] struct {
 	method string
 	files  []UploaderFile
@@ -91,16 +95,17 @@ type UploaderRequest[R, P any] struct {
 	chatId int64
 }
 
-// NewUploaderRequest creates a new multipart upload request with no associated chat ID.
+// NewUploaderRequest creates a low-level multipart upload request with no associated chat ID.
 func NewUploaderRequest[R, P any](method string, params P, files ...UploaderFile) UploaderRequest[R, P] {
 	return UploaderRequest[R, P]{method: method, files: files, params: params, chatId: 0}
 }
 
-// NewUploaderRequestWithChatID creates a new multipart upload request with an associated chat ID.
+// NewUploaderRequestWithChatID creates a low-level multipart upload request with an associated chat ID.
 // The chat ID is used for per-chat rate limiting.
 func NewUploaderRequestWithChatID[R, P any](method string, params P, chatId int64, files ...UploaderFile) UploaderRequest[R, P] {
 	return UploaderRequest[R, P]{method: method, files: files, params: params, chatId: chatId}
 }
+
 func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, error) {
 	var zero R
 
@@ -205,8 +210,7 @@ func (r UploaderRequest[R, P]) Do(up *Uploader) (R, error) {
 	return r.DoWithContext(context.Background(), up)
 }
 
-// prepareMultipart builds a multipart form body from the given files and params.
-// Params are encoded via utils.Encode. The writer boundary is finalized before returning.
+// Internal helper that builds a finalized multipart body from files and params.
 func prepareMultipart[P any](files []UploaderFile, params P) (*bytes.Buffer, string, error) {
 	buf := bytes.NewBuffer(nil)
 	w := multipart.NewWriter(buf)
@@ -239,8 +243,7 @@ func prepareMultipart[P any](files []UploaderFile, params P) (*bytes.Buffer, str
 	return buf, w.FormDataContentType(), nil
 }
 
-// uploaderTypeByExt infers the Telegram upload field name from a file extension.
-// Falls back to UploaderDocumentType for unrecognized extensions.
+// Internal helper that infers an upload field name from a file extension.
 func uploaderTypeByExt(filename string) UploaderFileType {
 	ext := strings.ToLower(filepath.Ext(filename))
 	switch ext {

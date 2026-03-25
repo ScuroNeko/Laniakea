@@ -55,12 +55,12 @@ type InputPaidMedia struct {
 	Type  InputPaidMediaType `json:"type"`
 	Media string             `json:"media"`
 
-	Cover             string `json:"cover"`
-	StartTimestamp    int64  `json:"start_timestamp"`
-	Width             int    `json:"width"`
-	Height            int    `json:"height"`
-	Duration          int    `json:"duration"`
-	SupportsStreaming bool   `json:"supports_streaming"`
+	Cover             *string `json:"cover,omitempty"`
+	StartTimestamp    *int64  `json:"start_timestamp,omitempty"`
+	Width             *int    `json:"width,omitempty"`
+	Height            *int    `json:"height,omitempty"`
+	Duration          *int    `json:"duration,omitempty"`
+	SupportsStreaming *bool   `json:"supports_streaming,omitempty"`
 }
 
 // PhotoSize represents one size of a photo or a file/sticker thumbnail.

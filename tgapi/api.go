@@ -124,6 +124,9 @@ func NewAPI(opts *APIOpts) *API {
 // See https://core.telegram.org/bots/api
 func (api *API) Close() error {
 	api.pool.stop()
+	if api.client != nil {
+		api.client.CloseIdleConnections()
+	}
 	return api.logger.Close()
 }
 
@@ -149,37 +152,29 @@ type ApiResponse[R any] struct {
 	Parameters  *ResponseParameters `json:"parameters,omitempty"`
 }
 
-// TelegramRequest is an internal helper struct.
-// DO NOT USE NewRequest or NewRequestWithChatID — they are unsafe and discouraged.
-// Instead, use explicit methods like SendMessage, GetUpdates, etc.
+// TelegramRequest is a low-level Telegram API request wrapper.
 //
-// Why? Because using generics with arbitrary types P and R leads to:
-//   - No compile-time validation of parameters
-//   - No IDE autocompletion
-//   - Runtime panics on malformed JSON
-//   - Hard-to-debug errors
-//
-// Recommended: Define specific methods for each Telegram method (see below).
+// Prefer method-specific helpers such as SendMessage or GetUpdates. TelegramRequest
+// bypasses method-specific parameter types and convenience helpers, so callers are
+// responsible for using the correct method name and compatible request and response types.
+// In that sense it is an unsafe escape hatch compared with the typed API surface.
 type TelegramRequest[R, P any] struct {
 	method string
 	params P
 	chatId int64
 }
 
-// NewRequest creates an untyped TelegramRequest for the given method and params with no chat ID.
+// NewRequest creates a low-level TelegramRequest with no associated chat ID.
 func NewRequest[R, P any](method string, params P) TelegramRequest[R, P] {
 	return TelegramRequest[R, P]{method, params, 0}
 }
 
-// NewRequestWithChatID creates an untyped TelegramRequest with an associated chat ID.
+// NewRequestWithChatID creates a low-level TelegramRequest with an associated chat ID.
 // The chat ID is used for per-chat rate limiting.
 func NewRequestWithChatID[R, P any](method string, params P, chatId int64) TelegramRequest[R, P] {
 	return TelegramRequest[R, P]{method, params, chatId}
 }
 
-// doRequest performs a single HTTP request to Telegram API.
-// Handles rate limiting, retries on 429, and parses responses.
-// Must be called within a worker pool context if using DoWithContext.
 func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, error) {
 	var zero R
 	reqData, err := json.Marshal(r.params)
@@ -296,15 +291,13 @@ func (r TelegramRequest[R, P]) Do(api *API) (R, error) {
 	return r.DoWithContext(context.Background(), api)
 }
 
-// readBody reads and limits response body to prevent memory exhaustion.
-// Telegram responses are typically small (<1MB), but we cap at 10MB.
+// Internal helper that reads and caps a Telegram response body.
 func readBody(body io.ReadCloser) ([]byte, error) {
 	reader := io.LimitReader(body, 10<<20) // 10 MB
 	return io.ReadAll(reader)
 }
 
-// parseBody unmarshals a Telegram API response into a typed ApiResponse.
-// Only returns an error on malformed JSON; non-OK responses are left for the caller to handle.
+// Internal helper that parses a typed Telegram API response body.
 func parseBody[R any](data []byte) (ApiResponse[R], error) {
 	var resp ApiResponse[R]
 	err := json.Unmarshal(data, &resp)

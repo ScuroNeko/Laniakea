@@ -33,8 +33,8 @@ type Runner[T DbContext] struct {
 //
 // Builder methods (Onetime, Async, Timeout) can be chained to customize behavior.
 // DO NOT call builder methods concurrently or after Execute().
-func NewRunner[T DbContext](name string, fn RunnerFn[T]) *Runner[T] {
-	return &Runner[T]{
+func NewRunner[T DbContext](name string, fn RunnerFn[T]) Runner[T] {
+	return Runner[T]{
 		name:    name,
 		fn:      fn,
 		async:   true, // Default: run asynchronously
@@ -45,7 +45,7 @@ func NewRunner[T DbContext](name string, fn RunnerFn[T]) *Runner[T] {
 // Onetime sets whether the runner executes once or repeatedly.
 // If true, the runner runs only once.
 // If false, the runner runs in a loop with the configured timeout.
-func (r *Runner[T]) Onetime(onetime bool) *Runner[T] {
+func (r Runner[T]) Onetime(onetime bool) Runner[T] {
 	r.onetime = onetime
 	return r
 }
@@ -55,7 +55,7 @@ func (r *Runner[T]) Onetime(onetime bool) *Runner[T] {
 // If false, the runner blocks the caller during execution.
 //
 // Note: If onetime=false and async=false, the runner will be skipped with a warning.
-func (r *Runner[T]) Async(async bool) *Runner[T] {
+func (r Runner[T]) Async(async bool) Runner[T] {
 	r.async = async
 	return r
 }
@@ -69,7 +69,7 @@ func (r *Runner[T]) Async(async bool) *Runner[T] {
 //
 // A zero value (time.Duration(0)) is allowed but may trigger a warning
 // if used with a background (non-onetime) async runner.
-func (r *Runner[T]) Timeout(timeout time.Duration) *Runner[T] {
+func (r Runner[T]) Timeout(timeout time.Duration) Runner[T] {
 	r.timeout = timeout
 	return r
 }

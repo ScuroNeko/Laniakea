@@ -1,9 +1,12 @@
 package laniakea
 
 import (
+	"context"
+	"errors"
 	"path/filepath"
 	"reflect"
 	"testing"
+	"time"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 	"git.nix13.pw/scuroneko/slog"
@@ -24,14 +27,14 @@ func TestAddPluginsSnapshotsConfiguration(t *testing.T) {
 	bot := &Bot[NoDB]{logger: slog.CreateLogger()}
 	plugin := NewPlugin[NoDB]("demo")
 
-	cmd := plugin.NewCommand(func(ctx *MsgContext, db *NoDB) {}, "start")
-	plugin.AddMiddleware(*NewMiddleware("base", func(ctx *MsgContext, db *NoDB) bool { return true }))
+	cmd := plugin.NewCommand(func(ctx *MsgContext, db NoDB) {}, "start")
+	plugin.AddMiddleware(NewMiddleware("base", func(ctx *MsgContext, db NoDB) bool { return true }))
 
 	bot.AddPlugins(plugin)
 
 	cmd.SetDescription("mutated after registration")
-	plugin.NewCommand(func(ctx *MsgContext, db *NoDB) {}, "late")
-	plugin.AddMiddleware(*NewMiddleware("late", func(ctx *MsgContext, db *NoDB) bool { return true }))
+	plugin.NewCommand(func(ctx *MsgContext, db NoDB) {}, "late")
+	plugin.AddMiddleware(NewMiddleware("late", func(ctx *MsgContext, db NoDB) bool { return true }))
 
 	registered := bot.plugins[0]
 	if _, exists := registered.commands["late"]; exists {
@@ -42,6 +45,20 @@ func TestAddPluginsSnapshotsConfiguration(t *testing.T) {
 	}
 	if len(registered.middlewares) != 1 {
 		t.Fatalf("registered middlewares unexpectedly mutated: got %d want 1", len(registered.middlewares))
+	}
+}
+
+func TestAddPluginsSkipsNilPlugin(t *testing.T) {
+	bot := &Bot[NoDB]{logger: slog.CreateLogger()}
+	plugin := NewPlugin[NoDB]("demo")
+
+	bot.AddPlugins(nil, plugin)
+
+	if len(bot.plugins) != 1 {
+		t.Fatalf("expected exactly one registered plugin, got %d", len(bot.plugins))
+	}
+	if bot.plugins[0].name != "demo" {
+		t.Fatalf("unexpected plugin name: %q", bot.plugins[0].name)
 	}
 }
 
@@ -66,5 +83,119 @@ func TestInitLoggersFallsBackToStdoutLoggerOnFileError(t *testing.T) {
 	}
 	if err := bot.logger.Close(); err != nil {
 		t.Fatalf("failed to close main logger: %v", err)
+	}
+}
+
+func TestNextPollRetryDelay(t *testing.T) {
+	tests := []struct {
+		name string
+		prev time.Duration
+		want time.Duration
+	}{
+		{name: "initial", prev: 0, want: time.Second},
+		{name: "double", prev: 2 * time.Second, want: 4 * time.Second},
+		{name: "cap", prev: 20 * time.Second, want: 30 * time.Second},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := nextPollRetryDelay(tt.prev); got != tt.want {
+				t.Fatalf("nextPollRetryDelay(%s) = %s, want %s", tt.prev, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAddDatabaseLoggerWriterSkipsWhenDBContextIsUnset(t *testing.T) {
+	bot := &Bot[NoDB]{logger: slog.CreateLogger()}
+	called := false
+
+	bot.AddDatabaseLoggerWriter(func(db NoDB) slog.LoggerWriter {
+		called = true
+		return nil
+	})
+
+	if called {
+		t.Fatal("expected database logger writer to be skipped when db context is unset")
+	}
+}
+
+func TestAddDatabaseLoggerWriterSkipsWhenDBContextIsNil(t *testing.T) {
+	type testDB struct{}
+
+	bot := &Bot[*testDB]{logger: slog.CreateLogger()}
+	var db *testDB
+	bot.DatabaseContext(db)
+
+	called := false
+	bot.AddDatabaseLoggerWriter(func(db *testDB) slog.LoggerWriter {
+		called = true
+		return nil
+	})
+
+	if called {
+		t.Fatal("expected database logger writer to be skipped when db context is nil")
+	}
+}
+
+func TestShouldWarnOnValueDBContext(t *testing.T) {
+	type testDB struct{}
+	type dbIface interface{ Ping() error }
+
+	tests := []struct {
+		name string
+		got  bool
+		want bool
+	}{
+		{name: "NoDB", got: shouldWarnOnValueDBContext[NoDB](), want: false},
+		{name: "pointer", got: shouldWarnOnValueDBContext[*testDB](), want: false},
+		{name: "interface", got: shouldWarnOnValueDBContext[dbIface](), want: false},
+		{name: "map", got: shouldWarnOnValueDBContext[map[string]int](), want: false},
+		{name: "struct", got: shouldWarnOnValueDBContext[testDB](), want: true},
+		{name: "int", got: shouldWarnOnValueDBContext[int](), want: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.got != tt.want {
+				t.Fatalf("shouldWarnOnValueDBContext = %v, want %v", tt.got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDatabaseContextMarksValueWarningOnce(t *testing.T) {
+	type testDB struct{}
+
+	bot := &Bot[testDB]{logger: slog.CreateLogger()}
+	bot.DatabaseContext(testDB{})
+	if !bot.warnedValueDB {
+		t.Fatal("expected value-typed database context to mark warning state")
+	}
+
+	ptrBot := &Bot[*testDB]{logger: slog.CreateLogger()}
+	ptrBot.DatabaseContext(&testDB{})
+	if ptrBot.warnedValueDB {
+		t.Fatal("did not expect pointer-typed database context to mark warning state")
+	}
+}
+
+func TestRunWithContextRejectsSecondRun(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	bot := &Bot[NoDB]{
+		logger:      slog.CreateLogger(),
+		prefixes:    []string{"/"},
+		plugins:     []Plugin[NoDB]{{name: "demo"}},
+		updateQueue: make(chan *tgapi.Update, 1),
+		maxWorkers:  1,
+	}
+
+	if err := bot.RunWithContext(ctx); err != nil {
+		t.Fatalf("first RunWithContext returned error: %v", err)
+	}
+	if err := bot.RunWithContext(ctx); !errors.Is(err, ErrBotAlreadyRun) {
+		t.Fatalf("expected ErrBotAlreadyRun on second run, got %v", err)
 	}
 }

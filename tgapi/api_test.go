@@ -13,6 +13,15 @@ func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return fn(req)
 }
 
+type closingTransport struct {
+	roundTripFunc
+	closed bool
+}
+
+func (t *closingTransport) CloseIdleConnections() {
+	t.closed = true
+}
+
 func TestAPILeavesAcceptEncodingToHTTPTransport(t *testing.T) {
 	var gotPath string
 	var gotAcceptEncoding string
@@ -52,5 +61,30 @@ func TestAPILeavesAcceptEncodingToHTTPTransport(t *testing.T) {
 	}
 	if gotAcceptEncoding != "" {
 		t.Fatalf("expected empty Accept-Encoding header, got %q", gotAcceptEncoding)
+	}
+}
+
+func TestAPICloseClosesIdleConnections(t *testing.T) {
+	transport := &closingTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(strings.NewReader(`{"ok":true,"result":{"id":1,"is_bot":true,"first_name":"Test"}}`)),
+			}, nil
+		},
+	}
+
+	api := NewAPI(
+		NewAPIOpts("token").
+			SetAPIUrl("https://example.test").
+			SetHTTPClient(&http.Client{Transport: transport}),
+	)
+
+	if err := api.Close(); err != nil {
+		t.Fatalf("Close returned error: %v", err)
+	}
+	if !transport.closed {
+		t.Fatal("expected Close to close idle HTTP connections")
 	}
 }

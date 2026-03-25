@@ -3,7 +3,6 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"mime/multipart"
 	"reflect"
 	"slices"
@@ -110,6 +109,6 @@ func writeMultipartValue(w *multipart.Writer, fieldName string, value []byte) er
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(fw, strings.NewReader(string(value)))
+	_, err = fw.Write(value)
 	return err
 }

@@ -44,6 +44,44 @@ func TestGetFileByLinkUsesConfiguredAPIURL(t *testing.T) {
 	}
 }
 
+func TestOpenFileByLinkStreamsResponseBody(t *testing.T) {
+	api := NewAPI(
+		NewAPIOpts("token").
+			SetAPIUrl("https://example.test").
+			SetHTTPClient(&http.Client{
+				Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+					return &http.Response{
+						StatusCode: http.StatusOK,
+						Body:       io.NopCloser(strings.NewReader("streamed payload")),
+					}, nil
+				}),
+			}),
+	)
+	defer func() {
+		if err := api.Close(); err != nil {
+			t.Fatalf("Close returned error: %v", err)
+		}
+	}()
+
+	body, err := api.OpenFileByLink("files/report.txt")
+	if err != nil {
+		t.Fatalf("OpenFileByLink returned error: %v", err)
+	}
+	defer func() {
+		if err := body.Close(); err != nil {
+			t.Fatalf("Close returned error: %v", err)
+		}
+	}()
+
+	data, err := io.ReadAll(body)
+	if err != nil {
+		t.Fatalf("failed to read body: %v", err)
+	}
+	if string(data) != "streamed payload" {
+		t.Fatalf("unexpected payload: %q", string(data))
+	}
+}
+
 func TestGetFileByLinkReturnsHTTPStatusError(t *testing.T) {
 	client := &http.Client{
 		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {

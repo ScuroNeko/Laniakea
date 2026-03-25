@@ -267,21 +267,21 @@ func (api *API) SetChatMenuButtonWithContext(ctx context.Context, params SetChat
 // GetChatMenuButtonP holds parameters for the getChatMenuButton method.
 // See https://core.telegram.org/bots/api#getchatmenubutton
 type GetChatMenuButtonP struct {
-	ChatID int64 `json:"chat_id"`
+	ChatID int64 `json:"chat_id,omitempty"`
 }
 
 // GetChatMenuButton returns the current menu button for the given chat.
 // See https://core.telegram.org/bots/api#getchatmenubutton
-func (api *API) GetChatMenuButton(params GetChatMenuButtonP) (BaseMenuButton, error) {
-	req := NewRequest[BaseMenuButton]("getChatMenuButton", params)
+func (api *API) GetChatMenuButton(params GetChatMenuButtonP) (MenuButton, error) {
+	req := NewRequest[MenuButton]("getChatMenuButton", params)
 	return req.Do(api)
 }
 
 // GetChatMenuButtonWithContext is the context-aware variant of GetChatMenuButton.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#getchatmenubutton
-func (api *API) GetChatMenuButtonWithContext(ctx context.Context, params GetChatMenuButtonP) (BaseMenuButton, error) {
-	req := NewRequest[BaseMenuButton]("getChatMenuButton", params)
+func (api *API) GetChatMenuButtonWithContext(ctx context.Context, params GetChatMenuButtonP) (MenuButton, error) {
+	req := NewRequest[MenuButton]("getChatMenuButton", params)
 	return req.DoWithContext(ctx, api)
 }
 

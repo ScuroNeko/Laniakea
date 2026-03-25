@@ -72,7 +72,9 @@ type BusinessMessagesDeleted struct {
 type InputStoryContentType string
 
 const (
+	// InputStoryContentPhotoType identifies photo story content.
 	InputStoryContentPhotoType InputStoryContentType = "photo"
+	// InputStoryContentVideoType identifies video story content.
 	InputStoryContentVideoType InputStoryContentType = "video"
 )
 
@@ -106,10 +108,15 @@ type StoryAreaPosition struct {
 type StoryAreaTypeType string
 
 const (
-	StoryAreaTypeLocationType   StoryAreaTypeType = "location"
-	StoryAreaTypeReactionType   StoryAreaTypeType = "suggested_reaction"
-	StoryAreaTypeLinkType       StoryAreaTypeType = "link"
-	StoryAreaTypeWeatherType    StoryAreaTypeType = "weather"
+	// StoryAreaTypeLocationType identifies a location story area.
+	StoryAreaTypeLocationType StoryAreaTypeType = "location"
+	// StoryAreaTypeReactionType identifies a suggested reaction story area.
+	StoryAreaTypeReactionType StoryAreaTypeType = "suggested_reaction"
+	// StoryAreaTypeLinkType identifies a link story area.
+	StoryAreaTypeLinkType StoryAreaTypeType = "link"
+	// StoryAreaTypeWeatherType identifies a weather story area.
+	StoryAreaTypeWeatherType StoryAreaTypeType = "weather"
+	// StoryAreaTypeUniqueGiftType identifies a unique gift story area.
 	StoryAreaTypeUniqueGiftType StoryAreaTypeType = "unique_gift"
 )
 

@@ -7,13 +7,12 @@ import (
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
 
-// ButtonStyleDanger, ButtonStyleSuccess, ButtonStylePrimary are predefined
-// Telegram keyboard button styles for visual feedback.
-//
-// These values map directly to Telegram Bot API's InlineKeyboardButton style field.
 const (
-	ButtonStyleDanger  tgapi.KeyboardButtonStyle = "danger"
+	// ButtonStyleDanger marks a destructive inline keyboard action.
+	ButtonStyleDanger tgapi.KeyboardButtonStyle = "danger"
+	// ButtonStyleSuccess marks a confirmatory inline keyboard action.
 	ButtonStyleSuccess tgapi.KeyboardButtonStyle = "success"
+	// ButtonStylePrimary marks a primary inline keyboard action.
 	ButtonStylePrimary tgapi.KeyboardButtonStyle = "primary"
 )
 
@@ -83,8 +82,7 @@ func (b InlineKbButtonBuilder) SetCallbackDataBase64(cmd string, args ...any) In
 	return b
 }
 
-// build converts the builder state into a tgapi.InlineKeyboardButton.
-// This method is typically called internally by InlineKeyboard.AddButton().
+// Internal helper that converts the builder state into a Telegram button.
 func (b InlineKbButtonBuilder) build() tgapi.InlineKeyboardButton {
 	return tgapi.InlineKeyboardButton{
 		Text:              b.text,
@@ -146,8 +144,7 @@ func (in *InlineKeyboard) SetPayloadType(t BotPayloadType) *InlineKeyboard {
 	return in
 }
 
-// append adds a button to the current line. If the line is full, it auto-flushes.
-// This is an internal helper used by other builder methods.
+// Internal helper that appends a button and auto-flushes a full row.
 func (in *InlineKeyboard) append(button tgapi.InlineKeyboardButton) *InlineKeyboard {
 	if in.CurrentLine.Len() == in.maxRow {
 		in.AddLine()
@@ -235,12 +232,12 @@ type CallbackData struct {
 // (int, string, bool, float64) but may not serialize complex structs meaningfully.
 //
 // Use this to build callback payloads for bot command routing.
-func NewCallbackData(command string, args ...any) *CallbackData {
+func NewCallbackData(command string, args ...any) CallbackData {
 	stringArgs := make([]string, len(args))
 	for i, arg := range args {
 		stringArgs[i] = fmt.Sprint(arg)
 	}
-	return &CallbackData{
+	return CallbackData{
 		Command: command,
 		Args:    stringArgs,
 	}
@@ -253,8 +250,8 @@ func NewCallbackData(command string, args ...any) *CallbackData {
 //
 // This fallback ensures the bot receives a valid JSON payload even if internal
 // errors occur — avoiding "invalid callback_data" errors from Telegram.
-func (d *CallbackData) ToJson() string {
-	data, err := encodeJsonPayload(*d)
+func (d CallbackData) ToJson() string {
+	data, err := encodeJsonPayload(d)
 	if err != nil {
 		// Fallback: return minimal valid JSON to avoid Telegram API rejection
 		return `{"cmd":""}`
@@ -264,8 +261,8 @@ func (d *CallbackData) ToJson() string {
 
 // ToBase64 serializes the CallbackData to a JSON string and then encodes it as Base64.
 // Returns an empty string if serialization or encoding fails.
-func (d *CallbackData) ToBase64() string {
-	s, err := encodeBase64Payload(*d)
+func (d CallbackData) ToBase64() string {
+	s, err := encodeBase64Payload(d)
 	if err != nil {
 		return ``
 	}
@@ -275,7 +272,7 @@ func (d *CallbackData) ToBase64() string {
 // Encode serializes the CallbackData according to the specified payload type.
 // Supported types: BotPayloadJson and BotPayloadBase64.
 // For unknown types, returns an empty string.
-func (d *CallbackData) Encode(t BotPayloadType) string {
+func (d CallbackData) Encode(t BotPayloadType) string {
 	switch t {
 	case BotPayloadBase64:
 		return d.ToBase64()

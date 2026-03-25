@@ -22,37 +22,47 @@ func (bot *Bot[T]) handle(u *tgapi.Update) {
 
 	ctx := &MsgContext{
 		Update: *u, Api: bot.api,
+		Logger:        bot.logger,
 		errorTemplate: bot.errorTemplate,
 		l10n:          bot.l10n,
 		draftProvider: bot.draftProvider,
 		payloadType:   bot.payloadType,
 	}
+	bot.prepareUpdateCtx(u, ctx)
+
 	for _, middleware := range bot.middlewares {
 		if !middleware.Execute(ctx, bot.dbContext) {
 			return
 		}
 	}
 
-	if u.CallbackQuery != nil {
-		bot.handleCallback(u, ctx)
-	} else {
+	switch u.Type {
+	case tgapi.UpdateTypeMessage, tgapi.UpdateTypeChannelPost:
 		bot.handleMessage(u, ctx)
+	case tgapi.UpdateTypeCallbackQuery:
+		bot.handleCallback(u, ctx)
+	default:
+		bot.handleUpdate(u, ctx)
 	}
 }
 
 func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
-	if update.Message == nil {
-		return
-	}
-	if update.Message.From == nil {
+	var msg *tgapi.Message
+	if update.Message != nil {
+		msg = update.Message
+	} else if update.ChannelPost != nil {
+		msg = update.ChannelPost
+	} else {
 		return
 	}
 
 	var text string
-	if len(update.Message.Text) > 0 {
-		text = update.Message.Text
+	if len(msg.Text) > 0 {
+		text = msg.Text
+	} else if len(msg.Caption) > 0 {
+		text = msg.Caption
 	} else {
-		text = update.Message.Caption
+		return
 	}
 
 	text = strings.TrimSpace(text)
@@ -60,10 +70,9 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 	if !hasPrefix {
 		return
 	}
+
 	ctx.Prefix = prefix
-	ctx.FromID = update.Message.From.ID
-	ctx.From = update.Message.From
-	ctx.Msg = update.Message
+	ctx.Update = *update
 
 	// Убираем префикс
 	text = strings.TrimSpace(text[len(prefix):])
@@ -94,9 +103,8 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 			ctx.Text = args
 			ctx.Args = strings.Fields(args) // Убирает лишние пробелы
 
-			ctx.Logger = plugin.logger
-			if ctx.Logger == nil {
-				ctx.Logger = bot.logger
+			if plugin.logger != nil {
+				ctx.Logger = plugin.logger
 			}
 			if !plugin.executeMiddlewares(ctx, bot.dbContext) {
 				return
@@ -114,16 +122,6 @@ func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 		return
 	}
 
-	ctx.FromID = update.CallbackQuery.From.ID
-	ctx.From = &update.CallbackQuery.From
-	if update.CallbackQuery.Message != nil {
-		ctx.Msg = update.CallbackQuery.Message
-		ctx.CallbackMsgId = update.CallbackQuery.Message.MessageID
-	}
-	if update.CallbackQuery.InlineMessageID != nil {
-		ctx.InlineMsgId = *update.CallbackQuery.InlineMessageID
-	}
-	ctx.CallbackQueryId = update.CallbackQuery.ID
 	ctx.Args = data.Args
 
 	for _, plugin := range bot.plugins {
@@ -142,6 +140,134 @@ func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 		plugin.executePayload(data.Command, ctx, bot.dbContext)
 		return
 	}
+}
+
+func (bot *Bot[T]) handleUpdate(u *tgapi.Update, ctx *MsgContext) {
+	for _, plugin := range bot.plugins {
+		handler, ok := plugin.handlers[u.Type]
+		if !ok {
+			continue
+		}
+
+		pluginCtx := cloneMsgContext(ctx)
+		if plugin.logger != nil {
+			pluginCtx.Logger = plugin.logger
+		}
+		if !plugin.executeMiddlewares(pluginCtx, bot.dbContext) {
+			continue
+		}
+		handler(pluginCtx, bot.dbContext)
+	}
+}
+
+func cloneMsgContext(src *MsgContext) *MsgContext {
+	cloned := *src
+	if src.Args != nil {
+		cloned.Args = append([]string(nil), src.Args...)
+	}
+	return &cloned
+}
+
+func (bot *Bot[T]) prepareUpdateCtx(u *tgapi.Update, ctx *MsgContext) {
+	var from *tgapi.User
+	switch u.Type {
+	case tgapi.UpdateTypeMessage:
+		if u.Message != nil {
+			ctx.Msg = u.Message
+		}
+	case tgapi.UpdateTypeEditedMessage:
+		if u.EditedMessage != nil {
+			ctx.Msg = u.EditedMessage
+		}
+	case tgapi.UpdateTypeChannelPost:
+		if u.ChannelPost != nil {
+			ctx.Msg = u.ChannelPost
+		}
+	case tgapi.UpdateTypeEditedChannelPost:
+		if u.EditedChannelPost != nil {
+			ctx.Msg = u.EditedChannelPost
+		}
+	case tgapi.UpdateTypeBusinessMessage:
+		if u.BusinessMessage != nil {
+			ctx.Msg = u.BusinessMessage
+		}
+	case tgapi.UpdateTypeEditedBusinessMessage:
+		if u.EditedBusinessMessage != nil {
+			ctx.Msg = u.EditedBusinessMessage
+		}
+	case tgapi.UpdateTypeInlineQuery:
+		if u.InlineQuery != nil {
+			from = &u.InlineQuery.From
+		}
+	case tgapi.UpdateTypeChosenInlineResult:
+		if u.ChosenInlineResult != nil {
+			from = &u.ChosenInlineResult.From
+		}
+	case tgapi.UpdateTypeCallbackQuery:
+		if u.CallbackQuery != nil {
+			if u.CallbackQuery.Message != nil {
+				ctx.Msg = u.CallbackQuery.Message
+				ctx.CallbackMsgId = u.CallbackQuery.Message.MessageID
+			}
+			if u.CallbackQuery.InlineMessageID != nil {
+				ctx.InlineMsgId = *u.CallbackQuery.InlineMessageID
+			}
+			ctx.CallbackQueryId = u.CallbackQuery.ID
+			from = &u.CallbackQuery.From
+		}
+	case tgapi.UpdateTypeShippingQuery:
+		if u.ShippingQuery != nil {
+			from = &u.ShippingQuery.From
+		}
+	case tgapi.UpdateTypePreCheckoutQuery:
+		if u.PreCheckoutQuery != nil {
+			from = &u.PreCheckoutQuery.From
+		}
+	case tgapi.UpdateTypePurchasedPaidMedia:
+		if u.PurchasedPaidMedia != nil {
+			from = &u.PurchasedPaidMedia.From
+		}
+	case tgapi.UpdateTypeMyChatMember:
+		if u.MyChatMember != nil {
+			from = &u.MyChatMember.From
+		}
+	case tgapi.UpdateTypeChatMember:
+		if u.ChatMember != nil {
+			from = &u.ChatMember.From
+		}
+	case tgapi.UpdateTypeChatJoinRequest:
+		if u.ChatJoinRequest != nil {
+			from = &u.ChatJoinRequest.From
+		}
+	case tgapi.UpdateTypeBusinessConnection:
+		if u.BusinessConnection != nil {
+			from = &u.BusinessConnection.User
+		}
+	case tgapi.UpdateTypePollAnswer:
+		if u.PollAnswer != nil {
+			from = &u.PollAnswer.User
+		}
+	case tgapi.UpdateTypeMessageReaction:
+		if u.MessageReaction != nil {
+			from = u.MessageReaction.User
+		}
+	case tgapi.UpdateTypeChatBoost:
+		if u.ChatBoost != nil {
+			from = &u.ChatBoost.Boost.Source.User
+		}
+	case tgapi.UpdateTypeRemovedChatBoost:
+		if u.RemovedChatBoost != nil {
+			from = &u.RemovedChatBoost.Source.User
+		}
+	}
+	if ctx.Msg != nil && from == nil {
+		from = ctx.Msg.From
+	}
+	if from != nil {
+		ctx.From = from
+		ctx.FromID = from.ID
+	}
+	ctx.Update = *u
 }
 
 func (bot *Bot[T]) checkPrefixes(text string) (string, bool) {

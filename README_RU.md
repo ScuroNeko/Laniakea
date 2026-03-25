@@ -53,7 +53,7 @@ import (
 // Она получает два параметра:
 //   - ctx: контекст сообщения (содержит информацию о сообщении, отправителе, чате и т.д.)
 //   - db: ваш пользовательский контекст базы данных (здесь мы используем NoDB — заглушку)
-func echo(ctx *laniakea.MsgContext, db *laniakea.NoDB) {
+func echo(ctx *laniakea.MsgContext, db laniakea.NoDB) {
 	// Отвечаем пользователю текстом, который он прислал, без префикса команды.
 	// ctx.Text содержит сообщение пользователя, из которого удалена часть с командой.
 	ctx.Answer(ctx.Text) // Ввод пользователя БЕЗ команды
@@ -65,7 +65,10 @@ func main() {
 
 	// 2. Инициализируем новый экземпляр бота.
 	//    Используем laniakea.NoDB как тип контекста базы данных (база не нужна для примера).
-	bot := laniakea.NewBot[laniakea.NoDB](opts)
+	bot, err := laniakea.NewBot[laniakea.NoDB](opts)
+	if err != nil {
+		log.Fatal(err)
+	}
 	// Гарантируем освобождение ресурсов бота при выходе.
 	defer bot.Close()
 
@@ -79,7 +82,7 @@ func main() {
 
 	// 5. Добавляем ещё одну команду, используя анонимную функцию (замыкание).
 	//    Эта команда просто отвечает "Pong", когда пользователь отправляет "/ping".
-	p.AddCommand(p.NewCommand(func(ctx *laniakea.MsgContext, db *laniakea.NoDB) {
+	p.AddCommand(p.NewCommand(func(ctx *laniakea.MsgContext, db laniakea.NoDB) {
 		ctx.Answer("Pong")
 	}, "ping"))
 
@@ -95,7 +98,9 @@ func main() {
 	}
 
 	// 8. Запускаем бота, начиная прослушивание обновлений (long polling).
-	bot.Run()
+	if err := bot.Run(); err != nil {
+		log.Fatal(err)
+	}
 }
 ```
 
@@ -106,15 +111,16 @@ func main() {
 4. `AddCommand`: Регистрирует команду. Первый аргумент — функция-обработчик (func(*MsgContext, T)), второй — имя команды (без слеша).
 5. **Функции-обработчики**: Получают *MsgContext (детали сообщения, методы типа Answer) и ваш контекст базы данных T.
 6. `ErrorTemplate`: Устанавливает шаблон для сообщений об ошибках. Плейсхолдер %s заменяется на текст ошибки.
-7. `AutoGenerateCommands`: Добавляет встроенные команды (/start, /help) и команду, показывающую список всех доступных команд.
-8. `Run()`: Запускает цикл опроса обновлений бота.
+7. `AutoGenerateCommands`: Регистрирует команды из плагинов в Telegram для поддерживаемых scope.
+8. `Run()`: Запускает цикл опроса обновлений бота и возвращает ошибку, если старт или polling завершился неуспешно.
+9. Экземпляр `Bot` одноразовый. После завершения `Run()` или `RunWithContext()` для следующего запуска создавайте новый бот.
 
 ## 📖 Основные концепции
 ### Плагины (Plugins)
 Плагины — основной способ организации кода. Плагин может содержать несколько команд и Middleware.
 
 ```go
-plugin := laniakea.NewPlugin[MyDB]("admin")
+plugin := laniakea.NewPlugin[*MyDB]("admin")
 plugin.AddCommand(plugin.NewCommand(banUser, "ban"))
 bot.AddPlugins(plugin)
 ```
@@ -138,20 +144,33 @@ func myHandler(ctx *laniakea.MsgContext, db *MyDB) {
 - `KeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage`: Отправляет сообщение, отформатированное MarkdownV2 (экранирование на вашей стороне), и Inline клавиатурой.
 - `AnswerPhoto(photoId, text string) *AnswerMessage`: Отправляет фотографию с подписью и parse_mode none.
 - `AnswerPhotoMarkdown(photoId, text string) *AnswerMessage`: Отправляет фотографию с подписью, отформатированной MarkdownV2 (экранирование на вашей стороне).
-- `EditCallback(text string)`: Редактирует сообщение, форматируя его в MarkdownV2 (экранирование на вашей стороне), после нажатия Inline кнопки.
-- `EditCallbackMarkdown(text string)`: Редактирует сообщение с parse_mode none после нажатия Inline кнопки.
-- `SendChatAction(action string)`: Отправляет действие "печатает", "загружает фото" и т.д.
-- Поля: `Text`, `Args`, `From`, `Chat`, `Msg` и другие.
+- `EditCallback(text string)`: Редактирует сообщение с `parse_mode` none после нажатия inline-кнопки.
+- `EditCallbackMarkdown(text string)`: Редактирует сообщение в формате MarkdownV2 (экранирование на вашей стороне) после нажатия inline-кнопки.
+- `SendAction(action tgapi.ChatActionType)`: Отправляет действие "печатает", "загружает фото" и т.д.
+- Поля: `Text`, `Args`, `From`, `FromID`, `Msg`, `InlineMsgId`, `CallbackQueryId` и другие.
 - И много других методов и полей!
 
 ### Контекст базы данных (Database Context)
-Параметр типа `T` в `NewBot[T]` — мощная функция. Вы можете передать любой тип (например, пул соединений с БД), и он будет доступен в каждом обработчике команды и中间件.
+Параметр типа `T` в `NewBot[T]` — мощная функция. Вы можете передать любой тип, но для разделяемых зависимостей вроде пула соединений с БД обычно стоит использовать pointer type.
 
 ```go
 type MyDB struct { /* ... */ }
 db := &MyDB{...}
-bot := laniakea.NewBot[*MyDB](opts, db) // Передаём экземпляр db
+bot, err := laniakea.NewBot[*MyDB](opts)
+if err != nil {
+    log.Fatal(err)
+}
+bot.DatabaseContext(db)
 ```
+
+### tgapi: API и Uploader
+
+В `tgapi` есть два клиента:
+
+- `API` для JSON-запросов (`SendMessage`, `EditMessageText`, методы с `file_id`/URL).
+- `Uploader` для multipart-загрузок (`SendPhoto`, `SendDocument`, `SendVideo` с бинарными файлами).
+
+Для продвинутых сценариев `tgapi.NewRequest(...)` и `tgapi.NewUploaderRequest(...)` остаются публичными low-level escape hatch API. Они менее безопасны, чем типизированные helper-методы: вызывающая сторона сама отвечает за корректное имя Telegram-метода и совместимые типы параметров/ответа.
 
 ## 🧩 Промежуточные слои (Middleware)
 Middleware — это функции, которые выполняются перед обработчиком команды. Они идеально подходят для сквозных задач, таких как логирование, контроль доступа, ограничение скорости запросов или модификация контекста.
@@ -167,11 +186,12 @@ func(ctx *MsgContext, db T) bool
 - Если возвращается false, цепочка выполнения немедленно прерывается (команда не запускается).
 
 ### Добавление middleware
-Используйте метод Use плагина для добавления одной или нескольких функций middleware. Они выполняются в порядке добавления.
+Используйте метод `AddMiddleware` плагина для добавления одной или нескольких функций middleware. Они выполняются в порядке добавления.
 
 ```go
-plugin := laniakea.NewPlugin[MyDB]("admin")
-plugin.Use(loggingMiddleware, adminOnlyMiddleware)
+plugin := laniakea.NewPlugin[*MyDB]("admin")
+plugin.AddMiddleware(laniakea.NewMiddleware("logging", loggingMiddleware))
+plugin.AddMiddleware(laniakea.NewMiddleware("admin-only", adminOnlyMiddleware))
 plugin.AddCommand(plugin.NewCommand(banUser, "ban"))
 ```
 
@@ -200,9 +220,17 @@ func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 - Middleware может изменять MsgContext (например, добавлять пользовательские поля) перед запуском команды.
 
 ## ⚙️ Расширенная настройка
-**Инлайн-клавиатуры**: Создавайте клавиатуры с помощью laniakea.NewKeyboard().
-**Ограничение запросов**: Передайте настроенный utils.RateLimiter через BotOpts для корректной обработки лимитов Telegram.
-**Пользовательский HTTP-клиент**: Предоставьте свой http.Client в BotOpts для точного контроля.
+- **Инлайн-клавиатуры**: Создавайте клавиатуры с помощью `laniakea.NewInlineKeyboardJson`, `laniakea.NewInlineKeyboardBase64` или `laniakea.NewInlineKeyboard`.
+- **Ограничение запросов**: Передайте настроенный `utils.RateLimiter` через `BotOpts` для корректной обработки лимитов Telegram.
+- **Локализация**: `L10n` безопасен для конкурентного использования после подключения к боту.
+- **Пользовательские update handlers**: Используйте `plugin.AddUpdateHandler(...)` для Telegram update types вне command/payload flow.
+- **Жизненный цикл**: `RunWithContext(...)` не вызывает `Close()` автоматически. Завершайте бот явно и создавайте новый `Bot` для следующего запуска.
+
+## Обработка Telegram Updates
+- Команды и payload-ы обрабатываются через плагины.
+- Для некомандных update-ов можно зарегистрировать обработчик через `plugin.AddUpdateHandler(updateType, handler)`.
+- `message`, `channel_post` и `callback_query` остаются в command/payload flow.
+- После JSON-декодирования `tgapi.Update` заполняет поле `Type`, чтобы обработчики могли явно видеть итоговый вид update.
 
 ## 📝 Лицензия
 Этот проект лицензирован под GNU General Public License v3.0 - подробности см. в файле [LICENSE](LICENSE).

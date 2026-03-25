@@ -9,6 +9,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
+// ErrDropOverflow is returned when drop mode rejects a rate-limited request.
 var ErrDropOverflow = errors.New("drop overflow limit")
 
 // RateLimiter implements per-chat and global rate limiting with optional blocking.
@@ -102,7 +103,7 @@ func (rl *RateLimiter) Wait(ctx context.Context, chatID int64) error {
 	return chatLimiter.Wait(ctx)
 }
 
-// getGlobalLimiter returns the global limiter safely under read lock.
+// Internal helper that returns the global limiter under read lock.
 func (rl *RateLimiter) getGlobalLimiter() *rate.Limiter {
 	rl.globalMu.RLock()
 	defer rl.globalMu.RUnlock()
@@ -190,8 +191,7 @@ func (rl *RateLimiter) Check(ctx context.Context, dropOverflow bool, chatID int6
 	return nil
 }
 
-// waitForGlobalUnlock blocks until global cooldown expires or context is done.
-// Does not check token bucket — only cooldown.
+// Internal helper that waits for the global cooldown to expire.
 func (rl *RateLimiter) waitForGlobalUnlock(ctx context.Context) error {
 	rl.globalMu.RLock()
 	until := rl.globalLockUntil
@@ -209,8 +209,7 @@ func (rl *RateLimiter) waitForGlobalUnlock(ctx context.Context) error {
 	}
 }
 
-// waitForChatUnlock blocks until the specified chat's cooldown expires or context is done.
-// Does not check token bucket — only cooldown.
+// Internal helper that waits for a chat-specific cooldown to expire.
 func (rl *RateLimiter) waitForChatUnlock(ctx context.Context, chatID int64) error {
 	rl.chatMu.RLock()
 	until, ok := rl.chatLocks[chatID]
@@ -228,8 +227,7 @@ func (rl *RateLimiter) waitForChatUnlock(ctx context.Context, chatID int64) erro
 	}
 }
 
-// getChatLimiter returns the rate limiter for the given chat, creating it if needed.
-// Uses 1 request per second with burst of 1 — conservative for per-user limits.
+// Internal helper that returns or creates a per-chat limiter.
 func (rl *RateLimiter) getChatLimiter(chatID int64) *rate.Limiter {
 	rl.chatMu.Lock()
 	defer rl.chatMu.Unlock()

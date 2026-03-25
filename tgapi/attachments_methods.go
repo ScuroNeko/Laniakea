@@ -241,7 +241,7 @@ type SendVoiceP struct {
 
 // SendVoice sends a voice note.
 // See https://core.telegram.org/bots/api#sendvoice
-func (api *API) SendVoice(params *SendVoiceP) (Message, error) {
+func (api *API) SendVoice(params SendVoiceP) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendVoice", params, params.ChatID)
 	return req.Do(api)
 }
@@ -249,7 +249,7 @@ func (api *API) SendVoice(params *SendVoiceP) (Message, error) {
 // SendVoiceWithContext is the context-aware variant of SendVoice.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendvoice
-func (api *API) SendVoiceWithContext(ctx context.Context, params *SendVoiceP) (Message, error) {
+func (api *API) SendVoiceWithContext(ctx context.Context, params SendVoiceP) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendVoice", params, params.ChatID)
 	return req.DoWithContext(ctx, api)
 }

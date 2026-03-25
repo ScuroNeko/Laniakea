@@ -11,7 +11,7 @@ import (
 // BotOpts holds configuration options for initializing a Bot.
 //
 // Values are loaded from environment variables via LoadOptsFromEnv().
-// Use NewOpts() to create a zero-value struct and set fields manually.
+// Use &BotOpts{} to create a value and set fields manually.
 type BotOpts struct {
 	// Token is the Telegram bot token (required).
 	Token string
@@ -56,7 +56,7 @@ type BotOpts struct {
 	// Use this to prioritize responsiveness over reliability.
 	DropRLOverflow bool
 
-	// MaxWorkers is the maximum number of concurrency running update handlers.
+	// MaxWorkers is the maximum number of update handlers that may run concurrently.
 	MaxWorkers int
 }
 
@@ -75,20 +75,30 @@ type BotOpts struct {
 //   - API_URL: custom API endpoint
 //   - RATE_LIMIT: max requests per second (default: 30)
 //   - DROP_RL_OVERFLOW: "true" to drop updates on rate limit overflow
+//   - MAX_WORKERS: maximum number of concurrent update handlers (default: 32)
 //
-// Returns a populated BotOpts. If TG_TOKEN is missing, behavior is undefined.
+// Returns a populated BotOpts.
+// NewBot validates required fields and returns ErrTokenRequired when TG_TOKEN is missing.
 func LoadOptsFromEnv() *BotOpts {
 	rateLimit := 30
+	maxWorkers := 32
+
+	stringUpdateTypes := splitEnvList(os.Getenv("UPDATE_TYPES"))
+	updateTypes := make([]tgapi.UpdateType, 0, len(stringUpdateTypes))
+	for _, updateType := range stringUpdateTypes {
+		updateTypes = append(updateTypes, tgapi.UpdateType(updateType))
+	}
+
 	if rl := os.Getenv("RATE_LIMIT"); rl != "" {
 		if n, err := strconv.Atoi(rl); err == nil {
 			rateLimit = n
 		}
 	}
 
-	stringUpdateTypes := splitEnvList(os.Getenv("UPDATE_TYPES"))
-	updateTypes := make([]tgapi.UpdateType, 0, len(stringUpdateTypes))
-	for _, updateType := range stringUpdateTypes {
-		updateTypes = append(updateTypes, tgapi.UpdateType(updateType))
+	if mw := os.Getenv("MAX_WORKERS"); mw != "" {
+		if n, err := strconv.Atoi(os.Getenv("MAX_WORKERS")); err == nil {
+			maxWorkers = n
+		}
 	}
 
 	return &BotOpts{
@@ -108,6 +118,8 @@ func LoadOptsFromEnv() *BotOpts {
 
 		RateLimit:      rateLimit,
 		DropRLOverflow: os.Getenv("DROP_RL_OVERFLOW") == "true",
+
+		MaxWorkers: maxWorkers,
 	}
 }
 

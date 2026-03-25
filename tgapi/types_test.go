@@ -6,41 +6,66 @@ import (
 	"testing"
 )
 
-func TestUpdateDeletedBusinessMessagesUnmarshalSetsAlias(t *testing.T) {
-	var update Update
-	err := json.Unmarshal([]byte(`{
-		"update_id": 1,
-		"deleted_business_messages": {
-			"business_connection_id": "conn",
-			"chat": {"id": 42, "type": "private"},
-			"message_ids": [3, 5]
-		}
-	}`), &update)
-	if err != nil {
-		t.Fatalf("Unmarshal returned error: %v", err)
+func TestUpdateUnmarshalSetsType(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want UpdateType
+	}{
+		{
+			name: "deleted business messages",
+			body: `{
+				"update_id": 1,
+				"deleted_business_messages": {
+					"business_connection_id": "conn",
+					"chat": {"id": 42, "type": "private"},
+					"message_ids": [3, 5]
+				}
+			}`,
+			want: UpdateTypeDeletedBusinessMessages,
+		},
+		{
+			name: "callback query",
+			body: `{
+				"update_id": 2,
+				"callback_query": {
+					"id": "cb",
+					"from": {"id": 1, "is_bot": false, "first_name": "Test"},
+					"chat_instance": "instance",
+					"data": "payload"
+				}
+			}`,
+			want: UpdateTypeCallbackQuery,
+		},
+		{
+			name: "unknown",
+			body: `{"update_id":3}`,
+			want: UpdateTypeUnknown,
+		},
 	}
 
-	if update.DeletedBusinessMessages == nil {
-		t.Fatal("expected DeletedBusinessMessages to be populated")
-	}
-	if update.DeletedBusinessMessage == nil {
-		t.Fatal("expected deprecated DeletedBusinessMessage alias to be populated")
-	}
-	if update.DeletedBusinessMessages != update.DeletedBusinessMessage {
-		t.Fatal("expected deleted business message fields to share the same payload")
-	}
-	if got := update.DeletedBusinessMessages.MessageIDs; len(got) != 2 || got[0] != 3 || got[1] != 5 {
-		t.Fatalf("unexpected message ids: %v", got)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var update Update
+			if err := json.Unmarshal([]byte(tt.body), &update); err != nil {
+				t.Fatalf("Unmarshal returned error: %v", err)
+			}
+			if update.Type != tt.want {
+				t.Fatalf("unexpected update type: got %q want %q", update.Type, tt.want)
+			}
+		})
 	}
 }
 
-func TestUpdateMarshalUsesCanonicalDeletedBusinessMessagesField(t *testing.T) {
+func TestUpdateMarshalOmitsSyntheticTypeField(t *testing.T) {
 	update := Update{
 		UpdateID: 1,
-		DeletedBusinessMessage: &BusinessMessagesDeleted{
-			BusinessConnectionID: "conn",
-			Chat:                 Chat{ID: 42, Type: string(ChatTypePrivate)},
-			MessageIDs:           []int{7},
+		Type:     UpdateTypeCallbackQuery,
+		CallbackQuery: &CallbackQuery{
+			ID:           "cb",
+			From:         User{ID: 1, FirstName: "Test"},
+			ChatInstance: "instance",
+			Data:         "payload",
 		},
 	}
 
@@ -50,11 +75,8 @@ func TestUpdateMarshalUsesCanonicalDeletedBusinessMessagesField(t *testing.T) {
 	}
 
 	got := string(data)
-	if !strings.Contains(got, `"deleted_business_messages"`) {
-		t.Fatalf("expected canonical deleted_business_messages field, got %s", got)
-	}
-	if strings.Contains(got, `"deleted_business_message"`) {
-		t.Fatalf("unexpected singular deleted_business_message field, got %s", got)
+	if strings.Contains(got, `"type"`) {
+		t.Fatalf("unexpected synthetic type field, got %s", got)
 	}
 }
 
@@ -65,5 +87,8 @@ func TestUpdateShippingQueryIsNilWhenAbsent(t *testing.T) {
 	}
 	if update.ShippingQuery != nil {
 		t.Fatalf("expected ShippingQuery to be nil, got %+v", update.ShippingQuery)
+	}
+	if update.Type != UpdateTypeUnknown {
+		t.Fatalf("expected UpdateTypeUnknown, got %q", update.Type)
 	}
 }

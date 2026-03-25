@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -43,7 +44,7 @@ func TestAutoGenerateCommandsChecksLimitBeforeDelete(t *testing.T) {
 	}()
 
 	plugin := NewPlugin[NoDB]("overflow")
-	exec := func(ctx *MsgContext, db *NoDB) {}
+	exec := func(ctx *MsgContext, db NoDB) {}
 	for i := 0; i < 101; i++ {
 		plugin.AddCommand(NewCommand(exec, "cmd"+strconv.Itoa(i)))
 	}
@@ -60,5 +61,25 @@ func TestAutoGenerateCommandsChecksLimitBeforeDelete(t *testing.T) {
 	}
 	if calls.Load() != 0 {
 		t.Fatalf("expected no HTTP calls before limit validation, got %d", calls.Load())
+	}
+}
+
+func TestGatherCommandsForPluginReturnsSortedCommands(t *testing.T) {
+	plugin := NewPlugin[NoDB]("sorted")
+	exec := func(ctx *MsgContext, db NoDB) {}
+
+	plugin.AddCommand(NewCommand(exec, "zeta"))
+	plugin.AddCommand(NewCommand(exec, "alpha"))
+	plugin.AddCommand(NewCommand(exec, "mid"))
+
+	commands := gatherCommandsForPlugin(*plugin)
+	got := make([]string, 0, len(commands))
+	for _, cmd := range commands {
+		got = append(got, cmd.Command)
+	}
+
+	want := []string{"alpha", "mid", "zeta"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected command order: got %v want %v", got, want)
 	}
 }

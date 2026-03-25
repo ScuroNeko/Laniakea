@@ -5,10 +5,12 @@ import (
 	"regexp"
 
 	"git.nix13.pw/scuroneko/extypes"
+	"git.nix13.pw/scuroneko/laniakea/tgapi"
+	"git.nix13.pw/scuroneko/laniakea/utils"
 	"git.nix13.pw/scuroneko/slog"
 )
 
-// CommandValueType defines the expected type of a command argument.
+// CommandValueType defines the expected type of command argument.
 type CommandValueType string
 
 const (
@@ -50,12 +52,12 @@ type CommandArg struct {
 // NewCommandArg creates a new CommandArg with the given text and type.
 // Uses a default regex based on the type (string or int).
 // For CommandValueAnyType, no validation is performed.
-func NewCommandArg(text string) *CommandArg {
-	return &CommandArg{CommandValueAnyType, text, CommandRegexString, false}
+func NewCommandArg(text string) CommandArg {
+	return CommandArg{CommandValueAnyType, text, CommandRegexString, false}
 }
 
 // SetValueType sets expected value type and switches built-in validation regexp.
-func (c *CommandArg) SetValueType(t CommandValueType) *CommandArg {
+func (c CommandArg) SetValueType(t CommandValueType) CommandArg {
 	regex := CommandRegexString
 	switch t {
 	case CommandValueIntType:
@@ -72,14 +74,14 @@ func (c *CommandArg) SetValueType(t CommandValueType) *CommandArg {
 
 // SetRequired marks this argument as required.
 // Returns the receiver for method chaining.
-func (c *CommandArg) SetRequired() *CommandArg {
+func (c CommandArg) SetRequired() CommandArg {
 	c.required = true
 	return c
 }
 
 // CommandExecutor is the function type that executes a command.
 // It receives the message context and a database context (generic).
-type CommandExecutor[T DbContext] func(ctx *MsgContext, dbContext *T)
+type CommandExecutor[T DbContext] func(ctx *MsgContext, dbContext T)
 
 // Command represents a bot command with arguments, description, and executor.
 // Can be registered in a Plugin and optionally skipped from auto-generation.
@@ -123,9 +125,7 @@ func (c *Command[T]) SkipCommandAutoGen() *Command[T] {
 	return c
 }
 
-// validateArgs checks if the provided arguments match the command's requirements.
-// Returns ErrCmdArgCountMismatch if too few arguments are provided.
-// Returns ErrCmdArgRegexpMismatch if any argument fails regex validation.
+// Internal helper that validates provided command arguments.
 func (c *Command[T]) validateArgs(args []string) error {
 	for i := range c.args.Len() {
 		if i >= len(args) && c.args.Get(i).required {
@@ -164,6 +164,8 @@ type Plugin[T DbContext] struct {
 	skipAutoCmd bool                         // If true, all commands in this plugin are excluded from auto-help
 	logger      *slog.Logger
 
+	handlers map[tgapi.UpdateType]CommandExecutor[T]
+
 	onClose func() error
 }
 
@@ -176,6 +178,7 @@ func NewPlugin[T DbContext](name string) *Plugin[T] {
 		middlewares: make(extypes.Slice[Middleware[T]], 0),
 		skipAutoCmd: false,
 		logger:      nil,
+		handlers:    make(map[tgapi.UpdateType]CommandExecutor[T]),
 	}
 }
 
@@ -207,6 +210,24 @@ func (p *Plugin[T]) NewPayload(exec CommandExecutor[T], command string, args ...
 	cmd := NewPayload(exec, command, args...)
 	p.AddPayload(cmd)
 	return cmd
+}
+
+// AddUpdateHandler registers a handler for a non-command update type.
+// Message, channel post, and callback query updates stay on the command/payload flow.
+func (p *Plugin[T]) AddUpdateHandler(t tgapi.UpdateType, handler CommandExecutor[T]) *Plugin[T] {
+	switch t {
+	case tgapi.UpdateTypeMessage, tgapi.UpdateTypeChannelPost, tgapi.UpdateTypeCallbackQuery:
+		if p.logger == nil {
+			logger := utils.CreateLogger(p.name, utils.GetLoggerLevel())
+			logger.Warnf("%s can't be registred through AddUpdateHandler. Use AddPayload/NewPayload or AddCommand/NewCommand", t)
+			_ = logger.Close()
+			return p
+		}
+		p.logger.Warnf("%s can't be registred through AddUpdateHandler. Use AddPayload/NewPayload or AddCommand/NewCommand", t)
+		return p
+	}
+	p.handlers[t] = handler
+	return p
 }
 
 // AddMiddleware adds a middleware to the plugin's global middleware chain.
@@ -267,10 +288,8 @@ func (p *Plugin[T]) Close() error {
 	return errors.Join(e...)
 }
 
-// executeCmd finds and executes a command by its trigger string.
-// Validates arguments and runs middlewares before executor.
-// On error, sends an error message to the user via ctx.error().
-func (p *Plugin[T]) executeCmd(cmd string, ctx *MsgContext, dbContext *T) {
+// Internal helper that validates and executes a command handler.
+func (p *Plugin[T]) executeCmd(cmd string, ctx *MsgContext, db T) {
 	command, exists := p.commands[cmd]
 	if !exists {
 		ctx.error(errors.New("command not found"))
@@ -284,19 +303,17 @@ func (p *Plugin[T]) executeCmd(cmd string, ctx *MsgContext, dbContext *T) {
 
 	// Run command-specific middlewares
 	for _, m := range command.middlewares {
-		if !m.Execute(ctx, dbContext) {
+		if !m.Execute(ctx, db) {
 			return
 		}
 	}
 
 	// Execute command
-	command.exec(ctx, dbContext)
+	command.exec(ctx, db)
 }
 
-// executePayload finds and executes a payload by its callback_data string.
-// Validates arguments and runs middlewares before executor.
-// On error, sends an error message to the user via ctx.error().
-func (p *Plugin[T]) executePayload(payload string, ctx *MsgContext, dbContext *T) {
+// Internal helper that validates and executes a payload handler.
+func (p *Plugin[T]) executePayload(payload string, ctx *MsgContext, db T) {
 	command, exists := p.payloads[payload]
 	if !exists {
 		ctx.error(errors.New("payload not found"))
@@ -310,18 +327,17 @@ func (p *Plugin[T]) executePayload(payload string, ctx *MsgContext, dbContext *T
 
 	// Run command-specific middlewares
 	for _, m := range command.middlewares {
-		if !m.Execute(ctx, dbContext) {
+		if !m.Execute(ctx, db) {
 			return
 		}
 	}
 
 	// Execute payload
-	command.exec(ctx, dbContext)
+	command.exec(ctx, db)
 }
 
-// executeMiddlewares runs all plugin middlewares in order.
-// Returns false if any middleware returns false (blocks execution).
-func (p *Plugin[T]) executeMiddlewares(ctx *MsgContext, db *T) bool {
+// Internal helper that runs plugin middlewares in order.
+func (p *Plugin[T]) executeMiddlewares(ctx *MsgContext, db T) bool {
 	for _, m := range p.middlewares {
 		if !m.Execute(ctx, db) {
 			return false
@@ -333,7 +349,7 @@ func (p *Plugin[T]) executeMiddlewares(ctx *MsgContext, db *T) bool {
 // MiddlewareExecutor is the function type for middleware logic.
 // Returns true to continue execution, false to block it.
 // If async, return value is ignored.
-type MiddlewareExecutor[T DbContext] func(ctx *MsgContext, db *T) bool
+type MiddlewareExecutor[T DbContext] func(ctx *MsgContext, db T) bool
 
 // Middleware represents a reusable execution interceptor.
 // Can be synchronous (blocking) or asynchronous (non-blocking).
@@ -345,19 +361,19 @@ type Middleware[T DbContext] struct {
 }
 
 // NewMiddleware creates a new synchronous middleware.
-func NewMiddleware[T DbContext](name string, executor MiddlewareExecutor[T]) *Middleware[T] {
-	return &Middleware[T]{name, executor, 0, false}
+func NewMiddleware[T DbContext](name string, executor MiddlewareExecutor[T]) Middleware[T] {
+	return Middleware[T]{name, executor, 0, false}
 }
 
 // SetOrder sets the execution order (currently ignored).
-func (m *Middleware[T]) SetOrder(order int) *Middleware[T] {
+func (m Middleware[T]) SetOrder(order int) Middleware[T] {
 	m.order = order
 	return m
 }
 
 // SetAsync marks the middleware to run asynchronously.
 // Execution continues regardless of its return value.
-func (m *Middleware[T]) SetAsync(async bool) *Middleware[T] {
+func (m Middleware[T]) SetAsync(async bool) Middleware[T] {
 	m.async = async
 	return m
 }
@@ -365,7 +381,7 @@ func (m *Middleware[T]) SetAsync(async bool) *Middleware[T] {
 // Execute runs the middleware.
 // If async, runs in a goroutine and returns true immediately.
 // Otherwise, returns the result of the executor.
-func (m *Middleware[T]) Execute(ctx *MsgContext, db *T) bool {
+func (m Middleware[T]) Execute(ctx *MsgContext, db T) bool {
 	if m.async {
 		ctx := *ctx // copy context to avoid race condition
 		go func(ctx MsgContext) {

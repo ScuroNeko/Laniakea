@@ -4,13 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
 
 // CmdRegexp matches command names allowed for Telegram command registration.
-var CmdRegexp = regexp.MustCompile("^[_a-z0-9]+$")
+var CmdRegexp = regexp.MustCompile("^[_a-z0-9]{1,32}$")
 
 // ErrTooManyCommands is returned when the total number of registered commands
 // exceeds Telegram's limit of 100 bot commands per bot.
@@ -20,7 +21,7 @@ var CmdRegexp = regexp.MustCompile("^[_a-z0-9]+$")
 // bot initialization.
 var ErrTooManyCommands = errors.New("too many commands. max 100")
 
-// generateBotCommand builds a BotCommand description with generated usage text.
+// Internal helper to build a BotCommand description with generated usage text.
 func generateBotCommand[T any](cmd *Command[T]) tgapi.BotCommand {
 	desc := ""
 	if len(cmd.description) > 0 {
@@ -44,13 +45,20 @@ func generateBotCommand[T any](cmd *Command[T]) tgapi.BotCommand {
 	return tgapi.BotCommand{Command: cmd.command, Description: usage}
 }
 
-// checkCmdRegex reports whether cmd matches CmdRegexp.
+// Internal helper to validate Telegram command names.
 func checkCmdRegex(cmd string) bool { return CmdRegexp.MatchString(cmd) }
 
-// gatherCommandsForPlugin collects non-skipped, valid commands from one plugin.
+// Internal helper to collect non-skipped, valid commands from one plugin.
 func gatherCommandsForPlugin[T any](pl Plugin[T]) []tgapi.BotCommand {
 	commands := make([]tgapi.BotCommand, 0)
-	for _, cmd := range pl.commands {
+	names := make([]string, 0, len(pl.commands))
+	for name := range pl.commands {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
+		cmd := pl.commands[name]
 		if cmd.skipAutoCmd {
 			continue
 		}
@@ -62,9 +70,7 @@ func gatherCommandsForPlugin[T any](pl Plugin[T]) []tgapi.BotCommand {
 	return commands
 }
 
-// gatherCommands collects all commands from all plugins
-// and converts them into tgapi.BotCommand objects.
-// See gatherCommandsForPlugin.
+// Internal helper to collect all auto-generated commands from registered plugins.
 func gatherCommands[T any](bot *Bot[T]) []tgapi.BotCommand {
 	commands := make([]tgapi.BotCommand, 0)
 	for _, pl := range bot.plugins {

@@ -45,9 +45,9 @@ type Message struct {
 
 	Text string `json:"text"`
 
-	Photo           extypes.Slice[*PhotoSize] `json:"photo,omitempty"`
-	Caption         string                    `json:"caption,omitempty"`
-	CaptionEntities []MessageEntity           `json:"caption_entities,omitempty"`
+	Photo           extypes.Slice[PhotoSize] `json:"photo,omitempty"`
+	Caption         string                   `json:"caption,omitempty"`
+	CaptionEntities []MessageEntity          `json:"caption_entities,omitempty"`
 
 	Date     int `json:"date"`
 	EditDate int `json:"edit_date"`
@@ -77,26 +77,46 @@ type MaybeInaccessibleMessage interface{ Message | InaccessibleMessage }
 type MessageEntityType string
 
 const (
-	MessageEntityMention              MessageEntityType = "mention"
-	MessageEntityHashtag              MessageEntityType = "hashtag"
-	MessageEntityCashtag              MessageEntityType = "cashtag"
-	MessageEntityBotCommand           MessageEntityType = "bot_command"
-	MessageEntityUrl                  MessageEntityType = "url"
-	MessageEntityEmail                MessageEntityType = "email"
-	MessageEntityPhoneNumber          MessageEntityType = "phone_number"
-	MessageEntityBold                 MessageEntityType = "bold"
-	MessageEntityItalic               MessageEntityType = "italic"
-	MessageEntityUnderline            MessageEntityType = "underline"
-	MessageEntityStrike               MessageEntityType = "strikethrough"
-	MessageEntitySpoiler              MessageEntityType = "spoiler"
-	MessageEntityBlockquote           MessageEntityType = "blockquote"
+	// MessageEntityMention identifies an @mention entity.
+	MessageEntityMention MessageEntityType = "mention"
+	// MessageEntityHashtag identifies a hashtag entity.
+	MessageEntityHashtag MessageEntityType = "hashtag"
+	// MessageEntityCashtag identifies a cashtag entity.
+	MessageEntityCashtag MessageEntityType = "cashtag"
+	// MessageEntityBotCommand identifies a bot command entity.
+	MessageEntityBotCommand MessageEntityType = "bot_command"
+	// MessageEntityUrl identifies a URL entity.
+	MessageEntityUrl MessageEntityType = "url"
+	// MessageEntityEmail identifies an email entity.
+	MessageEntityEmail MessageEntityType = "email"
+	// MessageEntityPhoneNumber identifies a phone number entity.
+	MessageEntityPhoneNumber MessageEntityType = "phone_number"
+	// MessageEntityBold identifies bold text.
+	MessageEntityBold MessageEntityType = "bold"
+	// MessageEntityItalic identifies italic text.
+	MessageEntityItalic MessageEntityType = "italic"
+	// MessageEntityUnderline identifies underlined text.
+	MessageEntityUnderline MessageEntityType = "underline"
+	// MessageEntityStrike identifies strikethrough text.
+	MessageEntityStrike MessageEntityType = "strikethrough"
+	// MessageEntitySpoiler identifies spoiler text.
+	MessageEntitySpoiler MessageEntityType = "spoiler"
+	// MessageEntityBlockquote identifies a blockquote entity.
+	MessageEntityBlockquote MessageEntityType = "blockquote"
+	// MessageEntityExpandableBlockquote identifies an expandable blockquote entity.
 	MessageEntityExpandableBlockquote MessageEntityType = "expandable_blockquote"
-	MessageEntityCode                 MessageEntityType = "code"
-	MessageEntityPre                  MessageEntityType = "pre"
-	MessageEntityTextLink             MessageEntityType = "text_link"
-	MessageEntityTextMention          MessageEntityType = "text_mention"
-	MessageEntityCustomEmoji          MessageEntityType = "custom_emoji"
-	MessageEntityDateTime             MessageEntityType = "date_time"
+	// MessageEntityCode identifies inline code.
+	MessageEntityCode MessageEntityType = "code"
+	// MessageEntityPre identifies a preformatted block.
+	MessageEntityPre MessageEntityType = "pre"
+	// MessageEntityTextLink identifies linked text.
+	MessageEntityTextLink MessageEntityType = "text_link"
+	// MessageEntityTextMention identifies a text mention.
+	MessageEntityTextMention MessageEntityType = "text_mention"
+	// MessageEntityCustomEmoji identifies a custom emoji entity.
+	MessageEntityCustomEmoji MessageEntityType = "custom_emoji"
+	// MessageEntityDateTime identifies a date-time entity.
+	MessageEntityDateTime MessageEntityType = "date_time"
 )
 
 // MessageEntity represents one special entity in a text message.
@@ -121,12 +141,12 @@ type ReplyParameters struct {
 	MessageID int   `json:"message_id"`
 	ChatID    int64 `json:"chat_id,omitempty"`
 
-	AllowSendingWithoutReply bool             `json:"allow_sending_without_reply,omitempty"`
-	Quote                    string           `json:"quote,omitempty"`
-	QuoteParsingMode         string           `json:"quote_parsing_mode,omitempty"`
-	QuoteEntities            []*MessageEntity `json:"quote_entities,omitempty"`
-	QuotePosition            int              `json:"quote_position,omitempty"`
-	ChecklistTaskID          int              `json:"checklist_task_id,omitempty"`
+	AllowSendingWithoutReply bool            `json:"allow_sending_without_reply,omitempty"`
+	Quote                    string          `json:"quote,omitempty"`
+	QuoteParsingMode         string          `json:"quote_parsing_mode,omitempty"`
+	QuoteEntities            []MessageEntity `json:"quote_entities,omitempty"`
+	QuotePosition            int             `json:"quote_position,omitempty"`
+	ChecklistTaskID          int             `json:"checklist_task_id,omitempty"`
 }
 
 // LinkPreviewOptions describes the options used for link preview generation.
@@ -166,8 +186,11 @@ type InlineKeyboardMarkup struct {
 type KeyboardButtonStyle string
 
 const (
-	KeyboardButtonStyleDanger  KeyboardButtonStyle = "danger"
+	// KeyboardButtonStyleDanger marks a destructive keyboard button.
+	KeyboardButtonStyleDanger KeyboardButtonStyle = "danger"
+	// KeyboardButtonStyleSuccess marks a confirmatory keyboard button.
 	KeyboardButtonStyleSuccess KeyboardButtonStyle = "success"
+	// KeyboardButtonStylePrimary marks a primary keyboard button.
 	KeyboardButtonStylePrimary KeyboardButtonStyle = "primary"
 )
 
@@ -255,32 +278,34 @@ type CallbackQuery struct {
 // InputPollOption contains information about one answer option in a poll to be sent.
 // See https://core.telegram.org/bots/api#inputpolloption
 type InputPollOption struct {
-	Text          string           `json:"text"`
-	TextParseMode ParseMode        `json:"text_parse_mode,omitempty"`
-	TextEntities  []*MessageEntity `json:"text_entities,omitempty"`
+	Text          string          `json:"text"`
+	TextParseMode ParseMode       `json:"text_parse_mode,omitempty"`
+	TextEntities  []MessageEntity `json:"text_entities,omitempty"`
 }
 
 // PollType represents the type of a poll.
 type PollType string
 
 const (
+	// PollTypeRegular identifies a regular poll.
 	PollTypeRegular PollType = "regular"
-	PollTypeQuiz    PollType = "quiz"
+	// PollTypeQuiz identifies a quiz poll.
+	PollTypeQuiz PollType = "quiz"
 )
 
 // InputChecklistTask describes a task in a checklist.
 type InputChecklistTask struct {
-	ID           int              `json:"id"`
-	Text         string           `json:"text"`
-	ParseMode    ParseMode        `json:"parse_mode,omitempty"`
-	TextEntities []*MessageEntity `json:"text_entities,omitempty"`
+	ID           int             `json:"id"`
+	Text         string          `json:"text"`
+	ParseMode    ParseMode       `json:"parse_mode,omitempty"`
+	TextEntities []MessageEntity `json:"text_entities,omitempty"`
 }
 
 // InputChecklist represents a checklist to be sent.
 type InputChecklist struct {
 	Title                   string               `json:"title"`
 	ParseMode               ParseMode            `json:"parse_mode,omitempty"`
-	TitleEntities           []*MessageEntity     `json:"title_entities,omitempty"`
+	TitleEntities           []MessageEntity      `json:"title_entities,omitempty"`
 	Tasks                   []InputChecklistTask `json:"tasks"`
 	OtherCanAddTasks        bool                 `json:"other_can_add_tasks,omitempty"`
 	OtherCanMarkTasksAsDone bool                 `json:"other_can_mark_tasks_as_done,omitempty"`
@@ -290,14 +315,23 @@ type InputChecklist struct {
 type ChatActionType string
 
 const (
-	ChatActionTyping          ChatActionType = "typing"
-	ChatActionUploadPhoto     ChatActionType = "upload_photo"
-	ChatActionUploadVideo     ChatActionType = "upload_video"
-	ChatActionUploadVoice     ChatActionType = "upload_voice"
-	ChatActionUploadDocument  ChatActionType = "upload_document"
-	ChatActionChooseSticker   ChatActionType = "choose_sticker"
-	ChatActionFindLocation    ChatActionType = "find_location"
+	// ChatActionTyping tells Telegram the bot is typing.
+	ChatActionTyping ChatActionType = "typing"
+	// ChatActionUploadPhoto tells Telegram the bot is uploading a photo.
+	ChatActionUploadPhoto ChatActionType = "upload_photo"
+	// ChatActionUploadVideo tells Telegram the bot is uploading a video.
+	ChatActionUploadVideo ChatActionType = "upload_video"
+	// ChatActionUploadVoice tells Telegram the bot is uploading a voice message.
+	ChatActionUploadVoice ChatActionType = "upload_voice"
+	// ChatActionUploadDocument tells Telegram the bot is uploading a document.
+	ChatActionUploadDocument ChatActionType = "upload_document"
+	// ChatActionChooseSticker tells Telegram the bot is choosing a sticker.
+	ChatActionChooseSticker ChatActionType = "choose_sticker"
+	// ChatActionFindLocation tells Telegram the bot is finding a location.
+	ChatActionFindLocation ChatActionType = "find_location"
+	// ChatActionUploadVideoNote tells Telegram the bot is uploading a video note.
 	ChatActionUploadVideoNote ChatActionType = "upload_video_note"
+	// ChatActionUploadVideoNone is a deprecated alias for ChatActionUploadVideoNote.
 	ChatActionUploadVideoNone ChatActionType = ChatActionUploadVideoNote
 )
 

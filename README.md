@@ -52,7 +52,7 @@ import (
 // It receives two parameters:
 //   - ctx: the message context (contains info about the message, sender, chat, etc.)
 //   - db: your custom database context (here we use NoDB, a placeholder for no database)
-func echo(ctx *laniakea.MsgContext, db *laniakea.NoDB) {
+func echo(ctx *laniakea.MsgContext, db laniakea.NoDB) {
 	// Answer the user with the text they sent, without any command prefix.
 	// ctx.Text contains the user's message with the command part stripped off.
 	ctx.Answer(ctx.Text) // User input WITHOUT command
@@ -64,7 +64,10 @@ func main() {
 
 	// 2. Initialize a new bot instance.
 	//    We use laniakea.NoDB as the database context type (no database needed for this example).
-	bot := laniakea.NewBot[laniakea.NoDB](opts)
+	bot, err := laniakea.NewBot[laniakea.NoDB](opts)
+	if err != nil {
+		log.Fatal(err)
+	}
 	// Ensure bot resources are cleaned up on exit.
 	defer bot.Close()
 
@@ -78,7 +81,7 @@ func main() {
 
 	// 5. Add another command using an anonymous function (closure).
 	//    This command simply replies "Pong" when the user sends "/ping".
-	p.AddCommand(p.NewCommand(func(ctx *laniakea.MsgContext, db *laniakea.NoDB) {
+	p.AddCommand(p.NewCommand(func(ctx *laniakea.MsgContext, db laniakea.NoDB) {
 		ctx.Answer("Pong")
 	}, "ping"))
 
@@ -94,7 +97,9 @@ func main() {
 	}
 
 	// 8. Start the bot, listening for updates (long polling).
-	bot.Run()
+	if err := bot.Run(); err != nil {
+		log.Fatal(err)
+	}
 }
 ```
 
@@ -105,15 +110,16 @@ func main() {
 4. `AddCommand`: Registers a command. The first argument is the handler function (func(*MsgContext, T)), the second is the command name (without the slash).
 5. **Handler Functions**: Receive *MsgContext (message details, methods like Answer) and your custom database context T.
 6. `ErrorTemplate`: Sets a template for error messages. The %s placeholder is replaced by the actual error.
-7. `AutoGenerateCommands`: Adds built-in commands (/start, /help) and a command that lists all available commands.
-8. `Run()`: Starts the bot's update polling loop.
+7. `AutoGenerateCommands`: Registers plugin-defined commands with Telegram across the supported scopes.
+8. `Run()`: Starts the bot's update polling loop and returns an error if startup or polling fails.
+9. A `Bot` instance is single-use. After `Run()` or `RunWithContext()` returns, create a new bot instance for the next session.
 
 ## 📖 Core Concepts
 ### Plugins
 
 Plugins are the main way to organize code. A plugin can have multiple commands and middlewares.
 ```go
-plugin := laniakea.NewPlugin[MyDB]("admin")
+plugin := laniakea.NewPlugin[*MyDB]("admin")
 plugin.AddCommand(plugin.NewCommand(banUser, "ban"))
 bot.AddPlugins(plugin)
 ```
@@ -153,14 +159,20 @@ Provides access to the incoming message and useful reply methods:
 
 This split keeps method intent explicit: JSON-only calls go through `API`, file uploads go through `Uploader`.
 
+For advanced cases, `tgapi.NewRequest(...)` and `tgapi.NewUploaderRequest(...)` remain public as low-level escape hatches. They are intentionally less safe than method-specific helpers: callers must supply the correct Telegram method name and compatible request/response types themselves.
+
 ### Database Context
 
-The `T` in `NewBot[T]` is a powerful feature. You can pass any type (like a database connection pool), and it will be available in every command and middleware handler.
+The `T` in `NewBot[T]` is a powerful feature. You can pass any type, but shared dependencies such as database pools should usually use a pointer type.
 
 ```go
 type MyDB struct { /* ... */ }
 db := &MyDB{...}
-bot := laniakea.NewBot[*MyDB](opts, db) // Pass db instance
+bot, err := laniakea.NewBot[*MyDB](opts)
+if err != nil {
+    log.Fatal(err)
+}
+bot.DatabaseContext(db)
 ```
 
 ## 🧩 Middleware
@@ -177,11 +189,12 @@ func(ctx *MsgContext, db T) bool
 - If it returns false, the execution chain stops immediately (the command will not run).
 
 ### Adding Middleware
-Use the Use method of a plugin to add one or more middleware functions. They are executed in the order they are added.
+Use `AddMiddleware` on a plugin to add one or more shared middleware functions. They are executed in the order they are added.
 
 ```go
-plugin := laniakea.NewPlugin[MyDB]("admin")
-plugin.Use(loggingMiddleware, adminOnlyMiddleware)
+plugin := laniakea.NewPlugin[*MyDB]("admin")
+plugin.AddMiddleware(laniakea.NewMiddleware("logging", loggingMiddleware))
+plugin.AddMiddleware(laniakea.NewMiddleware("admin-only", adminOnlyMiddleware))
 plugin.AddCommand(plugin.NewCommand(banUser, "ban"))
 ```
 
@@ -212,7 +225,15 @@ func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 ## ⚙️ Advanced Configuration
 - **Inline Keyboards**: Build keyboards using `laniakea.NewInlineKeyboardJson`, `laniakea.NewInlineKeyboardBase64`, or `laniakea.NewInlineKeyboard`.
 - **Rate Limiting**: Pass a configured utils.RateLimiter via BotOpts to handle Telegram's rate limits gracefully.
-- **Custom HTTP Client**: Provide your own http.Client in BotOpts for fine-tuned control.
+- **Localization**: `L10n` is safe for concurrent use once attached to the bot.
+- **Custom Update Handlers**: Use `plugin.AddUpdateHandler(...)` for Telegram update types that are not part of the command/payload flow.
+- **Lifecycle**: `RunWithContext(...)` does not call `Close()` for you. Shut the bot down explicitly, and create a fresh `Bot` for the next run.
+
+## Telegram Update Handling
+- Commands and payloads are handled through plugins.
+- Non-command updates can be routed with `plugin.AddUpdateHandler(updateType, handler)`.
+- `message`, `channel_post`, and `callback_query` stay on the command/payload flow.
+- `tgapi.Update` exposes a derived `Type` field after JSON unmarshalling so handlers can inspect the effective update kind directly.
 
 ## 📝 License
 

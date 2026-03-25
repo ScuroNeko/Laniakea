@@ -54,7 +54,9 @@ type BotShortDescription struct {
 type InputProfilePhotoType string
 
 const (
-	InputProfilePhotoStaticType   InputProfilePhotoType = "static"
+	// InputProfilePhotoStaticType identifies a static profile photo input.
+	InputProfilePhotoStaticType InputProfilePhotoType = "static"
+	// InputProfilePhotoAnimatedType identifies an animated profile photo input.
 	InputProfilePhotoAnimatedType InputProfilePhotoType = "animated"
 )
 
@@ -75,17 +77,20 @@ type InputProfilePhoto struct {
 type MenuButtonType string
 
 const (
+	// MenuButtonCommandsType identifies a commands menu button.
 	MenuButtonCommandsType MenuButtonType = "commands"
-	MenuButtonWebAppType   MenuButtonType = "web_app"
-	MenuButtonDefaultType  MenuButtonType = "default"
+	// MenuButtonWebAppType identifies a web app menu button.
+	MenuButtonWebAppType MenuButtonType = "web_app"
+	// MenuButtonDefaultType identifies Telegram's default menu button.
+	MenuButtonDefaultType MenuButtonType = "default"
 )
 
-// BaseMenuButton represents a menu button.
+// MenuButton represents a menu button.
 // See https://core.telegram.org/bots/api#menubutton
-type BaseMenuButton struct {
+type MenuButton struct {
 	Type MenuButtonType `json:"type"`
 
 	// WebApp fields (for web_app button)
-	Text   string     `json:"text"`
-	WebApp WebAppInfo `json:"web_app"`
+	Text   *string     `json:"text"`
+	WebApp *WebAppInfo `json:"web_app"`
 }

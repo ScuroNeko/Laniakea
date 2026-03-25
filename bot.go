@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"git.nix13.pw/scuroneko/extypes"
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
@@ -15,13 +17,18 @@ import (
 	"github.com/alitto/pond/v2"
 )
 
-// DbContext is an interface representing the application's database context.
-// It is injected into plugins and middleware via Bot.DatabaseContext().
+// DbContext is the generic dependency type injected into bots, plugins, and handlers.
+// Use it for shared application state such as database handles or service containers.
 //
 // Example:
 //
 //	type MyDB struct { ... }
-//	bot := NewBot[MyDB](opts).DatabaseContext(&myDB)
+//	myDB := &MyDB{}
+//	bot, err := NewBot[*MyDB](opts)
+//	if err != nil {
+//		return err
+//	}
+//	bot.DatabaseContext(myDB)
 //
 // Use NoDB if no database is needed.
 type DbContext any
@@ -32,7 +39,7 @@ type NoDB struct{ DbContext }
 
 // DbLogger is a function type that returns a slog.LoggerWriter for database logging.
 // Used to inject database-specific log output (e.g., SQL queries, ORM events).
-type DbLogger[T DbContext] func(db *T) slog.LoggerWriter
+type DbLogger[T DbContext] func(db T) slog.LoggerWriter
 
 // BotPayloadType defines the serialization format for callback data payloads.
 type BotPayloadType string
@@ -44,6 +51,20 @@ var (
 	BotPayloadJson BotPayloadType = "json"
 )
 
+var (
+	// ErrNoPrefixes reports that the bot was started without any command prefixes.
+	ErrNoPrefixes = errors.New("no prefixes defined")
+	// ErrNoPlugins reports that the bot was started without any registered plugins.
+	ErrNoPlugins = errors.New("no plugins defined")
+	// ErrBotAlreadyRun reports that Run or RunWithContext was called more than once.
+	ErrBotAlreadyRun = errors.New("bot can only be run once")
+
+	// ErrTokenRequired reports that BotOpts.Token was empty.
+	ErrTokenRequired = errors.New("token required")
+	// ErrOptsIsNil reports that NewBot was called with a nil BotOpts pointer.
+	ErrOptsIsNil = errors.New("opts is nil")
+)
+
 // Bot is the core Telegram bot instance.
 //
 // Manages:
@@ -53,7 +74,8 @@ var (
 //   - Logging and rate limiting
 //   - Localization and draft message support
 //
-// All methods are safe for concurrent use. Direct field access is not recommended.
+// Runtime accessors are safe for concurrent use. Configure the bot before Run.
+// A Bot is single-use: after Run or RunWithContext returns, create a new Bot for the next session.
 type Bot[T DbContext] struct {
 	token         string
 	debug         bool
@@ -73,9 +95,11 @@ type Bot[T DbContext] struct {
 
 	api           *tgapi.API      // Telegram API client
 	uploader      *tgapi.Uploader // File uploader
-	dbContext     *T              // Injected database context
-	l10n          *L10n           // Localization manager
-	draftProvider *DraftProvider  // Draft message builder
+	dbContext     T               // Injected database context
+	hasDBContext  bool
+	warnedValueDB bool
+	l10n          *L10n          // Localization manager
+	draftProvider *DraftProvider // Draft message builder
 
 	updateOffsetMu sync.Mutex
 	updateOffset   int                // Last processed update ID
@@ -83,6 +107,9 @@ type Bot[T DbContext] struct {
 	updateQueue    chan *tgapi.Update // Internal queue for processing updates
 	runnerOnceWG   sync.WaitGroup     // Tracks one-time async runners
 	runnerBgWG     sync.WaitGroup     // Tracks background async runners
+	runStateMu     sync.Mutex
+	running        bool
+	ran            bool
 }
 
 // NewBot creates and initializes a new Bot instance using the provided BotOpts.
@@ -93,13 +120,12 @@ type Bot[T DbContext] struct {
 //   - Fetches bot username via GetMe()
 //   - Sets up DraftProvider with random IDs
 //   - Adds API and Uploader loggers to extraLoggers
-//
-// Panics if:
-//   - Token is empty
-//   - GetMe() fails (invalid token or network error)
-func NewBot[T any](opts *BotOpts) *Bot[T] {
+func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
+	if opts == nil {
+		return nil, ErrOptsIsNil
+	}
 	if opts.Token == "" {
-		panic("laniakea: BotOpts.Token is required")
+		return nil, ErrTokenRequired
 	}
 
 	updateQueue := make(chan *tgapi.Update, 512)
@@ -163,7 +189,7 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 	u, err := api.GetMe()
 	if err != nil {
 		_ = bot.Close()
-		bot.logger.Fatal(err)
+		return nil, err
 	}
 	bot.username = Val(u.Username, "")
 	if bot.username == "" {
@@ -171,7 +197,7 @@ func NewBot[T any](opts *BotOpts) *Bot[T] {
 	}
 	bot.logger.Infoln(fmt.Sprintf("Authorized as %s (@%s)", u.FirstName, Val(u.Username, "unknown")))
 
-	return bot
+	return bot, nil
 }
 
 // Close gracefully shuts down bot-owned resources.
@@ -226,11 +252,7 @@ func (bot *Bot[T]) CloseRemote(ctx context.Context) error {
 	return nil
 }
 
-// initLoggers configures the main and optional request loggers.
-//
-// Uses DEBUG flag to set log level (DEBUG if true, FATAL otherwise).
-// Writes to stdout in JSON format by default.
-// If WriteToFile is true, writes to main.log and requests.log in LoggerBasePath.
+// Internal logger setup for the bot and optional request logger.
 func (bot *Bot[T]) initLoggers(opts *BotOpts) {
 	level := slog.FATAL
 	if opts.Debug {
@@ -285,8 +307,8 @@ func (bot *Bot[T]) GetUpdateTypes() []tgapi.UpdateType {
 func (bot *Bot[T]) GetLogger() *slog.Logger { return bot.logger }
 
 // GetDBContext returns the injected database context.
-// Returns nil if not set via DatabaseContext().
-func (bot *Bot[T]) GetDBContext() *T { return bot.dbContext }
+// If DatabaseContext was not called, it returns the zero value of T.
+func (bot *Bot[T]) GetDBContext() T { return bot.dbContext }
 
 // GetLoggerLevel returns the effective log level derived from the bot's debug
 // flag.
@@ -313,8 +335,16 @@ func (bot *Bot[T]) SetDraftProvider(p *DraftProvider) *Bot[T] {
 
 // DatabaseContext injects a database context into the bot.
 // This context is accessible to plugins and middleware via GetDBContext().
-func (bot *Bot[T]) DatabaseContext(ctx *T) *Bot[T] {
+// For shared dependencies such as *sql.DB, prefer using a pointer type as T.
+// Value-typed contexts are supported, but the bot warns once because handlers
+// receive T by value.
+func (bot *Bot[T]) DatabaseContext(ctx T) *Bot[T] {
+	if !bot.warnedValueDB && shouldWarnOnValueDBContext[T]() && bot.logger != nil {
+		bot.logger.Warnln("database context uses a value type; shared dependencies should usually use a pointer type as T")
+		bot.warnedValueDB = true
+	}
 	bot.dbContext = ctx
+	bot.hasDBContext = true
 	return bot
 }
 
@@ -387,12 +417,20 @@ func (bot *Bot[T]) Debug(debug bool) *Bot[T] {
 func (bot *Bot[T]) AddPlugins(plugin ...*Plugin[T]) *Bot[T] {
 	level := bot.GetLoggerLevel()
 	for _, p := range plugin {
+		if p == nil {
+			if bot.logger != nil {
+				bot.logger.Warn("nil plugin skipped")
+			}
+			continue
+		}
 		cloned := clonePlugin(p)
 		if cloned.logger == nil {
 			cloned.logger = utils.CreateLogger(cloned.name, level)
 		}
 		bot.plugins = append(bot.plugins, cloned)
-		bot.logger.Debugln(fmt.Sprintf("plugins with name \"%s\" registered", cloned.name))
+		if bot.logger != nil {
+			bot.logger.Debugln(fmt.Sprintf("plugins with name \"%s\" registered", cloned.name))
+		}
 	}
 	return bot
 }
@@ -409,13 +447,14 @@ func (bot *Bot[T]) AddPlugins(plugin ...*Plugin[T]) *Bot[T] {
 //
 // Example:
 //
-//	bot.AddMiddleware(&authMiddleware, &rateLimitMiddleware)
+//	bot.AddMiddleware(authMiddleware, rateLimitMiddleware)
 //
-// Panics if any middleware has a nil name.
+// Middleware with an empty name are skipped with a warning.
 func (bot *Bot[T]) AddMiddleware(middleware ...Middleware[T]) *Bot[T] {
 	for _, m := range middleware {
 		if m.name == "" {
-			panic("laniakea: middleware must have a non-empty name")
+			bot.logger.Warnln("middleware must have a non-empty name")
+			continue
 		}
 		bot.middlewares = append(bot.middlewares, m)
 		bot.logger.Debugln(fmt.Sprintf("middleware with name \"%s\" registered", m.name))
@@ -446,12 +485,13 @@ func (bot *Bot[T]) AddMiddleware(middleware ...Middleware[T]) *Bot[T] {
 //
 // Example:
 //
-//	bot.AddRunner(&cleanupRunner)
+//	bot.AddRunner(cleanupRunner)
 //
-// Panics if runner has a nil name.
+// Runners with an empty name are skipped with a warning.
 func (bot *Bot[T]) AddRunner(runner Runner[T]) *Bot[T] {
 	if runner.name == "" {
-		panic("laniakea: runner must have a non-empty name")
+		bot.logger.Warnln("runner must have a non-empty name")
+		return bot
 	}
 	bot.runners = append(bot.runners, runner)
 	bot.logger.Debugln(fmt.Sprintf("runner with name \"%s\" registered", runner.name))
@@ -498,6 +538,14 @@ func (bot *Bot[T]) AddL10n(l *L10n) *Bot[T] {
 //	    return db.QueryLogger()
 //	})
 func (bot *Bot[T]) AddDatabaseLoggerWriter(writer DbLogger[T]) *Bot[T] {
+	if !bot.hasDBContext {
+		bot.logger.Warnln("database context is not set; skipping database logger writer")
+		return bot
+	}
+	if isNilValue(bot.dbContext) {
+		bot.logger.Warnln("database context is nil; skipping database logger writer")
+		return bot
+	}
 	w := writer(bot.dbContext)
 	bot.logger.AddWriter(w)
 	if bot.RequestLogger != nil {
@@ -536,17 +584,21 @@ func (bot *Bot[T]) AddDatabaseLoggerWriter(writer DbLogger[T]) *Bot[T] {
 //	go bot.RunWithContext(ctx)
 //	// ... later ...
 //	cancel() // triggers graceful shutdown
-//	_ = bot.Close(context.Background())
-func (bot *Bot[T]) RunWithContext(ctx context.Context) {
+//	_ = bot.Close()
+//
+// A Bot is single-use. After RunWithContext returns, later calls return ErrBotAlreadyRun.
+func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 	if len(bot.prefixes) == 0 {
-		bot.logger.Errorln("no prefixes defined")
-		return
+		return ErrNoPrefixes
 	}
 
 	if len(bot.plugins) == 0 {
-		bot.logger.Errorln("no plugins defined")
-		return
+		return ErrNoPlugins
 	}
+	if err := bot.beginRun(); err != nil {
+		return err
+	}
+	defer bot.finishRun()
 
 	bot.ExecRunners(ctx)
 
@@ -560,6 +612,7 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) {
 			}
 			close(bot.updateQueue)
 		}()
+		retryDelay := time.Duration(0)
 		for {
 			select {
 			case <-ctx.Done():
@@ -571,8 +624,19 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) {
 						return
 					}
 					bot.logger.Errorln("failed to fetch updates:", err)
+					retryDelay = nextPollRetryDelay(retryDelay)
+					timer := time.NewTimer(retryDelay)
+					select {
+					case <-ctx.Done():
+						if !timer.Stop() {
+							<-timer.C
+						}
+						return
+					case <-timer.C:
+					}
 					continue
 				}
+				retryDelay = 0
 
 				for _, update := range updates {
 					u := update // copy loop variable to avoid race condition
@@ -597,6 +661,7 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) {
 	pool.Stop() // Wait for all tasks to complete and stop the pool
 	bot.runnerOnceWG.Wait()
 	bot.runnerBgWG.Wait()
+	return nil
 }
 
 // Run starts the bot using a background context.
@@ -605,8 +670,62 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) {
 // Use this for simple bots where graceful shutdown is not required.
 //
 // For production use, prefer RunWithContext to handle SIGINT/SIGTERM gracefully.
-func (bot *Bot[T]) Run() {
-	bot.RunWithContext(context.Background())
+func (bot *Bot[T]) Run() error {
+	return bot.RunWithContext(context.Background())
+}
+
+func (bot *Bot[T]) beginRun() error {
+	bot.runStateMu.Lock()
+	defer bot.runStateMu.Unlock()
+	if bot.running || bot.ran {
+		return ErrBotAlreadyRun
+	}
+	bot.running = true
+	bot.ran = true
+	return nil
+}
+
+func (bot *Bot[T]) finishRun() {
+	bot.runStateMu.Lock()
+	bot.running = false
+	bot.runStateMu.Unlock()
+}
+
+func nextPollRetryDelay(prev time.Duration) time.Duration {
+	if prev <= 0 {
+		return time.Second
+	}
+	next := prev * 2
+	if next > 30*time.Second {
+		return 30 * time.Second
+	}
+	return next
+}
+
+func isNilValue[T any](v T) bool {
+	rv := reflect.ValueOf(v)
+	if !rv.IsValid() {
+		return true
+	}
+	switch rv.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+		return rv.IsNil()
+	default:
+		return false
+	}
+}
+
+func shouldWarnOnValueDBContext[T any]() bool {
+	t := reflect.TypeFor[T]()
+	if t == reflect.TypeFor[NoDB]() {
+		return false
+	}
+	switch t.Kind() {
+	case reflect.Pointer, reflect.Interface, reflect.Map, reflect.Slice, reflect.Func, reflect.Chan:
+		return false
+	default:
+		return true
+	}
 }
 
 func clonePlugin[T DbContext](p *Plugin[T]) Plugin[T] {
@@ -617,6 +736,7 @@ func clonePlugin[T DbContext](p *Plugin[T]) Plugin[T] {
 		middlewares: append(extypes.Slice[Middleware[T]](nil), p.middlewares...),
 		skipAutoCmd: p.skipAutoCmd,
 		logger:      p.logger,
+		handlers:    make(map[tgapi.UpdateType]CommandExecutor[T]),
 		onClose:     p.onClose,
 	}
 
@@ -625,6 +745,9 @@ func clonePlugin[T DbContext](p *Plugin[T]) Plugin[T] {
 	}
 	for name, command := range p.payloads {
 		cloned.payloads[name] = cloneCommand(command)
+	}
+	for t, handler := range p.handlers {
+		cloned.handlers[t] = handler
 	}
 
 	return cloned

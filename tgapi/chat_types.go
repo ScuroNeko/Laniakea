@@ -17,10 +17,14 @@ type Chat struct {
 type ChatType string
 
 const (
-	ChatTypePrivate    ChatType = "private"
-	ChatTypeGroup      ChatType = "group"
+	// ChatTypePrivate identifies a private chat.
+	ChatTypePrivate ChatType = "private"
+	// ChatTypeGroup identifies a basic group chat.
+	ChatTypeGroup ChatType = "group"
+	// ChatTypeSupergroup identifies a supergroup chat.
 	ChatTypeSupergroup ChatType = "supergroup"
-	ChatTypeChannel    ChatType = "channel"
+	// ChatTypeChannel identifies a channel chat.
+	ChatTypeChannel ChatType = "channel"
 )
 
 // ChatFullInfo contains full information about a chat.
@@ -143,12 +147,18 @@ type ChatInviteLink struct {
 type ChatMemberStatusType string
 
 const (
-	ChatMemberStatusOwner         ChatMemberStatusType = "owner"
+	// ChatMemberStatusOwner identifies a chat owner.
+	ChatMemberStatusOwner ChatMemberStatusType = "owner"
+	// ChatMemberStatusAdministrator identifies a chat administrator.
 	ChatMemberStatusAdministrator ChatMemberStatusType = "administrator"
-	ChatMemberStatusMember        ChatMemberStatusType = "member"
-	ChatMemberStatusRestricted    ChatMemberStatusType = "restricted"
-	ChatMemberStatusLeft          ChatMemberStatusType = "left"
-	ChatMemberStatusBanned        ChatMemberStatusType = "kicked"
+	// ChatMemberStatusMember identifies a regular member.
+	ChatMemberStatusMember ChatMemberStatusType = "member"
+	// ChatMemberStatusRestricted identifies a restricted member.
+	ChatMemberStatusRestricted ChatMemberStatusType = "restricted"
+	// ChatMemberStatusLeft identifies a user who left the chat.
+	ChatMemberStatusLeft ChatMemberStatusType = "left"
+	// ChatMemberStatusBanned identifies a banned user.
+	ChatMemberStatusBanned ChatMemberStatusType = "kicked"
 )
 
 // ChatMember contains information about one member of a chat.

@@ -6,6 +6,9 @@ import "encoding/json"
 type UpdateType string
 
 const (
+	// UpdateTypeUnknown marks an update whose payload does not match a known Telegram update kind.
+	UpdateTypeUnknown UpdateType = "unknown"
+
 	// UpdateTypeMessage is a regular message update.
 	UpdateTypeMessage UpdateType = "message"
 	// UpdateTypeEditedMessage is an edited message update.
@@ -27,8 +30,6 @@ const (
 	UpdateTypeEditedBusinessMessage UpdateType = "edited_business_message"
 	// UpdateTypeDeletedBusinessMessages is a deleted business messages update.
 	UpdateTypeDeletedBusinessMessages UpdateType = "deleted_business_messages"
-	// UpdateTypeDeletedBusinessMessage is kept as a backward-compatible alias.
-	UpdateTypeDeletedBusinessMessage UpdateType = UpdateTypeDeletedBusinessMessages
 
 	// UpdateTypeInlineQuery is an inline query update.
 	UpdateTypeInlineQuery UpdateType = "inline_query"
@@ -61,6 +62,8 @@ const (
 // Update represents an incoming update from Telegram.
 // See https://core.telegram.org/bots/api#update
 type Update struct {
+	Type UpdateType `json:"-"`
+
 	UpdateID          int      `json:"update_id"`
 	Message           *Message `json:"message,omitempty"`
 	EditedMessage     *Message `json:"edited_message,omitempty"`
@@ -71,7 +74,6 @@ type Update struct {
 	BusinessMessage         *Message                     `json:"business_message,omitempty"`
 	EditedBusinessMessage   *Message                     `json:"edited_business_message,omitempty"`
 	DeletedBusinessMessages *BusinessMessagesDeleted     `json:"deleted_business_messages,omitempty"`
-	DeletedBusinessMessage  *BusinessMessagesDeleted     `json:"-"`
 	MessageReaction         *MessageReactionUpdated      `json:"message_reaction,omitempty"`
 	MessageReactionCount    *MessageReactionCountUpdated `json:"message_reaction_count,omitempty"`
 
@@ -91,33 +93,72 @@ type Update struct {
 	RemovedChatBoost *ChatBoostRemoved  `json:"removed_chat_boost,omitempty"`
 }
 
-func (u *Update) syncDeletedBusinessMessages() {
-	if u.DeletedBusinessMessages != nil {
-		u.DeletedBusinessMessage = u.DeletedBusinessMessages
-		return
-	}
-	if u.DeletedBusinessMessage != nil {
-		u.DeletedBusinessMessages = u.DeletedBusinessMessage
-	}
-}
-
-// UnmarshalJSON keeps the deprecated DeletedBusinessMessage alias in sync.
+// UnmarshalJSON decodes an update and derives its Type from the populated payload field.
 func (u *Update) UnmarshalJSON(data []byte) error {
-	type alias Update
-	var aux alias
+	type Alias Update
+
+	var aux Alias
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
-	*u = Update(aux)
-	u.syncDeletedBusinessMessages()
-	return nil
-}
 
-// MarshalJSON emits the canonical deleted_business_messages field.
-func (u Update) MarshalJSON() ([]byte, error) {
-	u.syncDeletedBusinessMessages()
-	type alias Update
-	return json.Marshal(alias(u))
+	*u = Update(aux)
+
+	switch {
+	case u.Message != nil:
+		u.Type = UpdateTypeMessage
+	case u.EditedMessage != nil:
+		u.Type = UpdateTypeEditedMessage
+	case u.ChannelPost != nil:
+		u.Type = UpdateTypeChannelPost
+	case u.EditedChannelPost != nil:
+		u.Type = UpdateTypeEditedChannelPost
+
+	case u.BusinessConnection != nil:
+		u.Type = UpdateTypeBusinessConnection
+	case u.BusinessMessage != nil:
+		u.Type = UpdateTypeBusinessMessage
+	case u.EditedBusinessMessage != nil:
+		u.Type = UpdateTypeEditedBusinessMessage
+	case u.DeletedBusinessMessages != nil:
+		u.Type = UpdateTypeDeletedBusinessMessages
+	case u.MessageReaction != nil:
+		u.Type = UpdateTypeMessageReaction
+	case u.MessageReactionCount != nil:
+		u.Type = UpdateTypeMessageReactionCount
+
+	case u.InlineQuery != nil:
+		u.Type = UpdateTypeInlineQuery
+	case u.ChosenInlineResult != nil:
+		u.Type = UpdateTypeChosenInlineResult
+	case u.CallbackQuery != nil:
+		u.Type = UpdateTypeCallbackQuery
+	case u.ShippingQuery != nil:
+		u.Type = UpdateTypeShippingQuery
+	case u.PreCheckoutQuery != nil:
+		u.Type = UpdateTypePreCheckoutQuery
+	case u.PurchasedPaidMedia != nil:
+		u.Type = UpdateTypePurchasedPaidMedia
+
+	case u.Poll != nil:
+		u.Type = UpdateTypePoll
+	case u.PollAnswer != nil:
+		u.Type = UpdateTypePollAnswer
+	case u.MyChatMember != nil:
+		u.Type = UpdateTypeMyChatMember
+	case u.ChatMember != nil:
+		u.Type = UpdateTypeChatMember
+	case u.ChatJoinRequest != nil:
+		u.Type = UpdateTypeChatJoinRequest
+	case u.ChatBoost != nil:
+		u.Type = UpdateTypeChatBoost
+	case u.RemovedChatBoost != nil:
+		u.Type = UpdateTypeRemovedChatBoost
+	default:
+		u.Type = UpdateTypeUnknown
+	}
+
+	return nil
 }
 
 // InlineQuery represents an incoming inline query.
@@ -351,19 +392,19 @@ type GiftBackground struct {
 
 // Gift represents a gift that can be sent.
 type Gift struct {
-	ID                     string         `json:"id"`
-	Sticker                Sticker        `json:"sticker"`
-	StarCount              int            `json:"star_count"`
-	UpdateStarCount        *int           `json:"update_star_count,omitempty"`
-	IsPremium              *bool          `json:"is_premium,omitempty"`
-	HasColors              *bool          `json:"has_colors,omitempty"`
-	TotalCount             *int           `json:"total_count,omitempty"`
-	RemainingCount         *int           `json:"remaining_count,omitempty"`
-	PersonalTotalCount     *int           `json:"personal_total_count,omitempty"`
-	PersonalRemainingCount *int           `json:"personal_remaining_count,omitempty"`
-	Background             GiftBackground `json:"background,omitempty"`
-	UniqueGiftVariantColor *int           `json:"unique_gift_variant_color,omitempty"`
-	PublisherChat          *Chat          `json:"publisher_chat,omitempty"`
+	ID                     string          `json:"id"`
+	Sticker                Sticker         `json:"sticker"`
+	StarCount              int             `json:"star_count"`
+	UpdateStarCount        *int            `json:"update_star_count,omitempty"`
+	IsPremium              *bool           `json:"is_premium,omitempty"`
+	HasColors              *bool           `json:"has_colors,omitempty"`
+	TotalCount             *int            `json:"total_count,omitempty"`
+	RemainingCount         *int            `json:"remaining_count,omitempty"`
+	PersonalTotalCount     *int            `json:"personal_total_count,omitempty"`
+	PersonalRemainingCount *int            `json:"personal_remaining_count,omitempty"`
+	Background             *GiftBackground `json:"background,omitempty"`
+	UniqueGiftVariantColor *int            `json:"unique_gift_variant_color,omitempty"`
+	PublisherChat          *Chat           `json:"publisher_chat,omitempty"`
 }
 
 // Gifts represents a list of gifts.
@@ -375,8 +416,10 @@ type Gifts struct {
 type OwnedGiftType string
 
 const (
+	// OwnedGiftRegularType identifies a regular owned gift.
 	OwnedGiftRegularType OwnedGiftType = "regular"
-	OwnedGiftUniqueType  OwnedGiftType = "unique"
+	// OwnedGiftUniqueType identifies a unique owned gift.
+	OwnedGiftUniqueType OwnedGiftType = "unique"
 )
 
 // OwnedGift represents a gift owned by a user or chat.
@@ -388,7 +431,7 @@ type OwnedGift struct {
 
 	// Fields specific to "regular" type
 	Gift                    Gift            `json:"gift"`
-	SenderUser              User            `json:"sender_user,omitempty"`
+	SenderUser              *User           `json:"sender_user,omitempty"`
 	Text                    string          `json:"text,omitempty"`
 	Entities                []MessageEntity `json:"entities,omitempty"`
 	IsPrivate               *bool           `json:"is_private,omitempty"`

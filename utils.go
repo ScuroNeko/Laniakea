@@ -53,11 +53,15 @@ func EscapePunctuation(s string) string {
 	return s
 }
 
-// Version constants mirror values from the internal utils/version package.
 const (
+	// VersionString re-exports the module version string.
 	VersionString = utils.VersionString
-	VersionMajor  = utils.VersionMajor
-	VersionMinor  = utils.VersionMinor
-	VersionPatch  = utils.VersionPatch
-	VersionBeta   = utils.VersionBeta
+	// VersionMajor re-exports the module major version.
+	VersionMajor = utils.VersionMajor
+	// VersionMinor re-exports the module minor version.
+	VersionMinor = utils.VersionMinor
+	// VersionPatch re-exports the module patch version.
+	VersionPatch = utils.VersionPatch
+	// VersionBeta re-exports the module prerelease counter.
+	VersionBeta = utils.VersionBeta
 )

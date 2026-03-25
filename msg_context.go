@@ -46,8 +46,7 @@ type AnswerMessage struct {
 	ctx       *MsgContext // internal back-reference
 }
 
-// edit is an internal helper to edit a message's text with optional keyboard and parse mode.
-// Used by Edit, EditMarkdown, EditCallback, etc.
+// Internal helper for text edits with optional keyboard and parse mode.
 func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	params := tgapi.EditMessageTextP{
 		Text:      text,
@@ -94,8 +93,7 @@ func (m *AnswerMessage) EditMarkdown(text string) *AnswerMessage {
 	return m.ctx.edit(m.MessageID, text, nil, tgapi.ParseMDV2)
 }
 
-// editCallback is an internal helper to edit the message associated with a callback query.
-// Supports both regular callback messages and inline callback messages.
+// Internal helper for editing callback-linked messages.
 func (ctx *MsgContext) editCallback(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if ctx.CallbackMsgId == 0 && ctx.InlineMsgId == "" {
 		ctx.Logger.Errorln("Can't edit non-callback update message")
@@ -128,8 +126,7 @@ func (ctx *MsgContext) EditCallbackfMarkdown(format string, keyboard *InlineKeyb
 	return ctx.editCallback(fmt.Sprintf(format, args...), keyboard, tgapi.ParseMDV2)
 }
 
-// editPhotoText edits the caption of a photo/video message.
-// Returns nil when no valid edit target is available for the current context.
+// Internal helper for media-caption edits.
 func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	params := tgapi.EditMessageCaptionP{
 		Caption:   text,
@@ -187,8 +184,7 @@ func (m *AnswerMessage) EditCaptionKeyboardMarkdown(text string, kb *InlineKeybo
 	return m.ctx.editPhotoText(m.MessageID, text, kb, tgapi.ParseMDV2)
 }
 
-// answer sends a new message with optional keyboard and parse mode.
-// Uses API limiter to respect Telegram rate limits per chat.
+// Internal helper for message replies with optional keyboard and parse mode.
 func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if ctx.Msg == nil {
 		ctx.Logger.Errorln("Can't answer message without a message")
@@ -255,7 +251,7 @@ func (ctx *MsgContext) KeyboardMarkdown(text string, keyboard *InlineKeyboard) *
 	return ctx.answer(text, keyboard, tgapi.ParseMDV2)
 }
 
-// answerPhoto sends a photo with optional caption and keyboard.
+// Internal helper for photo replies with optional caption and keyboard.
 func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if ctx.Msg == nil {
 		ctx.Logger.Errorln("Can't answer message without a message")
@@ -323,7 +319,7 @@ func (ctx *MsgContext) AnswerPhotofMarkdown(photoId, template string, args ...an
 	return ctx.answerPhoto(photoId, fmt.Sprintf(template, args...), nil, tgapi.ParseMDV2)
 }
 
-// delete removes a message by ID.
+// Internal helper that deletes a message by ID.
 func (ctx *MsgContext) delete(messageId int) {
 	if messageId == 0 {
 		ctx.Logger.Errorln("Can't delete message: message ID zero")
@@ -354,8 +350,7 @@ func (ctx *MsgContext) CallbackDelete() {
 	ctx.delete(ctx.CallbackMsgId)
 }
 
-// answerCallbackQuery sends a response to a callback query (optional text/alert/url).
-// Does nothing if CallbackQueryId is empty.
+// Internal helper that answers a callback query with optional text, alert, or URL.
 func (ctx *MsgContext) answerCallbackQuery(url, text string, showAlert bool) {
 	if len(ctx.CallbackQueryId) == 0 {
 		return
@@ -399,10 +394,7 @@ func (ctx *MsgContext) SendAction(action tgapi.ChatActionType) {
 	}
 }
 
-// error sends an error message to the user and logs it.
-// Uses errorTemplate to format the message.
-// For callbacks: sends as callback answer (no alert).
-// For regular messages: sends as plain text.
+// Internal helper that formats, sends, and logs an error.
 func (ctx *MsgContext) error(err error) {
 	text := fmt.Sprintf(ctx.errorTemplate, err.Error())
 

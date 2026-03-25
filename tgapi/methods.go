@@ -170,6 +170,7 @@ func (api *API) GetFileWithContext(ctx context.Context, params GetFileP) (File, 
 
 // GetFileByLink downloads a file from Telegram's file server using the provided file link.
 // The link is usually obtained from File.FilePath.
+// For large files, prefer OpenFileByLink or OpenFileByLinkWithContext to stream the response body.
 // See https://core.telegram.org/bots/api#file
 func (api *API) GetFileByLink(link string) ([]byte, error) {
 	return api.getFileByLink(context.Background(), link)
@@ -177,12 +178,38 @@ func (api *API) GetFileByLink(link string) ([]byte, error) {
 
 // GetFileByLinkWithContext is the context-aware variant of GetFileByLink.
 // It executes the same request but uses ctx for cancellation and deadlines.
+// For large files, prefer OpenFileByLinkWithContext to stream the response body.
 // See https://core.telegram.org/bots/api#file
 func (api *API) GetFileByLinkWithContext(ctx context.Context, link string) ([]byte, error) {
 	return api.getFileByLink(ctx, link)
 }
 
+// OpenFileByLink opens a streaming response body for a file hosted on Telegram's file server.
+// The caller must close the returned ReadCloser.
+// See https://core.telegram.org/bots/api#file
+func (api *API) OpenFileByLink(link string) (io.ReadCloser, error) {
+	return api.openFileByLink(context.Background(), link)
+}
+
+// OpenFileByLinkWithContext is the context-aware variant of OpenFileByLink.
+// The caller must close the returned ReadCloser.
+// See https://core.telegram.org/bots/api#file
+func (api *API) OpenFileByLinkWithContext(ctx context.Context, link string) (io.ReadCloser, error) {
+	return api.openFileByLink(ctx, link)
+}
+
 func (api *API) getFileByLink(ctx context.Context, link string) ([]byte, error) {
+	body, err := api.openFileByLink(ctx, link)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = body.Close()
+	}()
+	return io.ReadAll(body)
+}
+
+func (api *API) openFileByLink(ctx context.Context, link string) (io.ReadCloser, error) {
 	methodPrefix := ""
 	if api.useTestServer {
 		methodPrefix = "/test"
@@ -199,15 +226,15 @@ func (api *API) getFileByLink(ctx context.Context, link string) ([]byte, error) 
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		_ = res.Body.Close()
-	}()
 	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusMultipleChoices {
+		defer func() {
+			_ = res.Body.Close()
+		}()
 		body, readErr := io.ReadAll(io.LimitReader(res.Body, 4<<10))
 		if readErr != nil {
 			return nil, fmt.Errorf("unexpected status %d", res.StatusCode)
 		}
 		return nil, fmt.Errorf("unexpected status %d: %s", res.StatusCode, string(body))
 	}
-	return io.ReadAll(res.Body)
+	return res.Body, nil
 }

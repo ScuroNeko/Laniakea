@@ -12,7 +12,7 @@ import (
 // ErrDraftChatIDZero is returned when a draft is used without setting a chat ID.
 var ErrDraftChatIDZero = errors.New("zero draft chat ID")
 
-// draftIdGenerator defines an interface for generating unique draft IDs.
+// Interface for generating unique draft IDs.
 type draftIdGenerator interface {
 	// Next returns the next unique draft ID.
 	Next() uint64
@@ -239,7 +239,7 @@ func (d *Draft) Flush() error {
 	return err
 }
 
-// push is the internal helper for Push(). It updates the server draft via SendMessageDraft.
+// Internal helper for Push that updates the server-side draft.
 func (d *Draft) push(text string) error {
 	if d.chatID == 0 {
 		return ErrDraftChatIDZero
