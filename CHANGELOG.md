@@ -15,8 +15,8 @@
 - `AGENTS.md` now also defines a short commit-message format: one summary line plus up to three high-signal detail lines.
 - `AGENTS.md` now explicitly requires each commit-message detail line to be placed on its own new line.
 - `AGENTS.md` now also requires commit messages to be emitted as a plain multiline block instead of collapsed prose or list formatting.
+- `AGENTS.md` now requires new or expanded project documentation to be maintained in both English and Russian whenever reasonably possible.
 - Payload-type comments and docs now distinguish between the bot's default payload type and keyboard-local overrides.
-- The wiki `Start here` section now has substantive first-pass documentation for setup, commands/plugins, and `MsgContext`.
 - Version constants were bumped to `v1.0.0-rc.12`.
 
 ### Fixed

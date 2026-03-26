@@ -22,6 +22,12 @@ Review the codebase with focus on:
 - When feasible, make small, high-confidence improvements directly.
 - When uncertain, state confidence level and evidence.
 
+## Documentation languages
+- When creating or expanding project documentation, generate and maintain both English and Russian versions in the same turn whenever reasonably possible.
+- For wiki pages, prefer paired pages such as `Page.md` and `Page-RU.md`.
+- Keep English and Russian pages aligned in structure, major examples, and user-facing guidance.
+- If only one language can be updated safely in the current turn, explicitly say which language is lagging and why.
+
 ## Go review expectations
 Check for:
 - bugs, fragile logic, invalid assumptions, nil handling issues, resource leaks;
@@ -77,7 +83,8 @@ Before finalizing changes, run the relevant project checks when available:
 Prefer the repository’s documented commands. If multiple choices exist, use the most standard and least destructive ones first.
 
 ## Versioning and changelog
-- After every code or documentation change, update `CHANGELOG.md`.
+- After every code or documentation change in the main repository, update `CHANGELOG.md`.
+- Changes made only inside the `.wiki/` repository do not require a `CHANGELOG.md` update.
 - Add changes only to the section for the next version after the latest published git tag.
 - The agent must check the latest published tag, `CHANGELOG.md`, and `utils/version.go` before editing the changelog.
 - The agent must verify that the target changelog version matches the version declared in `utils/version.go`.
