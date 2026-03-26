@@ -100,6 +100,16 @@ Prefer the repository’s documented commands. If multiple choices exist, use th
 - Prefer additive compatibility over signature changes when the additive option is small and maintainable.
 - Example: if a method like `ctx.answer(...)` needs an extra parameter, the agent must either require a major-version bump or add a new method that keeps the old method working.
 
+## Commit message format
+- When the user asks for a commit message, the agent must produce it in this format:
+  1. a short summary line;
+  2. up to three additional lines with only the most important changes;
+  3. each additional line must start on its own new line.
+- The agent must output the commit message as a plain multiline block that the user can copy directly.
+- Do not collapse the lines into a paragraph, bullet list, or wrapped prose explanation.
+- Keep commit text concise and high-signal.
+- Do not turn commit messages into changelogs.
+
 ## Output format
 For repo-wide review tasks, structure the result as:
 

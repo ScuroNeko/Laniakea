@@ -10,6 +10,8 @@ A lightweight, easy-to-use, and performant Telegram Bot API wrapper for Go. It s
 
 [На русском](README_RU.md)
 
+[Wiki](https://git.nix13.pw/ScuroNeko/Laniakea/wiki)
+
 ---
 
 ## ✨ Features
@@ -246,6 +248,8 @@ This project is licensed under the GNU General Public License v3.0 — see the [
 
 ## 📚 Learn More
 [GoDoc](https://pkg.go.dev/git.nix13.pw/scuroneko/laniakea)
+
+[Wiki](https://git.nix13.pw/ScuroNeko/Laniakea/wiki)
 
 [Telegram Bot API](https://core.telegram.org/bots/api)
 

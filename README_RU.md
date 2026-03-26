@@ -10,6 +10,8 @@
 
 [English](README.md)
 
+[Wiki](https://git.nix13.pw/ScuroNeko/Laniakea/wiki)
+
 ---
 
 ## ✨ Возможности
@@ -242,6 +244,8 @@ func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 
 ## 📚 Дополнительная информация
 [GoDoc Laniakea](https://pkg.go.dev/git.nix13.pw/scuroneko/laniakea)
+
+[Wiki](https://git.nix13.pw/ScuroNeko/Laniakea/wiki)
 
 [Telegram Bot API](https://core.telegram.org/bots/api)
 

@@ -10,8 +10,13 @@
 ### Changed
 - `CommandExecutor` now returns `error`, and command, payload, and non-command update handlers now use centralized bot error handling for returned errors.
 - README and README_RU examples now use the new handler signature and document the long-message helpers.
+- README and README_RU now link to the project wiki, and the wiki now includes a page-priority tracker while content is being filled in.
 - `AGENTS.md` now requires every change to be recorded in `CHANGELOG.md`, enforces version alignment with `utils/version.go`, and blocks breaking changes without a major-version bump.
+- `AGENTS.md` now also defines a short commit-message format: one summary line plus up to three high-signal detail lines.
+- `AGENTS.md` now explicitly requires each commit-message detail line to be placed on its own new line.
+- `AGENTS.md` now also requires commit messages to be emitted as a plain multiline block instead of collapsed prose or list formatting.
 - Payload-type comments and docs now distinguish between the bot's default payload type and keyboard-local overrides.
+- The wiki `Start here` section now has substantive first-pass documentation for setup, commands/plugins, and `MsgContext`.
 - Version constants were bumped to `v1.0.0-rc.12`.
 
 ### Fixed
