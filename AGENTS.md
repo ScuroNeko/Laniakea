@@ -117,6 +117,11 @@ Prefer the repository’s documented commands. If multiple choices exist, use th
 - Keep commit text concise and high-signal.
 - Do not turn commit messages into changelogs.
 
+## Commit signing
+- All commits created by the agent must be GPG-signed.
+- If commit signing or pushing requires leaving the sandbox, the agent must request escalation explicitly before running the command.
+- If a signed commit cannot be created successfully, the agent must report the failure clearly and stop instead of creating an unsigned fallback commit.
+
 ## Output format
 For repo-wide review tasks, structure the result as:
 

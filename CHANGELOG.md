@@ -16,6 +16,8 @@
 - `AGENTS.md` now explicitly requires each commit-message detail line to be placed on its own new line.
 - `AGENTS.md` now also requires commit messages to be emitted as a plain multiline block instead of collapsed prose or list formatting.
 - `AGENTS.md` now requires new or expanded project documentation to be maintained in both English and Russian whenever reasonably possible.
+- `AGENTS.md` now requires all agent-created commits to be GPG-signed and to fail fast instead of falling back to unsigned commits when signing cannot be completed.
+- Added `TODO.md` to track missing framework-level concepts, with detailed notes for scenes, typed handler input, and request-scoped cancellation.
 - Payload-type comments and docs now distinguish between the bot's default payload type and keyboard-local overrides.
 - Version constants were bumped to `v1.0.0-rc.12`.
 
