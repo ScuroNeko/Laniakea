@@ -53,10 +53,11 @@ import (
 // Она получает два параметра:
 //   - ctx: контекст сообщения (содержит информацию о сообщении, отправителе, чате и т.д.)
 //   - db: ваш пользовательский контекст базы данных (здесь мы используем NoDB — заглушку)
-func echo(ctx *laniakea.MsgContext, db laniakea.NoDB) {
+func echo(ctx *laniakea.MsgContext, db laniakea.NoDB) error {
 	// Отвечаем пользователю текстом, который он прислал, без префикса команды.
 	// ctx.Text содержит сообщение пользователя, из которого удалена часть с командой.
 	ctx.Answer(ctx.Text) // Ввод пользователя БЕЗ команды
+	return nil
 }
 
 func main() {
@@ -82,8 +83,9 @@ func main() {
 
 	// 5. Добавляем ещё одну команду, используя анонимную функцию (замыкание).
 	//    Эта команда просто отвечает "Pong", когда пользователь отправляет "/ping".
-	p.AddCommand(p.NewCommand(func(ctx *laniakea.MsgContext, db laniakea.NoDB) {
+	p.AddCommand(p.NewCommand(func(ctx *laniakea.MsgContext, db laniakea.NoDB) error {
 		ctx.Answer("Pong")
+		return nil
 	}, "ping"))
 
 	// 6. Настраиваем бота: задаём шаблон ошибки и добавляем плагин.
@@ -108,8 +110,8 @@ func main() {
 1. `BotOpts`: Содержит конфигурацию, например, токен API.
 2. `NewBot[T]`: Создаёт экземпляр бота. Параметр типа T позволяет передать пользовательский контекст базы данных (например, *sql.DB), который будет доступен во всех обработчиках. Используйте laniakea.NoDB, если он не нужен.
 3. `NewPlugin`: Создаёт логическую группу для команд и Middleware.
-4. `AddCommand`: Регистрирует команду. Первый аргумент — функция-обработчик (func(*MsgContext, T)), второй — имя команды (без слеша).
-5. **Функции-обработчики**: Получают *MsgContext (детали сообщения, методы типа Answer) и ваш контекст базы данных T.
+4. `AddCommand`: Регистрирует команду. Первый аргумент — функция-обработчик (`func(*MsgContext, T) error`), второй — имя команды (без слеша).
+5. **Функции-обработчики**: Получают *MsgContext (детали сообщения, методы типа Answer) и ваш контекст базы данных T, а ошибку возвращают для централизованной обработки.
 6. `ErrorTemplate`: Устанавливает шаблон для сообщений об ошибках. Плейсхолдер %s заменяется на текст ошибки.
 7. `AutoGenerateCommands`: Регистрирует команды из плагинов в Telegram для поддерживаемых scope.
 8. `Run()`: Запускает цикл опроса обновлений бота и возвращает ошибку, если старт или polling завершился неуспешно.
@@ -129,9 +131,10 @@ bot.AddPlugins(plugin)
 Команда — это функция, которая обрабатывает конкретную команду бота (например, /start).
 
 ```go
-func myHandler(ctx *laniakea.MsgContext, db *MyDB) {
+func myHandler(ctx *laniakea.MsgContext, db *MyDB) error {
     // Доступ к аргументам команды через ctx.Args ([]string)
     // Ответ пользователю: ctx.Answer("какой-то текст")
+    return nil
 }
 ```
 
@@ -139,8 +142,10 @@ func myHandler(ctx *laniakea.MsgContext, db *MyDB) {
 Предоставляет доступ к входящему сообщению и полезные методы для ответа:
 
 - `Answer(text string)`: Отправляет сообщение с parse_mode none.
+- `AnswerLong(text string) []*AnswerMessage`: Разбивает длинный plain text на несколько сообщений.
 - `AnswerMarkdown(text string)`: Отправляет сообщение, отформатированное MarkdownV2 (экранирование на вашей стороне).
 - `Keyboard(text string, keyboard *InlineKeyboard) *AnswerMessage`: Отправляет сообщение с parse_mode none и Inline клавиатурой.
+- `KeyboardLong(text string, keyboard *InlineKeyboard) []*AnswerMessage`: Разбивает длинный plain text на несколько сообщений и вешает клавиатуру на последний chunk.
 - `KeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage`: Отправляет сообщение, отформатированное MarkdownV2 (экранирование на вашей стороне), и Inline клавиатурой.
 - `AnswerPhoto(photoId, text string) *AnswerMessage`: Отправляет фотографию с подписью и parse_mode none.
 - `AnswerPhotoMarkdown(photoId, text string) *AnswerMessage`: Отправляет фотографию с подписью, отформатированной MarkdownV2 (экранирование на вашей стороне).
@@ -220,7 +225,7 @@ func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 - Middleware может изменять MsgContext (например, добавлять пользовательские поля) перед запуском команды.
 
 ## ⚙️ Расширенная настройка
-- **Инлайн-клавиатуры**: Создавайте клавиатуры с помощью `laniakea.NewInlineKeyboardJson`, `laniakea.NewInlineKeyboardBase64` или `laniakea.NewInlineKeyboard`.
+- **Инлайн-клавиатуры**: Создавайте клавиатуры с помощью `laniakea.NewInlineKeyboardJson`, `laniakea.NewInlineKeyboardBase64` или `laniakea.NewInlineKeyboard`. `Bot.SetPayloadType(...)` задаёт payload format по умолчанию, а `InlineKeyboard.SetPayloadType(...)` переопределяет его для конкретной клавиатуры.
 - **Ограничение запросов**: Передайте настроенный `utils.RateLimiter` через `BotOpts` для корректной обработки лимитов Telegram.
 - **Локализация**: `L10n` безопасен для конкурентного использования после подключения к боту.
 - **Пользовательские update handlers**: Используйте `plugin.AddUpdateHandler(...)` для Telegram update types вне command/payload flow.

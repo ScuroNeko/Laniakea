@@ -81,7 +81,8 @@ func (c CommandArg) SetRequired() CommandArg {
 
 // CommandExecutor is the function type that executes a command.
 // It receives the message context and a database context (generic).
-type CommandExecutor[T DbContext] func(ctx *MsgContext, dbContext T)
+// Returning a non-nil error routes it through the bot's error handler.
+type CommandExecutor[T DbContext] func(ctx *MsgContext, dbContext T) error
 
 // Command represents a bot command with arguments, description, and executor.
 // Can be registered in a Plugin and optionally skipped from auto-generation.
@@ -309,7 +310,9 @@ func (p *Plugin[T]) executeCmd(cmd string, ctx *MsgContext, db T) {
 	}
 
 	// Execute command
-	command.exec(ctx, db)
+	if err := command.exec(ctx, db); err != nil {
+		ctx.error(err)
+	}
 }
 
 // Internal helper that validates and executes a payload handler.
@@ -333,7 +336,9 @@ func (p *Plugin[T]) executePayload(payload string, ctx *MsgContext, db T) {
 	}
 
 	// Execute payload
-	command.exec(ctx, db)
+	if err := command.exec(ctx, db); err != nil {
+		ctx.error(err)
+	}
 }
 
 // Internal helper that runs plugin middlewares in order.

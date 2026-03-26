@@ -51,7 +51,7 @@ func TestBotMiddlewareReceivesLogger(t *testing.T) {
 
 func TestAddUpdateHandlerRejectsReservedUpdateTypes(t *testing.T) {
 	plugin := NewPlugin[NoDB]("test")
-	handler := func(ctx *MsgContext, db NoDB) {}
+	handler := func(ctx *MsgContext, db NoDB) error { return nil }
 
 	for _, updateType := range []tgapi.UpdateType{
 		tgapi.UpdateTypeMessage,
@@ -110,7 +110,7 @@ func TestHandleUpdateHandlersPopulateFromContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			called := false
-			plugin := NewPlugin[NoDB]("test").AddUpdateHandler(tt.update.Type, func(ctx *MsgContext, db NoDB) {
+			plugin := NewPlugin[NoDB]("test").AddUpdateHandler(tt.update.Type, func(ctx *MsgContext, db NoDB) error {
 				called = true
 				if ctx.Update.UpdateID != tt.update.UpdateID {
 					t.Fatalf("unexpected update in context: got %d want %d", ctx.Update.UpdateID, tt.update.UpdateID)
@@ -127,6 +127,7 @@ func TestHandleUpdateHandlersPopulateFromContext(t *testing.T) {
 				if ctx.Msg != nil {
 					t.Fatalf("did not expect message context for %s", tt.name)
 				}
+				return nil
 			})
 
 			bot := &Bot[NoDB]{
@@ -147,7 +148,7 @@ func TestHandleUpdateHandlersReceiveIsolatedContexts(t *testing.T) {
 	firstCalled := false
 	secondCalled := false
 
-	first := NewPlugin[NoDB]("first").AddUpdateHandler(tgapi.UpdateTypeInlineQuery, func(ctx *MsgContext, db NoDB) {
+	first := NewPlugin[NoDB]("first").AddUpdateHandler(tgapi.UpdateTypeInlineQuery, func(ctx *MsgContext, db NoDB) error {
 		firstCalled = true
 		if ctx.FromID != 41 {
 			t.Fatalf("unexpected FromID in first handler: got %d want 41", ctx.FromID)
@@ -156,8 +157,9 @@ func TestHandleUpdateHandlersReceiveIsolatedContexts(t *testing.T) {
 		ctx.FromID = 999
 		ctx.Text = "mutated"
 		ctx.Args = []string{"mutated"}
+		return nil
 	})
-	second := NewPlugin[NoDB]("second").AddUpdateHandler(tgapi.UpdateTypeInlineQuery, func(ctx *MsgContext, db NoDB) {
+	second := NewPlugin[NoDB]("second").AddUpdateHandler(tgapi.UpdateTypeInlineQuery, func(ctx *MsgContext, db NoDB) error {
 		secondCalled = true
 		if ctx.From == nil {
 			t.Fatal("expected ctx.From to remain populated for second handler")
@@ -171,6 +173,7 @@ func TestHandleUpdateHandlersReceiveIsolatedContexts(t *testing.T) {
 		if len(ctx.Args) != 0 {
 			t.Fatalf("unexpected leaked Args in second handler: %v", ctx.Args)
 		}
+		return nil
 	})
 
 	bot := &Bot[NoDB]{
@@ -199,7 +202,7 @@ func TestHandleUpdateHandlersReceiveIsolatedContexts(t *testing.T) {
 func TestHandleChannelPostCommandWithSenderChat(t *testing.T) {
 	called := false
 	plugin := NewPlugin[NoDB]("test")
-	plugin.NewCommand(func(ctx *MsgContext, db NoDB) {
+	plugin.NewCommand(func(ctx *MsgContext, db NoDB) error {
 		called = true
 		if ctx.Msg == nil {
 			t.Fatal("expected message context")
@@ -213,6 +216,7 @@ func TestHandleChannelPostCommandWithSenderChat(t *testing.T) {
 		if ctx.FromID != 0 {
 			t.Fatalf("expected zero FromID for sender_chat updates, got %d", ctx.FromID)
 		}
+		return nil
 	}, "ping")
 
 	bot := &Bot[NoDB]{

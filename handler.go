@@ -156,7 +156,9 @@ func (bot *Bot[T]) handleUpdate(u *tgapi.Update, ctx *MsgContext) {
 		if !plugin.executeMiddlewares(pluginCtx, bot.dbContext) {
 			continue
 		}
-		handler(pluginCtx, bot.dbContext)
+		if err := handler(pluginCtx, bot.dbContext); err != nil {
+			pluginCtx.error(err)
+		}
 	}
 }
 
@@ -320,19 +322,48 @@ func decodeBase64Payload(s string) (CallbackData, error) {
 	}
 	return decodeJsonPayload(string(b))
 }
-func decodePayload(payloadType BotPayloadType, s string) (CallbackData, error) {
+func decodePayload(payloadType BotPayloadType, s string, strict bool) (CallbackData, BotPayloadType, error) {
 	switch payloadType {
 	case BotPayloadBase64:
-		return decodeBase64Payload(s)
+		data, err := decodeBase64Payload(s)
+		if err == nil {
+			return data, BotPayloadBase64, nil
+		}
+		if strict {
+			return CallbackData{}, "", fmt.Errorf("%w: expected %s", ErrPayloadTypeMismatch, BotPayloadBase64)
+		}
+		data, err = decodeJsonPayload(s)
+		if err != nil {
+			return CallbackData{}, "", err
+		}
+		return data, BotPayloadJson, nil
 	case BotPayloadJson:
-		return decodeJsonPayload(s)
+		data, err := decodeJsonPayload(s)
+		if err == nil {
+			return data, BotPayloadJson, nil
+		}
+		if strict {
+			return CallbackData{}, "", fmt.Errorf("%w: expected %s", ErrPayloadTypeMismatch, BotPayloadJson)
+		}
+		data, err = decodeBase64Payload(s)
+		if err != nil {
+			return CallbackData{}, "", err
+		}
+		return data, BotPayloadBase64, nil
 	}
-	return CallbackData{}, ErrInvalidPayloadType
+	return CallbackData{}, "", ErrInvalidPayloadType
 }
 
 //	func (bot *Bot[T]) encodePayload(d CallbackData) (string, error) {
 //		return encodePayload(bot.payloadType, d)
 //	}
 func (bot *Bot[T]) decodePayload(s string) (CallbackData, error) {
-	return decodePayload(bot.payloadType, s)
+	data, decodedType, err := decodePayload(bot.payloadType, s, bot.strictPayloadType)
+	if err != nil {
+		return CallbackData{}, err
+	}
+	if decodedType == BotPayloadBase64 && bot.debug && bot.logger != nil {
+		bot.logger.Debugf("decoded callback payload base64->json: raw=%q json=%s", s, data.ToJson())
+	}
+	return data, nil
 }

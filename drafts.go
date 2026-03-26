@@ -1,16 +1,12 @@
 package laniakea
 
 import (
-	"errors"
 	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
 )
-
-// ErrDraftChatIDZero is returned when a draft is used without setting a chat ID.
-var ErrDraftChatIDZero = errors.New("zero draft chat ID")
 
 // Interface for generating unique draft IDs.
 type draftIdGenerator interface {
@@ -221,6 +217,9 @@ func (d *Draft) Flush() error {
 	if d.chatID == 0 {
 		return ErrDraftChatIDZero
 	}
+	if err := validateMessageText(d.Message); err != nil {
+		return err
+	}
 
 	params := tgapi.SendMessageP{
 		ChatID:    d.chatID,
@@ -245,6 +244,9 @@ func (d *Draft) push(text string) error {
 		return ErrDraftChatIDZero
 	}
 	d.Message += text
+	if err := validateMessageText(d.Message); err != nil {
+		return err
+	}
 	params := tgapi.SendMessageDraftP{
 		ChatID:    d.chatID,
 		DraftID:   d.ID,

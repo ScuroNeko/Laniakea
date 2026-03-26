@@ -2,6 +2,7 @@ package laniakea
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -48,6 +49,10 @@ type AnswerMessage struct {
 
 // Internal helper for text edits with optional keyboard and parse mode.
 func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
+	if err := validateMessageText(text); err != nil {
+		ctx.Logger.Errorln(err)
+		return nil
+	}
 	params := tgapi.EditMessageTextP{
 		Text:      text,
 		ParseMode: parseMode,
@@ -59,7 +64,7 @@ func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard
 	case ctx.InlineMsgId != "":
 		params.InlineMessageID = ctx.InlineMsgId
 	default:
-		ctx.Logger.Errorln("Can't edit message: no valid message target")
+		ctx.Logger.Errorln(ErrEditTargetMissing)
 		return nil
 	}
 	if keyboard != nil {
@@ -96,7 +101,7 @@ func (m *AnswerMessage) EditMarkdown(text string) *AnswerMessage {
 // Internal helper for editing callback-linked messages.
 func (ctx *MsgContext) editCallback(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if ctx.CallbackMsgId == 0 && ctx.InlineMsgId == "" {
-		ctx.Logger.Errorln("Can't edit non-callback update message")
+		ctx.Logger.Errorln(ErrCallbackMessageMissing)
 		return nil
 	}
 	return ctx.edit(ctx.CallbackMsgId, text, keyboard, parseMode)
@@ -128,6 +133,10 @@ func (ctx *MsgContext) EditCallbackfMarkdown(format string, keyboard *InlineKeyb
 
 // Internal helper for media-caption edits.
 func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
+	if err := validateCaptionText(text); err != nil {
+		ctx.Logger.Errorln(err)
+		return nil
+	}
 	params := tgapi.EditMessageCaptionP{
 		Caption:   text,
 		ParseMode: parseMode,
@@ -139,7 +148,7 @@ func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeybo
 	case ctx.InlineMsgId != "":
 		params.InlineMessageID = ctx.InlineMsgId
 	default:
-		ctx.Logger.Errorln("Can't edit caption: no valid message target")
+		ctx.Logger.Errorln(ErrEditTargetMissing)
 		return nil
 	}
 	if kb != nil {
@@ -187,7 +196,11 @@ func (m *AnswerMessage) EditCaptionKeyboardMarkdown(text string, kb *InlineKeybo
 // Internal helper for message replies with optional keyboard and parse mode.
 func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if ctx.Msg == nil {
-		ctx.Logger.Errorln("Can't answer message without a message")
+		ctx.Logger.Errorln(ErrMessageContextNil)
+		return nil
+	}
+	if err := validateMessageText(text); err != nil {
+		ctx.Logger.Errorln(err)
 		return nil
 	}
 	params := tgapi.SendMessageP{
@@ -220,6 +233,14 @@ func (ctx *MsgContext) Answer(text string) *AnswerMessage {
 	return ctx.answer(text, nil, tgapi.ParseNone)
 }
 
+// AnswerLong sends one or more plain-text messages if text exceeds Telegram's limit.
+//
+// The text is split into Telegram-safe chunks. Returned messages preserve send
+// order. If a chunk fails to send, already-sent messages are returned.
+func (ctx *MsgContext) AnswerLong(text string) []*AnswerMessage {
+	return ctx.answerLong(text, nil, tgapi.ParseNone)
+}
+
 // AnswerMarkdown sends a message using MarkdownV2 formatting.
 //
 // ⚠️ WARNING: User input must be escaped with laniakea.EscapeMarkdownV2() before passing here.
@@ -230,6 +251,11 @@ func (ctx *MsgContext) AnswerMarkdown(text string) *AnswerMessage {
 // Answerf formats a string using fmt.Sprintf and sends it as a plain text message.
 func (ctx *MsgContext) Answerf(template string, args ...any) *AnswerMessage {
 	return ctx.answer(fmt.Sprintf(template, args...), nil, tgapi.ParseNone)
+}
+
+// AnswerLongf formats a string using fmt.Sprintf and sends it as one or more plain-text messages.
+func (ctx *MsgContext) AnswerLongf(template string, args ...any) []*AnswerMessage {
+	return ctx.answerLong(fmt.Sprintf(template, args...), nil, tgapi.ParseNone)
 }
 
 // AnswerfMarkdown formats a string using fmt.Sprintf and sends it using MarkdownV2.
@@ -244,6 +270,13 @@ func (ctx *MsgContext) Keyboard(text string, kb *InlineKeyboard) *AnswerMessage 
 	return ctx.answer(text, kb, tgapi.ParseNone)
 }
 
+// KeyboardLong sends long plain text split across multiple messages.
+//
+// The inline keyboard is attached only to the final chunk.
+func (ctx *MsgContext) KeyboardLong(text string, kb *InlineKeyboard) []*AnswerMessage {
+	return ctx.answerLong(text, kb, tgapi.ParseNone)
+}
+
 // KeyboardMarkdown sends a message with an inline keyboard using MarkdownV2.
 //
 // ⚠️ WARNING: User input must be escaped with laniakea.EscapeMarkdownV2() before passing here.
@@ -251,10 +284,53 @@ func (ctx *MsgContext) KeyboardMarkdown(text string, keyboard *InlineKeyboard) *
 	return ctx.answer(text, keyboard, tgapi.ParseMDV2)
 }
 
+func (ctx *MsgContext) answerLong(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) []*AnswerMessage {
+	if parseMode != tgapi.ParseNone {
+		ctx.Logger.Errorln(ErrMessageSplitImpossible)
+		return nil
+	}
+	if ctx.Msg == nil {
+		ctx.Logger.Errorln(ErrMessageContextNil)
+		return nil
+	}
+	if err := validateMessageText(text); err == nil {
+		msg := ctx.answer(text, keyboard, parseMode)
+		if msg == nil {
+			return nil
+		}
+		return []*AnswerMessage{msg}
+	} else if !errors.Is(err, ErrMessageTooLong) {
+		ctx.Logger.Errorln(err)
+		return nil
+	}
+
+	parts := SplitMessageText(text)
+	messages := make([]*AnswerMessage, 0, len(parts))
+	for i, part := range parts {
+		partKeyboard := (*InlineKeyboard)(nil)
+		if i == len(parts)-1 {
+			partKeyboard = keyboard
+		}
+		msg := ctx.answer(part, partKeyboard, parseMode)
+		if msg == nil {
+			break
+		}
+		messages = append(messages, msg)
+	}
+	if len(messages) == 0 {
+		return nil
+	}
+	return messages
+}
+
 // Internal helper for photo replies with optional caption and keyboard.
 func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if ctx.Msg == nil {
-		ctx.Logger.Errorln("Can't answer message without a message")
+		ctx.Logger.Errorln(ErrMessageContextNil)
+		return nil
+	}
+	if err := validateCaptionText(text); err != nil {
+		ctx.Logger.Errorln(err)
 		return nil
 	}
 	params := tgapi.SendPhotoP{
@@ -322,11 +398,11 @@ func (ctx *MsgContext) AnswerPhotofMarkdown(photoId, template string, args ...an
 // Internal helper that deletes a message by ID.
 func (ctx *MsgContext) delete(messageId int) {
 	if messageId == 0 {
-		ctx.Logger.Errorln("Can't delete message: message ID zero")
+		ctx.Logger.Errorln(ErrMessageIDZero)
 		return
 	}
 	if ctx.Msg == nil {
-		ctx.Logger.Errorln("Can't delete message: no chat message context")
+		ctx.Logger.Errorln(ErrMessageContextNil)
 		return
 	}
 	_, err := ctx.Api.DeleteMessage(tgapi.DeleteMessageP{
@@ -344,7 +420,7 @@ func (m *AnswerMessage) Delete() { m.ctx.delete(m.MessageID) }
 // CallbackDelete deletes the message that triggered the callback query.
 func (ctx *MsgContext) CallbackDelete() {
 	if ctx.CallbackMsgId == 0 {
-		ctx.Logger.Errorln("Can't delete callback message: no callback message ID")
+		ctx.Logger.Errorln(ErrCallbackMessageMissing)
 		return
 	}
 	ctx.delete(ctx.CallbackMsgId)
@@ -411,15 +487,15 @@ func (ctx *MsgContext) Error(err error) { ctx.error(err) }
 
 func (ctx *MsgContext) newDraft(parseMode tgapi.ParseMode) *Draft {
 	if ctx.Msg == nil {
-		ctx.Logger.Errorln("can't create draft: ctx.Msg is nil")
+		ctx.Logger.Errorln(ErrMessageContextNil)
 		return nil
 	}
 	if ctx.Api == nil {
-		ctx.Logger.Errorln("can't create draft: ctx.Api is nil")
+		ctx.Logger.Errorln(ErrAPIIsNil)
 		return nil
 	}
 	if ctx.draftProvider == nil {
-		ctx.Logger.Errorln("can't create draft: ctx.draftProvider is nil")
+		ctx.Logger.Errorln(ErrDraftProviderNil)
 		return nil
 	}
 

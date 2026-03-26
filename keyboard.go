@@ -136,11 +136,19 @@ func NewInlineKeyboard(payloadType BotPayloadType, maxRow int) *InlineKeyboard {
 	}
 }
 
-// SetPayloadType sets the serialization format for callback data added via
+// SetPayloadType sets the keyboard-local serialization format for callback data added via
 // AddCallbackButton and AddCallbackButtonStyle methods.
-// It should be one of BotPayloadJson or BotPayloadBase64.
+// It overrides the bot's default payload type for this keyboard only.
 func (in *InlineKeyboard) SetPayloadType(t BotPayloadType) *InlineKeyboard {
 	in.payloadType = t
+	return in
+}
+
+// GetPayloadType returns the keyboard-local callback payload encoding type.
+func (in *InlineKeyboard) GetPayloadType() BotPayloadType { return in.payloadType }
+
+func (in *InlineKeyboard) SetMaxRow(maxRow int) *InlineKeyboard {
+	in.maxRow = maxRow
 	return in
 }
 

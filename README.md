@@ -52,10 +52,11 @@ import (
 // It receives two parameters:
 //   - ctx: the message context (contains info about the message, sender, chat, etc.)
 //   - db: your custom database context (here we use NoDB, a placeholder for no database)
-func echo(ctx *laniakea.MsgContext, db laniakea.NoDB) {
+func echo(ctx *laniakea.MsgContext, db laniakea.NoDB) error {
 	// Answer the user with the text they sent, without any command prefix.
 	// ctx.Text contains the user's message with the command part stripped off.
 	ctx.Answer(ctx.Text) // User input WITHOUT command
+	return nil
 }
 
 func main() {
@@ -81,8 +82,9 @@ func main() {
 
 	// 5. Add another command using an anonymous function (closure).
 	//    This command simply replies "Pong" when the user sends "/ping".
-	p.AddCommand(p.NewCommand(func(ctx *laniakea.MsgContext, db laniakea.NoDB) {
+	p.AddCommand(p.NewCommand(func(ctx *laniakea.MsgContext, db laniakea.NoDB) error {
 		ctx.Answer("Pong")
+		return nil
 	}, "ping"))
 
 	// 6. Configure the bot with a custom error template and add the plugin.
@@ -107,8 +109,8 @@ func main() {
 1. `BotOpts`: Holds configuration like the API token.
 2. `NewBot[T]`: Creates a bot instance. The type parameter T allows you to pass a custom database context (e.g., *sql.DB) that will be available in all handlers. Use laniakea.NoDB if you don't need it.
 3. `NewPlugin`: Creates a logical group for commands and middlewares.
-4. `AddCommand`: Registers a command. The first argument is the handler function (func(*MsgContext, T)), the second is the command name (without the slash).
-5. **Handler Functions**: Receive *MsgContext (message details, methods like Answer) and your custom database context T.
+4. `AddCommand`: Registers a command. The first argument is the handler function (`func(*MsgContext, T) error`), the second is the command name (without the slash).
+5. **Handler Functions**: Receive *MsgContext (message details, methods like Answer) and your custom database context T, and return an error for centralized error handling.
 6. `ErrorTemplate`: Sets a template for error messages. The %s placeholder is replaced by the actual error.
 7. `AutoGenerateCommands`: Registers plugin-defined commands with Telegram across the supported scopes.
 8. `Run()`: Starts the bot's update polling loop and returns an error if startup or polling fails.
@@ -128,9 +130,10 @@ bot.AddPlugins(plugin)
 
 A command is a function that handles a specific bot command (e.g., /start).
 ```go
-func myHandler(ctx *laniakea.MsgContext, db *MyDB) {
+func myHandler(ctx *laniakea.MsgContext, db *MyDB) error {
     // Access command arguments via ctx.Args ([]string)
     // Reply to the user: ctx.Answer("some text")
+    return nil
 }
 ```
 
@@ -139,8 +142,10 @@ func myHandler(ctx *laniakea.MsgContext, db *MyDB) {
 Provides access to the incoming message and useful reply methods:
 
 - `Answer(text string) *AnswerMessage`: Sends a message with parse_mode none.
+- `AnswerLong(text string) []*AnswerMessage`: Splits long plain text into multiple messages.
 - `AnswerMarkdown(text string) *AnswerMessage`: Sends a message formatted with MarkdownV2 (you handle escaping).
 - `Keyboard(text string, keyboard *InlineKeyboard) *AnswerMessage`: Sends a message with parse_mode none and inline keyboard.
+- `KeyboardLong(text string, keyboard *InlineKeyboard) []*AnswerMessage`: Splits long plain text into multiple messages and attaches the keyboard to the final chunk.
 - `KeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage`: Sends a message formatted with MarkdownV2 (you handle escaping) and inline keyboard.
 - `AnswerPhoto(photoId, text string) *AnswerMessage`: Sends a message with photo with parse_mode none.
 - `AnswerPhotoMarkdown(photoId, text string) *AnswerMessage`: Sends a photo with MarkdownV2 caption (you handle escaping).
@@ -223,7 +228,7 @@ func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 - Middleware can modify the MsgContext (e.g., add custom fields) before the command runs.
 
 ## ⚙️ Advanced Configuration
-- **Inline Keyboards**: Build keyboards using `laniakea.NewInlineKeyboardJson`, `laniakea.NewInlineKeyboardBase64`, or `laniakea.NewInlineKeyboard`.
+- **Inline Keyboards**: Build keyboards using `laniakea.NewInlineKeyboardJson`, `laniakea.NewInlineKeyboardBase64`, or `laniakea.NewInlineKeyboard`. `Bot.SetPayloadType(...)` defines the default payload format, and `InlineKeyboard.SetPayloadType(...)` overrides it for one keyboard.
 - **Rate Limiting**: Pass a configured utils.RateLimiter via BotOpts to handle Telegram's rate limits gracefully.
 - **Localization**: `L10n` is safe for concurrent use once attached to the bot.
 - **Custom Update Handlers**: Use `plugin.AddUpdateHandler(...)` for Telegram update types that are not part of the command/payload flow.

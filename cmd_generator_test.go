@@ -44,7 +44,7 @@ func TestAutoGenerateCommandsChecksLimitBeforeDelete(t *testing.T) {
 	}()
 
 	plugin := NewPlugin[NoDB]("overflow")
-	exec := func(ctx *MsgContext, db NoDB) {}
+	exec := func(ctx *MsgContext, db NoDB) error { return nil }
 	for i := 0; i < 101; i++ {
 		plugin.AddCommand(NewCommand(exec, "cmd"+strconv.Itoa(i)))
 	}
@@ -66,7 +66,7 @@ func TestAutoGenerateCommandsChecksLimitBeforeDelete(t *testing.T) {
 
 func TestGatherCommandsForPluginReturnsSortedCommands(t *testing.T) {
 	plugin := NewPlugin[NoDB]("sorted")
-	exec := func(ctx *MsgContext, db NoDB) {}
+	exec := func(ctx *MsgContext, db NoDB) error { return nil }
 
 	plugin.AddCommand(NewCommand(exec, "zeta"))
 	plugin.AddCommand(NewCommand(exec, "alpha"))

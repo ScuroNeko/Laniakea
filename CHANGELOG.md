@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.0.0-rc.12
+
+### Added
+- `AnswerLong(...)`, `AnswerLongf(...)`, `KeyboardLong(...)`, and `SplitMessageText(...)` for explicit plain-text splitting of long replies without changing the semantics of existing single-message helpers.
+- Centralized library-level validation errors in `errors.go`, including `ErrEmptyMessage`, `ErrMessageTooLong`, `ErrCaptionTooLong`, and context/target validation sentinels.
+- `Bot.GetPayloadType()`, `InlineKeyboard.GetPayloadType()`, and optional strict payload decoding via `BotOpts.StrictPayloadType` / `Bot.SetStrictPayloadType(...)`.
+
+### Changed
+- `CommandExecutor` now returns `error`, and command, payload, and non-command update handlers now use centralized bot error handling for returned errors.
+- README and README_RU examples now use the new handler signature and document the long-message helpers.
+- `AGENTS.md` now requires every change to be recorded in `CHANGELOG.md`, enforces version alignment with `utils/version.go`, and blocks breaking changes without a major-version bump.
+- Payload-type comments and docs now distinguish between the bot's default payload type and keyboard-local overrides.
+- Version constants were bumped to `v1.0.0-rc.12`.
+
+### Fixed
+- Message and caption validation now runs before Telegram API calls, rejecting empty messages, oversized message text, and oversized captions with stable sentinel errors.
+- Draft flushing and draft updates now reject oversized messages before sending invalid requests.
+- Callback payload decoding now optionally enforces strict type matching, while the default tolerant mode logs Base64-to-JSON decoding in debug mode and still accepts keyboard-local payload overrides.
+
+### Breaking Changes
+- `CommandExecutor[T]` changed from `func(ctx *MsgContext, db T)` to `func(ctx *MsgContext, db T) error`.
+- `Plugin.NewCommand(...)`, `Plugin.NewPayload(...)`, and `Plugin.AddUpdateHandler(...)` now require handlers with the new error-returning signature.
+
 ## v1.0.0-rc.11
 
 ### Fixed

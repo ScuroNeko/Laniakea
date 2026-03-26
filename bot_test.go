@@ -27,13 +27,13 @@ func TestAddPluginsSnapshotsConfiguration(t *testing.T) {
 	bot := &Bot[NoDB]{logger: slog.CreateLogger()}
 	plugin := NewPlugin[NoDB]("demo")
 
-	cmd := plugin.NewCommand(func(ctx *MsgContext, db NoDB) {}, "start")
+	cmd := plugin.NewCommand(func(ctx *MsgContext, db NoDB) error { return nil }, "start")
 	plugin.AddMiddleware(NewMiddleware("base", func(ctx *MsgContext, db NoDB) bool { return true }))
 
 	bot.AddPlugins(plugin)
 
 	cmd.SetDescription("mutated after registration")
-	plugin.NewCommand(func(ctx *MsgContext, db NoDB) {}, "late")
+	plugin.NewCommand(func(ctx *MsgContext, db NoDB) error { return nil }, "late")
 	plugin.AddMiddleware(NewMiddleware("late", func(ctx *MsgContext, db NoDB) bool { return true }))
 
 	registered := bot.plugins[0]
@@ -45,6 +45,22 @@ func TestAddPluginsSnapshotsConfiguration(t *testing.T) {
 	}
 	if len(registered.middlewares) != 1 {
 		t.Fatalf("registered middlewares unexpectedly mutated: got %d want 1", len(registered.middlewares))
+	}
+}
+
+func TestBotPayloadTypeConfiguration(t *testing.T) {
+	bot := &Bot[NoDB]{payloadType: BotPayloadBase64}
+
+	if got := bot.GetPayloadType(); got != BotPayloadBase64 {
+		t.Fatalf("unexpected initial payload type: %q", got)
+	}
+	bot.SetPayloadType(BotPayloadJson)
+	if got := bot.GetPayloadType(); got != BotPayloadJson {
+		t.Fatalf("unexpected updated payload type: %q", got)
+	}
+	bot.SetStrictPayloadType(true)
+	if !bot.strictPayloadType {
+		t.Fatal("expected strict payload type to be enabled")
 	}
 }
 

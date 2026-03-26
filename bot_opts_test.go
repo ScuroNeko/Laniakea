@@ -45,3 +45,12 @@ func TestLoadPrefixesFromEnvDropsEmptyValues(t *testing.T) {
 		t.Fatalf("unexpected prefixes: got %v want %v", got, want)
 	}
 }
+
+func TestLoadOptsFromEnvReadsStrictPayloadType(t *testing.T) {
+	t.Setenv("STRICT_PAYLOAD_TYPE", "true")
+
+	opts := LoadOptsFromEnv()
+	if !opts.StrictPayloadType {
+		t.Fatal("expected StrictPayloadType to be enabled")
+	}
+}

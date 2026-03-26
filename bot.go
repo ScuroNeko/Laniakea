@@ -77,12 +77,13 @@ var (
 // Runtime accessors are safe for concurrent use. Configure the bot before Run.
 // A Bot is single-use: after Run or RunWithContext returns, create a new Bot for the next session.
 type Bot[T DbContext] struct {
-	token         string
-	debug         bool
-	errorTemplate string
-	username      string
-	payloadType   BotPayloadType
-	maxWorkers    int
+	token             string
+	debug             bool
+	errorTemplate     string
+	username          string
+	payloadType       BotPayloadType
+	strictPayloadType bool
+	maxWorkers        int
 
 	logger        *slog.Logger                // Main bot logger (JSON stdout + optional file)
 	RequestLogger *slog.Logger                // Optional request-level API logging
@@ -156,22 +157,23 @@ func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
 	}
 
 	bot := &Bot[T]{
-		updateOffset:  0,
-		errorTemplate: "%s",
-		payloadType:   BotPayloadBase64,
-		maxWorkers:    workers,
-		updateQueue:   updateQueue,
-		api:           api,
-		uploader:      uploader,
-		debug:         opts.Debug,
-		prefixes:      prefixes,
-		token:         opts.Token,
-		plugins:       make([]Plugin[T], 0),
-		updateTypes:   append([]tgapi.UpdateType{}, opts.UpdateTypes...),
-		runners:       make([]Runner[T], 0),
-		extraLoggers:  make([]*slog.Logger, 0),
-		l10n:          &L10n{},
-		draftProvider: NewRandomDraftProvider(api),
+		updateOffset:      0,
+		errorTemplate:     "%s",
+		payloadType:       BotPayloadBase64,
+		strictPayloadType: opts.StrictPayloadType,
+		maxWorkers:        workers,
+		updateQueue:       updateQueue,
+		api:               api,
+		uploader:          uploader,
+		debug:             opts.Debug,
+		prefixes:          prefixes,
+		token:             opts.Token,
+		plugins:           make([]Plugin[T], 0),
+		updateTypes:       append([]tgapi.UpdateType{}, opts.UpdateTypes...),
+		runners:           make([]Runner[T], 0),
+		extraLoggers:      make([]*slog.Logger, 0),
+		l10n:              &L10n{},
+		draftProvider:     NewRandomDraftProvider(api),
 	}
 
 	// Add API and Uploader loggers to extraLoggers for unified output
@@ -356,11 +358,22 @@ func (bot *Bot[T]) UpdateTypes(t ...tgapi.UpdateType) *Bot[T] {
 	return bot
 }
 
-// SetPayloadType sets the payload encoding type used for callback data.
+// SetPayloadType sets the default payload encoding type used for callback data.
 // JSON stores payload as a string: `{"cmd":"command","args":[...]}`.
 // Base64 stores the same JSON encoded as a Base64URL string.
+// InlineKeyboard.SetPayloadType may override this value for an individual keyboard.
 func (bot *Bot[T]) SetPayloadType(t BotPayloadType) *Bot[T] {
 	bot.payloadType = t
+	return bot
+}
+
+// GetPayloadType returns the bot's default callback payload encoding type.
+func (bot *Bot[T]) GetPayloadType() BotPayloadType { return bot.payloadType }
+
+// SetStrictPayloadType enables or disables strict callback payload decoding.
+// When enabled, callback payloads must match the bot's default payload type.
+func (bot *Bot[T]) SetStrictPayloadType(strict bool) *Bot[T] {
+	bot.strictPayloadType = strict
 	return bot
 }
 

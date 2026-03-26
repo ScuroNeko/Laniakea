@@ -1,6 +1,8 @@
 package laniakea
 
 import (
+	"errors"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -40,5 +42,56 @@ func TestInlineKeyboardBuilderPreservesConfiguredButtonFields(t *testing.T) {
 	}
 	if button.URL != "https://example.test" {
 		t.Fatalf("unexpected url: %q", button.URL)
+	}
+}
+
+func TestInlineKeyboardGetPayloadTypeReturnsLocalOverride(t *testing.T) {
+	kb := NewInlineKeyboardJson(2)
+	if got := kb.GetPayloadType(); got != BotPayloadJson {
+		t.Fatalf("unexpected initial payload type: %q", got)
+	}
+	kb.SetPayloadType(BotPayloadBase64)
+	if got := kb.GetPayloadType(); got != BotPayloadBase64 {
+		t.Fatalf("unexpected updated payload type: %q", got)
+	}
+}
+
+func TestDecodePayloadAcceptsBase64KeyboardPayloadWhenBotPrefersJSON(t *testing.T) {
+	kb := NewInlineKeyboardBase64(1).
+		AddCallbackButton("A", "cmd", 1, "two")
+
+	got, _, err := decodePayload(BotPayloadJson, kb.Get().InlineKeyboard[0][0].CallbackData, false)
+	if err != nil {
+		t.Fatalf("decodePayload returned error: %v", err)
+	}
+
+	want := CallbackData{Command: "cmd", Args: []string{"1", "two"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected payload: got %#v want %#v", got, want)
+	}
+}
+
+func TestDecodePayloadAcceptsJSONKeyboardPayloadWhenBotPrefersBase64(t *testing.T) {
+	kb := NewInlineKeyboardJson(1).
+		AddCallbackButton("A", "cmd", 1, "two")
+
+	got, _, err := decodePayload(BotPayloadBase64, kb.Get().InlineKeyboard[0][0].CallbackData, false)
+	if err != nil {
+		t.Fatalf("decodePayload returned error: %v", err)
+	}
+
+	want := CallbackData{Command: "cmd", Args: []string{"1", "two"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected payload: got %#v want %#v", got, want)
+	}
+}
+
+func TestDecodePayloadStrictRejectsMismatchedType(t *testing.T) {
+	kb := NewInlineKeyboardBase64(1).
+		AddCallbackButton("A", "cmd", 1)
+
+	_, _, err := decodePayload(BotPayloadJson, kb.Get().InlineKeyboard[0][0].CallbackData, true)
+	if !errors.Is(err, ErrPayloadTypeMismatch) {
+		t.Fatalf("expected ErrPayloadTypeMismatch, got %v", err)
 	}
 }

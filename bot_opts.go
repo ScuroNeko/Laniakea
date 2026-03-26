@@ -56,6 +56,10 @@ type BotOpts struct {
 	// Use this to prioritize responsiveness over reliability.
 	DropRLOverflow bool
 
+	// StrictPayloadType disables callback payload fallback decoding.
+	// When enabled, the bot accepts only the configured default payload type.
+	StrictPayloadType bool
+
 	// MaxWorkers is the maximum number of update handlers that may run concurrently.
 	MaxWorkers int
 }
@@ -75,6 +79,7 @@ type BotOpts struct {
 //   - API_URL: custom API endpoint
 //   - RATE_LIMIT: max requests per second (default: 30)
 //   - DROP_RL_OVERFLOW: "true" to drop updates on rate limit overflow
+//   - STRICT_PAYLOAD_TYPE: "true" to reject callback payloads encoded in a different format
 //   - MAX_WORKERS: maximum number of concurrent update handlers (default: 32)
 //
 // Returns a populated BotOpts.
@@ -116,8 +121,9 @@ func LoadOptsFromEnv() *BotOpts {
 		UseTestServer: os.Getenv("USE_TEST_SERVER") == "true",
 		APIUrl:        os.Getenv("API_URL"),
 
-		RateLimit:      rateLimit,
-		DropRLOverflow: os.Getenv("DROP_RL_OVERFLOW") == "true",
+		RateLimit:         rateLimit,
+		DropRLOverflow:    os.Getenv("DROP_RL_OVERFLOW") == "true",
+		StrictPayloadType: os.Getenv("STRICT_PAYLOAD_TYPE") == "true",
 
 		MaxWorkers: maxWorkers,
 	}
@@ -205,6 +211,13 @@ func (opts *BotOpts) SetRateLimit(limit int) *BotOpts {
 // Use this to prioritize responsiveness over reliability. Default is false.
 func (opts *BotOpts) SetDropRLOverflow(drop bool) *BotOpts {
 	opts.DropRLOverflow = drop
+	return opts
+}
+
+// SetStrictPayloadType enables or disables strict callback payload decoding.
+// When enabled, the bot accepts only the configured default payload type.
+func (opts *BotOpts) SetStrictPayloadType(strict bool) *BotOpts {
+	opts.StrictPayloadType = strict
 	return opts
 }
 

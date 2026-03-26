@@ -1,6 +1,8 @@
 package laniakea
 
 import (
+	"errors"
+	"strings"
 	"testing"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
@@ -32,5 +34,22 @@ func TestMsgContextNewDraftWorksWithoutLimiter(t *testing.T) {
 	}
 	if draft.chatID != 42 {
 		t.Fatalf("unexpected chat id: %d", draft.chatID)
+	}
+}
+
+func TestDraftFlushRejectsLongMessage(t *testing.T) {
+	draft := NewRandomDraftProvider(&tgapi.API{}).NewDraft(tgapi.ParseNone).SetChat(42, 0)
+	draft.Message = strings.Repeat("a", maxMessageTextLen+1)
+
+	if err := draft.Flush(); !errors.Is(err, ErrMessageTooLong) {
+		t.Fatalf("expected ErrMessageTooLong, got %v", err)
+	}
+}
+
+func TestDraftPushRejectsLongMessage(t *testing.T) {
+	draft := NewRandomDraftProvider(&tgapi.API{}).NewDraft(tgapi.ParseNone).SetChat(42, 0)
+
+	if err := draft.Push(strings.Repeat("a", maxMessageTextLen+1)); !errors.Is(err, ErrMessageTooLong) {
+		t.Fatalf("expected ErrMessageTooLong, got %v", err)
 	}
 }

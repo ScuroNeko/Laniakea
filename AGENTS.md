@@ -76,6 +76,30 @@ Before finalizing changes, run the relevant project checks when available:
 
 Prefer the repository’s documented commands. If multiple choices exist, use the most standard and least destructive ones first.
 
+## Versioning and changelog
+- After every code or documentation change, update `CHANGELOG.md`.
+- Add changes only to the section for the next version after the latest published git tag.
+- The agent must check the latest published tag, `CHANGELOG.md`, and `utils/version.go` before editing the changelog.
+- The agent must verify that the target changelog version matches the version declared in `utils/version.go`.
+- If the latest published tag is, for example, `v1.0.0`, and `CHANGELOG.md` does not yet contain the next version section, the agent must stop and ask the user which version the change belongs to:
+  1. `v1.0.1`
+  2. `v1.1.0`
+  3. `v2.0.0`
+- The agent must not guess the next version when that section is missing.
+- If the user-selected version does not match `utils/version.go`, the agent must warn about the mismatch and require the version file to be updated before proceeding.
+- Changelog entries must describe all user-visible behavior changes made in the turn, including API additions, fixes, behavior changes, and breaking changes.
+
+## Breaking changes policy
+- The agent must detect potential breaking changes before editing public APIs.
+- Breaking changes are forbidden unless the selected target version is a new major version.
+- If the requested change is breaking and the user did not bump the major version, the agent must stop and warn that the change is not allowed under the current version.
+- In that case, the agent must offer only these options:
+  1. do not make the breaking change;
+  2. introduce a backward-compatible alternative such as a new method, function, type, or struct, but only if that keeps the codebase reasonably small and clear;
+  3. bump the major version and then apply the breaking change.
+- Prefer additive compatibility over signature changes when the additive option is small and maintainable.
+- Example: if a method like `ctx.answer(...)` needs an extra parameter, the agent must either require a major-version bump or add a new method that keeps the old method working.
+
 ## Output format
 For repo-wide review tasks, structure the result as:
 
