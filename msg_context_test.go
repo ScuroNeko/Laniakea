@@ -65,6 +65,107 @@ func TestAnswerPhotoIncludesDirectMessagesTopicID(t *testing.T) {
 	}
 }
 
+func TestBindArgsBindsScalarFields(t *testing.T) {
+	type input struct {
+		ID     int
+		Active bool
+		Score  float64
+		Name   string
+	}
+
+	ctx := &MsgContext{Args: []string{"42", "true", "3.5", "Ada", "Lovelace"}}
+	var got input
+
+	if err := ctx.BindArgs(&got); err != nil {
+		t.Fatalf("BindArgs returned error: %v", err)
+	}
+
+	want := input{
+		ID:     42,
+		Active: true,
+		Score:  3.5,
+		Name:   "Ada Lovelace",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected bound value: got %#v want %#v", got, want)
+	}
+}
+
+func TestBindArgsLeavesTrailingFieldsZeroWhenArgsRunOut(t *testing.T) {
+	type input struct {
+		ID     int
+		Reason string
+		Admin  bool
+	}
+
+	ctx := &MsgContext{Args: []string{"7"}}
+	var got input
+
+	if err := ctx.BindArgs(&got); err != nil {
+		t.Fatalf("BindArgs returned error: %v", err)
+	}
+
+	if got.ID != 7 {
+		t.Fatalf("unexpected ID: got %d want 7", got.ID)
+	}
+	if got.Reason != "" {
+		t.Fatalf("expected zero-value Reason, got %q", got.Reason)
+	}
+	if got.Admin {
+		t.Fatal("expected zero-value Admin")
+	}
+}
+
+func TestBindArgsRejectsInvalidTargets(t *testing.T) {
+	ctx := &MsgContext{Args: []string{"1"}}
+
+	if err := ctx.BindArgs(nil); !errors.Is(err, ErrBindArgsTargetNotPointer) {
+		t.Fatalf("expected ErrBindArgsTargetNotPointer for nil target, got %v", err)
+	}
+
+	var notStruct int
+	if err := ctx.BindArgs(&notStruct); !errors.Is(err, ErrBindArgsTargetNotStruct) {
+		t.Fatalf("expected ErrBindArgsTargetNotStruct for non-struct target, got %v", err)
+	}
+}
+
+func TestBindArgsReportsConversionFailures(t *testing.T) {
+	type input struct {
+		ID int
+	}
+
+	ctx := &MsgContext{Args: []string{"oops"}}
+	var got input
+
+	err := ctx.BindArgs(&got)
+	if err == nil {
+		t.Fatal("expected BindArgs to fail")
+	}
+	if !errors.Is(err, ErrBindArgsConversion) {
+		t.Fatalf("expected ErrBindArgsConversion, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "field ID") {
+		t.Fatalf("expected field name in error, got %v", err)
+	}
+}
+
+func TestBindArgsRejectsUnsupportedFieldTypes(t *testing.T) {
+	type input struct {
+		Tags []string
+	}
+
+	ctx := &MsgContext{Args: []string{"tag"}}
+	var got input
+
+	err := ctx.BindArgs(&got)
+	if err == nil {
+		t.Fatal("expected BindArgs to fail")
+	}
+	if !errors.Is(err, ErrBindArgsUnsupportedFieldType) {
+		t.Fatalf("expected ErrBindArgsUnsupportedFieldType, got %v", err)
+	}
+}
+
 func TestAnswerRejectsEmptyMessage(t *testing.T) {
 	ctx := &MsgContext{
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: string(tgapi.ChatTypePrivate)}},

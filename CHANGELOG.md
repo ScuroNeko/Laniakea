@@ -6,6 +6,8 @@
 - `AnswerLong(...)`, `AnswerLongf(...)`, `KeyboardLong(...)`, and `SplitMessageText(...)` for explicit plain-text splitting of long replies without changing the semantics of existing single-message helpers.
 - Centralized library-level validation errors in `errors.go`, including `ErrEmptyMessage`, `ErrMessageTooLong`, `ErrCaptionTooLong`, and context/target validation sentinels.
 - `Bot.GetPayloadType()`, `InlineKeyboard.GetPayloadType()`, and optional strict payload decoding via `BotOpts.StrictPayloadType` / `Bot.SetStrictPayloadType(...)`.
+- `MsgContext.BindArgs(...)` for binding positional command arguments into exported struct fields.
+- Binding sentinels `ErrBindArgsTargetNotPointer`, `ErrBindArgsTargetNotStruct`, `ErrBindArgsUnsupportedFieldType`, and `ErrBindArgsConversion`.
 
 ### Changed
 - `CommandExecutor` now returns `error`, and command, payload, and non-command update handlers now use centralized bot error handling for returned errors.
@@ -17,18 +19,28 @@
 - `AGENTS.md` now also requires commit messages to be emitted as a plain multiline block instead of collapsed prose or list formatting.
 - `AGENTS.md` now requires new or expanded project documentation to be maintained in both English and Russian whenever reasonably possible.
 - `AGENTS.md` now requires all agent-created commits to be GPG-signed and to fail fast instead of falling back to unsigned commits when signing cannot be completed.
+- `AGENTS.md` now also links the wiki backlog flow more tightly to `TODO.md` and `CHANGELOG.md`, requiring draft-wiki confirmation for large new ideas and synchronized completion records for backlog items.
 - Added `TODO.md` to track missing framework-level concepts, with detailed notes for scenes, typed handler input, and request-scoped cancellation.
 - Payload-type comments and docs now distinguish between the bot's default payload type and keyboard-local overrides.
+- `MsgContext.Context()` now safely falls back to `context.Background()` when no request-scoped context is attached.
+- `MsgContext` reply, edit, callback, delete, action, and draft-limiter paths now use the context accessor instead of reaching into raw internal state.
+- `TODO.md` is now a short pointer file, while the detailed framework backlog lives in the wiki as `Framework-Backlog` / `Framework-Backlog-RU`.
 - Version constants were bumped to `v1.0.0-rc.12`.
 
 ### Fixed
 - Message and caption validation now runs before Telegram API calls, rejecting empty messages, oversized message text, and oversized captions with stable sentinel errors.
 - Draft flushing and draft updates now reject oversized messages before sending invalid requests.
 - Callback payload decoding now optionally enforces strict type matching, while the default tolerant mode logs Base64-to-JSON decoding in debug mode and still accepts keyboard-local payload overrides.
+- Positional argument binding now leaves missing trailing struct fields at zero values, joins the remaining arguments into the final string field, and returns clearer binding errors.
+- Request-scoped contexts are now created per update handler execution and safely reused through `MsgContext.Context()` even for manually constructed test contexts.
+- Command and payload handlers now have regression coverage for end-to-end typed argument binding through the normal routing path.
 
 ### Breaking Changes
 - `CommandExecutor[T]` changed from `func(ctx *MsgContext, db T)` to `func(ctx *MsgContext, db T) error`.
 - `Plugin.NewCommand(...)`, `Plugin.NewPayload(...)`, and `Plugin.AddUpdateHandler(...)` now require handlers with the new error-returning signature.
+
+### Tests
+- Added regression tests for `MsgContext.BindArgs(...)`, including scalar conversion, tail-string binding, zero-value trailing fields, invalid targets, unsupported field types, and end-to-end command/payload binding.
 
 ## v1.0.0-rc.11
 

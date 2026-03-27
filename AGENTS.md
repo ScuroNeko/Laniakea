@@ -28,6 +28,12 @@ Review the codebase with focus on:
 - Keep English and Russian pages aligned in structure, major examples, and user-facing guidance.
 - If only one language can be updated safely in the current turn, explicitly say which language is lagging and why.
 
+## Wiki and backlog workflow
+- Treat the wiki as the primary place for large design ideas, architectural drafts, and framework backlog notes.
+- If the agent identifies a substantial new concept or design direction, such as scenes, callback agents, a webhook model, or another framework-level abstraction, the agent must ask the user whether it should also formalize that idea as a draft wiki page.
+- When the user agrees, prefer paired wiki pages such as `Page.md` and `Page-RU.md`, and clearly mark draft design pages with `DRAFT` when the API is not implemented or not yet stable.
+- Keep `TODO.md`, the wiki backlog pages, and `CHANGELOG.md` aligned when framework-level items move between planned and completed states.
+
 ## Go review expectations
 Check for:
 - bugs, fragile logic, invalid assumptions, nil handling issues, resource leaks;
@@ -95,6 +101,11 @@ Prefer the repository’s documented commands. If multiple choices exist, use th
 - The agent must not guess the next version when that section is missing.
 - If the user-selected version does not match `utils/version.go`, the agent must warn about the mismatch and require the version file to be updated before proceeding.
 - Changelog entries must describe all user-visible behavior changes made in the turn, including API additions, fixes, behavior changes, and breaking changes.
+- When a framework backlog item recorded in `TODO.md` is completed, the agent must also update the backlog status using the existing format:
+  1. move the completed item into the top of the `Done` section;
+  2. replace the numbered backlog label with a version tag, for example `1. Scene Model` becomes `[v2.0.0] Scene Model`;
+  3. keep the item title and descriptive notes aligned with the corresponding `CHANGELOG.md` entry.
+- The agent must treat `TODO.md` and `CHANGELOG.md` as linked records: a completed backlog item should not be left in one file as done and in the other as still pending or undocumented.
 
 ## Breaking changes policy
 - The agent must detect potential breaking changes before editing public APIs.

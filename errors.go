@@ -24,6 +24,7 @@ var (
 	ErrPayloadTypeMismatch = errors.New("payload type mismatch")
 	// ErrDraftChatIDZero reports that a draft has no target chat ID.
 	ErrDraftChatIDZero = errors.New("zero draft chat ID")
+	ErrMessageNil      = errors.New("message is nil")
 	// ErrMessageContextNil reports that an operation requires ctx.Msg but none is set.
 	ErrMessageContextNil = errors.New("message context is nil")
 	// ErrEditTargetMissing reports that an edit operation has no message target.
@@ -36,6 +37,19 @@ var (
 	ErrAPIIsNil = errors.New("api is nil")
 	// ErrMessageIDZero reports that an operation requires a non-zero message ID.
 	ErrMessageIDZero = errors.New("message ID is zero")
+	// ErrBindArgsTargetNotPointer reports that BindArgs received a nil or non-pointer destination.
+	ErrBindArgsTargetNotPointer = errors.New("bind args: dst must be a non-nil pointer")
+	// ErrBindArgsTargetNotStruct reports that BindArgs received a pointer to a non-struct value.
+	ErrBindArgsTargetNotStruct = errors.New("bind args: dst must point to a struct")
+	// ErrBindArgsUnsupportedFieldType reports that BindArgs encountered an unsupported field kind.
+	ErrBindArgsUnsupportedFieldType = errors.New("bind args: unsupported field type")
+	// ErrBindArgsConversion reports that BindArgs could not convert a string argument into a field type.
+	ErrBindArgsConversion   = errors.New("bind args: conversion failed")
+	ErrCantFindSession      = errors.New("can't find session for this context")
+	ErrSceneNotFound        = errors.New("scene not found")
+	ErrSceneStepNotFound    = errors.New("scene step not found")
+	ErrSceneCommandNotFound = errors.New("scene command not found")
+	ErrNotInScene           = errors.New("not in scene")
 )
 
 func validateMessageText(text string) error {

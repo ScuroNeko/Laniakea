@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
+	"strings"
 	"time"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
@@ -36,6 +39,9 @@ type MsgContext struct {
 	l10n          *L10n
 	draftProvider *DraftProvider
 	payloadType   BotPayloadType
+	sceneRuntime  sceneRuntime
+
+	ctx context.Context
 }
 
 // AnswerMessage represents a message sent or edited via MsgContext.
@@ -70,7 +76,7 @@ func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard
 	if keyboard != nil {
 		params.ReplyMarkup = keyboard.Get()
 	}
-	msg, _, err := ctx.Api.EditMessageText(params)
+	msg, _, err := ctx.Api.EditMessageTextWithContext(ctx.Context(), params)
 	if err != nil {
 		ctx.Logger.Errorln(err)
 		return nil
@@ -155,7 +161,7 @@ func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeybo
 		params.ReplyMarkup = kb.Get()
 	}
 
-	msg, _, err := ctx.Api.EditMessageCaption(params)
+	msg, _, err := ctx.Api.EditMessageCaptionWithContext(ctx.Context(), params)
 	if err != nil {
 		ctx.Logger.Errorln(err)
 		return nil
@@ -218,7 +224,7 @@ func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard, parseMode t
 		params.DirectMessagesTopicID = ctx.Msg.DirectMessageTopic.TopicID
 	}
 
-	msg, err := ctx.Api.SendMessage(params)
+	msg, err := ctx.Api.SendMessageWithContext(ctx.Context(), params)
 	if err != nil {
 		ctx.Logger.Errorln(err)
 		return nil
@@ -349,7 +355,7 @@ func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard, par
 		params.DirectMessagesTopicID = int(ctx.Msg.DirectMessageTopic.TopicID)
 	}
 
-	msg, err := ctx.Api.SendPhoto(params)
+	msg, err := ctx.Api.SendPhotoWithContext(ctx.Context(), params)
 	if err != nil {
 		ctx.Logger.Errorln(err)
 		return nil
@@ -405,7 +411,7 @@ func (ctx *MsgContext) delete(messageId int) {
 		ctx.Logger.Errorln(ErrMessageContextNil)
 		return
 	}
-	_, err := ctx.Api.DeleteMessage(tgapi.DeleteMessageP{
+	_, err := ctx.Api.DeleteMessageWithContext(ctx.Context(), tgapi.DeleteMessageP{
 		ChatID:    ctx.Msg.Chat.ID,
 		MessageID: messageId,
 	})
@@ -431,7 +437,7 @@ func (ctx *MsgContext) answerCallbackQuery(url, text string, showAlert bool) {
 	if len(ctx.CallbackQueryId) == 0 {
 		return
 	}
-	_, err := ctx.Api.AnswerCallbackQuery(tgapi.AnswerCallbackQueryP{
+	_, err := ctx.Api.AnswerCallbackQueryWithContext(ctx.Context(), tgapi.AnswerCallbackQueryP{
 		CallbackQueryID: ctx.CallbackQueryId,
 		Text:            text, ShowAlert: showAlert, URL: url,
 	})
@@ -464,7 +470,7 @@ func (ctx *MsgContext) SendAction(action tgapi.ChatActionType) {
 	if ctx.Msg.MessageThreadID > 0 {
 		params.MessageThreadID = ctx.Msg.MessageThreadID
 	}
-	_, err := ctx.Api.SendChatAction(params)
+	_, err := ctx.Api.SendChatActionWithContext(ctx.Context(), params)
 	if err != nil {
 		ctx.Logger.Errorln(err)
 	}
@@ -500,7 +506,7 @@ func (ctx *MsgContext) newDraft(parseMode tgapi.ParseMode) *Draft {
 	}
 
 	if ctx.Api.Limiter != nil {
-		c, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		c, cancel := context.WithTimeout(ctx.Context(), 5*time.Second)
 		defer cancel()
 		if err := ctx.Api.Limiter.Wait(c, ctx.Msg.Chat.ID); err != nil {
 			ctx.Logger.Errorln(err)
@@ -539,4 +545,162 @@ func (ctx *MsgContext) Translate(key string) string {
 // encoding type and the specified maximum number of buttons per row.
 func (ctx *MsgContext) NewInlineKeyboard(maxRow int) *InlineKeyboard {
 	return NewInlineKeyboard(ctx.payloadType, maxRow)
+}
+
+func bindPositional(args []string, dst any) error {
+	v := reflect.ValueOf(dst)
+	if v.Kind() != reflect.Pointer || v.IsNil() {
+		return ErrBindArgsTargetNotPointer
+	}
+
+	v = v.Elem()
+	if v.Kind() != reflect.Struct {
+		return ErrBindArgsTargetNotStruct
+	}
+
+	t := v.Type()
+	fields := make([]int, 0, v.NumField())
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		if !field.CanSet() {
+			continue
+		}
+		fields = append(fields, i)
+	}
+
+	argIndex := 0
+	for fieldPos, fieldIndex := range fields {
+		field := v.Field(fieldIndex)
+		fieldType := t.Field(fieldIndex)
+
+		if argIndex >= len(args) {
+			// Leave trailing fields at their zero values when arguments run out.
+			break
+		}
+
+		isLastBindableField := fieldPos == len(fields)-1
+
+		raw := args[argIndex]
+		if isLastBindableField && field.Kind() == reflect.String {
+			raw = strings.Join(args[argIndex:], " ")
+		}
+
+		switch field.Kind() {
+		case reflect.String:
+			field.SetString(raw)
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			n, err := strconv.ParseInt(raw, 10, 64)
+			if err != nil {
+				return fmt.Errorf("%w: field %s: %v", ErrBindArgsConversion, fieldType.Name, err)
+			}
+			field.SetInt(n)
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			n, err := strconv.ParseUint(raw, 10, 64)
+			if err != nil {
+				return fmt.Errorf("%w: field %s: %v", ErrBindArgsConversion, fieldType.Name, err)
+			}
+			field.SetUint(n)
+		case reflect.Float32, reflect.Float64:
+			f, err := strconv.ParseFloat(raw, 64)
+			if err != nil {
+				return fmt.Errorf("%w: field %s: %v", ErrBindArgsConversion, fieldType.Name, err)
+			}
+			field.SetFloat(f)
+		case reflect.Bool:
+			b, err := strconv.ParseBool(raw)
+			if err != nil {
+				return fmt.Errorf("%w: field %s: %v", ErrBindArgsConversion, fieldType.Name, err)
+			}
+			field.SetBool(b)
+		default:
+			return fmt.Errorf("%w: field %s: %s", ErrBindArgsUnsupportedFieldType, fieldType.Name, field.Kind())
+		}
+
+		if isLastBindableField && field.Kind() == reflect.String {
+			break
+		}
+		argIndex++
+	}
+
+	return nil
+}
+
+// BindArgs binds positional command arguments from ctx.Args into dst.
+//
+// Exported struct fields are filled in declaration order. When fewer arguments
+// are provided than fields, the remaining fields keep their zero values. If the
+// final bindable field is a string, it receives the remaining arguments joined
+// with spaces.
+func (ctx *MsgContext) BindArgs(dst any) error {
+	return bindPositional(ctx.Args, dst)
+}
+
+// Context returns the request-scoped context associated with the current update.
+func (ctx *MsgContext) Context() context.Context {
+	if ctx.ctx == nil {
+		return context.Background()
+	}
+	return ctx.ctx
+}
+
+func (ctx *MsgContext) EnterScene(name string) error {
+	scene, ok := ctx.sceneRuntime.FindScene(name)
+	if !ok {
+		return ErrSceneNotFound
+	}
+
+	key, ok := ctx.sceneRuntime.BuildSceneKey(scene.Scope, ctx)
+	if !ok {
+		return ErrCantFindSession
+	}
+
+	session := SceneSession{
+		Scene: scene.Name,
+		Step:  scene.Entry,
+	}
+
+	return ctx.sceneRuntime.SetSession(key, session)
+}
+func (ctx *MsgContext) EnterSceneStep(name, step string) error {
+	scene, ok := ctx.sceneRuntime.FindScene(name)
+	if !ok {
+		return ErrSceneNotFound
+	}
+	if _, ok := scene.Steps[step]; !ok {
+		return ErrSceneStepNotFound
+	}
+
+	key, ok := ctx.sceneRuntime.BuildSceneKey(scene.Scope, ctx)
+	if !ok {
+		return ErrCantFindSession
+	}
+
+	session := SceneSession{
+		Scene: scene.Name,
+		Step:  step,
+	}
+
+	return ctx.sceneRuntime.SetSession(key, session)
+}
+func (ctx *MsgContext) ExitScene() error {
+	_, session, err := ctx.sceneRuntime.FindSceneSession(ctx)
+	if err != nil {
+		return err
+	}
+	if session.Scene == "" {
+		return ErrNotInScene
+	}
+
+	scene, ok := ctx.sceneRuntime.FindScene(session.Scene)
+	if !ok {
+		return ErrSceneNotFound
+	}
+
+	key, ok := ctx.sceneRuntime.BuildSceneKey(scene.Scope, ctx)
+	if !ok {
+		return ErrCantFindSession
+	}
+
+	return ctx.sceneRuntime.DeleteSession(key)
 }

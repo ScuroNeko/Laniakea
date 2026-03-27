@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -102,6 +104,9 @@ type Bot[T DbContext] struct {
 	l10n          *L10n          // Localization manager
 	draftProvider *DraftProvider // Draft message builder
 
+	sessionStore       SessionStore // Session store for scene management
+	sceneScopePriority []SceneScope
+
 	updateOffsetMu sync.Mutex
 	updateOffset   int                // Last processed update ID
 	updateTypes    []tgapi.UpdateType // Types of updates to fetch
@@ -174,6 +179,9 @@ func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
 		extraLoggers:      make([]*slog.Logger, 0),
 		l10n:              &L10n{},
 		draftProvider:     NewRandomDraftProvider(api),
+
+		sessionStore:       NewMemorySessionStore(),
+		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
 	}
 
 	// Add API and Uploader loggers to extraLoggers for unified output
@@ -332,6 +340,34 @@ func (bot *Bot[T]) L10n(lang, key string) string {
 // Useful for using LinearDraftIdGenerator to persist draft IDs across restarts.
 func (bot *Bot[T]) SetDraftProvider(p *DraftProvider) *Bot[T] {
 	bot.draftProvider = p
+	return bot
+}
+func (bot *Bot[T]) GetDraftProvider() *DraftProvider {
+	return bot.draftProvider
+}
+
+func (bot *Bot[T]) SetSettionStore(store SessionStore) *Bot[T] {
+	bot.sessionStore = store
+	return bot
+}
+func (bot *Bot[T]) GetSessionStore() SessionStore {
+	return bot.sessionStore
+}
+
+func (bot *Bot[T]) SetSceneScopePriority(priority []SceneScope) *Bot[T] {
+	newPriority := make([]SceneScope, 0, 3)
+	for _, scope := range priority {
+		if slices.Index(newPriority, scope) >= 0 {
+			bot.logger.Warnln(fmt.Sprintf("duplicate scope %v in scene scope priority; ignoring duplicates", scope))
+			continue
+		}
+		newPriority = append(newPriority, scope)
+	}
+	if len(newPriority) == 0 || len(newPriority) > 3 {
+		bot.logger.Warnln("scene scope priority must have 1 to 3 scopes; ignoring invalid input")
+		return bot
+	}
+	bot.sceneScopePriority = append([]SceneScope(nil), newPriority...)
 	return bot
 }
 
@@ -668,7 +704,7 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 	for update := range bot.updateQueue {
 		u := update // capture loop variable
 		pool.Submit(func() {
-			bot.handle(u)
+			bot.handle(ctx, u)
 		})
 	}
 	pool.Stop() // Wait for all tasks to complete and stop the pool
@@ -759,9 +795,7 @@ func clonePlugin[T DbContext](p *Plugin[T]) Plugin[T] {
 	for name, command := range p.payloads {
 		cloned.payloads[name] = cloneCommand(command)
 	}
-	for t, handler := range p.handlers {
-		cloned.handlers[t] = handler
-	}
+	maps.Copy(cloned.handlers, p.handlers)
 
 	return cloned
 }

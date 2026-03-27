@@ -1,6 +1,7 @@
 package laniakea
 
 import (
+	"context"
 	"testing"
 
 	"git.nix13.pw/scuroneko/laniakea/tgapi"
@@ -35,7 +36,7 @@ func TestBotMiddlewareReceivesLogger(t *testing.T) {
 		},
 	}
 
-	bot.handle(&tgapi.Update{
+	bot.handle(context.Background(), &tgapi.Update{
 		UpdateID: 1,
 		Type:     tgapi.UpdateTypePoll,
 		Poll: &tgapi.Poll{
@@ -135,7 +136,7 @@ func TestHandleUpdateHandlersPopulateFromContext(t *testing.T) {
 				plugins: []Plugin[NoDB]{clonePlugin(plugin)},
 			}
 
-			bot.handle(tt.update)
+			bot.handle(context.Background(), tt.update)
 
 			if !called {
 				t.Fatalf("expected update handler for %s to be called", tt.name)
@@ -184,7 +185,7 @@ func TestHandleUpdateHandlersReceiveIsolatedContexts(t *testing.T) {
 		},
 	}
 
-	bot.handle(&tgapi.Update{
+	bot.handle(context.Background(), &tgapi.Update{
 		UpdateID: 3,
 		Type:     tgapi.UpdateTypeInlineQuery,
 		InlineQuery: &tgapi.InlineQuery{
@@ -225,7 +226,7 @@ func TestHandleChannelPostCommandWithSenderChat(t *testing.T) {
 		plugins:  []Plugin[NoDB]{clonePlugin(plugin)},
 	}
 
-	bot.handle(&tgapi.Update{
+	bot.handle(context.Background(), &tgapi.Update{
 		UpdateID: 10,
 		Type:     tgapi.UpdateTypeChannelPost,
 		ChannelPost: &tgapi.Message{
@@ -238,5 +239,87 @@ func TestHandleChannelPostCommandWithSenderChat(t *testing.T) {
 
 	if !called {
 		t.Fatal("expected channel post command handler to be called")
+	}
+}
+
+func TestCommandHandlerBindArgsEndToEnd(t *testing.T) {
+	type banInput struct {
+		UserID int
+		Reason string
+	}
+
+	var got banInput
+	plugin := NewPlugin[NoDB]("test")
+	plugin.NewCommand(func(ctx *MsgContext, db NoDB) error {
+		return ctx.BindArgs(&got)
+	}, "ban",
+		NewCommandArg("user_id").SetValueType(CommandValueIntType).SetRequired(),
+		NewCommandArg("reason").SetRequired(),
+	)
+
+	bot := &Bot[NoDB]{
+		logger:   slog.CreateLogger(),
+		prefixes: []string{"/"},
+		plugins:  []Plugin[NoDB]{clonePlugin(plugin)},
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 11,
+		Type:     tgapi.UpdateTypeMessage,
+		Message: &tgapi.Message{
+			MessageID: 1,
+			Text:      "/ban 42 too loud",
+			Chat:      &tgapi.Chat{ID: 99, Type: string(tgapi.ChatTypePrivate)},
+		},
+	})
+
+	want := banInput{UserID: 42, Reason: "too loud"}
+	if got != want {
+		t.Fatalf("unexpected bound input: got %#v want %#v", got, want)
+	}
+}
+
+func TestPayloadHandlerBindArgsEndToEnd(t *testing.T) {
+	type payloadInput struct {
+		ID   int
+		Note string
+	}
+
+	var got payloadInput
+	plugin := NewPlugin[NoDB]("test")
+	plugin.NewPayload(func(ctx *MsgContext, db NoDB) error {
+		return ctx.BindArgs(&got)
+	}, "approve",
+		NewCommandArg("id").SetValueType(CommandValueIntType).SetRequired(),
+		NewCommandArg("note").SetRequired(),
+	)
+
+	bot := &Bot[NoDB]{
+		logger:      slog.CreateLogger(),
+		payloadType: BotPayloadJson,
+		plugins:     []Plugin[NoDB]{clonePlugin(plugin)},
+	}
+
+	data, err := encodeJsonPayload(CallbackData{
+		Command: "approve",
+		Args:    []string{"7", "looks", "good"},
+	})
+	if err != nil {
+		t.Fatalf("encodeJsonPayload returned error: %v", err)
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 12,
+		Type:     tgapi.UpdateTypeCallbackQuery,
+		CallbackQuery: &tgapi.CallbackQuery{
+			ID:   "cb-1",
+			Data: data,
+			From: tgapi.User{ID: 1},
+		},
+	})
+
+	want := payloadInput{ID: 7, Note: "looks good"}
+	if got != want {
+		t.Fatalf("unexpected bound payload input: got %#v want %#v", got, want)
 	}
 }

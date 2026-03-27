@@ -161,6 +161,7 @@ type Plugin[T DbContext] struct {
 	name        string                       // Name of the plugin (e.g., "admin", "user")
 	commands    map[string]*Command[T]       // Registered commands (triggered by message)
 	payloads    map[string]*Command[T]       // Registered payloads (triggered by callback data)
+	scenes      map[string]*Scene[T]         // Optional scenes for multi-step interactions
 	middlewares extypes.Slice[Middleware[T]] // Shared middlewares for all commands/payloads
 	skipAutoCmd bool                         // If true, all commands in this plugin are excluded from auto-help
 	logger      *slog.Logger
@@ -177,6 +178,7 @@ func NewPlugin[T DbContext](name string) *Plugin[T] {
 		commands:    make(map[string]*Command[T]),
 		payloads:    make(map[string]*Command[T]),
 		middlewares: make(extypes.Slice[Middleware[T]], 0),
+		scenes:      make(map[string]*Scene[T]),
 		skipAutoCmd: false,
 		logger:      nil,
 		handlers:    make(map[tgapi.UpdateType]CommandExecutor[T]),
@@ -211,6 +213,18 @@ func (p *Plugin[T]) NewPayload(exec CommandExecutor[T], command string, args ...
 	cmd := NewPayload(exec, command, args...)
 	p.AddPayload(cmd)
 	return cmd
+}
+
+func (p *Plugin[T]) AddScene(scene *Scene[T]) *Plugin[T] {
+	scene.PluginName = p.name
+	scene.setPluginName(p.name)
+	return p
+}
+func (p *Plugin[T]) NewScene(name string) *Scene[T] {
+	scene := NewScene[T](name)
+	scene.setPluginName(p.name)
+	p.AddScene(scene)
+	return scene
 }
 
 // AddUpdateHandler registers a handler for a non-command update type.

@@ -1,6 +1,7 @@
 package laniakea
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -13,36 +14,50 @@ import (
 // ErrInvalidPayloadType is returned when callback payload encoding type is unknown.
 var ErrInvalidPayloadType = errors.New("invalid payload type")
 
-func (bot *Bot[T]) handle(u *tgapi.Update) {
+func (bot *Bot[T]) handle(parentCtx context.Context, u *tgapi.Update) {
 	defer func() {
 		if r := recover(); r != nil {
 			bot.logger.Errorln(fmt.Sprintf("panic in handle: %v", r))
 		}
 	}()
 
-	ctx := &MsgContext{
+	ctx, cancel := context.WithCancel(parentCtx)
+	defer cancel()
+
+	msgCtx := &MsgContext{
 		Update: *u, Api: bot.api,
 		Logger:        bot.logger,
 		errorTemplate: bot.errorTemplate,
 		l10n:          bot.l10n,
 		draftProvider: bot.draftProvider,
+		sceneRuntime:  bot,
 		payloadType:   bot.payloadType,
+		ctx:           ctx,
 	}
-	bot.prepareUpdateCtx(u, ctx)
+	bot.prepareUpdateCtx(u, msgCtx)
 
 	for _, middleware := range bot.middlewares {
-		if !middleware.Execute(ctx, bot.dbContext) {
+		if !middleware.Execute(msgCtx, bot.dbContext) {
 			return
 		}
 	}
 
+	sceneHandled, err := bot.tryHandleScene(msgCtx)
+	if err != nil {
+		bot.logger.Errorln(err)
+		return
+	}
+	if sceneHandled {
+		return
+	}
+
 	switch u.Type {
 	case tgapi.UpdateTypeMessage, tgapi.UpdateTypeChannelPost:
-		bot.handleMessage(u, ctx)
+		bot.handleMessage(u, msgCtx)
 	case tgapi.UpdateTypeCallbackQuery:
-		bot.handleCallback(u, ctx)
+		bot.handleCallback(u, msgCtx)
 	default:
-		bot.handleUpdate(u, ctx)
+		bot.handleUpdate(u, msgCtx)
 	}
 }
 
@@ -65,30 +80,11 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 		return
 	}
 
-	text = strings.TrimSpace(text)
-	prefix, hasPrefix := bot.checkPrefixes(text)
-	if !hasPrefix {
+	prefix, cmd, args := bot.parseCommand(text)
+	if cmd == "" {
 		return
 	}
-
 	ctx.Prefix = prefix
-	ctx.Update = *update
-
-	// Убираем префикс
-	text = strings.TrimSpace(text[len(prefix):])
-
-	// Извлекаем команду как первое слово
-	spaceIndex := strings.Index(text, " ")
-	var cmd string
-	var args string
-
-	if spaceIndex == -1 {
-		cmd = text
-		args = ""
-	} else {
-		cmd = text[:spaceIndex]
-		args = strings.TrimSpace(text[spaceIndex:])
-	}
 
 	if strings.Contains(cmd, "@") {
 		botUsername := bot.username
@@ -269,12 +265,12 @@ func (bot *Bot[T]) prepareUpdateCtx(u *tgapi.Update, ctx *MsgContext) {
 		ctx.From = from
 		ctx.FromID = from.ID
 	}
-	ctx.Update = *u
 }
 
 func (bot *Bot[T]) checkPrefixes(text string) (string, bool) {
 	for _, prefix := range bot.prefixes {
 		if prefix == "" {
+			bot.logger.Warnln("empty prefix is not allowed")
 			continue
 		}
 		if strings.HasPrefix(text, prefix) {
@@ -282,6 +278,23 @@ func (bot *Bot[T]) checkPrefixes(text string) (string, bool) {
 		}
 	}
 	return "", false
+}
+func (bot *Bot[T]) parseCommand(text string) (prefix, cmd, args string) {
+	if prefix, hasPrefix := bot.checkPrefixes(text); hasPrefix {
+		text = strings.TrimSpace(text[len(prefix):])
+		spaceIndex := strings.Index(text, " ")
+		var cmd string
+		var args string
+		if spaceIndex == -1 {
+			cmd = text
+			args = ""
+		} else {
+			cmd = text[:spaceIndex]
+			args = strings.TrimSpace(text[spaceIndex:])
+		}
+		return prefix, cmd, args
+	}
+	return "", "", ""
 }
 
 func encodeJsonPayload(d CallbackData) (string, error) {
