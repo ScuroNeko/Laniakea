@@ -270,7 +270,9 @@ func (bot *Bot[T]) prepareUpdateCtx(u *tgapi.Update, ctx *MsgContext) {
 func (bot *Bot[T]) checkPrefixes(text string) (string, bool) {
 	for _, prefix := range bot.prefixes {
 		if prefix == "" {
-			bot.logger.Warnln("empty prefix is not allowed")
+			if bot.logger != nil {
+				bot.logger.Warnln("empty prefix is not allowed")
+			}
 			continue
 		}
 		if strings.HasPrefix(text, prefix) {
