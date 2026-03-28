@@ -342,18 +342,24 @@ func (bot *Bot[T]) SetDraftProvider(p *DraftProvider) *Bot[T] {
 	bot.draftProvider = p
 	return bot
 }
+
+// GetDraftProvider returns the draft provider currently used by the bot.
 func (bot *Bot[T]) GetDraftProvider() *DraftProvider {
 	return bot.draftProvider
 }
 
-func (bot *Bot[T]) SetSettionStore(store SessionStore) *Bot[T] {
+// SetSessionStore replaces the session store used for scene management.
+func (bot *Bot[T]) SetSessionStore(store SessionStore) *Bot[T] {
 	bot.sessionStore = store
 	return bot
 }
+
+// GetSessionStore returns the session store used for scene management.
 func (bot *Bot[T]) GetSessionStore() SessionStore {
 	return bot.sessionStore
 }
 
+// SetSceneScopePriority sets the lookup order for resolving active scene sessions.
 func (bot *Bot[T]) SetSceneScopePriority(priority []SceneScope) *Bot[T] {
 	newPriority := make([]SceneScope, 0, 3)
 	for _, scope := range priority {
@@ -782,6 +788,7 @@ func clonePlugin[T DbContext](p *Plugin[T]) Plugin[T] {
 		name:        p.name,
 		commands:    make(map[string]*Command[T], len(p.commands)),
 		payloads:    make(map[string]*Command[T], len(p.payloads)),
+		scenes:      make(map[string]*Scene[T], len(p.scenes)),
 		middlewares: append(extypes.Slice[Middleware[T]](nil), p.middlewares...),
 		skipAutoCmd: p.skipAutoCmd,
 		logger:      p.logger,
@@ -794,6 +801,9 @@ func clonePlugin[T DbContext](p *Plugin[T]) Plugin[T] {
 	}
 	for name, command := range p.payloads {
 		cloned.payloads[name] = cloneCommand(command)
+	}
+	for name, scene := range p.scenes {
+		cloned.scenes[name] = cloneScene(scene)
 	}
 	maps.Copy(cloned.handlers, p.handlers)
 
@@ -808,5 +818,24 @@ func cloneCommand[T DbContext](command *Command[T]) *Command[T] {
 	cloned := *command
 	cloned.args = append(extypes.Slice[CommandArg](nil), command.args...)
 	cloned.middlewares = append(extypes.Slice[Middleware[T]](nil), command.middlewares...)
+	return &cloned
+}
+
+func cloneScene[T DbContext](scene *Scene[T]) *Scene[T] {
+	if scene == nil {
+		return nil
+	}
+
+	cloned := *scene
+	cloned.steps = make(map[string]SceneHandler[T], len(scene.steps))
+	cloned.commands = make(map[string]SceneHandler[T], len(scene.commands))
+
+	for name, handler := range scene.steps {
+		cloned.steps[name] = handler
+	}
+	for name, handler := range scene.commands {
+		cloned.commands[name] = handler
+	}
+
 	return &cloned
 }

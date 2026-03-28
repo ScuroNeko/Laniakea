@@ -12,6 +12,6 @@ Russian page:
 
 Current high-priority status:
 
-- `1. Conversation / Scene Model`: not implemented yet.
+- `1. Conversation / Scene Model`: work in progress.
 - `2. Typed Handler Input Model`: completed in `v1.0.0-rc.12`.
 - `3. Request Context / Cancellation Model`: completed in `v1.0.0-rc.12`.

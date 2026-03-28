@@ -1,17 +1,17 @@
 package laniakea
 
-func (bot *Bot[T]) GetSession(key string) (SceneSession, error) {
+func (bot *Bot[T]) getSession(key string) (SceneSession, error) {
 	return bot.sessionStore.Get(key)
 }
 
-func (bot *Bot[T]) SetSession(key string, session SceneSession) error {
+func (bot *Bot[T]) setSession(key string, session SceneSession) error {
 	return bot.sessionStore.Set(key, session)
 }
 
-func (bot *Bot[T]) DeleteSession(key string) error {
+func (bot *Bot[T]) deleteSession(key string) error {
 	return bot.sessionStore.Delete(key)
 }
-func (bot *Bot[T]) FindScene(name string) (*sceneMeta, bool) {
+func (bot *Bot[T]) findScene(name string) (*sceneMeta, bool) {
 	for _, plugin := range bot.plugins {
 		scene, ok := plugin.scenes[name]
 		if !ok {
@@ -33,9 +33,9 @@ func (bot *Bot[T]) FindScene(name string) (*sceneMeta, bool) {
 	return nil, false
 }
 
-func (bot *Bot[T]) FindSceneSession(ctx *MsgContext) (string, SceneSession, error) {
+func (bot *Bot[T]) findSceneSession(ctx *MsgContext) (string, SceneSession, error) {
 	var zero SceneSession
-	if ctx.Msg == nil {
+	if ctx.Msg == nil && ctx.FromID == 0 {
 		return "", zero, ErrMessageNil
 	}
 
@@ -56,6 +56,7 @@ func (bot *Bot[T]) FindSceneSession(ctx *MsgContext) (string, SceneSession, erro
 
 	return "", zero, ErrCantFindSession
 }
-func (bot *Bot[T]) BuildSceneKey(scope SceneScope, ctx *MsgContext) (string, bool) {
+
+func (bot *Bot[T]) buildSceneKey(scope SceneScope, ctx *MsgContext) (string, bool) {
 	return buildSceneKey(scope, ctx)
 }

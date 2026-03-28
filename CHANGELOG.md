@@ -8,23 +8,15 @@
 - `Bot.GetPayloadType()`, `InlineKeyboard.GetPayloadType()`, and optional strict payload decoding via `BotOpts.StrictPayloadType` / `Bot.SetStrictPayloadType(...)`.
 - `MsgContext.BindArgs(...)` for binding positional command arguments into exported struct fields.
 - Binding sentinels `ErrBindArgsTargetNotPointer`, `ErrBindArgsTargetNotStruct`, `ErrBindArgsUnsupportedFieldType`, and `ErrBindArgsConversion`.
+- Work-in-progress scene/session support, including plugin scene registration, scoped scene sessions, scene entry/exit APIs on `MsgContext`, default in-memory session storage, scene-local routing before normal command handling, and state helpers on `SceneContext`.
 
 ### Changed
 - `CommandExecutor` now returns `error`, and command, payload, and non-command update handlers now use centralized bot error handling for returned errors.
 - README and README_RU examples now use the new handler signature and document the long-message helpers.
 - README and README_RU now link to the project wiki, and the wiki now includes a page-priority tracker while content is being filled in.
-- `AGENTS.md` now requires every change to be recorded in `CHANGELOG.md`, enforces version alignment with `utils/version.go`, and blocks breaking changes without a major-version bump.
-- `AGENTS.md` now also defines a short commit-message format: one summary line plus up to three high-signal detail lines.
-- `AGENTS.md` now explicitly requires each commit-message detail line to be placed on its own new line.
-- `AGENTS.md` now also requires commit messages to be emitted as a plain multiline block instead of collapsed prose or list formatting.
-- `AGENTS.md` now requires new or expanded project documentation to be maintained in both English and Russian whenever reasonably possible.
-- `AGENTS.md` now requires all agent-created commits to be GPG-signed and to fail fast instead of falling back to unsigned commits when signing cannot be completed.
-- `AGENTS.md` now also links the wiki backlog flow more tightly to `TODO.md` and `CHANGELOG.md`, requiring draft-wiki confirmation for large new ideas and synchronized completion records for backlog items.
-- Added `TODO.md` to track missing framework-level concepts, with detailed notes for scenes, typed handler input, and request-scoped cancellation.
 - Payload-type comments and docs now distinguish between the bot's default payload type and keyboard-local overrides.
 - `MsgContext.Context()` now safely falls back to `context.Background()` when no request-scoped context is attached.
 - `MsgContext` reply, edit, callback, delete, action, and draft-limiter paths now use the context accessor instead of reaching into raw internal state.
-- `TODO.md` is now a short pointer file, while the detailed framework backlog lives in the wiki as `Framework-Backlog` / `Framework-Backlog-RU`.
 - Version constants were bumped to `v1.0.0-rc.12`.
 
 ### Fixed

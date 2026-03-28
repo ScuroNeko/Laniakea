@@ -7,7 +7,7 @@ import (
 )
 
 func (bot *Bot[T]) tryHandleScene(ctx *MsgContext) (bool, error) {
-	key, session, err := bot.FindSceneSession(ctx)
+	key, session, err := bot.findSceneSession(ctx)
 	if err != nil {
 		if errors.Is(err, ErrCantFindSession) || errors.Is(err, ErrMessageNil) {
 			return false, nil
@@ -117,12 +117,25 @@ func (bot *Bot[T]) applySceneResult(scene *Scene[T], ctx *SceneContext, result S
 	}
 }
 func buildSceneKey(scope SceneScope, ctx *MsgContext) (string, bool) {
+	if ctx == nil {
+		return "", false
+	}
+
 	switch scope {
 	case SceneScopeUserChat:
+		if ctx.Msg == nil || ctx.Msg.Chat == nil || ctx.FromID == 0 {
+			return "", false
+		}
 		return fmt.Sprintf("user_id:%d:chat_id:%d", ctx.FromID, ctx.Msg.Chat.ID), true
 	case SceneScopeChat:
+		if ctx.Msg == nil || ctx.Msg.Chat == nil {
+			return "", false
+		}
 		return fmt.Sprintf("chat_id:%d", ctx.Msg.Chat.ID), true
 	case SceneScopeUser:
+		if ctx.FromID == 0 {
+			return "", false
+		}
 		return fmt.Sprintf("user_id:%d", ctx.FromID), true
 	default:
 		return "", false

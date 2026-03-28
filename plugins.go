@@ -215,11 +215,18 @@ func (p *Plugin[T]) NewPayload(exec CommandExecutor[T], command string, args ...
 	return cmd
 }
 
+// AddScene registers a multi-step scene in the plugin.
 func (p *Plugin[T]) AddScene(scene *Scene[T]) *Plugin[T] {
+	if scene == nil {
+		return p
+	}
 	scene.PluginName = p.name
 	scene.setPluginName(p.name)
+	p.scenes[scene.Name] = scene
 	return p
 }
+
+// NewScene creates, registers, and returns a new scene owned by the plugin.
 func (p *Plugin[T]) NewScene(name string) *Scene[T] {
 	scene := NewScene[T](name)
 	scene.setPluginName(p.name)

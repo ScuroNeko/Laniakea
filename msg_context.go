@@ -644,15 +644,22 @@ func (ctx *MsgContext) Context() context.Context {
 	return ctx.ctx
 }
 
+// EnterScene enters the named scene at its configured entry step.
 func (ctx *MsgContext) EnterScene(name string) error {
-	scene, ok := ctx.sceneRuntime.FindScene(name)
+	scene, ok := ctx.sceneRuntime.findScene(name)
 	if !ok {
 		return ErrSceneNotFound
 	}
 
-	key, ok := ctx.sceneRuntime.BuildSceneKey(scene.Scope, ctx)
+	key, ok := ctx.sceneRuntime.buildSceneKey(scene.Scope, ctx)
 	if !ok {
 		return ErrCantFindSession
+	}
+	if scene.Entry == "" {
+		return ErrSceneEntryNotSet
+	}
+	if _, ok := scene.Steps[scene.Entry]; !ok {
+		return ErrSceneStepNotFound
 	}
 
 	session := SceneSession{
@@ -660,10 +667,12 @@ func (ctx *MsgContext) EnterScene(name string) error {
 		Step:  scene.Entry,
 	}
 
-	return ctx.sceneRuntime.SetSession(key, session)
+	return ctx.sceneRuntime.setSession(key, session)
 }
+
+// EnterSceneStep enters the named scene at a specific step.
 func (ctx *MsgContext) EnterSceneStep(name, step string) error {
-	scene, ok := ctx.sceneRuntime.FindScene(name)
+	scene, ok := ctx.sceneRuntime.findScene(name)
 	if !ok {
 		return ErrSceneNotFound
 	}
@@ -671,7 +680,7 @@ func (ctx *MsgContext) EnterSceneStep(name, step string) error {
 		return ErrSceneStepNotFound
 	}
 
-	key, ok := ctx.sceneRuntime.BuildSceneKey(scene.Scope, ctx)
+	key, ok := ctx.sceneRuntime.buildSceneKey(scene.Scope, ctx)
 	if !ok {
 		return ErrCantFindSession
 	}
@@ -681,10 +690,12 @@ func (ctx *MsgContext) EnterSceneStep(name, step string) error {
 		Step:  step,
 	}
 
-	return ctx.sceneRuntime.SetSession(key, session)
+	return ctx.sceneRuntime.setSession(key, session)
 }
+
+// ExitScene leaves the currently active scene for this context.
 func (ctx *MsgContext) ExitScene() error {
-	_, session, err := ctx.sceneRuntime.FindSceneSession(ctx)
+	_, session, err := ctx.sceneRuntime.findSceneSession(ctx)
 	if err != nil {
 		return err
 	}
@@ -692,15 +703,15 @@ func (ctx *MsgContext) ExitScene() error {
 		return ErrNotInScene
 	}
 
-	scene, ok := ctx.sceneRuntime.FindScene(session.Scene)
+	scene, ok := ctx.sceneRuntime.findScene(session.Scene)
 	if !ok {
 		return ErrSceneNotFound
 	}
 
-	key, ok := ctx.sceneRuntime.BuildSceneKey(scene.Scope, ctx)
+	key, ok := ctx.sceneRuntime.buildSceneKey(scene.Scope, ctx)
 	if !ok {
 		return ErrCantFindSession
 	}
 
-	return ctx.sceneRuntime.DeleteSession(key)
+	return ctx.sceneRuntime.deleteSession(key)
 }

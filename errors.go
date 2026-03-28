@@ -44,12 +44,17 @@ var (
 	// ErrBindArgsUnsupportedFieldType reports that BindArgs encountered an unsupported field kind.
 	ErrBindArgsUnsupportedFieldType = errors.New("bind args: unsupported field type")
 	// ErrBindArgsConversion reports that BindArgs could not convert a string argument into a field type.
-	ErrBindArgsConversion   = errors.New("bind args: conversion failed")
-	ErrCantFindSession      = errors.New("can't find session for this context")
-	ErrSceneNotFound        = errors.New("scene not found")
-	ErrSceneStepNotFound    = errors.New("scene step not found")
-	ErrSceneCommandNotFound = errors.New("scene command not found")
-	ErrNotInScene           = errors.New("not in scene")
+	ErrBindArgsConversion = errors.New("bind args: conversion failed")
+	// ErrCantFindSession reports that no scene session matches the current context.
+	ErrCantFindSession = errors.New("can't find session for this context")
+	// ErrSceneNotFound reports that the requested scene is not registered.
+	ErrSceneNotFound = errors.New("scene not found")
+	// ErrSceneStepNotFound reports that the requested scene step is not registered.
+	ErrSceneStepNotFound = errors.New("scene step not found")
+	// ErrNotInScene reports that the current context has no active scene session.
+	ErrNotInScene = errors.New("not in scene")
+	// ErrSceneEntryNotSet reports that a scene has no configured entry step.
+	ErrSceneEntryNotSet = errors.New("scene entry step not set")
 )
 
 func validateMessageText(text string) error {
