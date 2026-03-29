@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"git.nix13.pw/scuroneko/extypes"
-	"git.nix13.pw/scuroneko/laniakea/tgapi"
-	"git.nix13.pw/scuroneko/laniakea/utils"
-	"git.nix13.pw/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/extypes"
+	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/laniakea/utils"
+	"git.scuroneko.dev/scuroneko/slog"
 	"github.com/alitto/pond/v2"
 )
 
@@ -350,6 +350,10 @@ func (bot *Bot[T]) GetDraftProvider() *DraftProvider {
 
 // SetSessionStore replaces the session store used for scene management.
 func (bot *Bot[T]) SetSessionStore(store SessionStore) *Bot[T] {
+	if store == nil {
+		bot.logger.Warn("SetSessionStore called with nil store; using default MemorySessionStore")
+		return bot
+	}
 	bot.sessionStore = store
 	return bot
 }
@@ -363,6 +367,10 @@ func (bot *Bot[T]) GetSessionStore() SessionStore {
 func (bot *Bot[T]) SetSceneScopePriority(priority []SceneScope) *Bot[T] {
 	newPriority := make([]SceneScope, 0, 3)
 	for _, scope := range priority {
+		if scope != SceneScopeUser && scope != SceneScopeChat && scope != SceneScopeUserChat {
+			bot.logger.Warnln(fmt.Sprintf("invalid scene scope %v in priority list; ignoring", scope))
+			continue
+		}
 		if slices.Index(newPriority, scope) >= 0 {
 			bot.logger.Warnln(fmt.Sprintf("duplicate scope %v in scene scope priority; ignoring duplicates", scope))
 			continue

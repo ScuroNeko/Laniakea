@@ -3,7 +3,7 @@ package laniakea
 import (
 	"strings"
 
-	"git.nix13.pw/scuroneko/laniakea/utils"
+	"git.scuroneko.dev/scuroneko/laniakea/utils"
 )
 
 // Ptr returns a pointer to v.

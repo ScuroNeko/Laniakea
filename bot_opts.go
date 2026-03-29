@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"git.nix13.pw/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
 
 // BotOpts holds configuration options for initializing a Bot.

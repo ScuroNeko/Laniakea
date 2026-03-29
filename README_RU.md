@@ -4,13 +4,13 @@
 
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go&style=flat-square)](https://go.dev/)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%203.0-blue.svg?style=flat-square)](LICENSE)
-![Gitea Release](https://img.shields.io/gitea/v/release/ScuroNeko/Laniakea?gitea_url=https%3A%2F%2Fgit.nix13.pw&sort=semver&display_name=release&style=flat-square&color=purple&link=https%3A%2F%2Fgit.nix13.pw%2FScuroNeko%2FLaniakea%2Freleases)
+![Gitea Release](https://img.shields.io/gitea/v/release/ScuroNeko/Laniakea?gitea_url=https%3A%2F%2Fgit.scuroneko.dev&sort=semver&display_name=release&style=flat-square&color=purple&link=https%3A%2F%2Fgit.scuroneko.dev%2FScuroNeko%2FLaniakea%2Freleases)
 
 Легковесная, простая в использовании и производительная обёртка для Telegram Bot API на Go. Она упрощает разработку ботов благодаря чистой системе плагинов, поддержке Middleware, автоматической генерации команд и встроенному рейтлимитеру.
 
 [English](README.md)
 
-[Wiki](https://git.nix13.pw/ScuroNeko/Laniakea/wiki)
+[Wiki](https://git.scuroneko.dev/ScuroNeko/Laniakea/wiki)
 
 ---
 
@@ -30,7 +30,7 @@
 ## 📦 Установка
 
 ```bash
-go get git.nix13.pw/scuroneko/laniakea
+go get git.scuroneko.dev/scuroneko/laniakea
 ```
 
 или
@@ -48,7 +48,7 @@ package main
 import (
 	"log"
 
-	"git.nix13.pw/scuroneko/laniakea" // Импортируем библиотеку Laniakea
+	"git.scuroneko.dev/scuroneko/laniakea" // Импортируем библиотеку Laniakea
 )
 
 // echo — это функция-обработчик команды.
@@ -170,6 +170,43 @@ if err != nil {
 bot.DatabaseContext(db)
 ```
 
+### Сцены и сессии (Scenes and Sessions)
+
+Сцены описывают многошаговые диалоги внутри плагина. Активная сцена хранится в session state, ключ которого зависит от scope, поэтому поток можно изолировать на пользователя, на чат или на пару пользователь-чат.
+
+```go
+plugin := laniakea.NewPlugin[MyDB]("signup")
+
+plugin.NewScene("signup").
+    SetScope(laniakea.SceneScopeUserChat).
+    SetEntry("ask_name").
+    OnStep("ask_name", func(ctx *laniakea.SceneContext, db MyDB) (laniakea.SceneResult, error) {
+        if ctx.Text == "" {
+            ctx.Answer("Как тебя зовут?")
+            return ctx.Stay(), nil
+        }
+
+        if err := ctx.SaveData(struct {
+            Name string `json:"name"`
+        }{Name: ctx.Text}); err != nil {
+            return laniakea.SceneResult{}, err
+        }
+
+        ctx.Answer("Приятно познакомиться.")
+        return ctx.Next("done"), nil
+    }).
+    OnStep("done", func(ctx *laniakea.SceneContext, db MyDB) (laniakea.SceneResult, error) {
+        return ctx.Exit(), nil
+    })
+```
+
+- Используйте `ctx.EnterScene("signup")`, чтобы войти в entry step, настроенный у сцены.
+- Используйте `ctx.EnterSceneStep("signup", "done")`, если нужен явный стартовый step.
+- Из scene handler возвращайте `ctx.Stay()`, `ctx.Next(step)`, `ctx.Exit()` или `ctx.Pass()` для управления потоком.
+- `SceneActionPass` не меняет текущую session state и продолжает обычный routing бота.
+- Для JSON-состояния сцены используйте `SceneContext.SaveData(...)` и `SceneContext.BindData(...)`.
+- Выбирайте `SceneScopeUser`, `SceneScopeChat` или `SceneScopeUserChat` в зависимости от того, насколько широко должен разделяться диалог.
+
 ### tgapi: API и Uploader
 
 В `tgapi` есть два клиента:
@@ -243,9 +280,9 @@ func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 Этот проект лицензирован под GNU General Public License v3.0 - подробности см. в файле [LICENSE](LICENSE).
 
 ## 📚 Дополнительная информация
-[GoDoc Laniakea](https://pkg.go.dev/git.nix13.pw/scuroneko/laniakea)
+[GoDoc Laniakea](https://pkg.go.dev/git.scuroneko.dev/scuroneko/laniakea)
 
-[Wiki](https://git.nix13.pw/ScuroNeko/Laniakea/wiki)
+[Wiki](https://git.scuroneko.dev/ScuroNeko/Laniakea/wiki)
 
 [Telegram Bot API](https://core.telegram.org/bots/api)
 

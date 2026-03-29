@@ -10,8 +10,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"git.nix13.pw/scuroneko/laniakea/tgapi"
-	"git.nix13.pw/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/slog"
 )
 
 type roundTripFunc func(*http.Request) (*http.Response, error)

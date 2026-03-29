@@ -3,8 +3,8 @@ package laniakea
 import (
 	"fmt"
 
-	"git.nix13.pw/scuroneko/extypes"
-	"git.nix13.pw/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/extypes"
+	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
 
 const (

@@ -35,9 +35,6 @@ func (bot *Bot[T]) findScene(name string) (*sceneMeta, bool) {
 
 func (bot *Bot[T]) findSceneSession(ctx *MsgContext) (string, SceneSession, error) {
 	var zero SceneSession
-	if ctx.Msg == nil && ctx.FromID == 0 {
-		return "", zero, ErrMessageNil
-	}
 
 	for _, scope := range bot.sceneScopePriority {
 		key, ok := buildSceneKey(scope, ctx)

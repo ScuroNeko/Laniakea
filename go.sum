@@ -1,7 +1,7 @@
-git.nix13.pw/scuroneko/extypes v1.2.2 h1:N54c1ejrPs1yfIkvYuwqI7B1+8S9mDv2GqQA6sct4dk=
-git.nix13.pw/scuroneko/extypes v1.2.2/go.mod h1:b4XYk1OW1dVSiE2MT/OMuX/K/UItf1swytX6eroVYnk=
-git.nix13.pw/scuroneko/slog v1.1.2 h1:pl7tV5FN25Yso7sLYoOgBXi9+jLo5BDJHWmHlNPjpY0=
-git.nix13.pw/scuroneko/slog v1.1.2/go.mod h1:UcfRIHDqpVQHahBGM93awLDK8//AsAvOqBwwbWqMkjM=
+git.scuroneko.dev/scuroneko/extypes v1.2.3 h1:n7QsfTZEn9fJNZLXGH/LkNq4cADaRk+LTu6LNMv9y6s=
+git.scuroneko.dev/scuroneko/extypes v1.2.3/go.mod h1:MhYpXC6sloLOpoM2guf64eSOrz+ET/QJZ8toobc3Ors=
+git.scuroneko.dev/scuroneko/slog v1.1.3 h1:vI4GZykn8gDb6OJ2xq+KLcEk38M7O4e/z1kzpeRHEHw=
+git.scuroneko.dev/scuroneko/slog v1.1.3/go.mod h1:gnDap54sfZv3EuSyZd7fjOH46aLbDFpvtN2wgFcWkgE=
 github.com/alitto/pond/v2 v2.7.0 h1:c76L+yN916m/DRXjGCeUBHHu92uWnh/g1bwVk4zyyXg=
 github.com/alitto/pond/v2 v2.7.0/go.mod h1:xkjYEgQ05RSpWdfSd1nM3OVv7TBhLdy7rMp3+2Nq+yE=
 github.com/fatih/color v1.18.0 h1:S8gINlzdQ840/4pfAwic/ZE0djQEH3wM94VfqLTZcOM=

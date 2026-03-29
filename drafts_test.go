@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"git.nix13.pw/scuroneko/laniakea/tgapi"
-	"git.nix13.pw/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/slog"
 )
 
 func TestDraftFlushRequiresChatID(t *testing.T) {

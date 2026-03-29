@@ -6,8 +6,8 @@ import (
 	"mime/multipart"
 	"testing"
 
-	"git.nix13.pw/scuroneko/laniakea/tgapi"
-	"git.nix13.pw/scuroneko/laniakea/utils"
+	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/laniakea/utils"
 )
 
 type multipartEncodeParams struct {

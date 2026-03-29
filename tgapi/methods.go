@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"git.nix13.pw/scuroneko/laniakea/utils"
+	"git.scuroneko.dev/scuroneko/laniakea/utils"
 )
 
 // UpdateParams holds parameters for the getUpdates method.

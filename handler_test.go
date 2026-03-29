@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"git.nix13.pw/scuroneko/laniakea/tgapi"
-	"git.nix13.pw/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/slog"
 )
 
 func TestCheckPrefixesSkipsEmptyPrefixes(t *testing.T) {

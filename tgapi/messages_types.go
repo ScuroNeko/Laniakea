@@ -1,6 +1,6 @@
 package tgapi
 
-import "git.nix13.pw/scuroneko/extypes"
+import "git.scuroneko.dev/scuroneko/extypes"
 
 // MessageID represents a message identifier wrapper returned by some API methods.
 type MessageID struct {

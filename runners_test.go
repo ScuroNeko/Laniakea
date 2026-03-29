@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"git.nix13.pw/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/slog"
 )
 
 func TestExecRunnersRunsOnetimeSyncRunner(t *testing.T) {

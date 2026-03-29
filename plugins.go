@@ -4,10 +4,10 @@ import (
 	"errors"
 	"regexp"
 
-	"git.nix13.pw/scuroneko/extypes"
-	"git.nix13.pw/scuroneko/laniakea/tgapi"
-	"git.nix13.pw/scuroneko/laniakea/utils"
-	"git.nix13.pw/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/extypes"
+	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/laniakea/utils"
+	"git.scuroneko.dev/scuroneko/slog"
 )
 
 // CommandValueType defines the expected type of command argument.

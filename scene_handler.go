@@ -26,6 +26,9 @@ func (bot *Bot[T]) tryHandleScene(ctx *MsgContext) (bool, error) {
 		if scene.PluginName != "" && scene.PluginName != plugin.name {
 			continue
 		}
+		if !plugin.executeMiddlewares(ctx, bot.dbContext) {
+			return false, nil
+		}
 		sceneCtx := &SceneContext{
 			MsgContext: ctx,
 			sess:       session,
@@ -40,10 +43,15 @@ func (bot *Bot[T]) executeScene(scene *Scene[T], ctx *SceneContext) (bool, error
 	if ctx.MsgContext == nil || ctx.sess.Scene == "" {
 		return false, nil
 	}
-	text := ctx.Msg.Text
-	if text == "" {
-		text = ctx.Msg.Caption
+
+	var text string
+	if ctx.Msg != nil {
+		text = ctx.Msg.Text
+		if text == "" {
+			text = ctx.Msg.Caption
+		}
 	}
+
 	text = strings.TrimSpace(text)
 	prefix, cmd, args := bot.parseCommand(text)
 	if cmd != "" {
@@ -89,7 +97,6 @@ func (bot *Bot[T]) applySceneResult(scene *Scene[T], ctx *SceneContext, result S
 			return false, err
 		}
 		return true, nil
-
 	case SceneActionNext:
 		if result.Next == "" {
 			return false, ErrSceneStepNotFound
@@ -102,16 +109,13 @@ func (bot *Bot[T]) applySceneResult(scene *Scene[T], ctx *SceneContext, result S
 			return false, err
 		}
 		return true, nil
-
 	case SceneActionExit:
 		if err := bot.sessionStore.Delete(ctx.key); err != nil {
 			return false, err
 		}
 		return true, nil
-
 	case SceneActionPass:
 		return false, nil
-
 	default:
 		return false, nil
 	}

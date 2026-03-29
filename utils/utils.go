@@ -3,7 +3,7 @@ package utils
 import (
 	"os"
 
-	"git.nix13.pw/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/slog"
 )
 
 // GetLoggerLevel returns DEBUG when DEBUG=true in env, otherwise FATAL.

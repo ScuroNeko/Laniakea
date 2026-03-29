@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"time"
 
-	"git.nix13.pw/scuroneko/laniakea/utils"
-	"git.nix13.pw/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/laniakea/utils"
+	"git.scuroneko.dev/scuroneko/slog"
 )
 
 // APIOpts holds configuration options for initializing the Telegram API client.

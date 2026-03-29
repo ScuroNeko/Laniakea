@@ -5,7 +5,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"git.nix13.pw/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
 
 // Interface for generating unique draft IDs.

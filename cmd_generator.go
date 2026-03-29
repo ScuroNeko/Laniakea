@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"git.nix13.pw/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
 
 // CmdRegexp matches command names allowed for Telegram command registration.

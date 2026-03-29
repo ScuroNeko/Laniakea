@@ -10,9 +10,13 @@ type SceneHandler[T any] func(ctx *SceneContext, db T) (SceneResult, error)
 
 // Scene defines a multi-step conversational flow.
 type Scene[T any] struct {
-	Name       string
-	Scope      SceneScope
-	Entry      string // starting step
+	// Name identifies the scene in plugin registration and session state.
+	Name string
+	// Scope controls how active scene sessions are keyed and shared.
+	Scope SceneScope
+	// Entry names the first step used by MsgContext.EnterScene.
+	Entry string
+	// PluginName stores the owning plugin name for scene resolution.
 	PluginName string
 
 	steps    map[string]SceneHandler[T]
@@ -43,6 +47,7 @@ func (s *Scene[T]) SetEntry(step string) *Scene[T] {
 	s.Entry = step
 	return s
 }
+
 func (s *Scene[T]) setPluginName(name string) *Scene[T] {
 	s.PluginName = name
 	return s
@@ -92,9 +97,12 @@ func (s *Scene[T]) executeMessage(ctx *SceneContext, db T) (SceneResult, bool, e
 
 // SceneSession stores the active scene state for one session key.
 type SceneSession struct {
+	// Scene is the registered scene name for the active session.
 	Scene string
-	Step  string
-	Data  []byte
+	// Step is the current step name inside the active scene.
+	Step string
+	// Data stores opaque session payload bytes, typically JSON.
+	Data []byte
 }
 
 // SetData stores arbitrary opaque session data.

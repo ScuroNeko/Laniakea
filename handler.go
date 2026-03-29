@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"git.nix13.pw/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
 
 // ErrInvalidPayloadType is returned when callback payload encoding type is unknown.

@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"git.nix13.pw/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
 
 func TestLoadOptsFromEnvIgnoresEmptyUpdateTypes(t *testing.T) {

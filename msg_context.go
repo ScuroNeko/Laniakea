@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"git.nix13.pw/scuroneko/laniakea/tgapi"
-	"git.nix13.pw/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/slog"
 )
 
 // MsgContext holds the context for handling a Telegram message or callback query.
@@ -646,6 +646,10 @@ func (ctx *MsgContext) Context() context.Context {
 
 // EnterScene enters the named scene at its configured entry step.
 func (ctx *MsgContext) EnterScene(name string) error {
+	if ctx.sceneRuntime == nil {
+		return ErrSceneRuntimeNil
+	}
+
 	scene, ok := ctx.sceneRuntime.findScene(name)
 	if !ok {
 		return ErrSceneNotFound
@@ -672,6 +676,10 @@ func (ctx *MsgContext) EnterScene(name string) error {
 
 // EnterSceneStep enters the named scene at a specific step.
 func (ctx *MsgContext) EnterSceneStep(name, step string) error {
+	if ctx.sceneRuntime == nil {
+		return ErrSceneRuntimeNil
+	}
+
 	scene, ok := ctx.sceneRuntime.findScene(name)
 	if !ok {
 		return ErrSceneNotFound
@@ -695,6 +703,10 @@ func (ctx *MsgContext) EnterSceneStep(name, step string) error {
 
 // ExitScene leaves the currently active scene for this context.
 func (ctx *MsgContext) ExitScene() error {
+	if ctx.sceneRuntime == nil {
+		return ErrSceneRuntimeNil
+	}
+
 	_, session, err := ctx.sceneRuntime.findSceneSession(ctx)
 	if err != nil {
 		return err

@@ -4,13 +4,13 @@
 
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go&style=flat-square)](https://go.dev/)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%203.0-blue.svg?style=flat-square)](LICENSE)
-![Gitea Release](https://img.shields.io/gitea/v/release/ScuroNeko/Laniakea?gitea_url=https%3A%2F%2Fgit.nix13.pw&sort=semver&display_name=release&style=flat-square&color=purple&link=https%3A%2F%2Fgit.nix13.pw%2FScuroNeko%2FLaniakea%2Freleases)
+![Gitea Release](https://img.shields.io/gitea/v/release/ScuroNeko/Laniakea?gitea_url=https%3A%2F%2Fgit.scuroneko.dev&sort=semver&display_name=release&style=flat-square&color=purple&link=https%3A%2F%2Fgit.scuroneko.dev%2FScuroNeko%2FLaniakea%2Freleases)
 
 A lightweight, easy-to-use, and performant Telegram Bot API wrapper for Go. It simplifies bot development with a clean plugin system, middleware support, automatic command generation, and built-in rate limiting.
 
 [На русском](README_RU.md)
 
-[Wiki](https://git.nix13.pw/ScuroNeko/Laniakea/wiki)
+[Wiki](https://git.scuroneko.dev/ScuroNeko/Laniakea/wiki)
 
 ---
 
@@ -29,7 +29,7 @@ A lightweight, easy-to-use, and performant Telegram Bot API wrapper for Go. It s
 ## 📦 Installation
 
 ```bash
-go get git.nix13.pw/scuroneko/laniakea
+go get git.scuroneko.dev/scuroneko/laniakea
 ```
 
 or
@@ -47,7 +47,7 @@ package main
 import (
 	"log"
 
-	"git.nix13.pw/scuroneko/laniakea" // Import the Laniakea library
+	"git.scuroneko.dev/scuroneko/laniakea" // Import the Laniakea library
 )
 
 // echo is a command handler function.
@@ -182,6 +182,43 @@ if err != nil {
 bot.DatabaseContext(db)
 ```
 
+### Scenes and Sessions
+
+Scenes model multi-step conversations inside a plugin. Each active scene is stored in a session keyed by scope, so you can isolate flows per user, per chat, or per user-chat pair.
+
+```go
+plugin := laniakea.NewPlugin[MyDB]("signup")
+
+plugin.NewScene("signup").
+    SetScope(laniakea.SceneScopeUserChat).
+    SetEntry("ask_name").
+    OnStep("ask_name", func(ctx *laniakea.SceneContext, db MyDB) (laniakea.SceneResult, error) {
+        if ctx.Text == "" {
+            ctx.Answer("What is your name?")
+            return ctx.Stay(), nil
+        }
+
+        if err := ctx.SaveData(struct {
+            Name string `json:"name"`
+        }{Name: ctx.Text}); err != nil {
+            return laniakea.SceneResult{}, err
+        }
+
+        ctx.Answer("Nice to meet you.")
+        return ctx.Next("done"), nil
+    }).
+    OnStep("done", func(ctx *laniakea.SceneContext, db MyDB) (laniakea.SceneResult, error) {
+        return ctx.Exit(), nil
+    })
+```
+
+- Use `ctx.EnterScene("signup")` to enter the configured entry step.
+- Use `ctx.EnterSceneStep("signup", "done")` when you need an explicit starting step.
+- Return `ctx.Stay()`, `ctx.Next(step)`, `ctx.Exit()`, or `ctx.Pass()` from scene handlers to control flow.
+- `SceneActionPass` keeps the current session unchanged and continues normal bot routing.
+- Use `SceneContext.SaveData(...)` and `SceneContext.BindData(...)` for JSON session state.
+- Use `SceneScopeUser`, `SceneScopeChat`, or `SceneScopeUserChat` depending on how widely a conversation should be shared.
+
 ## 🧩 Middleware
 Middleware are functions that run before a command handler. They are perfect for cross-cutting concerns like logging, access control, rate limiting, or modifying the context.
 
@@ -247,9 +284,9 @@ func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 This project is licensed under the GNU General Public License v3.0 — see the [LICENSE](LICENSE) file for details.
 
 ## 📚 Learn More
-[GoDoc](https://pkg.go.dev/git.nix13.pw/scuroneko/laniakea)
+[GoDoc](https://pkg.go.dev/git.scuroneko.dev/scuroneko/laniakea)
 
-[Wiki](https://git.nix13.pw/ScuroNeko/Laniakea/wiki)
+[Wiki](https://git.scuroneko.dev/ScuroNeko/Laniakea/wiki)
 
 [Telegram Bot API](https://core.telegram.org/bots/api)
 

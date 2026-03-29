@@ -14,7 +14,11 @@
 - `CommandExecutor` now returns `error`, and command, payload, and non-command update handlers now use centralized bot error handling for returned errors.
 - README and README_RU examples now use the new handler signature and document the long-message helpers.
 - README and README_RU now link to the project wiki, and the wiki now includes a page-priority tracker while content is being filled in.
+- README and README_RU now document scenes, session scopes, scene state helpers, and `SceneActionPass` semantics.
+- `TODO.md` and the framework backlog pages now group the remaining framework work into explicit priority 1, 2, and 3 buckets.
 - Payload-type comments and docs now distinguish between the bot's default payload type and keyboard-local overrides.
+- Scene runtime sentinel errors now have explicit godoc comments.
+- Public scene structs now document their exported fields more explicitly.
 - `MsgContext.Context()` now safely falls back to `context.Background()` when no request-scoped context is attached.
 - `MsgContext` reply, edit, callback, delete, action, and draft-limiter paths now use the context accessor instead of reaching into raw internal state.
 - Version constants were bumped to `v1.0.0-rc.12`.
@@ -33,6 +37,8 @@
 
 ### Tests
 - Added regression tests for `MsgContext.BindArgs(...)`, including scalar conversion, tail-string binding, zero-value trailing fields, invalid targets, unsupported field types, and end-to-end command/payload binding.
+- Added scene regression tests for runtime guards, scene-local command handling, and `SceneActionPass` preserving session state.
+- Added scene regression tests for message fallback handling, user-scoped session lookup without `Msg`, and custom `SessionStore` error propagation.
 
 ## v1.0.0-rc.11
 

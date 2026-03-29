@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"git.nix13.pw/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
 
 // Updates fetches new updates from Telegram API using long polling.

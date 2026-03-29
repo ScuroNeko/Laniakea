@@ -24,7 +24,8 @@ var (
 	ErrPayloadTypeMismatch = errors.New("payload type mismatch")
 	// ErrDraftChatIDZero reports that a draft has no target chat ID.
 	ErrDraftChatIDZero = errors.New("zero draft chat ID")
-	ErrMessageNil      = errors.New("message is nil")
+	// ErrMessageNil reports that a required message value is nil.
+	ErrMessageNil = errors.New("message is nil")
 	// ErrMessageContextNil reports that an operation requires ctx.Msg but none is set.
 	ErrMessageContextNil = errors.New("message context is nil")
 	// ErrEditTargetMissing reports that an edit operation has no message target.
@@ -55,6 +56,8 @@ var (
 	ErrNotInScene = errors.New("not in scene")
 	// ErrSceneEntryNotSet reports that a scene has no configured entry step.
 	ErrSceneEntryNotSet = errors.New("scene entry step not set")
+	// ErrSceneRuntimeNil reports that scene APIs were used without an attached runtime.
+	ErrSceneRuntimeNil = errors.New("scene runtime is nil")
 )
 
 func validateMessageText(text string) error {
