@@ -215,3 +215,227 @@ func TestRunWithContextRejectsSecondRun(t *testing.T) {
 		t.Fatalf("expected ErrBotAlreadyRun on second run, got %v", err)
 	}
 }
+
+func TestBotConfigurationFreezesAfterRunStarts(t *testing.T) {
+	type testDB struct{ Name string }
+
+	makeBot := func() *Bot[*testDB] {
+		return &Bot[*testDB]{
+			logger:             slog.CreateLogger(),
+			prefixes:           []string{"/"},
+			updateTypes:        []tgapi.UpdateType{tgapi.UpdateTypeMessage},
+			payloadType:        BotPayloadBase64,
+			strictPayloadType:  false,
+			errorTemplate:      "%s",
+			l10n:               &L10n{},
+			draftProvider:      &DraftProvider{},
+			sessionStore:       NewMemorySessionStore(),
+			sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
+		}
+	}
+
+	tests := []struct {
+		name string
+		check func(t *testing.T, bot *Bot[*testDB])
+	}{
+		{
+			name: "DatabaseContext",
+			check: func(t *testing.T, bot *Bot[*testDB]) {
+				original := &testDB{Name: "before"}
+				bot.DatabaseContext(original)
+				if err := bot.beginRun(); err != nil {
+					t.Fatalf("beginRun returned error: %v", err)
+				}
+				t.Cleanup(bot.finishRun)
+
+				later := &testDB{Name: "after"}
+				bot.DatabaseContext(later)
+				if bot.dbContext != original {
+					t.Fatal("DatabaseContext mutated after configuration freeze")
+				}
+			},
+		},
+		{
+			name: "UpdateTypes",
+			check: func(t *testing.T, bot *Bot[*testDB]) {
+				original := append([]tgapi.UpdateType(nil), bot.updateTypes...)
+				if err := bot.beginRun(); err != nil {
+					t.Fatalf("beginRun returned error: %v", err)
+				}
+				t.Cleanup(bot.finishRun)
+
+				bot.UpdateTypes(tgapi.UpdateTypePoll)
+				if !reflect.DeepEqual(bot.updateTypes, original) {
+					t.Fatalf("UpdateTypes mutated after configuration freeze: got %v want %v", bot.updateTypes, original)
+				}
+			},
+		},
+		{
+			name: "AddUpdateType",
+			check: func(t *testing.T, bot *Bot[*testDB]) {
+				original := append([]tgapi.UpdateType(nil), bot.updateTypes...)
+				if err := bot.beginRun(); err != nil {
+					t.Fatalf("beginRun returned error: %v", err)
+				}
+				t.Cleanup(bot.finishRun)
+
+				bot.AddUpdateType(tgapi.UpdateTypePoll)
+				if !reflect.DeepEqual(bot.updateTypes, original) {
+					t.Fatalf("AddUpdateType mutated after configuration freeze: got %v want %v", bot.updateTypes, original)
+				}
+			},
+		},
+		{
+			name: "SetPayloadType",
+			check: func(t *testing.T, bot *Bot[*testDB]) {
+				if err := bot.beginRun(); err != nil {
+					t.Fatalf("beginRun returned error: %v", err)
+				}
+				t.Cleanup(bot.finishRun)
+
+				bot.SetPayloadType(BotPayloadJson)
+				if bot.payloadType != BotPayloadBase64 {
+					t.Fatalf("payloadType mutated after configuration freeze: got %q want %q", bot.payloadType, BotPayloadBase64)
+				}
+			},
+		},
+		{
+			name: "SetStrictPayloadType",
+			check: func(t *testing.T, bot *Bot[*testDB]) {
+				if err := bot.beginRun(); err != nil {
+					t.Fatalf("beginRun returned error: %v", err)
+				}
+				t.Cleanup(bot.finishRun)
+
+				bot.SetStrictPayloadType(true)
+				if bot.strictPayloadType {
+					t.Fatal("strictPayloadType mutated after configuration freeze")
+				}
+			},
+		},
+		{
+			name: "AddPrefixes",
+			check: func(t *testing.T, bot *Bot[*testDB]) {
+				original := append([]string(nil), bot.prefixes...)
+				if err := bot.beginRun(); err != nil {
+					t.Fatalf("beginRun returned error: %v", err)
+				}
+				t.Cleanup(bot.finishRun)
+
+				bot.AddPrefixes("!")
+				if !reflect.DeepEqual(bot.prefixes, original) {
+					t.Fatalf("prefixes mutated after configuration freeze: got %v want %v", bot.prefixes, original)
+				}
+			},
+		},
+		{
+			name: "ErrorTemplate",
+			check: func(t *testing.T, bot *Bot[*testDB]) {
+				if err := bot.beginRun(); err != nil {
+					t.Fatalf("beginRun returned error: %v", err)
+				}
+				t.Cleanup(bot.finishRun)
+
+				bot.ErrorTemplate("changed")
+				if bot.errorTemplate != "%s" {
+					t.Fatalf("errorTemplate mutated after configuration freeze: got %q want %q", bot.errorTemplate, "%s")
+				}
+			},
+		},
+		{
+			name: "SetDraftProvider",
+			check: func(t *testing.T, bot *Bot[*testDB]) {
+				original := bot.draftProvider
+				if err := bot.beginRun(); err != nil {
+					t.Fatalf("beginRun returned error: %v", err)
+				}
+				t.Cleanup(bot.finishRun)
+
+				bot.SetDraftProvider(&DraftProvider{})
+				if bot.draftProvider != original {
+					t.Fatal("draftProvider mutated after configuration freeze")
+				}
+			},
+		},
+		{
+			name: "SetSessionStore",
+			check: func(t *testing.T, bot *Bot[*testDB]) {
+				original := bot.sessionStore
+				if err := bot.beginRun(); err != nil {
+					t.Fatalf("beginRun returned error: %v", err)
+				}
+				t.Cleanup(bot.finishRun)
+
+				bot.SetSessionStore(NewMemorySessionStore())
+				if bot.sessionStore != original {
+					t.Fatal("sessionStore mutated after configuration freeze")
+				}
+			},
+		},
+		{
+			name: "SetSceneScopePriority",
+			check: func(t *testing.T, bot *Bot[*testDB]) {
+				original := append([]SceneScope(nil), bot.sceneScopePriority...)
+				if err := bot.beginRun(); err != nil {
+					t.Fatalf("beginRun returned error: %v", err)
+				}
+				t.Cleanup(bot.finishRun)
+
+				bot.SetSceneScopePriority([]SceneScope{SceneScopeUser})
+				if !reflect.DeepEqual(bot.sceneScopePriority, original) {
+					t.Fatalf("sceneScopePriority mutated after configuration freeze: got %v want %v", bot.sceneScopePriority, original)
+				}
+			},
+		},
+		{
+			name: "AddL10n",
+			check: func(t *testing.T, bot *Bot[*testDB]) {
+				original := bot.l10n
+				if err := bot.beginRun(); err != nil {
+					t.Fatalf("beginRun returned error: %v", err)
+				}
+				t.Cleanup(bot.finishRun)
+
+				bot.AddL10n(&L10n{})
+				if bot.l10n != original {
+					t.Fatal("l10n mutated after configuration freeze")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.check(t, makeBot())
+		})
+	}
+}
+
+func TestAddPluginsAndRuntimeRegistrationsNoOpAfterRunStarts(t *testing.T) {
+	bot := &Bot[NoDB]{
+		logger:      slog.CreateLogger(),
+		prefixes:    []string{"/"},
+		middlewares: []Middleware[NoDB]{NewMiddleware("base", func(ctx *MsgContext, db NoDB) bool { return true })},
+		runners:     []Runner[NoDB]{NewRunner("base", func(bot *Bot[NoDB]) error { return nil })},
+	}
+	plugin := NewPlugin[NoDB]("late")
+
+	if err := bot.beginRun(); err != nil {
+		t.Fatalf("beginRun returned error: %v", err)
+	}
+	defer bot.finishRun()
+
+	bot.AddPlugins(plugin)
+	bot.AddMiddleware(NewMiddleware("late", func(ctx *MsgContext, db NoDB) bool { return true }))
+	bot.AddRunner(NewRunner("late", func(bot *Bot[NoDB]) error { return nil }))
+
+	if len(bot.plugins) != 0 {
+		t.Fatalf("expected AddPlugins to be ignored after configuration freeze, got %d plugins", len(bot.plugins))
+	}
+	if len(bot.middlewares) != 1 {
+		t.Fatalf("expected AddMiddleware to be ignored after configuration freeze, got %d middlewares", len(bot.middlewares))
+	}
+	if len(bot.runners) != 1 {
+		t.Fatalf("expected AddRunner to be ignored after configuration freeze, got %d runners", len(bot.runners))
+	}
+}

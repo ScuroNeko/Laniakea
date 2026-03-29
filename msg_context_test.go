@@ -166,6 +166,164 @@ func TestBindArgsRejectsUnsupportedFieldTypes(t *testing.T) {
 	}
 }
 
+func TestErrorDefaultRemainsUserVisibleForMessageFlow(t *testing.T) {
+	var requests int
+	var gotBody map[string]any
+
+	client := &http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			requests++
+			body, err := io.ReadAll(req.Body)
+			if err != nil {
+				t.Fatalf("failed to read request body: %v", err)
+			}
+			if err := json.Unmarshal(body, &gotBody); err != nil {
+				t.Fatalf("failed to decode request body: %v", err)
+			}
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(strings.NewReader(`{"ok":true,"result":{"message_id":9,"date":1}}`)),
+			}, nil
+		}),
+	}
+
+	api := tgapi.NewAPI(
+		tgapi.NewAPIOpts("token").
+			SetAPIUrl("https://example.test").
+			SetHTTPClient(client),
+	)
+	defer func() {
+		if err := api.Close(); err != nil {
+			t.Fatalf("Close returned error: %v", err)
+		}
+	}()
+
+	ctx := &MsgContext{
+		Api:           api,
+		Msg:           &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: string(tgapi.ChatTypePrivate)}},
+		Logger:        slog.CreateLogger(),
+		errorTemplate: "Error: %s",
+	}
+
+	ctx.error(errors.New("boom"))
+
+	if requests != 1 {
+		t.Fatalf("expected one user-facing error reply, got %d requests", requests)
+	}
+	if got := gotBody["text"]; got != "Error: boom" {
+		t.Fatalf("unexpected error reply text: %v", got)
+	}
+}
+
+func TestErrorInternalSkipsUserReplyForMessageFlow(t *testing.T) {
+	client := &http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			t.Fatal("unexpected HTTP request for internal-only error")
+			return nil, nil
+		}),
+	}
+
+	api := tgapi.NewAPI(
+		tgapi.NewAPIOpts("token").
+			SetAPIUrl("https://example.test").
+			SetHTTPClient(client),
+	)
+	defer func() {
+		if err := api.Close(); err != nil {
+			t.Fatalf("Close returned error: %v", err)
+		}
+	}()
+
+	ctx := &MsgContext{
+		Api:           api,
+		Msg:           &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: string(tgapi.ChatTypePrivate)}},
+		Logger:        slog.CreateLogger(),
+		errorTemplate: "Error: %s",
+	}
+
+	ctx.error(AsInternalError(errors.New("boom")))
+}
+
+func TestErrorInternalSkipsCallbackAnswer(t *testing.T) {
+	client := &http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			t.Fatal("unexpected callback answer request for internal-only error")
+			return nil, nil
+		}),
+	}
+
+	api := tgapi.NewAPI(
+		tgapi.NewAPIOpts("token").
+			SetAPIUrl("https://example.test").
+			SetHTTPClient(client),
+	)
+	defer func() {
+		if err := api.Close(); err != nil {
+			t.Fatalf("Close returned error: %v", err)
+		}
+	}()
+
+	ctx := &MsgContext{
+		Api:             api,
+		Logger:          slog.CreateLogger(),
+		errorTemplate:   "%s",
+		CallbackQueryId: "cb-1",
+	}
+
+	ctx.error(AsInternalError(errors.New("boom")))
+}
+
+func TestErrorUserVisibleAnswersCallback(t *testing.T) {
+	var requests int
+	var gotBody map[string]any
+
+	client := &http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			requests++
+			body, err := io.ReadAll(req.Body)
+			if err != nil {
+				t.Fatalf("failed to read request body: %v", err)
+			}
+			if err := json.Unmarshal(body, &gotBody); err != nil {
+				t.Fatalf("failed to decode request body: %v", err)
+			}
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(strings.NewReader(`{"ok":true,"result":true}`)),
+			}, nil
+		}),
+	}
+
+	api := tgapi.NewAPI(
+		tgapi.NewAPIOpts("token").
+			SetAPIUrl("https://example.test").
+			SetHTTPClient(client),
+	)
+	defer func() {
+		if err := api.Close(); err != nil {
+			t.Fatalf("Close returned error: %v", err)
+		}
+	}()
+
+	ctx := &MsgContext{
+		Api:             api,
+		Logger:          slog.CreateLogger(),
+		errorTemplate:   "Oops: %s",
+		CallbackQueryId: "cb-1",
+	}
+
+	ctx.error(AsUserError(errors.New("boom")))
+
+	if requests != 1 {
+		t.Fatalf("expected one callback error answer, got %d requests", requests)
+	}
+	if got := gotBody["text"]; got != "Oops: boom" {
+		t.Fatalf("unexpected callback error text: %v", got)
+	}
+}
+
 func TestAnswerRejectsEmptyMessage(t *testing.T) {
 	ctx := &MsgContext{
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: string(tgapi.ChatTypePrivate)}},

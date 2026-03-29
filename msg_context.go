@@ -13,27 +13,59 @@ import (
 	"git.scuroneko.dev/scuroneko/slog"
 )
 
-// MsgContext holds the context for handling a Telegram message or callback query.
-// It provides methods to respond, edit, delete, and translate messages, as well as
-// manage inline keyboards and message drafts.
+// MsgContext holds the normalized per-update context passed to command, payload,
+// scene, middleware, and generic update handlers.
+//
+// MsgContext is populated from the current Telegram update before handler routing.
+// Not every field is guaranteed for every update kind. In particular:
+//   - Update is always present.
+//   - Msg is populated only for update kinds that carry a Telegram message object.
+//   - From and FromID are populated only when the update exposes a user identity.
+//   - Text, Args, and Prefix are populated only by command or scene command routing.
+//   - CallbackQueryId, CallbackMsgId, and InlineMsgId are populated only for
+//     callback query handling when the corresponding callback targets exist.
+//
+// Helper methods on MsgContext may require a message-backed context. For example,
+// reply helpers need Msg, while inline callback edit helpers can work through
+// InlineMsgId when there is no chat message.
 type MsgContext struct {
 	Api    *tgapi.API
 	Update tgapi.Update
 
-	Msg  *tgapi.Message
+	// Msg is the normalized Telegram message for message-backed update kinds.
+	// It is nil for updates that do not include a message object.
+	Msg *tgapi.Message
+	// From is the normalized Telegram user for update kinds that expose one.
+	// It stays nil for sender-chat-only updates and update kinds without a user.
 	From *tgapi.User
 
 	// Logger is the logger assigned by the matched plugin for the current handler call.
 	// It may fall back to the bot logger when the plugin has no dedicated logger.
 	Logger *slog.Logger
 
-	InlineMsgId     string
-	CallbackMsgId   int
+	// InlineMsgId is the inline message identifier for callback queries that target
+	// an inline message instead of a chat message.
+	InlineMsgId string
+	// CallbackMsgId is the message ID targeted by the current callback query when
+	// the callback comes from a chat message.
+	CallbackMsgId int
+	// CallbackQueryId is the Telegram callback query ID for payload handlers and
+	// callback-backed scene handlers.
 	CallbackQueryId string
-	FromID          int64
-	Prefix          string
-	Text            string
-	Args            []string
+	// FromID is the normalized sender ID when the current update exposes a user.
+	// It is zero when the update has no user identity.
+	FromID int64
+	// Prefix is the matched command prefix for command routing and scene-local
+	// command routing. It is empty outside those flows.
+	Prefix string
+	// Text is the parsed command tail for command routing, the parsed scene-command
+	// tail for scene-local command routing, or the trimmed message text seen by a
+	// scene step/message handler. It is empty when the current routing path does
+	// not derive text input.
+	Text string
+	// Args contains parsed command or payload arguments for the current routing
+	// path. It is nil or empty when no argument vector is derived.
+	Args []string
 
 	errorTemplate string
 	l10n          *L10n
@@ -478,6 +510,13 @@ func (ctx *MsgContext) SendAction(action tgapi.ChatActionType) {
 
 // Internal helper that formats, sends, and logs an error.
 func (ctx *MsgContext) error(err error) {
+	if err == nil {
+		return
+	}
+	ctx.Logger.Errorln(err)
+	if IsInternalError(err) {
+		return
+	}
 	text := fmt.Sprintf(ctx.errorTemplate, err.Error())
 
 	if ctx.CallbackQueryId != "" {
@@ -485,7 +524,6 @@ func (ctx *MsgContext) error(err error) {
 	} else {
 		ctx.answer(text, nil, tgapi.ParseNone)
 	}
-	ctx.Logger.Errorln(err)
 }
 
 // Error is an alias for error().

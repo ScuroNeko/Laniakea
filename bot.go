@@ -118,6 +118,18 @@ type Bot[T DbContext] struct {
 	ran            bool
 }
 
+func (bot *Bot[T]) configMutable(method string) bool {
+	bot.runStateMu.Lock()
+	defer bot.runStateMu.Unlock()
+	if !bot.ran {
+		return true
+	}
+	if bot.logger != nil {
+		bot.logger.Warnln(fmt.Sprintf("%s called after bot configuration was frozen; ignoring", method))
+	}
+	return false
+}
+
 // NewBot creates and initializes a new Bot instance using the provided BotOpts.
 //
 // Automatically:
@@ -339,6 +351,9 @@ func (bot *Bot[T]) L10n(lang, key string) string {
 // SetDraftProvider replaces the default DraftProvider with a custom one.
 // Useful for using LinearDraftIdGenerator to persist draft IDs across restarts.
 func (bot *Bot[T]) SetDraftProvider(p *DraftProvider) *Bot[T] {
+	if !bot.configMutable("SetDraftProvider") {
+		return bot
+	}
 	bot.draftProvider = p
 	return bot
 }
@@ -350,6 +365,9 @@ func (bot *Bot[T]) GetDraftProvider() *DraftProvider {
 
 // SetSessionStore replaces the session store used for scene management.
 func (bot *Bot[T]) SetSessionStore(store SessionStore) *Bot[T] {
+	if !bot.configMutable("SetSessionStore") {
+		return bot
+	}
 	if store == nil {
 		bot.logger.Warn("SetSessionStore called with nil store; using default MemorySessionStore")
 		return bot
@@ -365,6 +383,9 @@ func (bot *Bot[T]) GetSessionStore() SessionStore {
 
 // SetSceneScopePriority sets the lookup order for resolving active scene sessions.
 func (bot *Bot[T]) SetSceneScopePriority(priority []SceneScope) *Bot[T] {
+	if !bot.configMutable("SetSceneScopePriority") {
+		return bot
+	}
 	newPriority := make([]SceneScope, 0, 3)
 	for _, scope := range priority {
 		if scope != SceneScopeUser && scope != SceneScopeChat && scope != SceneScopeUserChat {
@@ -391,6 +412,9 @@ func (bot *Bot[T]) SetSceneScopePriority(priority []SceneScope) *Bot[T] {
 // Value-typed contexts are supported, but the bot warns once because handlers
 // receive T by value.
 func (bot *Bot[T]) DatabaseContext(ctx T) *Bot[T] {
+	if !bot.configMutable("DatabaseContext") {
+		return bot
+	}
 	if !bot.warnedValueDB && shouldWarnOnValueDBContext[T]() && bot.logger != nil {
 		bot.logger.Warnln("database context uses a value type; shared dependencies should usually use a pointer type as T")
 		bot.warnedValueDB = true
@@ -403,6 +427,9 @@ func (bot *Bot[T]) DatabaseContext(ctx T) *Bot[T] {
 // UpdateTypes sets the list of update types the bot will request from Telegram.
 // Overwrites any previously set types.
 func (bot *Bot[T]) UpdateTypes(t ...tgapi.UpdateType) *Bot[T] {
+	if !bot.configMutable("UpdateTypes") {
+		return bot
+	}
 	bot.updateTypes = make([]tgapi.UpdateType, 0)
 	bot.updateTypes = append(bot.updateTypes, t...)
 	return bot
@@ -413,6 +440,9 @@ func (bot *Bot[T]) UpdateTypes(t ...tgapi.UpdateType) *Bot[T] {
 // Base64 stores the same JSON encoded as a Base64URL string.
 // InlineKeyboard.SetPayloadType may override this value for an individual keyboard.
 func (bot *Bot[T]) SetPayloadType(t BotPayloadType) *Bot[T] {
+	if !bot.configMutable("SetPayloadType") {
+		return bot
+	}
 	bot.payloadType = t
 	return bot
 }
@@ -423,6 +453,9 @@ func (bot *Bot[T]) GetPayloadType() BotPayloadType { return bot.payloadType }
 // SetStrictPayloadType enables or disables strict callback payload decoding.
 // When enabled, callback payloads must match the bot's default payload type.
 func (bot *Bot[T]) SetStrictPayloadType(strict bool) *Bot[T] {
+	if !bot.configMutable("SetStrictPayloadType") {
+		return bot
+	}
 	bot.strictPayloadType = strict
 	return bot
 }
@@ -430,6 +463,9 @@ func (bot *Bot[T]) SetStrictPayloadType(strict bool) *Bot[T] {
 // AddUpdateType adds one or more update types to the list.
 // Does not overwrite existing types.
 func (bot *Bot[T]) AddUpdateType(t ...tgapi.UpdateType) *Bot[T] {
+	if !bot.configMutable("AddUpdateType") {
+		return bot
+	}
 	bot.updateTypes = append(bot.updateTypes, t...)
 	return bot
 }
@@ -437,6 +473,9 @@ func (bot *Bot[T]) AddUpdateType(t ...tgapi.UpdateType) *Bot[T] {
 // AddPrefixes adds one or more command prefixes (e.g., "/", "!").
 // Must have at least one prefix before Run().
 func (bot *Bot[T]) AddPrefixes(prefixes ...string) *Bot[T] {
+	if !bot.configMutable("AddPrefixes") {
+		return bot
+	}
 	bot.prefixes = append(bot.prefixes, prefixes...)
 	return bot
 }
@@ -445,6 +484,9 @@ func (bot *Bot[T]) AddPrefixes(prefixes ...string) *Bot[T] {
 // Use "%s" to insert the error message.
 // Example: "❌ Error: %s" → "❌ Error: Command not found".
 func (bot *Bot[T]) ErrorTemplate(s string) *Bot[T] {
+	if !bot.configMutable("ErrorTemplate") {
+		return bot
+	}
 	bot.errorTemplate = s
 	return bot
 }
@@ -478,6 +520,9 @@ func (bot *Bot[T]) Debug(debug bool) *Bot[T] {
 // are passed here. Post-registration mutation through the original *Plugin is
 // not a supported API, even if some changes appear to work due to shared maps.
 func (bot *Bot[T]) AddPlugins(plugin ...*Plugin[T]) *Bot[T] {
+	if !bot.configMutable("AddPlugins") {
+		return bot
+	}
 	level := bot.GetLoggerLevel()
 	for _, p := range plugin {
 		if p == nil {
@@ -514,6 +559,9 @@ func (bot *Bot[T]) AddPlugins(plugin ...*Plugin[T]) *Bot[T] {
 //
 // Middleware with an empty name are skipped with a warning.
 func (bot *Bot[T]) AddMiddleware(middleware ...Middleware[T]) *Bot[T] {
+	if !bot.configMutable("AddMiddleware") {
+		return bot
+	}
 	for _, m := range middleware {
 		if m.name == "" {
 			bot.logger.Warnln("middleware must have a non-empty name")
@@ -552,6 +600,9 @@ func (bot *Bot[T]) AddMiddleware(middleware ...Middleware[T]) *Bot[T] {
 //
 // Runners with an empty name are skipped with a warning.
 func (bot *Bot[T]) AddRunner(runner Runner[T]) *Bot[T] {
+	if !bot.configMutable("AddRunner") {
+		return bot
+	}
 	if runner.name == "" {
 		bot.logger.Warnln("runner must have a non-empty name")
 		return bot
@@ -575,6 +626,9 @@ func (bot *Bot[T]) AddRunner(runner Runner[T]) *Bot[T] {
 //
 // Replaces any previously set L10n instance.
 func (bot *Bot[T]) AddL10n(l *L10n) *Bot[T] {
+	if !bot.configMutable("AddL10n") {
+		return bot
+	}
 	if l == nil {
 		bot.logger.Warn("AddL10n called with nil L10n; localization will be disabled")
 		return bot

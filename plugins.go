@@ -40,6 +40,11 @@ var ErrCmdArgCountMismatch = errors.New("command arg count mismatch")
 // ErrCmdArgRegexpMismatch is returned when an argument fails regex validation.
 var ErrCmdArgRegexpMismatch = errors.New("command arg regexp mismatch")
 
+var (
+	errCommandNotFound = errors.New("command not found")
+	errPayloadNotFound = errors.New("payload not found")
+)
+
 // CommandArg defines a single argument for a command, including type, regex,
 // and whether it is required.
 type CommandArg struct {
@@ -314,7 +319,7 @@ func (p *Plugin[T]) Close() error {
 func (p *Plugin[T]) executeCmd(cmd string, ctx *MsgContext, db T) {
 	command, exists := p.commands[cmd]
 	if !exists {
-		ctx.error(errors.New("command not found"))
+		ctx.error(AsInternalError(errCommandNotFound))
 		return
 	}
 
@@ -340,7 +345,7 @@ func (p *Plugin[T]) executeCmd(cmd string, ctx *MsgContext, db T) {
 func (p *Plugin[T]) executePayload(payload string, ctx *MsgContext, db T) {
 	command, exists := p.payloads[payload]
 	if !exists {
-		ctx.error(errors.New("payload not found"))
+		ctx.error(AsInternalError(errPayloadNotFound))
 		return
 	}
 

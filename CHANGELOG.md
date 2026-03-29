@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.0.0-rc.13
+
+### Added
+- `AsUserError(...)`, `AsInternalError(...)`, `IsUserError(...)`, and `IsInternalError(...)` for explicitly marking centralized handler errors as user-visible or internal-only without breaking the existing default error flow.
+
+### Changed
+- Bot configuration mutators now treat the bot as configuration-frozen after the first run begins and ignore late mutation attempts for bot-level config such as prefixes, payload defaults, plugins, middleware, runners, localization, scene session wiring, and database context injection.
+- `MsgContext` godoc and field comments now describe the normalized update contract more explicitly, including when `Msg`, `From`, callback target fields, `Text`, and `Args` are expected to be populated.
+- `MsgContext.Error(...)` and returned handler errors now suppress the automatic user reply when the error is explicitly marked with `AsInternalError(...)`, while keeping the previous user-visible default for unclassified errors.
+
+### Tests
+- Added regression coverage for the bot configuration freeze model, including ignored post-run mutations for core bot configuration methods and late registration paths.
+- Added table-driven update-contract coverage for `prepareUpdateCtx(...)`, including message-backed, callback-backed, user-backed, and no-user update kinds.
+- Added regression tests proving that `edited_message` and `edited_channel_post` stay out of command routing and continue through generic update handlers.
+- Added callback-routing regression tests for both chat-message and inline-message callback targets, including `CallbackQueryId`, `CallbackMsgId`, `InlineMsgId`, and payload-argument guarantees.
+- Added regression tests for the new error-visibility model in both message and callback flows, including silent internal-only errors and explicit user-visible callback replies.
+
 ## v1.0.0-rc.12
 
 ### Added

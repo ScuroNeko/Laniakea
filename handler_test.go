@@ -8,6 +8,10 @@ import (
 	"git.scuroneko.dev/scuroneko/slog"
 )
 
+func ptr[T any](v T) *T {
+	return &v
+}
+
 func TestCheckPrefixesSkipsEmptyPrefixes(t *testing.T) {
 	bot := &Bot[NoDB]{prefixes: []string{"", "/"}}
 
@@ -71,6 +75,275 @@ func TestAddUpdateHandlerRejectsReservedUpdateTypes(t *testing.T) {
 		if _, ok := plugin.handlers[updateType]; ok {
 			t.Fatalf("reserved update type %q must not be registered", updateType)
 		}
+	}
+}
+
+func TestPrepareUpdateCtxContract(t *testing.T) {
+	tests := []struct {
+		name               string
+		update             *tgapi.Update
+		wantMsg            bool
+		wantFrom           bool
+		wantFromID         int64
+		wantCallbackID     string
+		wantCallbackMsgID  int
+		wantInlineMsgID    string
+	}{
+		{
+			name: "message",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeMessage,
+				Message: &tgapi.Message{
+					MessageID: 11,
+					From:      &tgapi.User{ID: 101},
+					Chat:      &tgapi.Chat{ID: 1001},
+				},
+			},
+			wantMsg:    true,
+			wantFrom:   true,
+			wantFromID: 101,
+		},
+		{
+			name: "edited message",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeEditedMessage,
+				EditedMessage: &tgapi.Message{
+					MessageID: 12,
+					From:      &tgapi.User{ID: 102},
+					Chat:      &tgapi.Chat{ID: 1002},
+				},
+			},
+			wantMsg:    true,
+			wantFrom:   true,
+			wantFromID: 102,
+		},
+		{
+			name: "channel post sender chat",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeChannelPost,
+				ChannelPost: &tgapi.Message{
+					MessageID: 13,
+					Chat:      &tgapi.Chat{ID: -1003},
+				},
+			},
+			wantMsg: true,
+		},
+		{
+			name: "business message",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeBusinessMessage,
+				BusinessMessage: &tgapi.Message{
+					MessageID: 14,
+					From:      &tgapi.User{ID: 103},
+					Chat:      &tgapi.Chat{ID: 1004},
+				},
+			},
+			wantMsg:    true,
+			wantFrom:   true,
+			wantFromID: 103,
+		},
+		{
+			name: "inline query",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeInlineQuery,
+				InlineQuery: &tgapi.InlineQuery{ID: "iq", From: tgapi.User{ID: 104}},
+			},
+			wantFrom:   true,
+			wantFromID: 104,
+		},
+		{
+			name: "chosen inline result",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeChosenInlineResult,
+				ChosenInlineResult: &tgapi.ChosenInlineResult{ResultID: "res", From: tgapi.User{ID: 105}},
+			},
+			wantFrom:   true,
+			wantFromID: 105,
+		},
+		{
+			name: "callback query with message",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeCallbackQuery,
+				CallbackQuery: &tgapi.CallbackQuery{
+					ID:   "cb-1",
+					From: tgapi.User{ID: 106},
+					Message: &tgapi.Message{
+						MessageID: 77,
+						Chat:      &tgapi.Chat{ID: 1005},
+					},
+				},
+			},
+			wantMsg:           true,
+			wantFrom:          true,
+			wantFromID:        106,
+			wantCallbackID:    "cb-1",
+			wantCallbackMsgID: 77,
+		},
+		{
+			name: "callback query with inline message",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeCallbackQuery,
+				CallbackQuery: &tgapi.CallbackQuery{
+					ID:              "cb-2",
+					From:            tgapi.User{ID: 107},
+					InlineMessageID: ptr("inline-42"),
+				},
+			},
+			wantFrom:       true,
+			wantFromID:     107,
+			wantCallbackID: "cb-2",
+			wantInlineMsgID:"inline-42",
+		},
+		{
+			name: "shipping query",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeShippingQuery,
+				ShippingQuery: &tgapi.ShippingQuery{ID: "ship", From: tgapi.User{ID: 108}},
+			},
+			wantFrom:   true,
+			wantFromID: 108,
+		},
+		{
+			name: "pre checkout query",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypePreCheckoutQuery,
+				PreCheckoutQuery: &tgapi.PreCheckoutQuery{ID: "pre", From: tgapi.User{ID: 109}},
+			},
+			wantFrom:   true,
+			wantFromID: 109,
+		},
+		{
+			name: "purchased paid media",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypePurchasedPaidMedia,
+				PurchasedPaidMedia: &tgapi.PaidMediaPurchased{From: tgapi.User{ID: 110}},
+			},
+			wantFrom:   true,
+			wantFromID: 110,
+		},
+		{
+			name: "my chat member",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeMyChatMember,
+				MyChatMember: &tgapi.ChatMemberUpdated{From: tgapi.User{ID: 111}},
+			},
+			wantFrom:   true,
+			wantFromID: 111,
+		},
+		{
+			name: "chat member",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeChatMember,
+				ChatMember: &tgapi.ChatMemberUpdated{From: tgapi.User{ID: 112}},
+			},
+			wantFrom:   true,
+			wantFromID: 112,
+		},
+		{
+			name: "chat join request",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeChatJoinRequest,
+				ChatJoinRequest: &tgapi.ChatJoinRequest{From: tgapi.User{ID: 113}},
+			},
+			wantFrom:   true,
+			wantFromID: 113,
+		},
+		{
+			name: "business connection",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeBusinessConnection,
+				BusinessConnection: &tgapi.BusinessConnection{User: tgapi.User{ID: 114}},
+			},
+			wantFrom:   true,
+			wantFromID: 114,
+		},
+		{
+			name: "poll answer",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypePollAnswer,
+				PollAnswer: &tgapi.PollAnswer{User: tgapi.User{ID: 115}},
+			},
+			wantFrom:   true,
+			wantFromID: 115,
+		},
+		{
+			name: "message reaction",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeMessageReaction,
+				MessageReaction: &tgapi.MessageReactionUpdated{User: &tgapi.User{ID: 116}},
+			},
+			wantFrom:   true,
+			wantFromID: 116,
+		},
+		{
+			name: "chat boost",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeChatBoost,
+				ChatBoost: &tgapi.ChatBoostUpdated{
+					Boost: tgapi.ChatBoost{Source: tgapi.ChatBoostSource{User: tgapi.User{ID: 117}}},
+				},
+			},
+			wantFrom:   true,
+			wantFromID: 117,
+		},
+		{
+			name: "removed chat boost",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeRemovedChatBoost,
+				RemovedChatBoost: &tgapi.ChatBoostRemoved{
+					Source: tgapi.ChatBoostSource{User: tgapi.User{ID: 118}},
+				},
+			},
+			wantFrom:   true,
+			wantFromID: 118,
+		},
+		{
+			name: "poll",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypePoll,
+				Poll: &tgapi.Poll{ID: "poll"},
+			},
+		},
+		{
+			name: "message reaction count",
+			update: &tgapi.Update{
+				Type: tgapi.UpdateTypeMessageReactionCount,
+				MessageReactionCount: &tgapi.MessageReactionCountUpdated{},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bot := &Bot[NoDB]{}
+			ctx := &MsgContext{}
+			bot.prepareUpdateCtx(tt.update, ctx)
+
+			if got := ctx.Msg != nil; got != tt.wantMsg {
+				t.Fatalf("unexpected Msg presence: got %v want %v", got, tt.wantMsg)
+			}
+			if got := ctx.From != nil; got != tt.wantFrom {
+				t.Fatalf("unexpected From presence: got %v want %v", got, tt.wantFrom)
+			}
+			if ctx.FromID != tt.wantFromID {
+				t.Fatalf("unexpected FromID: got %d want %d", ctx.FromID, tt.wantFromID)
+			}
+			if ctx.CallbackQueryId != tt.wantCallbackID {
+				t.Fatalf("unexpected CallbackQueryId: got %q want %q", ctx.CallbackQueryId, tt.wantCallbackID)
+			}
+			if ctx.CallbackMsgId != tt.wantCallbackMsgID {
+				t.Fatalf("unexpected CallbackMsgId: got %d want %d", ctx.CallbackMsgId, tt.wantCallbackMsgID)
+			}
+			if ctx.InlineMsgId != tt.wantInlineMsgID {
+				t.Fatalf("unexpected InlineMsgId: got %q want %q", ctx.InlineMsgId, tt.wantInlineMsgID)
+			}
+			if ctx.Text != "" {
+				t.Fatalf("prepareUpdateCtx must not populate Text, got %q", ctx.Text)
+			}
+			if len(ctx.Args) != 0 {
+				t.Fatalf("prepareUpdateCtx must not populate Args, got %v", ctx.Args)
+			}
+		})
 	}
 }
 
@@ -321,5 +594,209 @@ func TestPayloadHandlerBindArgsEndToEnd(t *testing.T) {
 	want := payloadInput{ID: 7, Note: "looks good"}
 	if got != want {
 		t.Fatalf("unexpected bound payload input: got %#v want %#v", got, want)
+	}
+}
+
+func TestHandleEditedMessageStaysOutOfCommandFlow(t *testing.T) {
+	commandCalled := false
+	updateCalled := false
+
+	plugin := NewPlugin[NoDB]("test")
+	plugin.NewCommand(func(ctx *MsgContext, db NoDB) error {
+		commandCalled = true
+		return nil
+	}, "ping")
+	plugin.AddUpdateHandler(tgapi.UpdateTypeEditedMessage, func(ctx *MsgContext, db NoDB) error {
+		updateCalled = true
+		if ctx.Msg == nil {
+			t.Fatal("expected ctx.Msg in edited message handler")
+		}
+		if ctx.Text != "" {
+			t.Fatalf("expected empty Text in edited_message update handler, got %q", ctx.Text)
+		}
+		if len(ctx.Args) != 0 {
+			t.Fatalf("expected empty Args in edited_message update handler, got %v", ctx.Args)
+		}
+		return nil
+	})
+
+	bot := &Bot[NoDB]{
+		logger:   slog.CreateLogger(),
+		prefixes: []string{"/"},
+		plugins:  []Plugin[NoDB]{clonePlugin(plugin)},
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 20,
+		Type:     tgapi.UpdateTypeEditedMessage,
+		EditedMessage: &tgapi.Message{
+			MessageID: 1,
+			Text:      "/ping",
+			From:      &tgapi.User{ID: 1},
+			Chat:      &tgapi.Chat{ID: 42},
+		},
+	})
+
+	if commandCalled {
+		t.Fatal("edited_message must not enter command flow")
+	}
+	if !updateCalled {
+		t.Fatal("expected edited_message update handler to be called")
+	}
+}
+
+func TestHandleEditedChannelPostStaysOutOfCommandFlow(t *testing.T) {
+	commandCalled := false
+	updateCalled := false
+
+	plugin := NewPlugin[NoDB]("test")
+	plugin.NewCommand(func(ctx *MsgContext, db NoDB) error {
+		commandCalled = true
+		return nil
+	}, "ping")
+	plugin.AddUpdateHandler(tgapi.UpdateTypeEditedChannelPost, func(ctx *MsgContext, db NoDB) error {
+		updateCalled = true
+		if ctx.Msg == nil {
+			t.Fatal("expected ctx.Msg in edited channel post handler")
+		}
+		return nil
+	})
+
+	bot := &Bot[NoDB]{
+		logger:   slog.CreateLogger(),
+		prefixes: []string{"/"},
+		plugins:  []Plugin[NoDB]{clonePlugin(plugin)},
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 21,
+		Type:     tgapi.UpdateTypeEditedChannelPost,
+		EditedChannelPost: &tgapi.Message{
+			MessageID: 1,
+			Text:      "/ping",
+			Chat:      &tgapi.Chat{ID: -10042},
+		},
+	})
+
+	if commandCalled {
+		t.Fatal("edited_channel_post must not enter command flow")
+	}
+	if !updateCalled {
+		t.Fatal("expected edited_channel_post update handler to be called")
+	}
+}
+
+func TestHandleCallbackPopulatesMessageTargets(t *testing.T) {
+	called := false
+	plugin := NewPlugin[NoDB]("test")
+	plugin.NewPayload(func(ctx *MsgContext, db NoDB) error {
+		called = true
+		if ctx.CallbackQueryId != "cb-msg" {
+			t.Fatalf("unexpected CallbackQueryId: %q", ctx.CallbackQueryId)
+		}
+		if ctx.CallbackMsgId != 55 {
+			t.Fatalf("unexpected CallbackMsgId: %d", ctx.CallbackMsgId)
+		}
+		if ctx.InlineMsgId != "" {
+			t.Fatalf("did not expect InlineMsgId, got %q", ctx.InlineMsgId)
+		}
+		if ctx.Msg == nil {
+			t.Fatal("expected callback message context")
+		}
+		if ctx.From == nil || ctx.FromID != 7 {
+			t.Fatalf("unexpected callback sender: %#v / %d", ctx.From, ctx.FromID)
+		}
+		if ctx.Text != "" {
+			t.Fatalf("callback flow must not populate Text, got %q", ctx.Text)
+		}
+		if got, want := ctx.Args, []string{"7", "ok"}; len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+			t.Fatalf("unexpected callback args: got %v want %v", got, want)
+		}
+		return nil
+	}, "approve")
+
+	bot := &Bot[NoDB]{
+		logger:      slog.CreateLogger(),
+		payloadType: BotPayloadJson,
+		plugins:     []Plugin[NoDB]{clonePlugin(plugin)},
+	}
+
+	data, err := encodeJsonPayload(CallbackData{Command: "approve", Args: []string{"7", "ok"}})
+	if err != nil {
+		t.Fatalf("encodeJsonPayload returned error: %v", err)
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 30,
+		Type:     tgapi.UpdateTypeCallbackQuery,
+		CallbackQuery: &tgapi.CallbackQuery{
+			ID:   "cb-msg",
+			Data: data,
+			From: tgapi.User{ID: 7},
+			Message: &tgapi.Message{
+				MessageID: 55,
+				Chat:      &tgapi.Chat{ID: 77},
+			},
+		},
+	})
+
+	if !called {
+		t.Fatal("expected payload handler to be called")
+	}
+}
+
+func TestHandleCallbackPopulatesInlineTargets(t *testing.T) {
+	called := false
+	plugin := NewPlugin[NoDB]("test")
+	plugin.NewPayload(func(ctx *MsgContext, db NoDB) error {
+		called = true
+		if ctx.CallbackQueryId != "cb-inline" {
+			t.Fatalf("unexpected CallbackQueryId: %q", ctx.CallbackQueryId)
+		}
+		if ctx.CallbackMsgId != 0 {
+			t.Fatalf("did not expect CallbackMsgId, got %d", ctx.CallbackMsgId)
+		}
+		if ctx.InlineMsgId != "inline-55" {
+			t.Fatalf("unexpected InlineMsgId: %q", ctx.InlineMsgId)
+		}
+		if ctx.Msg != nil {
+			t.Fatalf("did not expect callback chat message context, got %#v", ctx.Msg)
+		}
+		if ctx.From == nil || ctx.FromID != 8 {
+			t.Fatalf("unexpected callback sender: %#v / %d", ctx.From, ctx.FromID)
+		}
+		if ctx.Text != "" {
+			t.Fatalf("callback flow must not populate Text, got %q", ctx.Text)
+		}
+		if got, want := ctx.Args, []string{"9"}; len(got) != len(want) || got[0] != want[0] {
+			t.Fatalf("unexpected callback args: got %v want %v", got, want)
+		}
+		return nil
+	}, "inline.approve")
+
+	bot := &Bot[NoDB]{
+		logger:      slog.CreateLogger(),
+		payloadType: BotPayloadJson,
+		plugins:     []Plugin[NoDB]{clonePlugin(plugin)},
+	}
+
+	data, err := encodeJsonPayload(CallbackData{Command: "inline.approve", Args: []string{"9"}})
+	if err != nil {
+		t.Fatalf("encodeJsonPayload returned error: %v", err)
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 31,
+		Type:     tgapi.UpdateTypeCallbackQuery,
+		CallbackQuery: &tgapi.CallbackQuery{
+			ID:              "cb-inline",
+			Data:            data,
+			From:            tgapi.User{ID: 8},
+			InlineMessageID: ptr("inline-55"),
+		},
+	})
+
+	if !called {
+		t.Fatal("expected inline payload handler to be called")
 	}
 }
