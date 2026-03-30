@@ -11,10 +11,10 @@ import (
 
 func TestExecRunnersRunsOnetimeSyncRunner(t *testing.T) {
 	var calls atomic.Int32
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger: slog.CreateLogger(),
-		runners: []Runner[NoDB]{
-			NewRunner("sync-once", func(*Bot[NoDB]) error {
+		runners: []Runner[NoData]{
+			NewRunner("sync-once", func(*Bot[NoData]) error {
 				calls.Add(1)
 				return nil
 			}).Onetime(true).Async(false),
@@ -33,10 +33,10 @@ func TestExecRunnersStopsBackgroundRunnerOnCancel(t *testing.T) {
 	triggered := make(chan struct{}, 1)
 	ctx, cancel := context.WithCancel(context.Background())
 
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger: slog.CreateLogger(),
-		runners: []Runner[NoDB]{
-			NewRunner("background", func(*Bot[NoDB]) error {
+		runners: []Runner[NoData]{
+			NewRunner("background", func(*Bot[NoData]) error {
 				if calls.Add(1) == 1 {
 					triggered <- struct{}{}
 				}

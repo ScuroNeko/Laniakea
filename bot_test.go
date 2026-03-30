@@ -13,7 +13,7 @@ import (
 )
 
 func TestGetUpdateTypesReturnsCopy(t *testing.T) {
-	bot := &Bot[NoDB]{updateTypes: []tgapi.UpdateType{tgapi.UpdateTypeMessage}}
+	bot := &Bot[NoData]{updateTypes: []tgapi.UpdateType{tgapi.UpdateTypeMessage}}
 
 	got := bot.GetUpdateTypes()
 	got[0] = tgapi.UpdateTypeCallbackQuery
@@ -24,17 +24,17 @@ func TestGetUpdateTypesReturnsCopy(t *testing.T) {
 }
 
 func TestAddPluginsSnapshotsConfiguration(t *testing.T) {
-	bot := &Bot[NoDB]{logger: slog.CreateLogger()}
-	plugin := NewPlugin[NoDB]("demo")
+	bot := &Bot[NoData]{logger: slog.CreateLogger()}
+	plugin := NewPlugin[NoData]("demo")
 
-	cmd := plugin.NewCommand(func(ctx *MsgContext, db NoDB) error { return nil }, "start")
-	plugin.AddMiddleware(NewMiddleware("base", func(ctx *MsgContext, db NoDB) bool { return true }))
+	cmd := plugin.NewCommand(func(ctx *MsgContext, db NoData) error { return nil }, "start")
+	plugin.AddMiddleware(NewMiddleware("base", func(ctx *MsgContext, db NoData) bool { return true }))
 
 	bot.AddPlugins(plugin)
 
 	cmd.SetDescription("mutated after registration")
-	plugin.NewCommand(func(ctx *MsgContext, db NoDB) error { return nil }, "late")
-	plugin.AddMiddleware(NewMiddleware("late", func(ctx *MsgContext, db NoDB) bool { return true }))
+	plugin.NewCommand(func(ctx *MsgContext, db NoData) error { return nil }, "late")
+	plugin.AddMiddleware(NewMiddleware("late", func(ctx *MsgContext, db NoData) bool { return true }))
 
 	registered := bot.plugins[0]
 	if _, exists := registered.commands["late"]; exists {
@@ -49,7 +49,7 @@ func TestAddPluginsSnapshotsConfiguration(t *testing.T) {
 }
 
 func TestBotPayloadTypeConfiguration(t *testing.T) {
-	bot := &Bot[NoDB]{payloadType: BotPayloadBase64}
+	bot := &Bot[NoData]{payloadType: BotPayloadBase64}
 
 	if got := bot.GetPayloadType(); got != BotPayloadBase64 {
 		t.Fatalf("unexpected initial payload type: %q", got)
@@ -65,8 +65,8 @@ func TestBotPayloadTypeConfiguration(t *testing.T) {
 }
 
 func TestAddPluginsSkipsNilPlugin(t *testing.T) {
-	bot := &Bot[NoDB]{logger: slog.CreateLogger()}
-	plugin := NewPlugin[NoDB]("demo")
+	bot := &Bot[NoData]{logger: slog.CreateLogger()}
+	plugin := NewPlugin[NoData]("demo")
 
 	bot.AddPlugins(nil, plugin)
 
@@ -79,7 +79,7 @@ func TestAddPluginsSkipsNilPlugin(t *testing.T) {
 }
 
 func TestInitLoggersFallsBackToStdoutLoggerOnFileError(t *testing.T) {
-	bot := &Bot[NoDB]{}
+	bot := &Bot[NoData]{}
 
 	bot.initLoggers(&BotOpts{
 		Debug:            true,
@@ -122,39 +122,39 @@ func TestNextPollRetryDelay(t *testing.T) {
 	}
 }
 
-func TestAddDatabaseLoggerWriterSkipsWhenDBContextIsUnset(t *testing.T) {
-	bot := &Bot[NoDB]{logger: slog.CreateLogger()}
+func TestAddDatabaseLoggerWriterSkipsWhenAppDataIsUnset(t *testing.T) {
+	bot := &Bot[NoData]{logger: slog.CreateLogger()}
 	called := false
 
-	bot.AddDatabaseLoggerWriter(func(db NoDB) slog.LoggerWriter {
+	bot.AddAppDataLoggerWriter(func(db NoData) slog.LoggerWriter {
 		called = true
 		return nil
 	})
 
 	if called {
-		t.Fatal("expected database logger writer to be skipped when db context is unset")
+		t.Fatal("expected app-data logger writer to be skipped when app data is unset")
 	}
 }
 
-func TestAddDatabaseLoggerWriterSkipsWhenDBContextIsNil(t *testing.T) {
+func TestAddDatabaseLoggerWriterSkipsWhenAppDataIsNil(t *testing.T) {
 	type testDB struct{}
 
 	bot := &Bot[*testDB]{logger: slog.CreateLogger()}
 	var db *testDB
-	bot.DatabaseContext(db)
+	bot.SetAppData(db)
 
 	called := false
-	bot.AddDatabaseLoggerWriter(func(db *testDB) slog.LoggerWriter {
+	bot.AddAppDataLoggerWriter(func(db *testDB) slog.LoggerWriter {
 		called = true
 		return nil
 	})
 
 	if called {
-		t.Fatal("expected database logger writer to be skipped when db context is nil")
+		t.Fatal("expected app-data logger writer to be skipped when app data is nil")
 	}
 }
 
-func TestShouldWarnOnValueDBContext(t *testing.T) {
+func TestShouldWarnOnValueAppData(t *testing.T) {
 	type testDB struct{}
 	type dbIface interface{ Ping() error }
 
@@ -163,36 +163,36 @@ func TestShouldWarnOnValueDBContext(t *testing.T) {
 		got  bool
 		want bool
 	}{
-		{name: "NoDB", got: shouldWarnOnValueDBContext[NoDB](), want: false},
-		{name: "pointer", got: shouldWarnOnValueDBContext[*testDB](), want: false},
-		{name: "interface", got: shouldWarnOnValueDBContext[dbIface](), want: false},
-		{name: "map", got: shouldWarnOnValueDBContext[map[string]int](), want: false},
-		{name: "struct", got: shouldWarnOnValueDBContext[testDB](), want: true},
-		{name: "int", got: shouldWarnOnValueDBContext[int](), want: true},
+		{name: "NoData", got: shouldWarnOnValueAppData[NoData](), want: false},
+		{name: "pointer", got: shouldWarnOnValueAppData[*testDB](), want: false},
+		{name: "interface", got: shouldWarnOnValueAppData[dbIface](), want: false},
+		{name: "map", got: shouldWarnOnValueAppData[map[string]int](), want: false},
+		{name: "struct", got: shouldWarnOnValueAppData[testDB](), want: true},
+		{name: "int", got: shouldWarnOnValueAppData[int](), want: true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.got != tt.want {
-				t.Fatalf("shouldWarnOnValueDBContext = %v, want %v", tt.got, tt.want)
+				t.Fatalf("shouldWarnOnValueAppData = %v, want %v", tt.got, tt.want)
 			}
 		})
 	}
 }
 
-func TestDatabaseContextMarksValueWarningOnce(t *testing.T) {
+func TestSetAppDataMarksValueWarningOnce(t *testing.T) {
 	type testDB struct{}
 
 	bot := &Bot[testDB]{logger: slog.CreateLogger()}
-	bot.DatabaseContext(testDB{})
-	if !bot.warnedValueDB {
-		t.Fatal("expected value-typed database context to mark warning state")
+	bot.SetAppData(testDB{})
+	if !bot.warnedValueData {
+		t.Fatal("expected value-typed app data to mark warning state")
 	}
 
 	ptrBot := &Bot[*testDB]{logger: slog.CreateLogger()}
-	ptrBot.DatabaseContext(&testDB{})
-	if ptrBot.warnedValueDB {
-		t.Fatal("did not expect pointer-typed database context to mark warning state")
+	ptrBot.SetAppData(&testDB{})
+	if ptrBot.warnedValueData {
+		t.Fatal("did not expect pointer-typed app data to mark warning state")
 	}
 }
 
@@ -200,10 +200,10 @@ func TestRunWithContextRejectsSecondRun(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger:      slog.CreateLogger(),
 		prefixes:    []string{"/"},
-		plugins:     []Plugin[NoDB]{{name: "demo"}},
+		plugins:     []Plugin[NoData]{{name: "demo"}},
 		updateQueue: make(chan *tgapi.Update, 1),
 		maxWorkers:  1,
 	}
@@ -235,23 +235,23 @@ func TestBotConfigurationFreezesAfterRunStarts(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
+		name  string
 		check func(t *testing.T, bot *Bot[*testDB])
 	}{
 		{
-			name: "DatabaseContext",
+			name: "SetAppData",
 			check: func(t *testing.T, bot *Bot[*testDB]) {
 				original := &testDB{Name: "before"}
-				bot.DatabaseContext(original)
+				bot.SetAppData(original)
 				if err := bot.beginRun(); err != nil {
 					t.Fatalf("beginRun returned error: %v", err)
 				}
 				t.Cleanup(bot.finishRun)
 
 				later := &testDB{Name: "after"}
-				bot.DatabaseContext(later)
-				if bot.dbContext != original {
-					t.Fatal("DatabaseContext mutated after configuration freeze")
+				bot.SetAppData(later)
+				if bot.appData != original {
+					t.Fatal("SetAppData mutated after configuration freeze")
 				}
 			},
 		},
@@ -264,7 +264,7 @@ func TestBotConfigurationFreezesAfterRunStarts(t *testing.T) {
 				}
 				t.Cleanup(bot.finishRun)
 
-				bot.UpdateTypes(tgapi.UpdateTypePoll)
+				bot.SetUpdateTypes(tgapi.UpdateTypePoll)
 				if !reflect.DeepEqual(bot.updateTypes, original) {
 					t.Fatalf("UpdateTypes mutated after configuration freeze: got %v want %v", bot.updateTypes, original)
 				}
@@ -336,7 +336,7 @@ func TestBotConfigurationFreezesAfterRunStarts(t *testing.T) {
 				}
 				t.Cleanup(bot.finishRun)
 
-				bot.ErrorTemplate("changed")
+				bot.SetErrorTemplate("changed")
 				if bot.errorTemplate != "%s" {
 					t.Fatalf("errorTemplate mutated after configuration freeze: got %q want %q", bot.errorTemplate, "%s")
 				}
@@ -396,7 +396,7 @@ func TestBotConfigurationFreezesAfterRunStarts(t *testing.T) {
 				}
 				t.Cleanup(bot.finishRun)
 
-				bot.AddL10n(&L10n{})
+				bot.SetL10n(&L10n{})
 				if bot.l10n != original {
 					t.Fatal("l10n mutated after configuration freeze")
 				}
@@ -412,13 +412,13 @@ func TestBotConfigurationFreezesAfterRunStarts(t *testing.T) {
 }
 
 func TestAddPluginsAndRuntimeRegistrationsNoOpAfterRunStarts(t *testing.T) {
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger:      slog.CreateLogger(),
 		prefixes:    []string{"/"},
-		middlewares: []Middleware[NoDB]{NewMiddleware("base", func(ctx *MsgContext, db NoDB) bool { return true })},
-		runners:     []Runner[NoDB]{NewRunner("base", func(bot *Bot[NoDB]) error { return nil })},
+		middlewares: []Middleware[NoData]{NewMiddleware("base", func(ctx *MsgContext, db NoData) bool { return true })},
+		runners:     []Runner[NoData]{NewRunner("base", func(bot *Bot[NoData]) error { return nil })},
 	}
-	plugin := NewPlugin[NoDB]("late")
+	plugin := NewPlugin[NoData]("late")
 
 	if err := bot.beginRun(); err != nil {
 		t.Fatalf("beginRun returned error: %v", err)
@@ -426,8 +426,8 @@ func TestAddPluginsAndRuntimeRegistrationsNoOpAfterRunStarts(t *testing.T) {
 	defer bot.finishRun()
 
 	bot.AddPlugins(plugin)
-	bot.AddMiddleware(NewMiddleware("late", func(ctx *MsgContext, db NoDB) bool { return true }))
-	bot.AddRunner(NewRunner("late", func(bot *Bot[NoDB]) error { return nil }))
+	bot.AddMiddleware(NewMiddleware("late", func(ctx *MsgContext, db NoData) bool { return true }))
+	bot.AddRunner(NewRunner("late", func(bot *Bot[NoData]) error { return nil }))
 
 	if len(bot.plugins) != 0 {
 		t.Fatalf("expected AddPlugins to be ignored after configuration freeze, got %d plugins", len(bot.plugins))

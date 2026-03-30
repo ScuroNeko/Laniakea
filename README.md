@@ -21,8 +21,8 @@ A lightweight, easy-to-use, and performant Telegram Bot API wrapper for Go. It s
 *   **Middleware Support:** Run code before or after commands (e.g., logging, access control).
 *   **Automatic Command Generation:** Generate help and command lists automatically.
 *   **Built-in Rate Limiting:** Protect your bot from hitting Telegram API limits (supports `retry_after` handling).
-*   **Context-Aware:** Pass custom database or state contexts to your handlers.
-*   **Fluent Interface:** Chain methods for clean configuration (e.g., `bot.ErrorTemplate(...).AddPlugins(...)`).
+*   **Context-Aware:** Pass custom application data or state contexts to your handlers.
+*   **Configurable API:** Mix `Set...` and `Add...` helpers to configure bots clearly (for example, `bot.SetErrorTemplate(...).AddPlugins(...)`).
 
 ---
 
@@ -53,8 +53,8 @@ import (
 // echo is a command handler function.
 // It receives two parameters:
 //   - ctx: the message context (contains info about the message, sender, chat, etc.)
-//   - db: your custom database context (here we use NoDB, a placeholder for no database)
-func echo(ctx *laniakea.MsgContext, db laniakea.NoDB) error {
+//   - data: your shared application data (here we use NoData, a placeholder for no shared data)
+func echo(ctx *laniakea.MsgContext, data laniakea.NoData) error {
 	// Answer the user with the text they sent, without any command prefix.
 	// ctx.Text contains the user's message with the command part stripped off.
 	ctx.Answer(ctx.Text) // User input WITHOUT command
@@ -66,8 +66,8 @@ func main() {
 	opts := &laniakea.BotOpts{Token: "TOKEN"}
 
 	// 2. Initialize a new bot instance.
-	//    We use laniakea.NoDB as the database context type (no database needed for this example).
-	bot, err := laniakea.NewBot[laniakea.NoDB](opts)
+	//    We use laniakea.NoData as the application data type (no shared data needed for this example).
+	bot, err := laniakea.NewBot[laniakea.NoData](opts)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,7 +76,7 @@ func main() {
 
 	// 3. Create a new plugin named "ping".
 	//    Plugins help group related commands and middlewares.
-	p := laniakea.NewPlugin[laniakea.NoDB]("ping")
+	p := laniakea.NewPlugin[laniakea.NoData]("ping")
 
 	// 4. Add a command to the plugin.
 	//    p.NewCommand(echo, "echo") creates a command that triggers the 'echo' function on the "/echo" command.
@@ -84,15 +84,15 @@ func main() {
 
 	// 5. Add another command using an anonymous function (closure).
 	//    This command simply replies "Pong" when the user sends "/ping".
-	p.AddCommand(p.NewCommand(func(ctx *laniakea.MsgContext, db laniakea.NoDB) error {
+	p.AddCommand(p.NewCommand(func(ctx *laniakea.MsgContext, data laniakea.NoData) error {
 		ctx.Answer("Pong")
 		return nil
 	}, "ping"))
 
 	// 6. Configure the bot with a custom error template and add the plugin.
-	//    ErrorTemplate sets a format string for errors (where %s will be replaced by the actual error).
+	//    SetErrorTemplate sets a format string for errors (where %s will be replaced by the actual error).
 	//    AddPlugins(p) registers our "ping" plugin with the bot.
-	bot = bot.ErrorTemplate("Error\n\n%s").AddPlugins(p)
+	bot = bot.SetErrorTemplate("Error\n\n%s").AddPlugins(p)
 
 	// 7. Automatically generate commands like /start, /help, and a list of all registered commands.
 	//    This is optional but very useful for most bots.
@@ -109,11 +109,11 @@ func main() {
 
 ### How It Works
 1. `BotOpts`: Holds configuration like the API token.
-2. `NewBot[T]`: Creates a bot instance. The type parameter T allows you to pass a custom database context (e.g., *sql.DB) that will be available in all handlers. Use laniakea.NoDB if you don't need it.
+2. `NewBot[T]`: Creates a bot instance. The type parameter T allows you to pass custom shared application data (for example, *sql.DB or a service container) that will be available in all handlers. Use laniakea.NoData if you don't need it.
 3. `NewPlugin`: Creates a logical group for commands and middlewares.
 4. `AddCommand`: Registers a command. The first argument is the handler function (`func(*MsgContext, T) error`), the second is the command name (without the slash).
-5. **Handler Functions**: Receive *MsgContext (message details, methods like Answer) and your custom database context T, and return an error for centralized error handling.
-6. `ErrorTemplate`: Sets a template for error messages. The %s placeholder is replaced by the actual error.
+5. **Handler Functions**: Receive *MsgContext (message details, methods like Answer) and your custom application data T, and return an error for centralized error handling.
+6. `SetErrorTemplate`: Sets a template for error messages. The %s placeholder is replaced by the actual error.
 7. `AutoGenerateCommands`: Registers plugin-defined commands with Telegram across the supported scopes.
 8. `Run()`: Starts the bot's update polling loop and returns an error if startup or polling fails.
 9. A `Bot` instance is single-use. After `Run()` or `RunWithContext()` returns, create a new bot instance for the next session.
@@ -168,9 +168,9 @@ This split keeps method intent explicit: JSON-only calls go through `API`, file 
 
 For advanced cases, `tgapi.NewRequest(...)` and `tgapi.NewUploaderRequest(...)` remain public as low-level escape hatches. They are intentionally less safe than method-specific helpers: callers must supply the correct Telegram method name and compatible request/response types themselves.
 
-### Database Context
+### App Data
 
-The `T` in `NewBot[T]` is a powerful feature. You can pass any type, but shared dependencies such as database pools should usually use a pointer type.
+The `T` in `NewBot[T]` is a powerful feature. You can pass any type, but shared dependencies such as database pools, service containers, or API clients should usually use a pointer type.
 
 ```go
 type MyDB struct { /* ... */ }
@@ -179,7 +179,7 @@ bot, err := laniakea.NewBot[*MyDB](opts)
 if err != nil {
     log.Fatal(err)
 }
-bot.DatabaseContext(db)
+bot.SetAppData(db)
 ```
 
 ### Scenes and Sessions

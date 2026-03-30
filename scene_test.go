@@ -28,8 +28,8 @@ func (s failingSessionStore) Delete(key string) error {
 }
 
 func TestPluginAddSceneRegistersScene(t *testing.T) {
-	plugin := NewPlugin[NoDB]("wizard")
-	scene := NewScene[NoDB]("signup")
+	plugin := NewPlugin[NoData]("wizard")
+	scene := NewScene[NoData]("signup")
 
 	plugin.AddScene(scene)
 
@@ -44,10 +44,10 @@ func TestPluginAddSceneRegistersScene(t *testing.T) {
 func TestBotAddPluginsPreservesScenesAndHandlesThem(t *testing.T) {
 	called := false
 
-	plugin := NewPlugin[NoDB]("wizard")
+	plugin := NewPlugin[NoData]("wizard")
 	plugin.NewScene("signup").
 		SetEntry("start").
-		OnStep("start", func(ctx *SceneContext, db NoDB) (SceneResult, error) {
+		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			called = true
 			if ctx.Text != "hello there" {
 				t.Fatalf("unexpected scene text: got %q want %q", ctx.Text, "hello there")
@@ -55,7 +55,7 @@ func TestBotAddPluginsPreservesScenesAndHandlesThem(t *testing.T) {
 			return ctx.Exit(), nil
 		})
 
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger:             slog.CreateLogger(),
 		prefixes:           []string{"/"},
 		sessionStore:       NewMemorySessionStore(),
@@ -145,10 +145,10 @@ func TestBuildSceneKeyRejectsMissingContextFields(t *testing.T) {
 
 func TestEnterSceneRejectsMissingEntryConfiguration(t *testing.T) {
 	t.Run("empty entry", func(t *testing.T) {
-		plugin := NewPlugin[NoDB]("wizard")
+		plugin := NewPlugin[NoData]("wizard")
 		plugin.NewScene("signup")
 
-		bot := &Bot[NoDB]{
+		bot := &Bot[NoData]{
 			logger:             slog.CreateLogger(),
 			sessionStore:       NewMemorySessionStore(),
 			sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
@@ -168,10 +168,10 @@ func TestEnterSceneRejectsMissingEntryConfiguration(t *testing.T) {
 	})
 
 	t.Run("missing entry step", func(t *testing.T) {
-		plugin := NewPlugin[NoDB]("wizard")
+		plugin := NewPlugin[NoData]("wizard")
 		plugin.NewScene("signup").SetEntry("start")
 
-		bot := &Bot[NoDB]{
+		bot := &Bot[NoData]{
 			logger:             slog.CreateLogger(),
 			sessionStore:       NewMemorySessionStore(),
 			sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
@@ -209,14 +209,14 @@ func TestSceneCommandHandlerRunsBeforeStep(t *testing.T) {
 	sceneCommandCalled := false
 	stepCalled := false
 
-	plugin := NewPlugin[NoDB]("wizard")
+	plugin := NewPlugin[NoData]("wizard")
 	plugin.NewScene("signup").
 		SetEntry("start").
-		OnStep("start", func(ctx *SceneContext, db NoDB) (SceneResult, error) {
+		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			stepCalled = true
 			return ctx.Stay(), nil
 		}).
-		OnCommand("cancel", func(ctx *SceneContext, db NoDB) (SceneResult, error) {
+		OnCommand("cancel", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			sceneCommandCalled = true
 			if ctx.Prefix != "/" {
 				t.Fatalf("unexpected prefix: got %q want /", ctx.Prefix)
@@ -230,7 +230,7 @@ func TestSceneCommandHandlerRunsBeforeStep(t *testing.T) {
 			return ctx.Exit(), nil
 		})
 
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger:             slog.CreateLogger(),
 		prefixes:           []string{"/"},
 		sessionStore:       NewMemorySessionStore(),
@@ -269,14 +269,14 @@ func TestSceneCommandHandlerRunsBeforeStep(t *testing.T) {
 func TestScenePassDoesNotPersistSessionData(t *testing.T) {
 	commandCalled := false
 
-	plugin := NewPlugin[NoDB]("wizard")
-	plugin.NewCommand(func(ctx *MsgContext, db NoDB) error {
+	plugin := NewPlugin[NoData]("wizard")
+	plugin.NewCommand(func(ctx *MsgContext, db NoData) error {
 		commandCalled = true
 		return nil
 	}, "ping")
 	plugin.NewScene("signup").
 		SetEntry("start").
-		OnStep("start", func(ctx *SceneContext, db NoDB) (SceneResult, error) {
+		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			if err := ctx.SaveData(struct {
 				Value string `json:"value"`
 			}{Value: "changed"}); err != nil {
@@ -285,7 +285,7 @@ func TestScenePassDoesNotPersistSessionData(t *testing.T) {
 			return ctx.Pass(), nil
 		})
 
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger:             slog.CreateLogger(),
 		prefixes:           []string{"/"},
 		sessionStore:       NewMemorySessionStore(),
@@ -348,13 +348,13 @@ func TestScenePassDoesNotPersistSessionData(t *testing.T) {
 func TestSceneMessageFallbackRunsWhenNoCommandOrStepMatch(t *testing.T) {
 	fallbackCalled := false
 
-	plugin := NewPlugin[NoDB]("wizard")
+	plugin := NewPlugin[NoData]("wizard")
 	plugin.NewScene("signup").
 		SetEntry("start").
-		OnStep("start", func(ctx *SceneContext, db NoDB) (SceneResult, error) {
+		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			return ctx.Stay(), nil
 		}).
-		OnMessage(func(ctx *SceneContext, db NoDB) (SceneResult, error) {
+		OnMessage(func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			fallbackCalled = true
 			if ctx.Text != "hello fallback" {
 				t.Fatalf("unexpected fallback text: got %q want %q", ctx.Text, "hello fallback")
@@ -362,7 +362,7 @@ func TestSceneMessageFallbackRunsWhenNoCommandOrStepMatch(t *testing.T) {
 			return ctx.Exit(), nil
 		})
 
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger:             slog.CreateLogger(),
 		prefixes:           []string{"/"},
 		sessionStore:       NewMemorySessionStore(),
@@ -407,7 +407,7 @@ func TestSceneMessageFallbackRunsWhenNoCommandOrStepMatch(t *testing.T) {
 }
 
 func TestFindSceneSessionSupportsUserScopeWithoutMessage(t *testing.T) {
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger:             slog.CreateLogger(),
 		sessionStore:       NewMemorySessionStore(),
 		sceneScopePriority: []SceneScope{SceneScopeUser, SceneScopeChat, SceneScopeUserChat},
@@ -434,7 +434,7 @@ func TestSceneStoreErrorsPropagate(t *testing.T) {
 	setErr := errors.New("set failed")
 
 	t.Run("find scene session get error", func(t *testing.T) {
-		bot := &Bot[NoDB]{
+		bot := &Bot[NoData]{
 			logger:             slog.CreateLogger(),
 			sessionStore:       failingSessionStore{getErr: getErr},
 			sceneScopePriority: []SceneScope{SceneScopeUser},
@@ -447,10 +447,10 @@ func TestSceneStoreErrorsPropagate(t *testing.T) {
 	})
 
 	t.Run("apply scene result set error", func(t *testing.T) {
-		scene := NewScene[NoDB]("signup").OnStep("start", func(ctx *SceneContext, db NoDB) (SceneResult, error) {
+		scene := NewScene[NoData]("signup").OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			return ctx.Stay(), nil
 		})
-		bot := &Bot[NoDB]{
+		bot := &Bot[NoData]{
 			logger:             slog.CreateLogger(),
 			sessionStore:       failingSessionStore{setErr: setErr},
 			sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},

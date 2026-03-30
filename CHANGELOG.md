@@ -9,6 +9,7 @@
 - Bot configuration mutators now treat the bot as configuration-frozen after the first run begins and ignore late mutation attempts for bot-level config such as prefixes, payload defaults, plugins, middleware, runners, localization, scene session wiring, and database context injection.
 - `MsgContext` godoc and field comments now describe the normalized update contract more explicitly, including when `Msg`, `From`, callback target fields, `Text`, and `Args` are expected to be populated.
 - `MsgContext.Error(...)` and returned handler errors now suppress the automatic user reply when the error is explicitly marked with `AsInternalError(...)`, while keeping the previous user-visible default for unclassified errors.
+- Godoc, README examples, and regression-test naming now consistently describe the shared generic dependency model as app data, including `NoData` and `SetAppData(...)`.
 
 ### Tests
 - Added regression coverage for the bot configuration freeze model, including ignored post-run mutations for core bot configuration methods and late registration paths.

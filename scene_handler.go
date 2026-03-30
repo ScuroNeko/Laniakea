@@ -26,7 +26,7 @@ func (bot *Bot[T]) tryHandleScene(ctx *MsgContext) (bool, error) {
 		if scene.PluginName != "" && scene.PluginName != plugin.name {
 			continue
 		}
-		if !plugin.executeMiddlewares(ctx, bot.dbContext) {
+		if !plugin.executeMiddlewares(ctx, bot.appData) {
 			return false, nil
 		}
 		sceneCtx := &SceneContext{
@@ -59,7 +59,7 @@ func (bot *Bot[T]) executeScene(scene *Scene[T], ctx *SceneContext) (bool, error
 		ctx.Text = args
 		ctx.Args = strings.Fields(args)
 
-		res, matched, err := scene.executeCommand(cmd, ctx, bot.dbContext)
+		res, matched, err := scene.executeCommand(cmd, ctx, bot.appData)
 		if err != nil {
 			return false, err
 		}
@@ -71,7 +71,7 @@ func (bot *Bot[T]) executeScene(scene *Scene[T], ctx *SceneContext) (bool, error
 	ctx.Args = nil
 	ctx.Prefix = ""
 	if ctx.sess.Step != "" {
-		res, matched, err := scene.executeStep(ctx.sess.Step, ctx, bot.dbContext)
+		res, matched, err := scene.executeStep(ctx.sess.Step, ctx, bot.appData)
 		if err != nil {
 			return false, err
 		}
@@ -80,7 +80,7 @@ func (bot *Bot[T]) executeScene(scene *Scene[T], ctx *SceneContext) (bool, error
 		}
 	}
 
-	res, matched, err := scene.executeMessage(ctx, bot.dbContext)
+	res, matched, err := scene.executeMessage(ctx, bot.appData)
 	if err != nil {
 		return false, err
 	}

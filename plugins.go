@@ -85,13 +85,13 @@ func (c CommandArg) SetRequired() CommandArg {
 }
 
 // CommandExecutor is the function type that executes a command.
-// It receives the message context and a database context (generic).
+// It receives the message context and injected application data.
 // Returning a non-nil error routes it through the bot's error handler.
-type CommandExecutor[T DbContext] func(ctx *MsgContext, dbContext T) error
+type CommandExecutor[T AppData] func(ctx *MsgContext, dbContext T) error
 
 // Command represents a bot command with arguments, description, and executor.
 // Can be registered in a Plugin and optionally skipped from auto-generation.
-type Command[T DbContext] struct {
+type Command[T AppData] struct {
 	command     string                       // The command trigger (e.g., "/start")
 	description string                       // Human-readable description for help
 	exec        CommandExecutor[T]           // Function to execute when command is triggered
@@ -162,7 +162,7 @@ func (c *Command[T]) validateArgs(args []string) error {
 // A Plugin is intended to be fully configured before it is passed to Bot.AddPlugins.
 // After registration, treat the plugin as committed and do not mutate it further.
 // Post-registration changes through the original *Plugin are not a supported API.
-type Plugin[T DbContext] struct {
+type Plugin[T AppData] struct {
 	name        string                       // Name of the plugin (e.g., "admin", "user")
 	commands    map[string]*Command[T]       // Registered commands (triggered by message)
 	payloads    map[string]*Command[T]       // Registered payloads (triggered by callback data)
@@ -177,7 +177,7 @@ type Plugin[T DbContext] struct {
 }
 
 // NewPlugin creates a new Plugin with the given name.
-func NewPlugin[T DbContext](name string) *Plugin[T] {
+func NewPlugin[T AppData](name string) *Plugin[T] {
 	return &Plugin[T]{
 		name:        name,
 		commands:    make(map[string]*Command[T]),
@@ -380,11 +380,11 @@ func (p *Plugin[T]) executeMiddlewares(ctx *MsgContext, db T) bool {
 // MiddlewareExecutor is the function type for middleware logic.
 // Returns true to continue execution, false to block it.
 // If async, return value is ignored.
-type MiddlewareExecutor[T DbContext] func(ctx *MsgContext, db T) bool
+type MiddlewareExecutor[T AppData] func(ctx *MsgContext, db T) bool
 
 // Middleware represents a reusable execution interceptor.
 // Can be synchronous (blocking) or asynchronous (non-blocking).
-type Middleware[T DbContext] struct {
+type Middleware[T AppData] struct {
 	name     string                // Human-readable name for logging/debugging
 	executor MiddlewareExecutor[T] // Function to execute
 	order    int                   // Optional sort order (not used yet)
@@ -392,7 +392,7 @@ type Middleware[T DbContext] struct {
 }
 
 // NewMiddleware creates a new synchronous middleware.
-func NewMiddleware[T DbContext](name string, executor MiddlewareExecutor[T]) Middleware[T] {
+func NewMiddleware[T AppData](name string, executor MiddlewareExecutor[T]) Middleware[T] {
 	return Middleware[T]{name, executor, 0, false}
 }
 

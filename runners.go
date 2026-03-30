@@ -7,7 +7,7 @@ import (
 
 // RunnerFn is the function type for a runner. It receives a pointer to
 // the Bot and returns an error if execution fails.
-type RunnerFn[T DbContext] func(*Bot[T]) error
+type RunnerFn[T AppData] func(*Bot[T]) error
 
 // Runner represents a configurable background or one-time task to be
 // executed by a Bot.
@@ -20,7 +20,7 @@ type RunnerFn[T DbContext] func(*Bot[T]) error
 //   - onetime=true, async=true:  Run once in a goroutine (non-blocking).
 //   - onetime=false, async=true: Run repeatedly in a goroutine with timeout.
 //   - onetime=false, async=false: Invalid configuration — ignored with warning.
-type Runner[T DbContext] struct {
+type Runner[T AppData] struct {
 	name    string        // Human-readable name for logging
 	onetime bool          // If true, runs once; if false, runs periodically
 	async   bool          // If true, runs in a goroutine; else, runs synchronously
@@ -33,7 +33,7 @@ type Runner[T DbContext] struct {
 //
 // Builder methods (Onetime, Async, Timeout) can be chained to customize behavior.
 // DO NOT call builder methods concurrently or after Execute().
-func NewRunner[T DbContext](name string, fn RunnerFn[T]) Runner[T] {
+func NewRunner[T AppData](name string, fn RunnerFn[T]) Runner[T] {
 	return Runner[T]{
 		name:    name,
 		fn:      fn,

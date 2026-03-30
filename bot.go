@@ -19,8 +19,11 @@ import (
 	"github.com/alitto/pond/v2"
 )
 
-// DbContext is the generic dependency type injected into bots, plugins, and handlers.
-// Use it for shared application state such as database handles or service containers.
+// AppData is the generic shared application data type injected into bots,
+// plugins, and handlers.
+//
+// Use it for long-lived shared dependencies such as database handles, service
+// containers, API clients, or immutable configuration snapshots.
 //
 // Example:
 //
@@ -30,18 +33,22 @@ import (
 //	if err != nil {
 //		return err
 //	}
-//	bot.DatabaseContext(myDB)
+//	bot.SetAppData(myDB)
 //
-// Use NoDB if no database is needed.
-type DbContext any
+// Use NoData if no shared application data is needed.
+type AppData any
 
-// NoDB is a placeholder type for bots that do not use a database.
-// Use Bot[NoDB] to indicate no dependency injection is required.
-type NoDB struct{ DbContext }
+// NoData is a placeholder type for bots that do not use shared application
+// data.
+//
+// Use Bot[NoData] to indicate no shared dependency injection is required.
+type NoData struct{ AppData }
 
-// DbLogger is a function type that returns a slog.LoggerWriter for database logging.
-// Used to inject database-specific log output (e.g., SQL queries, ORM events).
-type DbLogger[T DbContext] func(db T) slog.LoggerWriter
+// AppDataLogger builds a slog.LoggerWriter from injected application data.
+//
+// Use it when shared application data exposes a log sink or adapter that should
+// receive framework logs.
+type AppDataLogger[T AppData] func(data T) slog.LoggerWriter
 
 // BotPayloadType defines the serialization format for callback data payloads.
 type BotPayloadType string
@@ -78,7 +85,7 @@ var (
 //
 // Runtime accessors are safe for concurrent use. Configure the bot before Run.
 // A Bot is single-use: after Run or RunWithContext returns, create a new Bot for the next session.
-type Bot[T DbContext] struct {
+type Bot[T AppData] struct {
 	token             string
 	debug             bool
 	errorTemplate     string
@@ -98,11 +105,12 @@ type Bot[T DbContext] struct {
 
 	api           *tgapi.API      // Telegram API client
 	uploader      *tgapi.Uploader // File uploader
-	dbContext     T               // Injected database context
-	hasDBContext  bool
-	warnedValueDB bool
-	l10n          *L10n          // Localization manager
-	draftProvider *DraftProvider // Draft message builder
+	l10n          *L10n           // Localization manager
+	draftProvider *DraftProvider  // Draft message builder
+
+	appData         T // Injected application data
+	hasAppData      bool
+	warnedValueData bool
 
 	sessionStore       SessionStore // Session store for scene management
 	sceneScopePriority []SceneScope
@@ -328,9 +336,9 @@ func (bot *Bot[T]) GetUpdateTypes() []tgapi.UpdateType {
 // GetLogger returns the main bot logger.
 func (bot *Bot[T]) GetLogger() *slog.Logger { return bot.logger }
 
-// GetDBContext returns the injected database context.
-// If DatabaseContext was not called, it returns the zero value of T.
-func (bot *Bot[T]) GetDBContext() T { return bot.dbContext }
+// GetAppData returns the injected application data.
+// If SetAppData was not called, it returns the zero value of T.
+func (bot *Bot[T]) GetAppData() T { return bot.appData }
 
 // GetLoggerLevel returns the effective log level derived from the bot's debug
 // flag.
@@ -406,27 +414,30 @@ func (bot *Bot[T]) SetSceneScopePriority(priority []SceneScope) *Bot[T] {
 	return bot
 }
 
-// DatabaseContext injects a database context into the bot.
-// This context is accessible to plugins and middleware via GetDBContext().
+// SetAppData injects shared application data into the bot.
+//
+// The data is accessible to commands, payload handlers, middleware, scenes,
+// and runners through the generic type parameter T.
+//
 // For shared dependencies such as *sql.DB, prefer using a pointer type as T.
-// Value-typed contexts are supported, but the bot warns once because handlers
-// receive T by value.
-func (bot *Bot[T]) DatabaseContext(ctx T) *Bot[T] {
-	if !bot.configMutable("DatabaseContext") {
+// Value-typed application data is supported, but the bot warns once because
+// handlers receive T by value.
+func (bot *Bot[T]) SetAppData(ctx T) *Bot[T] {
+	if !bot.configMutable("SetAppData") {
 		return bot
 	}
-	if !bot.warnedValueDB && shouldWarnOnValueDBContext[T]() && bot.logger != nil {
-		bot.logger.Warnln("database context uses a value type; shared dependencies should usually use a pointer type as T")
-		bot.warnedValueDB = true
+	if !bot.warnedValueData && shouldWarnOnValueAppData[T]() && bot.logger != nil {
+		bot.logger.Warnln("app data uses a value type; shared dependencies should usually use a pointer type as T")
+		bot.warnedValueData = true
 	}
-	bot.dbContext = ctx
-	bot.hasDBContext = true
+	bot.appData = ctx
+	bot.hasAppData = true
 	return bot
 }
 
-// UpdateTypes sets the list of update types the bot will request from Telegram.
+// SetUpdateTypes sets the list of update types the bot will request from Telegram.
 // Overwrites any previously set types.
-func (bot *Bot[T]) UpdateTypes(t ...tgapi.UpdateType) *Bot[T] {
+func (bot *Bot[T]) SetUpdateTypes(t ...tgapi.UpdateType) *Bot[T] {
 	if !bot.configMutable("UpdateTypes") {
 		return bot
 	}
@@ -480,10 +491,10 @@ func (bot *Bot[T]) AddPrefixes(prefixes ...string) *Bot[T] {
 	return bot
 }
 
-// ErrorTemplate sets the format string for error messages sent to users.
+// SetErrorTemplate sets the format string for error messages sent to users.
 // Use "%s" to insert the error message.
 // Example: "❌ Error: %s" → "❌ Error: Command not found".
-func (bot *Bot[T]) ErrorTemplate(s string) *Bot[T] {
+func (bot *Bot[T]) SetErrorTemplate(s string) *Bot[T] {
 	if !bot.configMutable("ErrorTemplate") {
 		return bot
 	}
@@ -491,8 +502,8 @@ func (bot *Bot[T]) ErrorTemplate(s string) *Bot[T] {
 	return bot
 }
 
-// Debug enables or disables debug logging.
-func (bot *Bot[T]) Debug(debug bool) *Bot[T] {
+// SetDebug enables or disables debug logging.
+func (bot *Bot[T]) SetDebug(debug bool) *Bot[T] {
 	bot.debug = debug
 	level := slog.FATAL
 	if debug {
@@ -612,7 +623,7 @@ func (bot *Bot[T]) AddRunner(runner Runner[T]) *Bot[T] {
 	return bot
 }
 
-// AddL10n sets the localization (i18n) provider for the bot.
+// SetL10n sets the localization (i18n) provider for the bot.
 //
 // The L10n instance must be pre-populated with translations.
 // Translations are accessed via Bot.L10n(lang, key).
@@ -622,22 +633,22 @@ func (bot *Bot[T]) AddRunner(runner Runner[T]) *Bot[T] {
 //	l10n := l10n.New()
 //	l10n.Add("en", "hello", "Hello!")
 //	l10n.Add("es", "hello", "¡Hola!")
-//	bot.AddL10n(l10n)
+//	bot.SetL10n(l10n)
 //
 // Replaces any previously set L10n instance.
-func (bot *Bot[T]) AddL10n(l *L10n) *Bot[T] {
-	if !bot.configMutable("AddL10n") {
+func (bot *Bot[T]) SetL10n(l *L10n) *Bot[T] {
+	if !bot.configMutable("SetL10n") {
 		return bot
 	}
 	if l == nil {
-		bot.logger.Warn("AddL10n called with nil L10n; localization will be disabled")
+		bot.logger.Warn("SetL10n called with nil L10n; localization will be disabled")
 		return bot
 	}
 	bot.l10n = l
 	return bot
 }
 
-// AddDatabaseLoggerWriter adds a database logger writer to all loggers.
+// AddAppDataLoggerWriter adds an app-data-backed logger writer to all loggers.
 //
 // The writer will receive logs from:
 //   - Main bot logger
@@ -647,23 +658,23 @@ func (bot *Bot[T]) AddL10n(l *L10n) *Bot[T] {
 //
 // Call this after AddPlugins if plugin loggers should also receive the writer.
 // Plugins registered later do not automatically inherit previously added
-// database writers; call AddDatabaseLoggerWriter again after adding them.
+// writers; call AddAppDataLoggerWriter again after adding them.
 //
 // Example:
 //
-//	bot.AddDatabaseLoggerWriter(func(db *MyDB) slog.LoggerWriter {
-//	    return db.QueryLogger()
+//	bot.AddAppDataLoggerWriter(func(data *MyAppData) slog.LoggerWriter {
+//	    return data.QueryLogger()
 //	})
-func (bot *Bot[T]) AddDatabaseLoggerWriter(writer DbLogger[T]) *Bot[T] {
-	if !bot.hasDBContext {
-		bot.logger.Warnln("database context is not set; skipping database logger writer")
+func (bot *Bot[T]) AddAppDataLoggerWriter(writer AppDataLogger[T]) *Bot[T] {
+	if !bot.hasAppData {
+		bot.logger.Warnln("app data is not set; skipping app-data logger writer")
 		return bot
 	}
-	if isNilValue(bot.dbContext) {
-		bot.logger.Warnln("database context is nil; skipping database logger writer")
+	if isNilValue(bot.appData) {
+		bot.logger.Warnln("app data is nil; skipping app-data logger writer")
 		return bot
 	}
-	w := writer(bot.dbContext)
+	w := writer(bot.appData)
 	bot.logger.AddWriter(w)
 	if bot.RequestLogger != nil {
 		bot.RequestLogger.AddWriter(w)
@@ -832,9 +843,9 @@ func isNilValue[T any](v T) bool {
 	}
 }
 
-func shouldWarnOnValueDBContext[T any]() bool {
+func shouldWarnOnValueAppData[T any]() bool {
 	t := reflect.TypeFor[T]()
-	if t == reflect.TypeFor[NoDB]() {
+	if t == reflect.TypeFor[NoData]() {
 		return false
 	}
 	switch t.Kind() {
@@ -845,7 +856,7 @@ func shouldWarnOnValueDBContext[T any]() bool {
 	}
 }
 
-func clonePlugin[T DbContext](p *Plugin[T]) Plugin[T] {
+func clonePlugin[T AppData](p *Plugin[T]) Plugin[T] {
 	cloned := Plugin[T]{
 		name:        p.name,
 		commands:    make(map[string]*Command[T], len(p.commands)),
@@ -872,7 +883,7 @@ func clonePlugin[T DbContext](p *Plugin[T]) Plugin[T] {
 	return cloned
 }
 
-func cloneCommand[T DbContext](command *Command[T]) *Command[T] {
+func cloneCommand[T AppData](command *Command[T]) *Command[T] {
 	if command == nil {
 		return nil
 	}
@@ -883,7 +894,7 @@ func cloneCommand[T DbContext](command *Command[T]) *Command[T] {
 	return &cloned
 }
 
-func cloneScene[T DbContext](scene *Scene[T]) *Scene[T] {
+func cloneScene[T AppData](scene *Scene[T]) *Scene[T] {
 	if scene == nil {
 		return nil
 	}

@@ -37,7 +37,7 @@ func (bot *Bot[T]) handle(parentCtx context.Context, u *tgapi.Update) {
 	bot.prepareUpdateCtx(u, msgCtx)
 
 	for _, middleware := range bot.middlewares {
-		if !middleware.Execute(msgCtx, bot.dbContext) {
+		if !middleware.Execute(msgCtx, bot.appData) {
 			return
 		}
 	}
@@ -102,10 +102,10 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 			if plugin.logger != nil {
 				ctx.Logger = plugin.logger
 			}
-			if !plugin.executeMiddlewares(ctx, bot.dbContext) {
+			if !plugin.executeMiddlewares(ctx, bot.appData) {
 				return
 			}
-			plugin.executeCmd(cmd, ctx, bot.dbContext)
+			plugin.executeCmd(cmd, ctx, bot.appData)
 			return
 		}
 	}
@@ -130,10 +130,10 @@ func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 		if ctx.Logger == nil {
 			ctx.Logger = bot.logger
 		}
-		if !plugin.executeMiddlewares(ctx, bot.dbContext) {
+		if !plugin.executeMiddlewares(ctx, bot.appData) {
 			return
 		}
-		plugin.executePayload(data.Command, ctx, bot.dbContext)
+		plugin.executePayload(data.Command, ctx, bot.appData)
 		return
 	}
 }
@@ -149,10 +149,10 @@ func (bot *Bot[T]) handleUpdate(u *tgapi.Update, ctx *MsgContext) {
 		if plugin.logger != nil {
 			pluginCtx.Logger = plugin.logger
 		}
-		if !plugin.executeMiddlewares(pluginCtx, bot.dbContext) {
+		if !plugin.executeMiddlewares(pluginCtx, bot.appData) {
 			continue
 		}
-		if err := handler(pluginCtx, bot.dbContext); err != nil {
+		if err := handler(pluginCtx, bot.appData); err != nil {
 			pluginCtx.error(err)
 		}
 	}

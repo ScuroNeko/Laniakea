@@ -13,17 +13,17 @@ Core concepts:
 
 Example usage:
 
-	bot, err := laniakea.NewBot[*mydb.DBContext](laniakea.LoadOptsFromEnv())
+	bot, err := laniakea.NewBot[*mydb.AppData](laniakea.LoadOptsFromEnv())
 	if err != nil {
 	    return err
 	}
-	bot.DatabaseContext(myDB).
+	bot.SetAppData(myDB).
 	    AddUpdateType(tgapi.UpdateTypeMessage).
 	    AddPrefixes("/", "!").
 	    AddPlugins(&startPlugin, &helpPlugin).
 	    AddMiddleware(authMiddleware, logMiddleware).
 	    AddRunner(cleanupRunner).
-	    AddL10n(l10n.New())
+	    SetL10n(l10n.New())
 
 	return bot.Run()
 

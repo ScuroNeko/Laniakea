@@ -43,16 +43,16 @@ func TestAutoGenerateCommandsChecksLimitBeforeDelete(t *testing.T) {
 		}
 	}()
 
-	plugin := NewPlugin[NoDB]("overflow")
-	exec := func(ctx *MsgContext, db NoDB) error { return nil }
+	plugin := NewPlugin[NoData]("overflow")
+	exec := func(ctx *MsgContext, db NoData) error { return nil }
 	for i := 0; i < 101; i++ {
 		plugin.AddCommand(NewCommand(exec, "cmd"+strconv.Itoa(i)))
 	}
 
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		api:     api,
 		logger:  slog.CreateLogger(),
-		plugins: []Plugin[NoDB]{*plugin},
+		plugins: []Plugin[NoData]{*plugin},
 	}
 
 	err := bot.AutoGenerateCommands()
@@ -65,8 +65,8 @@ func TestAutoGenerateCommandsChecksLimitBeforeDelete(t *testing.T) {
 }
 
 func TestGatherCommandsForPluginReturnsSortedCommands(t *testing.T) {
-	plugin := NewPlugin[NoDB]("sorted")
-	exec := func(ctx *MsgContext, db NoDB) error { return nil }
+	plugin := NewPlugin[NoData]("sorted")
+	exec := func(ctx *MsgContext, db NoData) error { return nil }
 
 	plugin.AddCommand(NewCommand(exec, "zeta"))
 	plugin.AddCommand(NewCommand(exec, "alpha"))

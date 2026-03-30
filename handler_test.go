@@ -13,7 +13,7 @@ func ptr[T any](v T) *T {
 }
 
 func TestCheckPrefixesSkipsEmptyPrefixes(t *testing.T) {
-	bot := &Bot[NoDB]{prefixes: []string{"", "/"}}
+	bot := &Bot[NoData]{prefixes: []string{"", "/"}}
 
 	if prefix, ok := bot.checkPrefixes("hello"); ok {
 		t.Fatalf("unexpected prefix match for plain text: %q", prefix)
@@ -27,10 +27,10 @@ func TestBotMiddlewareReceivesLogger(t *testing.T) {
 	logger := slog.CreateLogger()
 	called := false
 
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger: logger,
-		middlewares: []Middleware[NoDB]{
-			NewMiddleware("logger-check", func(ctx *MsgContext, db NoDB) bool {
+		middlewares: []Middleware[NoData]{
+			NewMiddleware("logger-check", func(ctx *MsgContext, db NoData) bool {
 				called = true
 				if ctx.Logger != logger {
 					t.Fatalf("expected bot logger in middleware context, got %#v", ctx.Logger)
@@ -55,8 +55,8 @@ func TestBotMiddlewareReceivesLogger(t *testing.T) {
 }
 
 func TestAddUpdateHandlerRejectsReservedUpdateTypes(t *testing.T) {
-	plugin := NewPlugin[NoDB]("test")
-	handler := func(ctx *MsgContext, db NoDB) error { return nil }
+	plugin := NewPlugin[NoData]("test")
+	handler := func(ctx *MsgContext, db NoData) error { return nil }
 
 	for _, updateType := range []tgapi.UpdateType{
 		tgapi.UpdateTypeMessage,
@@ -80,14 +80,14 @@ func TestAddUpdateHandlerRejectsReservedUpdateTypes(t *testing.T) {
 
 func TestPrepareUpdateCtxContract(t *testing.T) {
 	tests := []struct {
-		name               string
-		update             *tgapi.Update
-		wantMsg            bool
-		wantFrom           bool
-		wantFromID         int64
-		wantCallbackID     string
-		wantCallbackMsgID  int
-		wantInlineMsgID    string
+		name              string
+		update            *tgapi.Update
+		wantMsg           bool
+		wantFrom          bool
+		wantFromID        int64
+		wantCallbackID    string
+		wantCallbackMsgID int
+		wantInlineMsgID   string
 	}{
 		{
 			name: "message",
@@ -145,7 +145,7 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 		{
 			name: "inline query",
 			update: &tgapi.Update{
-				Type: tgapi.UpdateTypeInlineQuery,
+				Type:        tgapi.UpdateTypeInlineQuery,
 				InlineQuery: &tgapi.InlineQuery{ID: "iq", From: tgapi.User{ID: 104}},
 			},
 			wantFrom:   true,
@@ -154,7 +154,7 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 		{
 			name: "chosen inline result",
 			update: &tgapi.Update{
-				Type: tgapi.UpdateTypeChosenInlineResult,
+				Type:               tgapi.UpdateTypeChosenInlineResult,
 				ChosenInlineResult: &tgapi.ChosenInlineResult{ResultID: "res", From: tgapi.User{ID: 105}},
 			},
 			wantFrom:   true,
@@ -189,15 +189,15 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 					InlineMessageID: ptr("inline-42"),
 				},
 			},
-			wantFrom:       true,
-			wantFromID:     107,
-			wantCallbackID: "cb-2",
-			wantInlineMsgID:"inline-42",
+			wantFrom:        true,
+			wantFromID:      107,
+			wantCallbackID:  "cb-2",
+			wantInlineMsgID: "inline-42",
 		},
 		{
 			name: "shipping query",
 			update: &tgapi.Update{
-				Type: tgapi.UpdateTypeShippingQuery,
+				Type:          tgapi.UpdateTypeShippingQuery,
 				ShippingQuery: &tgapi.ShippingQuery{ID: "ship", From: tgapi.User{ID: 108}},
 			},
 			wantFrom:   true,
@@ -206,7 +206,7 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 		{
 			name: "pre checkout query",
 			update: &tgapi.Update{
-				Type: tgapi.UpdateTypePreCheckoutQuery,
+				Type:             tgapi.UpdateTypePreCheckoutQuery,
 				PreCheckoutQuery: &tgapi.PreCheckoutQuery{ID: "pre", From: tgapi.User{ID: 109}},
 			},
 			wantFrom:   true,
@@ -215,7 +215,7 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 		{
 			name: "purchased paid media",
 			update: &tgapi.Update{
-				Type: tgapi.UpdateTypePurchasedPaidMedia,
+				Type:               tgapi.UpdateTypePurchasedPaidMedia,
 				PurchasedPaidMedia: &tgapi.PaidMediaPurchased{From: tgapi.User{ID: 110}},
 			},
 			wantFrom:   true,
@@ -224,7 +224,7 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 		{
 			name: "my chat member",
 			update: &tgapi.Update{
-				Type: tgapi.UpdateTypeMyChatMember,
+				Type:         tgapi.UpdateTypeMyChatMember,
 				MyChatMember: &tgapi.ChatMemberUpdated{From: tgapi.User{ID: 111}},
 			},
 			wantFrom:   true,
@@ -233,7 +233,7 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 		{
 			name: "chat member",
 			update: &tgapi.Update{
-				Type: tgapi.UpdateTypeChatMember,
+				Type:       tgapi.UpdateTypeChatMember,
 				ChatMember: &tgapi.ChatMemberUpdated{From: tgapi.User{ID: 112}},
 			},
 			wantFrom:   true,
@@ -242,7 +242,7 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 		{
 			name: "chat join request",
 			update: &tgapi.Update{
-				Type: tgapi.UpdateTypeChatJoinRequest,
+				Type:            tgapi.UpdateTypeChatJoinRequest,
 				ChatJoinRequest: &tgapi.ChatJoinRequest{From: tgapi.User{ID: 113}},
 			},
 			wantFrom:   true,
@@ -251,7 +251,7 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 		{
 			name: "business connection",
 			update: &tgapi.Update{
-				Type: tgapi.UpdateTypeBusinessConnection,
+				Type:               tgapi.UpdateTypeBusinessConnection,
 				BusinessConnection: &tgapi.BusinessConnection{User: tgapi.User{ID: 114}},
 			},
 			wantFrom:   true,
@@ -260,7 +260,7 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 		{
 			name: "poll answer",
 			update: &tgapi.Update{
-				Type: tgapi.UpdateTypePollAnswer,
+				Type:       tgapi.UpdateTypePollAnswer,
 				PollAnswer: &tgapi.PollAnswer{User: tgapi.User{ID: 115}},
 			},
 			wantFrom:   true,
@@ -269,7 +269,7 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 		{
 			name: "message reaction",
 			update: &tgapi.Update{
-				Type: tgapi.UpdateTypeMessageReaction,
+				Type:            tgapi.UpdateTypeMessageReaction,
 				MessageReaction: &tgapi.MessageReactionUpdated{User: &tgapi.User{ID: 116}},
 			},
 			wantFrom:   true,
@@ -307,7 +307,7 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 		{
 			name: "message reaction count",
 			update: &tgapi.Update{
-				Type: tgapi.UpdateTypeMessageReactionCount,
+				Type:                 tgapi.UpdateTypeMessageReactionCount,
 				MessageReactionCount: &tgapi.MessageReactionCountUpdated{},
 			},
 		},
@@ -315,7 +315,7 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bot := &Bot[NoDB]{}
+			bot := &Bot[NoData]{}
 			ctx := &MsgContext{}
 			bot.prepareUpdateCtx(tt.update, ctx)
 
@@ -384,7 +384,7 @@ func TestHandleUpdateHandlersPopulateFromContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			called := false
-			plugin := NewPlugin[NoDB]("test").AddUpdateHandler(tt.update.Type, func(ctx *MsgContext, db NoDB) error {
+			plugin := NewPlugin[NoData]("test").AddUpdateHandler(tt.update.Type, func(ctx *MsgContext, db NoData) error {
 				called = true
 				if ctx.Update.UpdateID != tt.update.UpdateID {
 					t.Fatalf("unexpected update in context: got %d want %d", ctx.Update.UpdateID, tt.update.UpdateID)
@@ -404,9 +404,9 @@ func TestHandleUpdateHandlersPopulateFromContext(t *testing.T) {
 				return nil
 			})
 
-			bot := &Bot[NoDB]{
+			bot := &Bot[NoData]{
 				logger:  slog.CreateLogger(),
-				plugins: []Plugin[NoDB]{clonePlugin(plugin)},
+				plugins: []Plugin[NoData]{clonePlugin(plugin)},
 			}
 
 			bot.handle(context.Background(), tt.update)
@@ -422,7 +422,7 @@ func TestHandleUpdateHandlersReceiveIsolatedContexts(t *testing.T) {
 	firstCalled := false
 	secondCalled := false
 
-	first := NewPlugin[NoDB]("first").AddUpdateHandler(tgapi.UpdateTypeInlineQuery, func(ctx *MsgContext, db NoDB) error {
+	first := NewPlugin[NoData]("first").AddUpdateHandler(tgapi.UpdateTypeInlineQuery, func(ctx *MsgContext, db NoData) error {
 		firstCalled = true
 		if ctx.FromID != 41 {
 			t.Fatalf("unexpected FromID in first handler: got %d want 41", ctx.FromID)
@@ -433,7 +433,7 @@ func TestHandleUpdateHandlersReceiveIsolatedContexts(t *testing.T) {
 		ctx.Args = []string{"mutated"}
 		return nil
 	})
-	second := NewPlugin[NoDB]("second").AddUpdateHandler(tgapi.UpdateTypeInlineQuery, func(ctx *MsgContext, db NoDB) error {
+	second := NewPlugin[NoData]("second").AddUpdateHandler(tgapi.UpdateTypeInlineQuery, func(ctx *MsgContext, db NoData) error {
 		secondCalled = true
 		if ctx.From == nil {
 			t.Fatal("expected ctx.From to remain populated for second handler")
@@ -450,9 +450,9 @@ func TestHandleUpdateHandlersReceiveIsolatedContexts(t *testing.T) {
 		return nil
 	})
 
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger: slog.CreateLogger(),
-		plugins: []Plugin[NoDB]{
+		plugins: []Plugin[NoData]{
 			clonePlugin(first),
 			clonePlugin(second),
 		},
@@ -475,8 +475,8 @@ func TestHandleUpdateHandlersReceiveIsolatedContexts(t *testing.T) {
 
 func TestHandleChannelPostCommandWithSenderChat(t *testing.T) {
 	called := false
-	plugin := NewPlugin[NoDB]("test")
-	plugin.NewCommand(func(ctx *MsgContext, db NoDB) error {
+	plugin := NewPlugin[NoData]("test")
+	plugin.NewCommand(func(ctx *MsgContext, db NoData) error {
 		called = true
 		if ctx.Msg == nil {
 			t.Fatal("expected message context")
@@ -493,10 +493,10 @@ func TestHandleChannelPostCommandWithSenderChat(t *testing.T) {
 		return nil
 	}, "ping")
 
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger:   slog.CreateLogger(),
 		prefixes: []string{"/"},
-		plugins:  []Plugin[NoDB]{clonePlugin(plugin)},
+		plugins:  []Plugin[NoData]{clonePlugin(plugin)},
 	}
 
 	bot.handle(context.Background(), &tgapi.Update{
@@ -522,18 +522,18 @@ func TestCommandHandlerBindArgsEndToEnd(t *testing.T) {
 	}
 
 	var got banInput
-	plugin := NewPlugin[NoDB]("test")
-	plugin.NewCommand(func(ctx *MsgContext, db NoDB) error {
+	plugin := NewPlugin[NoData]("test")
+	plugin.NewCommand(func(ctx *MsgContext, db NoData) error {
 		return ctx.BindArgs(&got)
 	}, "ban",
 		NewCommandArg("user_id").SetValueType(CommandValueIntType).SetRequired(),
 		NewCommandArg("reason").SetRequired(),
 	)
 
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger:   slog.CreateLogger(),
 		prefixes: []string{"/"},
-		plugins:  []Plugin[NoDB]{clonePlugin(plugin)},
+		plugins:  []Plugin[NoData]{clonePlugin(plugin)},
 	}
 
 	bot.handle(context.Background(), &tgapi.Update{
@@ -559,18 +559,18 @@ func TestPayloadHandlerBindArgsEndToEnd(t *testing.T) {
 	}
 
 	var got payloadInput
-	plugin := NewPlugin[NoDB]("test")
-	plugin.NewPayload(func(ctx *MsgContext, db NoDB) error {
+	plugin := NewPlugin[NoData]("test")
+	plugin.NewPayload(func(ctx *MsgContext, db NoData) error {
 		return ctx.BindArgs(&got)
 	}, "approve",
 		NewCommandArg("id").SetValueType(CommandValueIntType).SetRequired(),
 		NewCommandArg("note").SetRequired(),
 	)
 
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger:      slog.CreateLogger(),
 		payloadType: BotPayloadJson,
-		plugins:     []Plugin[NoDB]{clonePlugin(plugin)},
+		plugins:     []Plugin[NoData]{clonePlugin(plugin)},
 	}
 
 	data, err := encodeJsonPayload(CallbackData{
@@ -601,12 +601,12 @@ func TestHandleEditedMessageStaysOutOfCommandFlow(t *testing.T) {
 	commandCalled := false
 	updateCalled := false
 
-	plugin := NewPlugin[NoDB]("test")
-	plugin.NewCommand(func(ctx *MsgContext, db NoDB) error {
+	plugin := NewPlugin[NoData]("test")
+	plugin.NewCommand(func(ctx *MsgContext, db NoData) error {
 		commandCalled = true
 		return nil
 	}, "ping")
-	plugin.AddUpdateHandler(tgapi.UpdateTypeEditedMessage, func(ctx *MsgContext, db NoDB) error {
+	plugin.AddUpdateHandler(tgapi.UpdateTypeEditedMessage, func(ctx *MsgContext, db NoData) error {
 		updateCalled = true
 		if ctx.Msg == nil {
 			t.Fatal("expected ctx.Msg in edited message handler")
@@ -620,10 +620,10 @@ func TestHandleEditedMessageStaysOutOfCommandFlow(t *testing.T) {
 		return nil
 	})
 
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger:   slog.CreateLogger(),
 		prefixes: []string{"/"},
-		plugins:  []Plugin[NoDB]{clonePlugin(plugin)},
+		plugins:  []Plugin[NoData]{clonePlugin(plugin)},
 	}
 
 	bot.handle(context.Background(), &tgapi.Update{
@@ -649,12 +649,12 @@ func TestHandleEditedChannelPostStaysOutOfCommandFlow(t *testing.T) {
 	commandCalled := false
 	updateCalled := false
 
-	plugin := NewPlugin[NoDB]("test")
-	plugin.NewCommand(func(ctx *MsgContext, db NoDB) error {
+	plugin := NewPlugin[NoData]("test")
+	plugin.NewCommand(func(ctx *MsgContext, db NoData) error {
 		commandCalled = true
 		return nil
 	}, "ping")
-	plugin.AddUpdateHandler(tgapi.UpdateTypeEditedChannelPost, func(ctx *MsgContext, db NoDB) error {
+	plugin.AddUpdateHandler(tgapi.UpdateTypeEditedChannelPost, func(ctx *MsgContext, db NoData) error {
 		updateCalled = true
 		if ctx.Msg == nil {
 			t.Fatal("expected ctx.Msg in edited channel post handler")
@@ -662,10 +662,10 @@ func TestHandleEditedChannelPostStaysOutOfCommandFlow(t *testing.T) {
 		return nil
 	})
 
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger:   slog.CreateLogger(),
 		prefixes: []string{"/"},
-		plugins:  []Plugin[NoDB]{clonePlugin(plugin)},
+		plugins:  []Plugin[NoData]{clonePlugin(plugin)},
 	}
 
 	bot.handle(context.Background(), &tgapi.Update{
@@ -688,8 +688,8 @@ func TestHandleEditedChannelPostStaysOutOfCommandFlow(t *testing.T) {
 
 func TestHandleCallbackPopulatesMessageTargets(t *testing.T) {
 	called := false
-	plugin := NewPlugin[NoDB]("test")
-	plugin.NewPayload(func(ctx *MsgContext, db NoDB) error {
+	plugin := NewPlugin[NoData]("test")
+	plugin.NewPayload(func(ctx *MsgContext, db NoData) error {
 		called = true
 		if ctx.CallbackQueryId != "cb-msg" {
 			t.Fatalf("unexpected CallbackQueryId: %q", ctx.CallbackQueryId)
@@ -715,10 +715,10 @@ func TestHandleCallbackPopulatesMessageTargets(t *testing.T) {
 		return nil
 	}, "approve")
 
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger:      slog.CreateLogger(),
 		payloadType: BotPayloadJson,
-		plugins:     []Plugin[NoDB]{clonePlugin(plugin)},
+		plugins:     []Plugin[NoData]{clonePlugin(plugin)},
 	}
 
 	data, err := encodeJsonPayload(CallbackData{Command: "approve", Args: []string{"7", "ok"}})
@@ -747,8 +747,8 @@ func TestHandleCallbackPopulatesMessageTargets(t *testing.T) {
 
 func TestHandleCallbackPopulatesInlineTargets(t *testing.T) {
 	called := false
-	plugin := NewPlugin[NoDB]("test")
-	plugin.NewPayload(func(ctx *MsgContext, db NoDB) error {
+	plugin := NewPlugin[NoData]("test")
+	plugin.NewPayload(func(ctx *MsgContext, db NoData) error {
 		called = true
 		if ctx.CallbackQueryId != "cb-inline" {
 			t.Fatalf("unexpected CallbackQueryId: %q", ctx.CallbackQueryId)
@@ -774,10 +774,10 @@ func TestHandleCallbackPopulatesInlineTargets(t *testing.T) {
 		return nil
 	}, "inline.approve")
 
-	bot := &Bot[NoDB]{
+	bot := &Bot[NoData]{
 		logger:      slog.CreateLogger(),
 		payloadType: BotPayloadJson,
-		plugins:     []Plugin[NoDB]{clonePlugin(plugin)},
+		plugins:     []Plugin[NoData]{clonePlugin(plugin)},
 	}
 
 	data, err := encodeJsonPayload(CallbackData{Command: "inline.approve", Args: []string{"9"}})
