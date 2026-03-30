@@ -21,6 +21,7 @@ import (
 //   - Update is always present.
 //   - Msg is populated only for update kinds that carry a Telegram message object.
 //   - From and FromID are populated only when the update exposes a user identity.
+//   - Chat and ChatID are populated only when the update exposes a chat identity.
 //   - Text, Args, and Prefix are populated only by command or scene command routing.
 //   - CallbackQueryId, CallbackMsgId, and InlineMsgId are populated only for
 //     callback query handling when the corresponding callback targets exist.
@@ -38,6 +39,9 @@ type MsgContext struct {
 	// From is the normalized Telegram user for update kinds that expose one.
 	// It stays nil for sender-chat-only updates and update kinds without a user.
 	From *tgapi.User
+	// Chat is the normalized Telegram chat for update kinds that expose one.
+	// It is nil for updates that do not include a chat identity.
+	Chat *tgapi.Chat
 
 	// Logger is the logger assigned by the matched plugin for the current handler call.
 	// It may fall back to the bot logger when the plugin has no dedicated logger.
@@ -55,6 +59,9 @@ type MsgContext struct {
 	// FromID is the normalized sender ID when the current update exposes a user.
 	// It is zero when the update has no user identity.
 	FromID int64
+	// ChatID is the normalized chat ID when the current update exposes a chat.
+	// It is zero when the update has no chat identity.
+	ChatID int64
 	// Prefix is the matched command prefix for command routing and scene-local
 	// command routing. It is empty outside those flows.
 	Prefix string

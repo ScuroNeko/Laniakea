@@ -47,7 +47,7 @@ func TestAnswerPhotoIncludesDirectMessagesTopicID(t *testing.T) {
 	ctx := &MsgContext{
 		Api: api,
 		Msg: &tgapi.Message{
-			Chat:               &tgapi.Chat{ID: 42, Type: string(tgapi.ChatTypePrivate)},
+			Chat:               &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate},
 			DirectMessageTopic: &tgapi.DirectMessageTopic{TopicID: 77},
 		},
 		Logger: slog.CreateLogger(),
@@ -201,7 +201,7 @@ func TestErrorDefaultRemainsUserVisibleForMessageFlow(t *testing.T) {
 
 	ctx := &MsgContext{
 		Api:           api,
-		Msg:           &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: string(tgapi.ChatTypePrivate)}},
+		Msg:           &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
 		Logger:        slog.CreateLogger(),
 		errorTemplate: "Error: %s",
 	}
@@ -237,7 +237,7 @@ func TestErrorInternalSkipsUserReplyForMessageFlow(t *testing.T) {
 
 	ctx := &MsgContext{
 		Api:           api,
-		Msg:           &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: string(tgapi.ChatTypePrivate)}},
+		Msg:           &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
 		Logger:        slog.CreateLogger(),
 		errorTemplate: "Error: %s",
 	}
@@ -326,7 +326,7 @@ func TestErrorUserVisibleAnswersCallback(t *testing.T) {
 
 func TestAnswerRejectsEmptyMessage(t *testing.T) {
 	ctx := &MsgContext{
-		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: string(tgapi.ChatTypePrivate)}},
+		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
 		Logger: slog.CreateLogger(),
 	}
 
@@ -356,7 +356,7 @@ func TestAnswerRejectsLongMessageWithoutSendingRequest(t *testing.T) {
 
 	ctx := &MsgContext{
 		Api:    api,
-		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: string(tgapi.ChatTypePrivate)}},
+		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
 		Logger: slog.CreateLogger(),
 	}
 
@@ -440,7 +440,7 @@ func TestAnswerLongSplitsRequestsAndAttachesKeyboardToLastChunk(t *testing.T) {
 
 	ctx := &MsgContext{
 		Api:    api,
-		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: string(tgapi.ChatTypePrivate)}},
+		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
 		Logger: slog.CreateLogger(),
 	}
 	kb := NewInlineKeyboardJson(1).AddCallbackButton("A", "cmd")

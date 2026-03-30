@@ -72,7 +72,7 @@ func TestBotAddPluginsPreservesScenesAndHandlesThem(t *testing.T) {
 	}
 
 	enterCtx := &MsgContext{
-		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: string(tgapi.ChatTypePrivate)}},
+		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID:       42,
 		sceneRuntime: bot,
 	}
@@ -86,7 +86,7 @@ func TestBotAddPluginsPreservesScenesAndHandlesThem(t *testing.T) {
 		Message: &tgapi.Message{
 			MessageID: 7,
 			Text:      "hello there",
-			Chat:      &tgapi.Chat{ID: 100, Type: string(tgapi.ChatTypePrivate)},
+			Chat:      &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate},
 			From:      &tgapi.User{ID: 42},
 		},
 	})
@@ -96,7 +96,7 @@ func TestBotAddPluginsPreservesScenesAndHandlesThem(t *testing.T) {
 	}
 
 	lookupCtx := &MsgContext{
-		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: string(tgapi.ChatTypePrivate)}},
+		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID: 42,
 	}
 	if _, session, err := bot.findSceneSession(lookupCtx); err == nil && session.Scene != "" {
@@ -129,7 +129,7 @@ func TestBuildSceneKeyRejectsMissingContextFields(t *testing.T) {
 			name:  "missing from id for user chat scope",
 			scope: SceneScopeUserChat,
 			ctx: &MsgContext{
-				Msg: &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: string(tgapi.ChatTypePrivate)}},
+				Msg: &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 			},
 		},
 	}
@@ -156,7 +156,7 @@ func TestEnterSceneRejectsMissingEntryConfiguration(t *testing.T) {
 		bot.AddPlugins(plugin)
 
 		ctx := &MsgContext{
-			Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: string(tgapi.ChatTypePrivate)}},
+			Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 			FromID:       42,
 			sceneRuntime: bot,
 		}
@@ -179,7 +179,7 @@ func TestEnterSceneRejectsMissingEntryConfiguration(t *testing.T) {
 		bot.AddPlugins(plugin)
 
 		ctx := &MsgContext{
-			Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: string(tgapi.ChatTypePrivate)}},
+			Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 			FromID:       42,
 			sceneRuntime: bot,
 		}
@@ -239,7 +239,7 @@ func TestSceneCommandHandlerRunsBeforeStep(t *testing.T) {
 	bot.AddPlugins(plugin)
 
 	enterCtx := &MsgContext{
-		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: string(tgapi.ChatTypePrivate)}},
+		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID:       42,
 		sceneRuntime: bot,
 	}
@@ -253,7 +253,7 @@ func TestSceneCommandHandlerRunsBeforeStep(t *testing.T) {
 		Message: &tgapi.Message{
 			MessageID: 8,
 			Text:      "/cancel right now",
-			Chat:      &tgapi.Chat{ID: 100, Type: string(tgapi.ChatTypePrivate)},
+			Chat:      &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate},
 			From:      &tgapi.User{ID: 42},
 		},
 	})
@@ -294,7 +294,7 @@ func TestScenePassDoesNotPersistSessionData(t *testing.T) {
 	bot.AddPlugins(plugin)
 
 	enterCtx := &MsgContext{
-		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: string(tgapi.ChatTypePrivate)}},
+		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID:       42,
 		sceneRuntime: bot,
 	}
@@ -303,7 +303,7 @@ func TestScenePassDoesNotPersistSessionData(t *testing.T) {
 	}
 
 	key, ok := buildSceneKey(SceneScopeUserChat, &MsgContext{
-		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: string(tgapi.ChatTypePrivate)}},
+		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID: 42,
 	})
 	if !ok {
@@ -324,7 +324,7 @@ func TestScenePassDoesNotPersistSessionData(t *testing.T) {
 		Message: &tgapi.Message{
 			MessageID: 9,
 			Text:      "/ping",
-			Chat:      &tgapi.Chat{ID: 100, Type: string(tgapi.ChatTypePrivate)},
+			Chat:      &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate},
 			From:      &tgapi.User{ID: 42},
 		},
 	})
@@ -371,7 +371,7 @@ func TestSceneMessageFallbackRunsWhenNoCommandOrStepMatch(t *testing.T) {
 	bot.AddPlugins(plugin)
 
 	enterCtx := &MsgContext{
-		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: string(tgapi.ChatTypePrivate)}},
+		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID:       42,
 		sceneRuntime: bot,
 	}
@@ -380,7 +380,7 @@ func TestSceneMessageFallbackRunsWhenNoCommandOrStepMatch(t *testing.T) {
 	}
 
 	key, ok := buildSceneKey(SceneScopeUserChat, &MsgContext{
-		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: string(tgapi.ChatTypePrivate)}},
+		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID: 42,
 	})
 	if !ok {
@@ -396,7 +396,7 @@ func TestSceneMessageFallbackRunsWhenNoCommandOrStepMatch(t *testing.T) {
 		Message: &tgapi.Message{
 			MessageID: 10,
 			Text:      "hello fallback",
-			Chat:      &tgapi.Chat{ID: 100, Type: string(tgapi.ChatTypePrivate)},
+			Chat:      &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate},
 			From:      &tgapi.User{ID: 42},
 		},
 	})

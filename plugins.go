@@ -231,6 +231,12 @@ func (p *Plugin[T]) AddScene(scene *Scene[T]) *Plugin[T] {
 	return p
 }
 
+// UsePolicy registers a Policy as plugin middleware for all plugin handlers.
+func (p *Plugin[T]) UsePolicy(name string, policy Policy[T]) *Plugin[T] {
+	mw := RequirePolicy(name, policy)
+	return p.AddMiddleware(mw)
+}
+
 // NewScene creates, registers, and returns a new scene owned by the plugin.
 func (p *Plugin[T]) NewScene(name string) *Scene[T] {
 	scene := NewScene[T](name)

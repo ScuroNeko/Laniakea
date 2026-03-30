@@ -85,6 +85,8 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 		wantMsg           bool
 		wantFrom          bool
 		wantFromID        int64
+		wantChat          bool
+		wantChatID        int64
 		wantCallbackID    string
 		wantCallbackMsgID int
 		wantInlineMsgID   string
@@ -102,6 +104,8 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 			wantMsg:    true,
 			wantFrom:   true,
 			wantFromID: 101,
+			wantChat:   true,
+			wantChatID: 1001,
 		},
 		{
 			name: "edited message",
@@ -116,6 +120,8 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 			wantMsg:    true,
 			wantFrom:   true,
 			wantFromID: 102,
+			wantChat:   true,
+			wantChatID: 1002,
 		},
 		{
 			name: "channel post sender chat",
@@ -126,7 +132,9 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 					Chat:      &tgapi.Chat{ID: -1003},
 				},
 			},
-			wantMsg: true,
+			wantMsg:    true,
+			wantChat:   true,
+			wantChatID: -1003,
 		},
 		{
 			name: "business message",
@@ -141,6 +149,8 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 			wantMsg:    true,
 			wantFrom:   true,
 			wantFromID: 103,
+			wantChat:   true,
+			wantChatID: 1004,
 		},
 		{
 			name: "inline query",
@@ -176,6 +186,8 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 			wantMsg:           true,
 			wantFrom:          true,
 			wantFromID:        106,
+			wantChat:          true,
+			wantChatID:        1005,
 			wantCallbackID:    "cb-1",
 			wantCallbackMsgID: 77,
 		},
@@ -225,28 +237,34 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 			name: "my chat member",
 			update: &tgapi.Update{
 				Type:         tgapi.UpdateTypeMyChatMember,
-				MyChatMember: &tgapi.ChatMemberUpdated{From: tgapi.User{ID: 111}},
+				MyChatMember: &tgapi.ChatMemberUpdated{From: tgapi.User{ID: 111}, Chat: tgapi.Chat{ID: -2001}},
 			},
 			wantFrom:   true,
 			wantFromID: 111,
+			wantChat:   true,
+			wantChatID: -2001,
 		},
 		{
 			name: "chat member",
 			update: &tgapi.Update{
 				Type:       tgapi.UpdateTypeChatMember,
-				ChatMember: &tgapi.ChatMemberUpdated{From: tgapi.User{ID: 112}},
+				ChatMember: &tgapi.ChatMemberUpdated{From: tgapi.User{ID: 112}, Chat: tgapi.Chat{ID: -2002}},
 			},
 			wantFrom:   true,
 			wantFromID: 112,
+			wantChat:   true,
+			wantChatID: -2002,
 		},
 		{
 			name: "chat join request",
 			update: &tgapi.Update{
 				Type:            tgapi.UpdateTypeChatJoinRequest,
-				ChatJoinRequest: &tgapi.ChatJoinRequest{From: tgapi.User{ID: 113}},
+				ChatJoinRequest: &tgapi.ChatJoinRequest{From: tgapi.User{ID: 113}, Chat: tgapi.Chat{ID: -2003}},
 			},
 			wantFrom:   true,
 			wantFromID: 113,
+			wantChat:   true,
+			wantChatID: -2003,
 		},
 		{
 			name: "business connection",
@@ -270,32 +288,40 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 			name: "message reaction",
 			update: &tgapi.Update{
 				Type:            tgapi.UpdateTypeMessageReaction,
-				MessageReaction: &tgapi.MessageReactionUpdated{User: &tgapi.User{ID: 116}},
+				MessageReaction: &tgapi.MessageReactionUpdated{User: &tgapi.User{ID: 116}, Chat: &tgapi.Chat{ID: -2004}},
 			},
 			wantFrom:   true,
 			wantFromID: 116,
+			wantChat:   true,
+			wantChatID: -2004,
 		},
 		{
 			name: "chat boost",
 			update: &tgapi.Update{
 				Type: tgapi.UpdateTypeChatBoost,
 				ChatBoost: &tgapi.ChatBoostUpdated{
+					Chat:  tgapi.Chat{ID: -2005},
 					Boost: tgapi.ChatBoost{Source: tgapi.ChatBoostSource{User: tgapi.User{ID: 117}}},
 				},
 			},
 			wantFrom:   true,
 			wantFromID: 117,
+			wantChat:   true,
+			wantChatID: -2005,
 		},
 		{
 			name: "removed chat boost",
 			update: &tgapi.Update{
 				Type: tgapi.UpdateTypeRemovedChatBoost,
 				RemovedChatBoost: &tgapi.ChatBoostRemoved{
+					Chat:   tgapi.Chat{ID: -2006},
 					Source: tgapi.ChatBoostSource{User: tgapi.User{ID: 118}},
 				},
 			},
 			wantFrom:   true,
 			wantFromID: 118,
+			wantChat:   true,
+			wantChatID: -2006,
 		},
 		{
 			name: "poll",
@@ -327,6 +353,12 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 			}
 			if ctx.FromID != tt.wantFromID {
 				t.Fatalf("unexpected FromID: got %d want %d", ctx.FromID, tt.wantFromID)
+			}
+			if got := ctx.Chat != nil; got != tt.wantChat {
+				t.Fatalf("unexpected Chat presence: got %v want %v", got, tt.wantChat)
+			}
+			if ctx.ChatID != tt.wantChatID {
+				t.Fatalf("unexpected ChatID: got %d want %d", ctx.ChatID, tt.wantChatID)
 			}
 			if ctx.CallbackQueryId != tt.wantCallbackID {
 				t.Fatalf("unexpected CallbackQueryId: got %q want %q", ctx.CallbackQueryId, tt.wantCallbackID)
@@ -505,8 +537,8 @@ func TestHandleChannelPostCommandWithSenderChat(t *testing.T) {
 		ChannelPost: &tgapi.Message{
 			MessageID:  55,
 			Text:       "/ping",
-			SenderChat: &tgapi.Chat{ID: -1001, Type: string(tgapi.ChatTypeChannel)},
-			Chat:       &tgapi.Chat{ID: -1001, Type: string(tgapi.ChatTypeChannel)},
+			SenderChat: &tgapi.Chat{ID: -1001, Type: tgapi.ChatTypeChannel},
+			Chat:       &tgapi.Chat{ID: -1001, Type: tgapi.ChatTypeChannel},
 		},
 	})
 
@@ -542,7 +574,7 @@ func TestCommandHandlerBindArgsEndToEnd(t *testing.T) {
 		Message: &tgapi.Message{
 			MessageID: 1,
 			Text:      "/ban 42 too loud",
-			Chat:      &tgapi.Chat{ID: 99, Type: string(tgapi.ChatTypePrivate)},
+			Chat:      &tgapi.Chat{ID: 99, Type: tgapi.ChatTypePrivate},
 		},
 	})
 

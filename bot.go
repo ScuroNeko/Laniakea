@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"maps"
 	"reflect"
-	"slices"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -282,38 +280,6 @@ func (bot *Bot[T]) CloseRemote(ctx context.Context) error {
 	return nil
 }
 
-// Internal logger setup for the bot and optional request logger.
-func (bot *Bot[T]) initLoggers(opts *BotOpts) {
-	level := slog.FATAL
-	if opts.Debug {
-		level = slog.DEBUG
-	}
-
-	bot.logger = utils.CreateLogger("BOT", level)
-	if opts.WriteToFile {
-		path := fmt.Sprintf("%s/main.log", strings.TrimRight(opts.LoggerBasePath, "/"))
-		logger, err := utils.CreateFileLogger("BOT", level, path)
-		if err != nil {
-			bot.logger.Errorln(err)
-		} else {
-			bot.logger = logger
-		}
-	}
-
-	if opts.UseRequestLogger {
-		bot.RequestLogger = utils.CreateLogger("REQUESTS", level)
-		if opts.WriteToFile {
-			path := fmt.Sprintf("%s/requests.log", strings.TrimRight(opts.LoggerBasePath, "/"))
-			logger, err := utils.CreateFileLogger("REQUESTS", level, path)
-			if err != nil {
-				bot.logger.Errorln(err)
-			} else {
-				bot.RequestLogger = logger
-			}
-		}
-	}
-}
-
 // GetUpdateOffset returns the current update offset (thread-safe).
 func (bot *Bot[T]) GetUpdateOffset() int {
 	bot.updateOffsetMu.Lock()
@@ -328,17 +294,8 @@ func (bot *Bot[T]) SetUpdateOffset(offset int) {
 	bot.updateOffset = offset
 }
 
-// GetUpdateTypes returns the list of update types the bot is configured to receive.
-func (bot *Bot[T]) GetUpdateTypes() []tgapi.UpdateType {
-	return append([]tgapi.UpdateType(nil), bot.updateTypes...)
-}
-
 // GetLogger returns the main bot logger.
 func (bot *Bot[T]) GetLogger() *slog.Logger { return bot.logger }
-
-// GetAppData returns the injected application data.
-// If SetAppData was not called, it returns the zero value of T.
-func (bot *Bot[T]) GetAppData() T { return bot.appData }
 
 // GetLoggerLevel returns the effective log level derived from the bot's debug
 // flag.
@@ -356,340 +313,6 @@ func (bot *Bot[T]) L10n(lang, key string) string {
 	return bot.l10n.Translate(lang, key)
 }
 
-// SetDraftProvider replaces the default DraftProvider with a custom one.
-// Useful for using LinearDraftIdGenerator to persist draft IDs across restarts.
-func (bot *Bot[T]) SetDraftProvider(p *DraftProvider) *Bot[T] {
-	if !bot.configMutable("SetDraftProvider") {
-		return bot
-	}
-	bot.draftProvider = p
-	return bot
-}
-
-// GetDraftProvider returns the draft provider currently used by the bot.
-func (bot *Bot[T]) GetDraftProvider() *DraftProvider {
-	return bot.draftProvider
-}
-
-// SetSessionStore replaces the session store used for scene management.
-func (bot *Bot[T]) SetSessionStore(store SessionStore) *Bot[T] {
-	if !bot.configMutable("SetSessionStore") {
-		return bot
-	}
-	if store == nil {
-		bot.logger.Warn("SetSessionStore called with nil store; using default MemorySessionStore")
-		return bot
-	}
-	bot.sessionStore = store
-	return bot
-}
-
-// GetSessionStore returns the session store used for scene management.
-func (bot *Bot[T]) GetSessionStore() SessionStore {
-	return bot.sessionStore
-}
-
-// SetSceneScopePriority sets the lookup order for resolving active scene sessions.
-func (bot *Bot[T]) SetSceneScopePriority(priority []SceneScope) *Bot[T] {
-	if !bot.configMutable("SetSceneScopePriority") {
-		return bot
-	}
-	newPriority := make([]SceneScope, 0, 3)
-	for _, scope := range priority {
-		if scope != SceneScopeUser && scope != SceneScopeChat && scope != SceneScopeUserChat {
-			bot.logger.Warnln(fmt.Sprintf("invalid scene scope %v in priority list; ignoring", scope))
-			continue
-		}
-		if slices.Index(newPriority, scope) >= 0 {
-			bot.logger.Warnln(fmt.Sprintf("duplicate scope %v in scene scope priority; ignoring duplicates", scope))
-			continue
-		}
-		newPriority = append(newPriority, scope)
-	}
-	if len(newPriority) == 0 || len(newPriority) > 3 {
-		bot.logger.Warnln("scene scope priority must have 1 to 3 scopes; ignoring invalid input")
-		return bot
-	}
-	bot.sceneScopePriority = append([]SceneScope(nil), newPriority...)
-	return bot
-}
-
-// SetAppData injects shared application data into the bot.
-//
-// The data is accessible to commands, payload handlers, middleware, scenes,
-// and runners through the generic type parameter T.
-//
-// For shared dependencies such as *sql.DB, prefer using a pointer type as T.
-// Value-typed application data is supported, but the bot warns once because
-// handlers receive T by value.
-func (bot *Bot[T]) SetAppData(ctx T) *Bot[T] {
-	if !bot.configMutable("SetAppData") {
-		return bot
-	}
-	if !bot.warnedValueData && shouldWarnOnValueAppData[T]() && bot.logger != nil {
-		bot.logger.Warnln("app data uses a value type; shared dependencies should usually use a pointer type as T")
-		bot.warnedValueData = true
-	}
-	bot.appData = ctx
-	bot.hasAppData = true
-	return bot
-}
-
-// SetUpdateTypes sets the list of update types the bot will request from Telegram.
-// Overwrites any previously set types.
-func (bot *Bot[T]) SetUpdateTypes(t ...tgapi.UpdateType) *Bot[T] {
-	if !bot.configMutable("UpdateTypes") {
-		return bot
-	}
-	bot.updateTypes = make([]tgapi.UpdateType, 0)
-	bot.updateTypes = append(bot.updateTypes, t...)
-	return bot
-}
-
-// SetPayloadType sets the default payload encoding type used for callback data.
-// JSON stores payload as a string: `{"cmd":"command","args":[...]}`.
-// Base64 stores the same JSON encoded as a Base64URL string.
-// InlineKeyboard.SetPayloadType may override this value for an individual keyboard.
-func (bot *Bot[T]) SetPayloadType(t BotPayloadType) *Bot[T] {
-	if !bot.configMutable("SetPayloadType") {
-		return bot
-	}
-	bot.payloadType = t
-	return bot
-}
-
-// GetPayloadType returns the bot's default callback payload encoding type.
-func (bot *Bot[T]) GetPayloadType() BotPayloadType { return bot.payloadType }
-
-// SetStrictPayloadType enables or disables strict callback payload decoding.
-// When enabled, callback payloads must match the bot's default payload type.
-func (bot *Bot[T]) SetStrictPayloadType(strict bool) *Bot[T] {
-	if !bot.configMutable("SetStrictPayloadType") {
-		return bot
-	}
-	bot.strictPayloadType = strict
-	return bot
-}
-
-// AddUpdateType adds one or more update types to the list.
-// Does not overwrite existing types.
-func (bot *Bot[T]) AddUpdateType(t ...tgapi.UpdateType) *Bot[T] {
-	if !bot.configMutable("AddUpdateType") {
-		return bot
-	}
-	bot.updateTypes = append(bot.updateTypes, t...)
-	return bot
-}
-
-// AddPrefixes adds one or more command prefixes (e.g., "/", "!").
-// Must have at least one prefix before Run().
-func (bot *Bot[T]) AddPrefixes(prefixes ...string) *Bot[T] {
-	if !bot.configMutable("AddPrefixes") {
-		return bot
-	}
-	bot.prefixes = append(bot.prefixes, prefixes...)
-	return bot
-}
-
-// SetErrorTemplate sets the format string for error messages sent to users.
-// Use "%s" to insert the error message.
-// Example: "❌ Error: %s" → "❌ Error: Command not found".
-func (bot *Bot[T]) SetErrorTemplate(s string) *Bot[T] {
-	if !bot.configMutable("ErrorTemplate") {
-		return bot
-	}
-	bot.errorTemplate = s
-	return bot
-}
-
-// SetDebug enables or disables debug logging.
-func (bot *Bot[T]) SetDebug(debug bool) *Bot[T] {
-	bot.debug = debug
-	level := slog.FATAL
-	if debug {
-		level = slog.DEBUG
-	}
-
-	bot.logger.Level(level)
-	if bot.RequestLogger != nil {
-		bot.RequestLogger.Level(level)
-	}
-	for _, p := range bot.plugins {
-		if p.logger == nil {
-			continue
-		}
-		p.logger.Level(level)
-	}
-	return bot
-}
-
-// AddPlugins registers one or more plugins.
-// Plugins are executed in registration order unless filtered by middleware.
-//
-// Registration is a commit point for plugin configuration. The Bot stores
-// plugin metadata internally, so plugins must be fully configured before they
-// are passed here. Post-registration mutation through the original *Plugin is
-// not a supported API, even if some changes appear to work due to shared maps.
-func (bot *Bot[T]) AddPlugins(plugin ...*Plugin[T]) *Bot[T] {
-	if !bot.configMutable("AddPlugins") {
-		return bot
-	}
-	level := bot.GetLoggerLevel()
-	for _, p := range plugin {
-		if p == nil {
-			if bot.logger != nil {
-				bot.logger.Warn("nil plugin skipped")
-			}
-			continue
-		}
-		cloned := clonePlugin(p)
-		if cloned.logger == nil {
-			cloned.logger = utils.CreateLogger(cloned.name, level)
-		}
-		bot.plugins = append(bot.plugins, cloned)
-		if bot.logger != nil {
-			bot.logger.Debugln(fmt.Sprintf("plugins with name \"%s\" registered", cloned.name))
-		}
-	}
-	return bot
-}
-
-// AddMiddleware registers one or more middleware handlers.
-//
-// Middleware are executed in order of increasing .order value before plugins.
-// If two middleware have the same order, they are sorted lexicographically by name.
-//
-// Middleware can:
-//   - Modify or reject updates before they reach plugins
-//   - Inject context (e.g., user auth state, rate limit status)
-//   - Log, validate, or transform incoming data
-//
-// Example:
-//
-//	bot.AddMiddleware(authMiddleware, rateLimitMiddleware)
-//
-// Middleware with an empty name are skipped with a warning.
-func (bot *Bot[T]) AddMiddleware(middleware ...Middleware[T]) *Bot[T] {
-	if !bot.configMutable("AddMiddleware") {
-		return bot
-	}
-	for _, m := range middleware {
-		if m.name == "" {
-			bot.logger.Warnln("middleware must have a non-empty name")
-			continue
-		}
-		bot.middlewares = append(bot.middlewares, m)
-		bot.logger.Debugln(fmt.Sprintf("middleware with name \"%s\" registered", m.name))
-	}
-
-	// Stable sort by order (ascending), then by name (lexicographic)
-	sort.Slice(bot.middlewares, func(i, j int) bool {
-		first := bot.middlewares[i]
-		second := bot.middlewares[j]
-		if first.order != second.order {
-			return first.order < second.order
-		}
-		return first.name < second.name
-	})
-
-	return bot
-}
-
-// AddRunner registers a background runner to execute concurrently with the bot.
-//
-// Runners are goroutines that run independently of update processing.
-// Common use cases:
-//   - Periodic cleanup (e.g., expiring drafts, clearing temp files)
-//   - Metrics collection or health checks
-//   - Scheduled tasks (e.g., daily announcements)
-//
-// Runners are started immediately after Bot.Run() is called.
-//
-// Example:
-//
-//	bot.AddRunner(cleanupRunner)
-//
-// Runners with an empty name are skipped with a warning.
-func (bot *Bot[T]) AddRunner(runner Runner[T]) *Bot[T] {
-	if !bot.configMutable("AddRunner") {
-		return bot
-	}
-	if runner.name == "" {
-		bot.logger.Warnln("runner must have a non-empty name")
-		return bot
-	}
-	bot.runners = append(bot.runners, runner)
-	bot.logger.Debugln(fmt.Sprintf("runner with name \"%s\" registered", runner.name))
-	return bot
-}
-
-// SetL10n sets the localization (i18n) provider for the bot.
-//
-// The L10n instance must be pre-populated with translations.
-// Translations are accessed via Bot.L10n(lang, key).
-//
-// Example:
-//
-//	l10n := l10n.New()
-//	l10n.Add("en", "hello", "Hello!")
-//	l10n.Add("es", "hello", "¡Hola!")
-//	bot.SetL10n(l10n)
-//
-// Replaces any previously set L10n instance.
-func (bot *Bot[T]) SetL10n(l *L10n) *Bot[T] {
-	if !bot.configMutable("SetL10n") {
-		return bot
-	}
-	if l == nil {
-		bot.logger.Warn("SetL10n called with nil L10n; localization will be disabled")
-		return bot
-	}
-	bot.l10n = l
-	return bot
-}
-
-// AddAppDataLoggerWriter adds an app-data-backed logger writer to all loggers.
-//
-// The writer will receive logs from:
-//   - Main bot logger
-//   - Request logger (if enabled)
-//   - API and Uploader loggers
-//   - Already registered plugin loggers
-//
-// Call this after AddPlugins if plugin loggers should also receive the writer.
-// Plugins registered later do not automatically inherit previously added
-// writers; call AddAppDataLoggerWriter again after adding them.
-//
-// Example:
-//
-//	bot.AddAppDataLoggerWriter(func(data *MyAppData) slog.LoggerWriter {
-//	    return data.QueryLogger()
-//	})
-func (bot *Bot[T]) AddAppDataLoggerWriter(writer AppDataLogger[T]) *Bot[T] {
-	if !bot.hasAppData {
-		bot.logger.Warnln("app data is not set; skipping app-data logger writer")
-		return bot
-	}
-	if isNilValue(bot.appData) {
-		bot.logger.Warnln("app data is nil; skipping app-data logger writer")
-		return bot
-	}
-	w := writer(bot.appData)
-	bot.logger.AddWriter(w)
-	if bot.RequestLogger != nil {
-		bot.RequestLogger.AddWriter(w)
-	}
-	for _, l := range bot.extraLoggers {
-		l.AddWriter(w)
-	}
-	for _, p := range bot.plugins {
-		if p.logger != nil {
-			p.logger.AddWriter(w)
-		}
-	}
-	return bot
-}
-
 // RunWithContext starts the bot with a given context for graceful shutdown.
 //
 // This is the main entry point for bot execution. It:
@@ -705,14 +328,6 @@ func (bot *Bot[T]) AddAppDataLoggerWriter(writer AppDataLogger[T]) *Bot[T] {
 //
 // RunWithContext does not close API, uploader, or logger resources on return.
 // The caller must invoke Close after RunWithContext finishes.
-//
-// Example:
-//
-//	ctx, cancel := context.WithCancel(context.Background())
-//	go bot.RunWithContext(ctx)
-//	// ... later ...
-//	cancel() // triggers graceful shutdown
-//	_ = bot.Close()
 //
 // A Bot is single-use. After RunWithContext returns, later calls return ErrBotAlreadyRun.
 func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
@@ -800,6 +415,37 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 // For production use, prefer RunWithContext to handle SIGINT/SIGTERM gracefully.
 func (bot *Bot[T]) Run() error {
 	return bot.RunWithContext(context.Background())
+}
+
+func (bot *Bot[T]) initLoggers(opts *BotOpts) {
+	level := slog.FATAL
+	if opts.Debug {
+		level = slog.DEBUG
+	}
+
+	bot.logger = utils.CreateLogger("BOT", level)
+	if opts.WriteToFile {
+		path := fmt.Sprintf("%s/main.log", strings.TrimRight(opts.LoggerBasePath, "/"))
+		logger, err := utils.CreateFileLogger("BOT", level, path)
+		if err != nil {
+			bot.logger.Errorln(err)
+		} else {
+			bot.logger = logger
+		}
+	}
+
+	if opts.UseRequestLogger {
+		bot.RequestLogger = utils.CreateLogger("REQUESTS", level)
+		if opts.WriteToFile {
+			path := fmt.Sprintf("%s/requests.log", strings.TrimRight(opts.LoggerBasePath, "/"))
+			logger, err := utils.CreateFileLogger("REQUESTS", level, path)
+			if err != nil {
+				bot.logger.Errorln(err)
+			} else {
+				bot.RequestLogger = logger
+			}
+		}
+	}
 }
 
 func (bot *Bot[T]) beginRun() error {

@@ -12,11 +12,13 @@ Russian page:
 
 Current priority split:
 
-- `Priority 1`: webhook runtime model, authorization and policy model, observability model.
-- `Priority 2`: service layer and dependency graph model, plugin composition contract.
+- `Priority 1`: observability model.
+- `Priority 2`: service layer and dependency graph model.
+- `Partial`: webhook runtime model, plugin composition contract.
 
 Completed former high-priority items:
 
+- `[v1.0.0-rc.13] Authorization and policy model`: added first-class `Policy[T]`, middleware integration through `RequirePolicy(...)`, plugin and bot policy registration helpers, built-in Telegram-aware policies, and composable `AllPolicies(...)`, `AnyPolicy(...)`, and `NotPolicy(...)` helpers with regression coverage.
 - `[v1.0.0-rc.13] Update schema contract`: documented and tested the normalized `MsgContext` update-routing contract, including routing categories and per-update field guarantees.
 - `[v1.0.0-rc.13] User-facing vs internal error model`: added explicit user-visible vs internal-only error markers and updated centralized handler error routing accordingly.
 - `[v1.0.0-rc.13] Configuration freeze model`: formalized bot configuration freeze after first run, documented lifecycle commit points, and added regression coverage for ignored late mutations.

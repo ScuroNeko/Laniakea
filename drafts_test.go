@@ -22,7 +22,7 @@ func TestMsgContextNewDraftWorksWithoutLimiter(t *testing.T) {
 	ctx := &MsgContext{
 		Api: &tgapi.API{},
 		Msg: &tgapi.Message{
-			Chat: &tgapi.Chat{ID: 42, Type: string(tgapi.ChatTypePrivate)},
+			Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate},
 		},
 		Logger:        slog.CreateLogger(),
 		draftProvider: NewRandomDraftProvider(&tgapi.API{}),

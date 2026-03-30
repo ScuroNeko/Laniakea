@@ -3,14 +3,14 @@ package tgapi
 // Chat represents a chat (private, group, supergroup, channel).
 // See https://core.telegram.org/bots/api#chat
 type Chat struct {
-	ID               int64   `json:"id"`
-	Type             string  `json:"type"`
-	Title            *string `json:"title,omitempty"`
-	Username         *string `json:"username,omitempty"`
-	FirstName        *string `json:"first_name,omitempty"`
-	LastName         *string `json:"last_name,omitempty"`
-	IsForum          *bool   `json:"is_forum,omitempty"`
-	IsDirectMessages *bool   `json:"is_direct_messages,omitempty"`
+	ID               int64    `json:"id"`
+	Type             ChatType `json:"type"`
+	Title            *string  `json:"title,omitempty"`
+	Username         *string  `json:"username,omitempty"`
+	FirstName        *string  `json:"first_name,omitempty"`
+	LastName         *string  `json:"last_name,omitempty"`
+	IsForum          *bool    `json:"is_forum,omitempty"`
+	IsDirectMessages *bool    `json:"is_direct_messages,omitempty"`
 }
 
 // ChatType represents the type of a chat.

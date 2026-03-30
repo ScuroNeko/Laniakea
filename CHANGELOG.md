@@ -4,16 +4,23 @@
 
 ### Added
 - `AsUserError(...)`, `AsInternalError(...)`, `IsUserError(...)`, and `IsInternalError(...)` for explicitly marking centralized handler errors as user-visible or internal-only without breaking the existing default error flow.
+- `Policy[T]`, `RequirePolicy(...)`, and built-in chat and callback policy helpers for expressing reusable authorization rules through the existing middleware pipeline.
+- `Bot.UsePolicy(...)` and `Plugin.UsePolicy(...)` as shorthand for registering policies as middleware.
+- `AllPolicies(...)`, `AnyPolicy(...)`, and `NotPolicy(...)` for composing reusable authorization rules without introducing a second execution pipeline.
 
 ### Changed
 - Bot configuration mutators now treat the bot as configuration-frozen after the first run begins and ignore late mutation attempts for bot-level config such as prefixes, payload defaults, plugins, middleware, runners, localization, scene session wiring, and database context injection.
 - `MsgContext` godoc and field comments now describe the normalized update contract more explicitly, including when `Msg`, `From`, callback target fields, `Text`, and `Args` are expected to be populated.
+- `MsgContext` normalization now also carries `Chat` and `ChatID` for more Telegram update kinds, allowing policy and update handlers to rely on normalized chat identity outside message-only flows.
 - `MsgContext.Error(...)` and returned handler errors now suppress the automatic user reply when the error is explicitly marked with `AsInternalError(...)`, while keeping the previous user-visible default for unclassified errors.
 - Godoc, README examples, and regression-test naming now consistently describe the shared generic dependency model as app data, including `NoData` and `SetAppData(...)`.
+- `tgapi.Chat.Type` now uses the typed `tgapi.ChatType` enum in public DTOs and tests instead of raw string casts.
 
 ### Tests
 - Added regression coverage for the bot configuration freeze model, including ignored post-run mutations for core bot configuration methods and late registration paths.
 - Added table-driven update-contract coverage for `prepareUpdateCtx(...)`, including message-backed, callback-backed, user-backed, and no-user update kinds.
+- Added regression tests for policy middleware blocking, built-in private-chat policy decisions, normalized chat identity, and admin checks that use normalized `ChatID` and `FromID`.
+- Added regression tests for policy composition semantics, including all-of, any-of, and deny inversion with preserved internal failures.
 - Added regression tests proving that `edited_message` and `edited_channel_post` stay out of command routing and continue through generic update handlers.
 - Added callback-routing regression tests for both chat-message and inline-message callback targets, including `CallbackQueryId`, `CallbackMsgId`, `InlineMsgId`, and payload-argument guarantees.
 - Added regression tests for the new error-visibility model in both message and callback flows, including silent internal-only errors and explicit user-visible callback replies.
