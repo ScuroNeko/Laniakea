@@ -98,6 +98,11 @@ type API struct {
 // Always call Close() when done to release resources.
 func NewAPI(opts *APIOpts) *API {
 	l := utils.CreateLogger("API", utils.GetLoggerLevel())
+	if opts == nil {
+		l.Errorln("Set API options")
+		_ = l.Close()
+		return nil
+	}
 
 	client := opts.client
 	if client == nil {

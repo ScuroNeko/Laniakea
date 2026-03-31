@@ -18,7 +18,7 @@ const (
 	CommandValueStringType CommandValueType = "string"
 	// CommandValueIntType expects a decimal integer (digits only).
 	CommandValueIntType CommandValueType = "int"
-	// CommandValueBoolType is reserved for future use (not implemented).
+	// CommandValueBoolType expects a exact "true" or "false".
 	CommandValueBoolType CommandValueType = "bool"
 	// CommandValueAnyType accepts any input without validation.
 	CommandValueAnyType CommandValueType = "any"
@@ -193,6 +193,12 @@ func NewPlugin[T AppData](name string) *Plugin[T] {
 // AddCommand registers a command in the plugin.
 // The command's .command field is used as the key.
 func (p *Plugin[T]) AddCommand(command *Command[T]) *Plugin[T] {
+	if command == nil {
+		if p.logger != nil {
+			p.logger.Warnln("trying to add nil command")
+		}
+		return p
+	}
 	p.commands[command.command] = command
 	return p
 }
@@ -208,6 +214,12 @@ func (p *Plugin[T]) NewCommand(exec CommandExecutor[T], command string, args ...
 // AddPayload registers a payload (e.g., callback query data) in the plugin.
 // Payloads are triggered by inline button callback_data, not by message text.
 func (p *Plugin[T]) AddPayload(command *Command[T]) *Plugin[T] {
+	if command == nil {
+		if p.logger != nil {
+			p.logger.Warnln("trying to add nil command")
+		}
+		return p
+	}
 	p.payloads[command.command] = command
 	return p
 }

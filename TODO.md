@@ -12,8 +12,8 @@ Russian page:
 
 Current priority split:
 
-- `Priority 2`: service layer and dependency graph model.
-- `Partial`: webhook runtime model, plugin composition contract.
+- `Partial`: webhook runtime model.
+- `Ideas`: service layer and dependency graph model, plugin composition contract.
 
 Completed former high-priority items:
 

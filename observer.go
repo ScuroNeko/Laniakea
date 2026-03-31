@@ -32,6 +32,7 @@ const (
 	HandlerSceneMessageKind HandlerEventKind = "scene_message"
 )
 
+// Event is the marker interface implemented by all observer runtime events.
 type Event interface {
 	isEvent()
 }

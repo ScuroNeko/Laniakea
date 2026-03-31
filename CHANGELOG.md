@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.0-rc.14
+
+### Changed
+- Added missing godoc for the exported observer `Event` marker interface.
+
 ## v1.0.0-rc.13
 
 ### Added

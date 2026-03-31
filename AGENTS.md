@@ -32,7 +32,9 @@ Review the codebase with focus on:
 - Treat the wiki as the primary place for large design ideas, architectural drafts, and framework backlog notes.
 - If the agent identifies a substantial new concept or design direction, such as scenes, callback agents, a webhook model, or another framework-level abstraction, the agent must ask the user whether it should also formalize that idea as a draft wiki page.
 - When the user agrees, prefer paired wiki pages such as `Page.md` and `Page-RU.md`, and clearly mark draft design pages with `DRAFT` when the API is not implemented or not yet stable.
-- Keep `TODO.md`, the wiki backlog pages, and `CHANGELOG.md` aligned when framework-level items move between planned and completed states.
+- Keep `TODO.md`, the wiki backlog pages, and `CHANGELOG.md` aligned when framework-level items move between planned and completed states in the main repository.
+- Wiki-only edits must never be added to `CHANGELOG.md`.
+- `AGENTS.md`-only edits must never be added to `CHANGELOG.md`.
 
 ## Go review expectations
 Check for:
@@ -90,7 +92,8 @@ Prefer the repository’s documented commands. If multiple choices exist, use th
 
 ## Versioning and changelog
 - After every code or documentation change in the main repository, update `CHANGELOG.md`.
-- Changes made only inside the `.wiki/` repository do not require a `CHANGELOG.md` update.
+- Changes made only inside the `.wiki/` repository must not be added to `CHANGELOG.md`.
+- Changes made only in `AGENTS.md` must not be added to `CHANGELOG.md`.
 - Add changes only to the section for the next version after the latest published git tag.
 - The agent must check the latest published tag, `CHANGELOG.md`, and `utils/version.go` before editing the changelog.
 - The agent must verify that the target changelog version matches the version declared in `utils/version.go`.

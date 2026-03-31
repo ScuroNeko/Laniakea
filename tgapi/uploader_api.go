@@ -71,6 +71,11 @@ type Uploader struct {
 // NewUploader creates a multipart uploader bound to an API client.
 func NewUploader(api *API) *Uploader {
 	logger := utils.CreateLogger("UPLOADER", utils.GetLoggerLevel())
+	if api == nil {
+		logger.Errorln("api is nil")
+		_ = logger.Close()
+		return nil
+	}
 	return &Uploader{api, logger}
 }
 
