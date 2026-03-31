@@ -33,6 +33,27 @@ func (bot *Bot[T]) GetDraftProvider() *DraftProvider {
 	return bot.draftProvider
 }
 
+// SetObserver sets an event observer for instrumentation.
+func (bot *Bot[T]) SetObserver(observer Observer) *Bot[T] {
+	if !bot.configMutable("SetObserver") {
+		return bot
+	}
+	if observer == nil {
+		if bot.logger != nil {
+			bot.logger.Warn("SetObserver called with nil observer; instrumentation will be disabled")
+		}
+		bot.observer = nil
+		return bot
+	}
+	bot.observer = observer
+	return bot
+}
+
+// GetObserver returns the bot's event observer, or nil if no observer is set.
+func (bot *Bot[T]) GetObserver() Observer {
+	return bot.observer
+}
+
 // SetSessionStore replaces the session store used for scene management.
 func (bot *Bot[T]) SetSessionStore(store SessionStore) *Bot[T] {
 	if !bot.configMutable("SetSessionStore") {

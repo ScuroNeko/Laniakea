@@ -107,8 +107,21 @@ func (bot *Bot[T]) ExecRunners(ctx context.Context) {
 			bot.runnerOnceWG.Add(1)
 			go func(r Runner[T]) {
 				defer bot.runnerOnceWG.Done()
+				startedAt := time.Now()
 				err := r.fn(bot)
+				bot.safeEmitEvent(ctx, RunnerFinishedEvent{
+					Name:     r.name,
+					Duration: time.Since(startedAt),
+					Err:      err,
+				})
 				if err != nil {
+					bot.safeEmitEvent(ctx, ErrorEvent{
+						Plugin:      "bot",
+						HandlerKind: HandlerRunnerKind,
+						HandlerName: r.name,
+						Err:         err,
+						UserFacing:  false,
+					})
 					bot.logger.Warnf("Runner %s failed: %s\n", r.name, err)
 				}
 			}(runner)
@@ -116,10 +129,22 @@ func (bot *Bot[T]) ExecRunners(ctx context.Context) {
 			// One-time sync: block until done
 			t := time.Now()
 			err := runner.fn(bot)
+			elapsed := time.Since(t)
+			bot.safeEmitEvent(ctx, RunnerFinishedEvent{
+				Name:     runner.name,
+				Duration: elapsed,
+				Err:      err,
+			})
 			if err != nil {
+				bot.safeEmitEvent(ctx, ErrorEvent{
+					Plugin:      "bot",
+					HandlerKind: HandlerRunnerKind,
+					HandlerName: runner.name,
+					Err:         err,
+					UserFacing:  false,
+				})
 				bot.logger.Warnf("Runner %s failed: %s\n", runner.name, err)
 			}
-			elapsed := time.Since(t)
 			if elapsed > time.Second*2 {
 				bot.logger.Warnf("Runner %s too slow. Elapsed time %v >= 2s\n", runner.name, elapsed)
 			}
@@ -135,8 +160,21 @@ func (bot *Bot[T]) ExecRunners(ctx context.Context) {
 					case <-ctx.Done():
 						return
 					case <-ticker.C:
+						startedAt := time.Now()
 						err := r.fn(bot)
+						bot.safeEmitEvent(ctx, RunnerFinishedEvent{
+							Name:     r.name,
+							Duration: time.Since(startedAt),
+							Err:      err,
+						})
 						if err != nil {
+							bot.safeEmitEvent(ctx, ErrorEvent{
+								Plugin:      "bot",
+								HandlerKind: HandlerRunnerKind,
+								HandlerName: r.name,
+								Err:         err,
+								UserFacing:  false,
+							})
 							bot.logger.Warnf("Runner %s failed: %s\n", r.name, err)
 						}
 					}

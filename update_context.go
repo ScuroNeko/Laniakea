@@ -1,8 +1,13 @@
 package laniakea
 
-import "git.scuroneko.dev/scuroneko/laniakea/tgapi"
+import (
+	"time"
 
-func (bot *Bot[T]) handleUpdate(u *tgapi.Update, ctx *MsgContext) {
+	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
+)
+
+func (bot *Bot[T]) handleUpdate(u *tgapi.Update, ctx *MsgContext) bool {
+	handled := false
 	for _, plugin := range bot.plugins {
 		handler, ok := plugin.handlers[u.Type]
 		if !ok {
@@ -16,10 +21,49 @@ func (bot *Bot[T]) handleUpdate(u *tgapi.Update, ctx *MsgContext) {
 		if !plugin.executeMiddlewares(pluginCtx, bot.appData) {
 			continue
 		}
-		if err := handler(pluginCtx, bot.appData); err != nil {
+		startTime := time.Now()
+		bot.safeEmitEvent(pluginCtx.Context(), HandlerStartedEvent{
+			UpdateID:    u.UpdateID,
+			UpdateType:  u.Type,
+			Plugin:      plugin.name,
+			HandlerKind: HandlerUpdateKind,
+			HandlerName: string(u.Type),
+			FromID:      pluginCtx.FromID,
+			ChatID:      pluginCtx.ChatID,
+		})
+		err := handler(pluginCtx, bot.appData)
+		endEvent := HandlerFinishedEvent{
+			UpdateID:    u.UpdateID,
+			UpdateType:  u.Type,
+			Plugin:      plugin.name,
+			HandlerKind: HandlerUpdateKind,
+			HandlerName: string(u.Type),
+			FromID:      pluginCtx.FromID,
+			ChatID:      pluginCtx.ChatID,
+			Duration:    time.Since(startTime),
+		}
+		if err != nil {
+			endEvent.Err = err
+			endEvent.UserFacing = IsUserError(err)
+		}
+		bot.safeEmitEvent(pluginCtx.Context(), endEvent)
+		if err != nil {
+			bot.safeEmitEvent(pluginCtx.Context(), ErrorEvent{
+				UpdateID:    u.UpdateID,
+				UpdateType:  u.Type,
+				Plugin:      plugin.name,
+				HandlerKind: HandlerUpdateKind,
+				HandlerName: string(u.Type),
+				FromID:      pluginCtx.FromID,
+				ChatID:      pluginCtx.ChatID,
+				Err:         err,
+				UserFacing:  IsUserError(err),
+			})
 			pluginCtx.error(err)
 		}
+		handled = true
 	}
+	return handled
 }
 
 func (bot *Bot[T]) prepareUpdateCtx(u *tgapi.Update, ctx *MsgContext) {

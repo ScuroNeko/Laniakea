@@ -266,6 +266,170 @@ func TestSceneCommandHandlerRunsBeforeStep(t *testing.T) {
 	}
 }
 
+func TestSceneCommandObserverEmitsLifecycleEvents(t *testing.T) {
+	observer := &recordingObserver{}
+	plugin := NewPlugin[NoData]("wizard")
+	plugin.NewScene("signup").
+		SetEntry("start").
+		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
+			return ctx.Stay(), nil
+		}).
+		OnCommand("cancel", func(ctx *SceneContext, db NoData) (SceneResult, error) {
+			return ctx.Exit(), nil
+		})
+
+	bot := &Bot[NoData]{
+		logger:             slog.CreateLogger(),
+		prefixes:           []string{"/"},
+		sessionStore:       NewMemorySessionStore(),
+		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
+		observer:           observer,
+	}
+	bot.AddPlugins(plugin)
+
+	enterCtx := &MsgContext{
+		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
+		FromID:       42,
+		sceneRuntime: bot,
+	}
+	if err := enterCtx.EnterScene("signup"); err != nil {
+		t.Fatalf("EnterScene returned error: %v", err)
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 22,
+		Type:     tgapi.UpdateTypeMessage,
+		Message: &tgapi.Message{
+			MessageID: 9,
+			Text:      "/cancel",
+			Chat:      &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate},
+			From:      &tgapi.User{ID: 42},
+		},
+	})
+
+	if len(observer.started) != 1 {
+		t.Fatalf("expected one scene started event, got %d", len(observer.started))
+	}
+	if got := observer.started[0]; got.HandlerKind != HandlerSceneCommandKind || got.HandlerName != "cancel" || got.Plugin != "wizard" {
+		t.Fatalf("unexpected scene started event: %#v", got)
+	}
+	if len(observer.finished) != 1 {
+		t.Fatalf("expected one scene finished event, got %d", len(observer.finished))
+	}
+	if got := observer.finished[0]; got.HandlerKind != HandlerSceneCommandKind || got.HandlerName != "cancel" || got.Plugin != "wizard" || got.Err != nil {
+		t.Fatalf("unexpected scene finished event: %#v", got)
+	}
+}
+
+func TestSceneStepObserverEmitsLifecycleEvents(t *testing.T) {
+	observer := &recordingObserver{}
+	plugin := NewPlugin[NoData]("wizard")
+	plugin.NewScene("signup").
+		SetEntry("start").
+		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
+			return ctx.Stay(), nil
+		})
+
+	bot := &Bot[NoData]{
+		logger:             slog.CreateLogger(),
+		prefixes:           []string{"/"},
+		sessionStore:       NewMemorySessionStore(),
+		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
+		observer:           observer,
+	}
+	bot.AddPlugins(plugin)
+
+	enterCtx := &MsgContext{
+		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
+		FromID:       42,
+		sceneRuntime: bot,
+	}
+	if err := enterCtx.EnterScene("signup"); err != nil {
+		t.Fatalf("EnterScene returned error: %v", err)
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 23,
+		Type:     tgapi.UpdateTypeMessage,
+		Message: &tgapi.Message{
+			MessageID: 10,
+			Text:      "hello there",
+			Chat:      &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate},
+			From:      &tgapi.User{ID: 42},
+		},
+	})
+
+	if len(observer.started) != 1 {
+		t.Fatalf("expected one scene started event, got %d", len(observer.started))
+	}
+	if got := observer.started[0]; got.HandlerKind != HandlerSceneStepKind || got.HandlerName != "start" || got.Plugin != "wizard" {
+		t.Fatalf("unexpected scene step started event: %#v", got)
+	}
+	if len(observer.finished) != 1 {
+		t.Fatalf("expected one scene finished event, got %d", len(observer.finished))
+	}
+	if got := observer.finished[0]; got.HandlerKind != HandlerSceneStepKind || got.HandlerName != "start" || got.Plugin != "wizard" || got.Err != nil {
+		t.Fatalf("unexpected scene step finished event: %#v", got)
+	}
+}
+
+func TestSceneMessageObserverEmitsLifecycleEvents(t *testing.T) {
+	observer := &recordingObserver{}
+	plugin := NewPlugin[NoData]("wizard")
+	scene := plugin.NewScene("signup").
+		SetEntry("start").
+		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
+			return ctx.Stay(), nil
+		}).
+		OnMessage(func(ctx *SceneContext, db NoData) (SceneResult, error) {
+			return ctx.Exit(), nil
+		})
+
+	bot := &Bot[NoData]{
+		logger:             slog.CreateLogger(),
+		prefixes:           []string{"/"},
+		sessionStore:       NewMemorySessionStore(),
+		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
+		observer:           observer,
+	}
+	bot.AddPlugins(plugin)
+
+	key, ok := buildSceneKey(SceneScopeUserChat, &MsgContext{
+		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
+		FromID: 42,
+	})
+	if !ok {
+		t.Fatal("expected scene key to be built")
+	}
+	if err := bot.sessionStore.Set(key, SceneSession{Scene: scene.Name}); err != nil {
+		t.Fatalf("failed to seed scene session: %v", err)
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 24,
+		Type:     tgapi.UpdateTypeMessage,
+		Message: &tgapi.Message{
+			MessageID: 11,
+			Text:      "hello there",
+			Chat:      &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate},
+			From:      &tgapi.User{ID: 42},
+		},
+	})
+
+	if len(observer.started) != 1 {
+		t.Fatalf("expected one scene started event, got %d", len(observer.started))
+	}
+	if got := observer.started[0]; got.HandlerKind != HandlerSceneMessageKind || got.HandlerName != "message_fallback" || got.Plugin != "wizard" {
+		t.Fatalf("unexpected scene message started event: %#v", got)
+	}
+	if len(observer.finished) != 1 {
+		t.Fatalf("expected one scene finished event, got %d", len(observer.finished))
+	}
+	if got := observer.finished[0]; got.HandlerKind != HandlerSceneMessageKind || got.HandlerName != "message_fallback" || got.Plugin != "wizard" || got.Err != nil {
+		t.Fatalf("unexpected scene message finished event: %#v", got)
+	}
+}
+
 func TestScenePassDoesNotPersistSessionData(t *testing.T) {
 	commandCalled := false
 

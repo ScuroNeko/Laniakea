@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -79,6 +80,7 @@ type MsgContext struct {
 	draftProvider *DraftProvider
 	payloadType   BotPayloadType
 	sceneRuntime  sceneRuntime
+	observer      Observer
 
 	ctx context.Context
 }
@@ -687,6 +689,22 @@ func (ctx *MsgContext) Context() context.Context {
 		return context.Background()
 	}
 	return ctx.ctx
+}
+
+func (ctx *MsgContext) emitPolicyChecked(event PolicyCheckedEvent) {
+	if ctx == nil || ctx.observer == nil {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			if ctx.Logger != nil {
+				ctx.Logger.Errorln(fmt.Sprintf("panic in observer policy event: %v", r))
+				return
+			}
+			log.Printf("panic in observer policy event: %v", r)
+		}
+	}()
+	ctx.observer.OnPolicyChecked(ctx.Context(), event)
 }
 
 // EnterScene enters the named scene at its configured entry step.

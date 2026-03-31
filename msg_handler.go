@@ -2,18 +2,19 @@ package laniakea
 
 import (
 	"strings"
+	"time"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
 
-func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
+func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) bool {
 	var msg *tgapi.Message
 	if update.Message != nil {
 		msg = update.Message
 	} else if update.ChannelPost != nil {
 		msg = update.ChannelPost
 	} else {
-		return
+		return false
 	}
 
 	var text string
@@ -22,12 +23,12 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 	} else if len(msg.Caption) > 0 {
 		text = msg.Caption
 	} else {
-		return
+		return false
 	}
 
 	prefix, cmd, args := bot.parseCommand(text)
 	if cmd == "" {
-		return
+		return false
 	}
 	ctx.Prefix = prefix
 
@@ -37,10 +38,10 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 			cmd = cmd[:len(cmd)-len("@"+botUsername)] // убираем @botname
 		}
 	}
-
 	// Ищем команду по точному совпадению
 	for _, plugin := range bot.plugins {
 		if _, exists := plugin.commands[cmd]; exists {
+
 			ctx.Text = args
 			ctx.Args = strings.Fields(args) // Убирает лишние пробелы
 
@@ -48,19 +49,75 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) {
 				ctx.Logger = plugin.logger
 			}
 			if !plugin.executeMiddlewares(ctx, bot.appData) {
-				return
+				return false
 			}
-			plugin.executeCmd(cmd, ctx, bot.appData)
-			return
+
+			startTime := time.Now()
+			bot.safeEmitEvent(ctx.Context(), HandlerStartedEvent{
+				UpdateID:    update.UpdateID,
+				UpdateType:  update.Type,
+				Plugin:      plugin.name,
+				HandlerKind: HandlerCommandKind,
+				HandlerName: cmd,
+				FromID:      ctx.FromID,
+				ChatID:      ctx.ChatID,
+			})
+
+			err := plugin.executeCmd(cmd, ctx, bot.appData)
+			handlerEndEvent := HandlerFinishedEvent{
+				UpdateID:    update.UpdateID,
+				UpdateType:  update.Type,
+				Plugin:      plugin.name,
+				HandlerKind: HandlerCommandKind,
+				HandlerName: cmd,
+				FromID:      ctx.FromID,
+				ChatID:      ctx.ChatID,
+				Duration:    time.Since(startTime),
+			}
+
+			var errorEvent *ErrorEvent = nil
+			if err != nil {
+				ctx.error(err)
+				handlerEndEvent.Err = err
+				handlerEndEvent.UserFacing = IsUserError(err)
+				errorEvent = &ErrorEvent{
+					UpdateID:    update.UpdateID,
+					UpdateType:  update.Type,
+					Plugin:      plugin.name,
+					HandlerKind: HandlerCommandKind,
+					HandlerName: cmd,
+					FromID:      ctx.FromID,
+					ChatID:      ctx.ChatID,
+					Err:         err,
+					UserFacing:  handlerEndEvent.UserFacing,
+				}
+			}
+			bot.safeEmitEvent(ctx.Context(), handlerEndEvent)
+			if errorEvent != nil {
+				bot.safeEmitEvent(ctx.Context(), *errorEvent)
+			}
+			return true
 		}
 	}
+	return false
 }
 
-func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) {
+func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) bool {
 	data, err := bot.decodePayload(update.CallbackQuery.Data)
 	if err != nil {
 		bot.logger.Errorln(err)
-		return
+		bot.safeEmitEvent(ctx.Context(), ErrorEvent{
+			UpdateID:    update.UpdateID,
+			UpdateType:  update.Type,
+			Plugin:      "bot",
+			HandlerKind: HandlerPayloadKind,
+			HandlerName: "decodePayload",
+			FromID:      ctx.FromID,
+			ChatID:      ctx.ChatID,
+			Err:         err,
+			UserFacing:  false,
+		})
+		return false
 	}
 
 	ctx.Args = data.Args
@@ -75,12 +132,57 @@ func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) {
 		if ctx.Logger == nil {
 			ctx.Logger = bot.logger
 		}
+
 		if !plugin.executeMiddlewares(ctx, bot.appData) {
-			return
+			return false
 		}
-		plugin.executePayload(data.Command, ctx, bot.appData)
-		return
+
+		startTime := time.Now()
+		bot.safeEmitEvent(ctx.Context(), HandlerStartedEvent{
+			UpdateID:    update.UpdateID,
+			UpdateType:  update.Type,
+			Plugin:      plugin.name,
+			HandlerKind: HandlerPayloadKind,
+			HandlerName: data.Command,
+			FromID:      ctx.FromID,
+			ChatID:      ctx.ChatID,
+		})
+		err := plugin.executePayload(data.Command, ctx, bot.appData)
+
+		endEvent := HandlerFinishedEvent{
+			UpdateID:    update.UpdateID,
+			UpdateType:  update.Type,
+			Plugin:      plugin.name,
+			HandlerKind: HandlerPayloadKind,
+			HandlerName: data.Command,
+			FromID:      ctx.FromID,
+			ChatID:      ctx.ChatID,
+			Duration:    time.Since(startTime),
+		}
+		var errorEvent *ErrorEvent = nil
+		if err != nil {
+			ctx.error(err)
+			errorEvent = &ErrorEvent{
+				UpdateID:    update.UpdateID,
+				UpdateType:  update.Type,
+				Plugin:      plugin.name,
+				HandlerKind: HandlerPayloadKind,
+				HandlerName: data.Command,
+				FromID:      ctx.FromID,
+				ChatID:      ctx.ChatID,
+				Err:         err,
+				UserFacing:  IsUserError(err),
+			}
+			endEvent.Err = err
+			endEvent.UserFacing = errorEvent.UserFacing
+		}
+		bot.safeEmitEvent(ctx.Context(), endEvent)
+		if errorEvent != nil {
+			bot.safeEmitEvent(ctx.Context(), *errorEvent)
+		}
+		return true
 	}
+	return false
 }
 
 func (bot *Bot[T]) checkPrefixes(text string) (string, bool) {

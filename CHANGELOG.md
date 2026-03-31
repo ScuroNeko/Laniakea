@@ -14,6 +14,13 @@
 - `MsgContext` normalization now also carries `Chat` and `ChatID` for more Telegram update kinds, allowing policy and update handlers to rely on normalized chat identity outside message-only flows.
 - `MsgContext.Error(...)` and returned handler errors now suppress the automatic user reply when the error is explicitly marked with `AsInternalError(...)`, while keeping the previous user-visible default for unclassified errors.
 - Godoc, README examples, and regression-test naming now consistently describe the shared generic dependency model as app data, including `NoData` and `SetAppData(...)`.
+- Observer configuration now treats `SetObserver(nil)` as clearing instrumentation instead of leaving the previous observer attached.
+- Observer lifecycle events now cover generic update handlers and scene command, step, and message-fallback handlers with logical handler names and durations.
+- `RequirePolicy(...)` now emits `PolicyCheckedEvent` for both passed and denied policy decisions.
+- Scene command, step, and message-fallback flows now emit observer `ErrorEvent`s with scene-specific handler kinds and logical handler names.
+- Scene transition observer events now use the same transition payload for scene command, step, and message-fallback flows.
+- Observer error emission now also covers generic update handlers, callback payload decode failures, runner failures, and polling retries, including dedicated runner and polling handler kinds in `ErrorEvent`.
+- `TODO.md` and the framework backlog pages now mark the observability model as completed for `v1.0.0-rc.13`.
 - `tgapi.Chat.Type` now uses the typed `tgapi.ChatType` enum in public DTOs and tests instead of raw string casts.
 
 ### Tests
@@ -21,6 +28,9 @@
 - Added table-driven update-contract coverage for `prepareUpdateCtx(...)`, including message-backed, callback-backed, user-backed, and no-user update kinds.
 - Added regression tests for policy middleware blocking, built-in private-chat policy decisions, normalized chat identity, and admin checks that use normalized `ChatID` and `FromID`.
 - Added regression tests for policy composition semantics, including all-of, any-of, and deny inversion with preserved internal failures.
+- Added regression tests for `SetObserver(...)`, `GetObserver()`, and clearing the observer with `SetObserver(nil)`.
+- Added observer regression tests for generic update-handler errors, callback payload decode failures, runner failure events, and polling retry emission.
+- Added observer regression tests for update and scene handler lifecycle events and `PolicyCheckedEvent` emission.
 - Added regression tests proving that `edited_message` and `edited_channel_post` stay out of command routing and continue through generic update handlers.
 - Added callback-routing regression tests for both chat-message and inline-message callback targets, including `CallbackQueryId`, `CallbackMsgId`, `InlineMsgId`, and payload-argument guarantees.
 - Added regression tests for the new error-visibility model in both message and callback flows, including silent internal-only errors and explicit user-visible callback replies.

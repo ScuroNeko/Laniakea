@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 )
 
 func (bot *Bot[T]) tryHandleScene(ctx *MsgContext) (bool, error) {
@@ -34,12 +35,13 @@ func (bot *Bot[T]) tryHandleScene(ctx *MsgContext) (bool, error) {
 			sess:       session,
 			key:        key,
 		}
-		return bot.executeScene(scene, sceneCtx)
+
+		return bot.executeScene(sceneCtx, scene)
 	}
 	return false, ErrSceneNotFound
 }
 
-func (bot *Bot[T]) executeScene(scene *Scene[T], ctx *SceneContext) (bool, error) {
+func (bot *Bot[T]) executeScene(ctx *SceneContext, scene *Scene[T]) (bool, error) {
 	if ctx.MsgContext == nil || ctx.sess.Scene == "" {
 		return false, nil
 	}
@@ -59,37 +61,143 @@ func (bot *Bot[T]) executeScene(scene *Scene[T], ctx *SceneContext) (bool, error
 		ctx.Text = args
 		ctx.Args = strings.Fields(args)
 
-		res, matched, err := scene.executeCommand(cmd, ctx, bot.appData)
-		if err != nil {
-			return false, err
-		}
-		if matched {
-			return bot.applySceneResult(scene, ctx, res)
+		if _, ok := scene.commands[cmd]; ok {
+			startTime := time.Now()
+			bot.emitSceneStarted(ctx, scene, HandlerSceneCommandKind, cmd)
+			res, _, err := scene.executeCommand(cmd, ctx, bot.appData)
+			if err != nil {
+				bot.emitSceneFinished(ctx, scene, HandlerSceneCommandKind, cmd, startTime, err)
+				bot.emitSceneError(ctx, scene, HandlerSceneCommandKind, cmd, err)
+				return false, err
+			}
+			from := ctx.sess.Step
+			ok, err := bot.applySceneResult(scene, ctx, res)
+			bot.emitSceneFinished(ctx, scene, HandlerSceneCommandKind, cmd, startTime, err)
+			if err != nil {
+				bot.emitSceneError(ctx, scene, HandlerSceneCommandKind, cmd, err)
+			}
+			if ok {
+				bot.emitSceneTransition(ctx, scene, from, res)
+			}
+			return ok, err
 		}
 	}
 	ctx.Text = text
 	ctx.Args = nil
 	ctx.Prefix = ""
 	if ctx.sess.Step != "" {
-		res, matched, err := scene.executeStep(ctx.sess.Step, ctx, bot.appData)
-		if err != nil {
-			return false, err
-		}
-		if matched {
-			return bot.applySceneResult(scene, ctx, res)
+		step := ctx.sess.Step
+		if _, ok := scene.steps[step]; ok {
+			startTime := time.Now()
+			bot.emitSceneStarted(ctx, scene, HandlerSceneStepKind, step)
+			res, _, err := scene.executeStep(step, ctx, bot.appData)
+			if err != nil {
+				bot.emitSceneFinished(ctx, scene, HandlerSceneStepKind, step, startTime, err)
+				bot.emitSceneError(ctx, scene, HandlerSceneStepKind, step, err)
+				return false, err
+			}
+			from := step
+			ok, err := bot.applySceneResult(scene, ctx, res)
+			bot.emitSceneFinished(ctx, scene, HandlerSceneStepKind, step, startTime, err)
+			if err != nil {
+				bot.emitSceneError(ctx, scene, HandlerSceneStepKind, from, err)
+			}
+			if ok {
+				bot.emitSceneTransition(ctx, scene, from, res)
+			}
+			return ok, err
 		}
 	}
 
-	res, matched, err := scene.executeMessage(ctx, bot.appData)
-	if err != nil {
-		return false, err
-	}
-	if matched {
-		return bot.applySceneResult(scene, ctx, res)
+	if scene.message != nil {
+		startTime := time.Now()
+		bot.emitSceneStarted(ctx, scene, HandlerSceneMessageKind, "message_fallback")
+		res, _, err := scene.executeMessage(ctx, bot.appData)
+		if err != nil {
+			bot.emitSceneFinished(ctx, scene, HandlerSceneMessageKind, "message_fallback", startTime, err)
+			bot.emitSceneError(ctx, scene, HandlerSceneMessageKind, "message_fallback", err)
+			return false, err
+		}
+		from := ctx.sess.Step
+		ok, err := bot.applySceneResult(scene, ctx, res)
+		bot.emitSceneFinished(ctx, scene, HandlerSceneMessageKind, "message_fallback", startTime, err)
+		if err != nil {
+			bot.emitSceneError(ctx, scene, HandlerSceneMessageKind, "message_fallback", err)
+		}
+		if ok {
+			bot.emitSceneTransition(ctx, scene, from, res)
+		}
+		return ok, err
 	}
 
 	return false, nil
 }
+
+func (bot *Bot[T]) emitSceneStarted(ctx *SceneContext, scene *Scene[T], kind HandlerEventKind, name string) {
+	bot.safeEmitEvent(ctx.Context(), HandlerStartedEvent{
+		UpdateID:    ctx.Update.UpdateID,
+		UpdateType:  ctx.Update.Type,
+		Plugin:      scene.PluginName,
+		HandlerKind: kind,
+		HandlerName: name,
+		FromID:      ctx.FromID,
+		ChatID:      ctx.ChatID,
+	})
+}
+
+func (bot *Bot[T]) emitSceneFinished(ctx *SceneContext, scene *Scene[T], kind HandlerEventKind, name string, startedAt time.Time, err error) {
+	bot.safeEmitEvent(ctx.Context(), HandlerFinishedEvent{
+		UpdateID:    ctx.Update.UpdateID,
+		UpdateType:  ctx.Update.Type,
+		Plugin:      scene.PluginName,
+		HandlerKind: kind,
+		HandlerName: name,
+		FromID:      ctx.FromID,
+		ChatID:      ctx.ChatID,
+		Duration:    time.Since(startedAt),
+		Err:         err,
+		UserFacing:  IsUserError(err),
+	})
+}
+
+func (bot *Bot[T]) emitSceneError(ctx *SceneContext, scene *Scene[T], kind HandlerEventKind, name string, err error) {
+	bot.safeEmitEvent(ctx.Context(), ErrorEvent{
+		UpdateID:    ctx.Update.UpdateID,
+		UpdateType:  ctx.Update.Type,
+		Plugin:      scene.PluginName,
+		HandlerKind: kind,
+		HandlerName: name,
+		FromID:      ctx.FromID,
+		ChatID:      ctx.ChatID,
+		Err:         err,
+		UserFacing:  IsUserError(err),
+	})
+}
+
+func (bot *Bot[T]) emitSceneTransition(ctx *SceneContext, scene *Scene[T], from string, result SceneResult) {
+	if result.Action == SceneActionPass {
+		return
+	}
+
+	to := from
+	switch result.Action {
+	case SceneActionNext:
+		to = result.Next
+	case SceneActionExit:
+		to = ""
+	}
+
+	bot.safeEmitEvent(ctx.Context(), SceneTransitionEvent{
+		Plugin: scene.PluginName,
+		Scene:  scene.Name,
+		From:   from,
+		To:     to,
+		Action: result.Action,
+		FromID: ctx.FromID,
+		ChatID: ctx.ChatID,
+	})
+}
+
 func (bot *Bot[T]) applySceneResult(scene *Scene[T], ctx *SceneContext, result SceneResult) (bool, error) {
 	switch result.Action {
 	case SceneActionStay:

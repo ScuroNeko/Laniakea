@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
@@ -19,6 +20,7 @@ func (bot *Bot[T]) handle(parentCtx context.Context, u *tgapi.Update) {
 			bot.logger.Errorln(fmt.Sprintf("panic in handle: %v", r))
 		}
 	}()
+	startTime := time.Now()
 
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
@@ -30,10 +32,17 @@ func (bot *Bot[T]) handle(parentCtx context.Context, u *tgapi.Update) {
 		l10n:          bot.l10n,
 		draftProvider: bot.draftProvider,
 		sceneRuntime:  bot,
+		observer:      bot.observer,
 		payloadType:   bot.payloadType,
 		ctx:           ctx,
 	}
 	bot.prepareUpdateCtx(u, msgCtx)
+	bot.safeEmitEvent(ctx, UpdateReceivedEvent{
+		UpdateID:   u.UpdateID,
+		UpdateType: u.Type,
+		FromID:     msgCtx.FromID,
+		ChatID:     msgCtx.ChatID,
+	})
 
 	for _, middleware := range bot.middlewares {
 		if !middleware.Execute(msgCtx, bot.appData) {
@@ -44,20 +53,56 @@ func (bot *Bot[T]) handle(parentCtx context.Context, u *tgapi.Update) {
 	sceneHandled, err := bot.tryHandleScene(msgCtx)
 	if err != nil {
 		bot.logger.Errorln(err)
+		bot.safeEmitEvent(ctx, UpdateHandledEvent{
+			UpdateID:   u.UpdateID,
+			UpdateType: u.Type,
+			FromID:     msgCtx.FromID,
+			ChatID:     msgCtx.ChatID,
+			Duration:   time.Since(startTime),
+			Handled:    false,
+		})
+		bot.safeEmitEvent(ctx, ErrorEvent{
+			UpdateID:    u.UpdateID,
+			UpdateType:  u.Type,
+			Plugin:      "bot",
+			HandlerKind: HandlerSceneKind,
+			HandlerName: "tryHandleScene",
+			FromID:      msgCtx.FromID,
+			ChatID:      msgCtx.ChatID,
+			Err:         err,
+			UserFacing:  false,
+		})
 		return
 	}
 	if sceneHandled {
+		bot.safeEmitEvent(ctx, UpdateHandledEvent{
+			UpdateID:   u.UpdateID,
+			UpdateType: u.Type,
+			FromID:     msgCtx.FromID,
+			ChatID:     msgCtx.ChatID,
+			Duration:   time.Since(startTime),
+			Handled:    true,
+		})
 		return
 	}
 
+	handled := false
 	switch u.Type {
 	case tgapi.UpdateTypeMessage, tgapi.UpdateTypeChannelPost:
-		bot.handleMessage(u, msgCtx)
+		handled = bot.handleMessage(u, msgCtx)
 	case tgapi.UpdateTypeCallbackQuery:
-		bot.handleCallback(u, msgCtx)
+		handled = bot.handleCallback(u, msgCtx)
 	default:
-		bot.handleUpdate(u, msgCtx)
+		handled = bot.handleUpdate(u, msgCtx)
 	}
+	bot.safeEmitEvent(ctx, UpdateHandledEvent{
+		UpdateID:   u.UpdateID,
+		UpdateType: u.Type,
+		FromID:     msgCtx.FromID,
+		ChatID:     msgCtx.ChatID,
+		Duration:   time.Since(startTime),
+		Handled:    handled,
+	})
 }
 
 func cloneMsgContext(src *MsgContext) *MsgContext {

@@ -3,14 +3,48 @@ package laniakea
 import (
 	"context"
 	"errors"
+	"io"
+	"net/http"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 	"git.scuroneko.dev/scuroneko/slog"
 )
+
+type pollingRoundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f pollingRoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+type pollingRetryObserver struct {
+	recordingObserver
+	cancel context.CancelFunc
+}
+
+func (o *pollingRetryObserver) OnPollingRetry(ctx context.Context, ev PollingRetryEvent) {
+	o.recordingObserver.OnPollingRetry(ctx, ev)
+	if o.cancel != nil {
+		o.cancel()
+	}
+}
+
+type testObserver struct{}
+
+func (testObserver) OnReceiveUpdate(context.Context, UpdateReceivedEvent)  {}
+func (testObserver) OnHandledUpdate(context.Context, UpdateHandledEvent)   {}
+func (testObserver) OnHandlerStarted(context.Context, HandlerStartedEvent) {}
+func (testObserver) OnHandlerFinished(context.Context, HandlerFinishedEvent) {
+}
+func (testObserver) OnSceneTransition(context.Context, SceneTransitionEvent) {}
+func (testObserver) OnPolicyChecked(context.Context, PolicyCheckedEvent)     {}
+func (testObserver) OnRunnerFinished(context.Context, RunnerFinishedEvent)   {}
+func (testObserver) OnPollingRetry(context.Context, PollingRetryEvent)       {}
+func (testObserver) OnError(context.Context, ErrorEvent)                     {}
 
 func TestGetUpdateTypesReturnsCopy(t *testing.T) {
 	bot := &Bot[NoData]{updateTypes: []tgapi.UpdateType{tgapi.UpdateTypeMessage}}
@@ -196,6 +230,34 @@ func TestSetAppDataMarksValueWarningOnce(t *testing.T) {
 	}
 }
 
+func TestSetObserverAndGetObserver(t *testing.T) {
+	bot := &Bot[NoData]{logger: slog.CreateLogger()}
+	observer := testObserver{}
+
+	if got := bot.GetObserver(); got != nil {
+		t.Fatalf("expected nil observer by default, got %#v", got)
+	}
+
+	bot.SetObserver(observer)
+	if got := bot.GetObserver(); got == nil {
+		t.Fatal("expected observer to be stored")
+	}
+}
+
+func TestSetObserverNilClearsObserver(t *testing.T) {
+	bot := &Bot[NoData]{logger: slog.CreateLogger()}
+	bot.SetObserver(testObserver{})
+
+	if bot.GetObserver() == nil {
+		t.Fatal("expected observer to be set")
+	}
+
+	bot.SetObserver(nil)
+	if got := bot.GetObserver(); got != nil {
+		t.Fatalf("expected nil observer after clearing, got %#v", got)
+	}
+}
+
 func TestRunWithContextRejectsSecondRun(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -213,6 +275,58 @@ func TestRunWithContextRejectsSecondRun(t *testing.T) {
 	}
 	if err := bot.RunWithContext(ctx); !errors.Is(err, ErrBotAlreadyRun) {
 		t.Fatalf("expected ErrBotAlreadyRun on second run, got %v", err)
+	}
+}
+
+func TestRunWithContextEmitsPollingRetryAndErrorEvents(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	observer := &pollingRetryObserver{cancel: cancel}
+
+	client := &http.Client{
+		Transport: pollingRoundTripFunc(func(r *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(strings.NewReader(`{"ok":false,"error_code":500,"description":"boom"}`)),
+			}, nil
+		}),
+	}
+
+	api := tgapi.NewAPI(
+		tgapi.NewAPIOpts("token").
+			SetAPIUrl("http://example.invalid").
+			SetHTTPClient(client),
+	)
+	defer func() {
+		_ = api.Close()
+	}()
+
+	bot := &Bot[NoData]{
+		logger:      slog.CreateLogger(),
+		api:         api,
+		prefixes:    []string{"/"},
+		plugins:     []Plugin[NoData]{{name: "demo"}},
+		updateQueue: make(chan *tgapi.Update, 1),
+		maxWorkers:  1,
+		observer:    observer,
+	}
+
+	if err := bot.RunWithContext(ctx); err != nil {
+		t.Fatalf("RunWithContext returned error: %v", err)
+	}
+
+	if len(observer.retries) != 1 {
+		t.Fatalf("expected one polling retry event, got %d", len(observer.retries))
+	}
+	if got := observer.retries[0]; got.Attempt != 1 || got.Delay <= 0 || got.Err == nil {
+		t.Fatalf("unexpected polling retry event: %#v", got)
+	}
+	if len(observer.errors) != 1 {
+		t.Fatalf("expected one polling error event, got %d", len(observer.errors))
+	}
+	if got := observer.errors[0]; got.HandlerKind != HandlerPollingKind || got.HandlerName != "getUpdates" || got.Plugin != "bot" || got.Err == nil || got.UserFacing {
+		t.Fatalf("unexpected polling error event: %#v", got)
 	}
 }
 

@@ -322,55 +322,47 @@ func (p *Plugin[T]) Close() error {
 }
 
 // Internal helper that validates and executes a command handler.
-func (p *Plugin[T]) executeCmd(cmd string, ctx *MsgContext, db T) {
+func (p *Plugin[T]) executeCmd(cmd string, ctx *MsgContext, db T) error {
 	command, exists := p.commands[cmd]
 	if !exists {
-		ctx.error(AsInternalError(errCommandNotFound))
-		return
+		return AsInternalError(errCommandNotFound)
 	}
 
 	if err := command.validateArgs(ctx.Args); err != nil {
-		ctx.error(err)
-		return
+		return AsUserError(err)
 	}
 
 	// Run command-specific middlewares
 	for _, m := range command.middlewares {
 		if !m.Execute(ctx, db) {
-			return
+			return AsInternalError(errors.New("middleware blocked call"))
 		}
 	}
 
 	// Execute command
-	if err := command.exec(ctx, db); err != nil {
-		ctx.error(err)
-	}
+	return command.exec(ctx, db)
 }
 
 // Internal helper that validates and executes a payload handler.
-func (p *Plugin[T]) executePayload(payload string, ctx *MsgContext, db T) {
+func (p *Plugin[T]) executePayload(payload string, ctx *MsgContext, db T) error {
 	command, exists := p.payloads[payload]
 	if !exists {
-		ctx.error(AsInternalError(errPayloadNotFound))
-		return
+		return AsInternalError(errPayloadNotFound)
 	}
 
 	if err := command.validateArgs(ctx.Args); err != nil {
-		ctx.error(err)
-		return
+		return AsUserError(err)
 	}
 
 	// Run command-specific middlewares
 	for _, m := range command.middlewares {
 		if !m.Execute(ctx, db) {
-			return
+			return AsInternalError(errors.New("middleware blocked call"))
 		}
 	}
 
 	// Execute payload
-	if err := command.exec(ctx, db); err != nil {
-		ctx.error(err)
-	}
+	return command.exec(ctx, db)
 }
 
 // Internal helper that runs plugin middlewares in order.

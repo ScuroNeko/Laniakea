@@ -2,6 +2,7 @@ package laniakea
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
@@ -10,6 +11,37 @@ import (
 
 func ptr[T any](v T) *T {
 	return &v
+}
+
+type recordingObserver struct {
+	started  []HandlerStartedEvent
+	finished []HandlerFinishedEvent
+	errors   []ErrorEvent
+	policies []PolicyCheckedEvent
+	runners  []RunnerFinishedEvent
+	retries  []PollingRetryEvent
+}
+
+func (*recordingObserver) OnReceiveUpdate(context.Context, UpdateReceivedEvent) {}
+func (*recordingObserver) OnHandledUpdate(context.Context, UpdateHandledEvent)  {}
+func (o *recordingObserver) OnHandlerStarted(_ context.Context, ev HandlerStartedEvent) {
+	o.started = append(o.started, ev)
+}
+func (o *recordingObserver) OnHandlerFinished(_ context.Context, ev HandlerFinishedEvent) {
+	o.finished = append(o.finished, ev)
+}
+func (*recordingObserver) OnSceneTransition(context.Context, SceneTransitionEvent) {}
+func (o *recordingObserver) OnPolicyChecked(_ context.Context, ev PolicyCheckedEvent) {
+	o.policies = append(o.policies, ev)
+}
+func (o *recordingObserver) OnRunnerFinished(_ context.Context, ev RunnerFinishedEvent) {
+	o.runners = append(o.runners, ev)
+}
+func (o *recordingObserver) OnPollingRetry(_ context.Context, ev PollingRetryEvent) {
+	o.retries = append(o.retries, ev)
+}
+func (o *recordingObserver) OnError(_ context.Context, ev ErrorEvent) {
+	o.errors = append(o.errors, ev)
 }
 
 func TestCheckPrefixesSkipsEmptyPrefixes(t *testing.T) {
@@ -505,6 +537,57 @@ func TestHandleUpdateHandlersReceiveIsolatedContexts(t *testing.T) {
 	}
 }
 
+func TestHandleUpdateObserverEmitsUpdateErrors(t *testing.T) {
+	observer := &recordingObserver{}
+	plugin := NewPlugin[NoData]("test").AddUpdateHandler(tgapi.UpdateTypeInlineQuery, func(ctx *MsgContext, db NoData) error {
+		return AsUserError(errors.New("update failed"))
+	})
+
+	bot := &Bot[NoData]{
+		logger:   slog.CreateLogger(),
+		plugins:  []Plugin[NoData]{clonePlugin(plugin)},
+		observer: observer,
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 4,
+		Type:     tgapi.UpdateTypeInlineQuery,
+		InlineQuery: &tgapi.InlineQuery{
+			ID:   "iq",
+			From: tgapi.User{ID: 41},
+		},
+	})
+
+	if len(observer.errors) != 1 {
+		t.Fatalf("expected one observer error event, got %d", len(observer.errors))
+	}
+	ev := observer.errors[0]
+	if ev.Plugin != "test" {
+		t.Fatalf("unexpected plugin: %q", ev.Plugin)
+	}
+	if ev.HandlerKind != HandlerUpdateKind {
+		t.Fatalf("unexpected handler kind: %q", ev.HandlerKind)
+	}
+	if ev.HandlerName != string(tgapi.UpdateTypeInlineQuery) {
+		t.Fatalf("unexpected handler name: %q", ev.HandlerName)
+	}
+	if !ev.UserFacing {
+		t.Fatal("expected update error to be marked user-facing")
+	}
+	if len(observer.started) != 1 {
+		t.Fatalf("expected one handler started event, got %d", len(observer.started))
+	}
+	if got := observer.started[0]; got.HandlerKind != HandlerUpdateKind || got.HandlerName != string(tgapi.UpdateTypeInlineQuery) || got.Plugin != "test" {
+		t.Fatalf("unexpected started event: %#v", got)
+	}
+	if len(observer.finished) != 1 {
+		t.Fatalf("expected one handler finished event, got %d", len(observer.finished))
+	}
+	if got := observer.finished[0]; got.HandlerKind != HandlerUpdateKind || got.HandlerName != string(tgapi.UpdateTypeInlineQuery) || got.Plugin != "test" || got.Err == nil || !got.UserFacing {
+		t.Fatalf("unexpected finished event: %#v", got)
+	}
+}
+
 func TestHandleChannelPostCommandWithSenderChat(t *testing.T) {
 	called := false
 	plugin := NewPlugin[NoData]("test")
@@ -830,5 +913,159 @@ func TestHandleCallbackPopulatesInlineTargets(t *testing.T) {
 
 	if !called {
 		t.Fatal("expected inline payload handler to be called")
+	}
+}
+
+func TestHandleCallbackObserverEmitsPayloadEvents(t *testing.T) {
+	observer := &recordingObserver{}
+	plugin := NewPlugin[NoData]("test")
+	plugin.NewPayload(func(ctx *MsgContext, db NoData) error {
+		return nil
+	}, "approve")
+
+	bot := &Bot[NoData]{
+		logger:      slog.CreateLogger(),
+		payloadType: BotPayloadJson,
+		plugins:     []Plugin[NoData]{clonePlugin(plugin)},
+		observer:    observer,
+	}
+
+	data, err := encodeJsonPayload(CallbackData{Command: "approve", Args: []string{"7"}})
+	if err != nil {
+		t.Fatalf("encodeJsonPayload returned error: %v", err)
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 32,
+		Type:     tgapi.UpdateTypeCallbackQuery,
+		CallbackQuery: &tgapi.CallbackQuery{
+			ID:   "cb-observer",
+			Data: data,
+			From: tgapi.User{ID: 7},
+			Message: &tgapi.Message{
+				MessageID: 56,
+				Chat:      &tgapi.Chat{ID: 78},
+			},
+		},
+	})
+
+	if len(observer.started) != 1 {
+		t.Fatalf("expected one started event, got %d", len(observer.started))
+	}
+	if got := observer.started[0]; got.HandlerKind != HandlerPayloadKind || got.HandlerName != "approve" || got.Plugin != "test" {
+		t.Fatalf("unexpected started event: %#v", got)
+	}
+	if len(observer.finished) != 1 {
+		t.Fatalf("expected one finished event, got %d", len(observer.finished))
+	}
+	if got := observer.finished[0]; got.HandlerKind != HandlerPayloadKind || got.HandlerName != "approve" || got.Plugin != "test" || got.Err != nil || got.UserFacing {
+		t.Fatalf("unexpected finished event: %#v", got)
+	}
+	if len(observer.errors) != 0 {
+		t.Fatalf("did not expect error events, got %#v", observer.errors)
+	}
+}
+
+func TestHandleCallbackObserverEmitsPayloadErrors(t *testing.T) {
+	observer := &recordingObserver{}
+	plugin := NewPlugin[NoData]("test")
+	wantErr := AsInternalError(errors.New("boom"))
+	plugin.NewPayload(func(ctx *MsgContext, db NoData) error {
+		return wantErr
+	}, "approve")
+
+	bot := &Bot[NoData]{
+		logger:      slog.CreateLogger(),
+		payloadType: BotPayloadJson,
+		plugins:     []Plugin[NoData]{clonePlugin(plugin)},
+		observer:    observer,
+	}
+
+	data, err := encodeJsonPayload(CallbackData{Command: "approve", Args: []string{"7"}})
+	if err != nil {
+		t.Fatalf("encodeJsonPayload returned error: %v", err)
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 33,
+		Type:     tgapi.UpdateTypeCallbackQuery,
+		CallbackQuery: &tgapi.CallbackQuery{
+			ID:   "cb-observer-err",
+			Data: data,
+			From: tgapi.User{ID: 7},
+			Message: &tgapi.Message{
+				MessageID: 57,
+				Chat:      &tgapi.Chat{ID: 79},
+			},
+		},
+	})
+
+	if len(observer.started) != 1 {
+		t.Fatalf("expected one started event, got %d", len(observer.started))
+	}
+	if len(observer.finished) != 1 {
+		t.Fatalf("expected one finished event, got %d", len(observer.finished))
+	}
+	if got := observer.finished[0]; !errors.Is(got.Err, wantErr) || got.UserFacing {
+		t.Fatalf("unexpected finished event: %#v", got)
+	}
+	if len(observer.errors) != 1 {
+		t.Fatalf("expected one error event, got %d", len(observer.errors))
+	}
+	if got := observer.errors[0]; !errors.Is(got.Err, wantErr) || got.HandlerKind != HandlerPayloadKind || got.HandlerName != "approve" || got.Plugin != "test" || got.UserFacing {
+		t.Fatalf("unexpected error event: %#v", got)
+	}
+}
+
+func TestHandleCallbackObserverEmitsDecodeErrors(t *testing.T) {
+	observer := &recordingObserver{}
+	bot := &Bot[NoData]{
+		logger:      slog.CreateLogger(),
+		payloadType: BotPayloadJson,
+		observer:    observer,
+	}
+
+	handled := bot.handleCallback(&tgapi.Update{
+		UpdateID: 34,
+		Type:     tgapi.UpdateTypeCallbackQuery,
+		CallbackQuery: &tgapi.CallbackQuery{
+			ID:   "cb-bad",
+			Data: "{not-json",
+			From: tgapi.User{ID: 7},
+		},
+	}, &MsgContext{
+		Update: tgapi.Update{
+			UpdateID: 34,
+			Type:     tgapi.UpdateTypeCallbackQuery,
+		},
+		Logger:          bot.logger,
+		ctx:             context.Background(),
+		CallbackQueryId: "cb-bad",
+		From:            &tgapi.User{ID: 7},
+		FromID:          7,
+		sceneRuntime:    bot,
+	})
+
+	if handled {
+		t.Fatal("expected invalid callback payload to stay unhandled")
+	}
+	if len(observer.started) != 0 || len(observer.finished) != 0 {
+		t.Fatalf("expected no handler lifecycle events for decode failure, got started=%d finished=%d", len(observer.started), len(observer.finished))
+	}
+	if len(observer.errors) != 1 {
+		t.Fatalf("expected one observer error event, got %d", len(observer.errors))
+	}
+	ev := observer.errors[0]
+	if ev.Plugin != "bot" {
+		t.Fatalf("unexpected plugin: %q", ev.Plugin)
+	}
+	if ev.HandlerKind != HandlerPayloadKind {
+		t.Fatalf("unexpected handler kind: %q", ev.HandlerKind)
+	}
+	if ev.HandlerName != "decodePayload" {
+		t.Fatalf("unexpected handler name: %q", ev.HandlerName)
+	}
+	if ev.UserFacing {
+		t.Fatal("expected decode failure to stay internal")
 	}
 }

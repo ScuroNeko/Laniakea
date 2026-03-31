@@ -105,6 +105,7 @@ type Bot[T AppData] struct {
 	uploader      *tgapi.Uploader // File uploader
 	l10n          *L10n           // Localization manager
 	draftProvider *DraftProvider  // Draft message builder
+	observer      Observer        // Optional event observer for instrumentation
 
 	appData         T // Injected application data
 	hasAppData      bool
@@ -356,6 +357,7 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 			close(bot.updateQueue)
 		}()
 		retryDelay := time.Duration(0)
+		retryCount := 0
 		for {
 			select {
 			case <-ctx.Done():
@@ -368,6 +370,19 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 					}
 					bot.logger.Errorln("failed to fetch updates:", err)
 					retryDelay = nextPollRetryDelay(retryDelay)
+					retryCount++
+					bot.safeEmitEvent(ctx, PollingRetryEvent{
+						Attempt: retryCount,
+						Delay:   retryDelay,
+						Err:     err,
+					})
+					bot.safeEmitEvent(ctx, ErrorEvent{
+						Plugin:      "bot",
+						HandlerKind: HandlerPollingKind,
+						HandlerName: "getUpdates",
+						Err:         err,
+						UserFacing:  false,
+					})
 					timer := time.NewTimer(retryDelay)
 					select {
 					case <-ctx.Done():
@@ -380,6 +395,7 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 					continue
 				}
 				retryDelay = 0
+				retryCount = 0
 
 				for _, update := range updates {
 					u := update // copy loop variable to avoid race condition

@@ -1,6 +1,7 @@
 package laniakea
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -226,4 +227,55 @@ func TestNotPolicyInvertsUserDenyButPreservesInternalErrors(t *testing.T) {
 	if !errors.Is(err, internal) {
 		t.Fatalf("expected internal error to be preserved, got %v", err)
 	}
+}
+
+func TestRequirePolicyEmitsObserverEvents(t *testing.T) {
+	t.Run("allow", func(t *testing.T) {
+		observer := &recordingObserver{}
+		ctx := &MsgContext{
+			Logger:   slog.CreateLogger(),
+			ctx:      context.Background(),
+			observer: observer,
+			FromID:   10,
+			ChatID:   20,
+		}
+
+		mw := RequirePolicy[NoData]("allow", func(ctx *MsgContext, data NoData) error {
+			return nil
+		})
+
+		if !mw.Execute(ctx, NoData{}) {
+			t.Fatal("expected allowed policy middleware to continue execution")
+		}
+		if len(observer.policies) != 1 {
+			t.Fatalf("expected one policy event, got %d", len(observer.policies))
+		}
+		if got := observer.policies[0]; got.Name != "allow" || !got.Passed || got.Err != nil || got.Internal {
+			t.Fatalf("unexpected policy event: %#v", got)
+		}
+	})
+
+	t.Run("deny", func(t *testing.T) {
+		observer := &recordingObserver{}
+		ctx := &MsgContext{
+			Logger:        slog.CreateLogger(),
+			ctx:           context.Background(),
+			observer:      observer,
+			errorTemplate: "%s",
+		}
+
+		mw := RequirePolicy[NoData]("deny", func(ctx *MsgContext, data NoData) error {
+			return AsInternalError(errors.New("blocked"))
+		})
+
+		if mw.Execute(ctx, NoData{}) {
+			t.Fatal("expected denied policy middleware to stop execution")
+		}
+		if len(observer.policies) != 1 {
+			t.Fatalf("expected one policy event, got %d", len(observer.policies))
+		}
+		if got := observer.policies[0]; got.Name != "deny" || got.Passed || got.Err == nil || !got.Internal {
+			t.Fatalf("unexpected policy event: %#v", got)
+		}
+	})
 }

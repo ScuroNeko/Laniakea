@@ -14,9 +14,23 @@ type Policy[T AppData] func(ctx *MsgContext, data T) error
 func RequirePolicy[T AppData](name string, p Policy[T]) Middleware[T] {
 	return NewMiddleware(name, func(ctx *MsgContext, data T) bool {
 		if err := p(ctx, data); err != nil {
+			ctx.emitPolicyChecked(PolicyCheckedEvent{
+				Name:     name,
+				FromID:   ctx.FromID,
+				ChatID:   ctx.ChatID,
+				Passed:   false,
+				Err:      err,
+				Internal: IsInternalError(err),
+			})
 			ctx.error(err)
 			return false
 		}
+		ctx.emitPolicyChecked(PolicyCheckedEvent{
+			Name:   name,
+			FromID: ctx.FromID,
+			ChatID: ctx.ChatID,
+			Passed: true,
+		})
 		return true
 	})
 }
