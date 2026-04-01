@@ -147,6 +147,8 @@ func (in *InlineKeyboard) SetPayloadType(t BotPayloadType) *InlineKeyboard {
 // GetPayloadType returns the keyboard-local callback payload encoding type.
 func (in *InlineKeyboard) GetPayloadType() BotPayloadType { return in.payloadType }
 
+// SetMaxRow sets the maximum number of buttons appended to a row before the
+// keyboard automatically starts a new line.
 func (in *InlineKeyboard) SetMaxRow(maxRow int) *InlineKeyboard {
 	in.maxRow = maxRow
 	return in

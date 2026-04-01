@@ -27,7 +27,7 @@ Example usage:
 
 	return bot.Run()
 
-Configure bots, plugins, and localization before starting Run or RunWithContext.
+Configure bots, plugins, and localization before starting Run, RunWithContext, or RunWebHookWithContext.
 Runtime accessors are safe for concurrent use unless stated otherwise.
 */
 package laniakea

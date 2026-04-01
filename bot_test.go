@@ -278,6 +278,41 @@ func TestRunWithContextRejectsSecondRun(t *testing.T) {
 	}
 }
 
+func TestCloseDoesNotDeleteWebhook(t *testing.T) {
+	requests := 0
+	client := &http.Client{
+		Transport: pollingRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+			requests++
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(strings.NewReader(`{"ok":true,"result":true}`)),
+			}, nil
+		}),
+	}
+
+	api := tgapi.NewAPI(
+		tgapi.NewAPIOpts("token").
+			SetAPIUrl("http://example.invalid").
+			SetHTTPClient(client),
+	)
+	uploader := tgapi.NewUploader(api)
+
+	bot := &Bot[NoData]{
+		logger:        slog.CreateLogger(),
+		webHookLogger: slog.CreateLogger(),
+		api:           api,
+		uploader:      uploader,
+	}
+
+	if err := bot.Close(); err != nil {
+		t.Fatalf("Close returned error: %v", err)
+	}
+	if requests != 0 {
+		t.Fatalf("Close performed unexpected remote requests: got %d want 0", requests)
+	}
+}
+
 func TestRunWithContextEmitsPollingRetryAndErrorEvents(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

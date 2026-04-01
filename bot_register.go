@@ -93,7 +93,8 @@ func (bot *Bot[T]) UsePolicy(name string, policy Policy[T]) *Bot[T] {
 //   - Metrics collection or health checks
 //   - Scheduled tasks (e.g., daily announcements)
 //
-// Runners are started immediately after Bot.Run() is called.
+// Runners start from the bot runtime entry points, immediately after
+// RunWithContext or RunWebHookWithContext begins.
 //
 // Example:
 //

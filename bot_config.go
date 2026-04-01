@@ -9,7 +9,7 @@ import (
 )
 
 // AddPrefixes adds one or more command prefixes (e.g., "/", "!").
-// Must have at least one prefix before Run().
+// The bot must have at least one prefix before any runtime entry point starts.
 func (bot *Bot[T]) AddPrefixes(prefixes ...string) *Bot[T] {
 	if !bot.configMutable("AddPrefixes") {
 		return bot

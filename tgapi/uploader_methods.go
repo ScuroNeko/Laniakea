@@ -333,7 +333,7 @@ func (u *Uploader) SetChatPhotoWithContext(ctx context.Context, params UploadCha
 type UploadSetWebhookP struct {
 	URL                string       `json:"url"`
 	IPAddress          string       `json:"ip_address,omitempty"`
-	MaxConnections     int          `json:"max_connections,omitempty"`
+	MaxConnections     int8         `json:"max_connections,omitempty"`
 	AllowedUpdates     []UpdateType `json:"allowed_updates,omitempty"`
 	DropPendingUpdates bool         `json:"drop_pending_updates,omitempty"`
 	SecretToken        string       `json:"secret_token,omitempty"`

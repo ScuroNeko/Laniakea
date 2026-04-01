@@ -23,6 +23,7 @@ A lightweight, easy-to-use, and performant Telegram Bot API wrapper for Go. It s
 *   **Built-in Rate Limiting:** Protect your bot from hitting Telegram API limits (supports `retry_after` handling).
 *   **Context-Aware:** Pass custom application data or state contexts to your handlers.
 *   **Configurable API:** Mix `Set...` and `Add...` helpers to configure bots clearly (for example, `bot.SetErrorTemplate(...).AddPlugins(...)`).
+*   **Polling and Webhook Runtime:** Run bots through long polling with `Run()` / `RunWithContext(...)` or through a bot-owned webhook server with `RunWebHookWithContext(...)`.
 
 ---
 
@@ -116,7 +117,26 @@ func main() {
 6. `SetErrorTemplate`: Sets a template for error messages. The %s placeholder is replaced by the actual error.
 7. `AutoGenerateCommands`: Registers plugin-defined commands with Telegram across the supported scopes.
 8. `Run()`: Starts the bot's update polling loop and returns an error if startup or polling fails.
-9. A `Bot` instance is single-use. After `Run()` or `RunWithContext()` returns, create a new bot instance for the next session.
+9. `RunWebHookWithContext(...)`: Starts the bot-owned webhook runtime when Telegram should deliver updates over HTTP instead of long polling.
+10. A `Bot` instance is single-use. After `Run()`, `RunWithContext()`, or `RunWebHookWithContext()` returns, create a new bot instance for the next session.
+
+## Webhook Runtime
+
+Laniakea also supports a bot-owned webhook runtime through `RunWebHookWithContext(...)` and `RunWebHook(...)`.
+
+Use it when:
+- Telegram should push updates to your HTTP endpoint instead of your bot polling for them.
+- You want webhook-delivered updates to reuse the same internal queue, worker pool, runners, and single-use lifecycle as polling.
+- You want Laniakea to register the webhook and own the local HTTP server.
+
+Production notes:
+- Set `BotWebHookOpts.SecretToken` for request authentication.
+- `BotWebHookOpts.SecretToken` is required when `BotWebHookOpts.UseStatusPath` is enabled.
+- Keep `BotWebHookOpts.Path` specific instead of serving webhook traffic on `/`.
+- If you switch an existing deployment from webhook mode to long polling, delete the webhook first with `CloseWebHook()` or `tgapi.DeleteWebhook(...)`. Telegram keeps webhook delivery active until it is removed.
+- Use `RunWebHookWithContext(...)` with a cancelable context, then call `Close()` after runtime shutdown.
+
+See the full guide in the wiki: [Webhook Runtime](https://git.scuroneko.dev/ScuroNeko/Laniakea/wiki/Webhook-Runtime)
 
 ## 📖 Core Concepts
 ### Plugins
@@ -271,7 +291,7 @@ func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 - **Rate Limiting**: Pass a configured utils.RateLimiter via BotOpts to handle Telegram's rate limits gracefully.
 - **Localization**: `L10n` is safe for concurrent use once attached to the bot.
 - **Custom Update Handlers**: Use `plugin.AddUpdateHandler(...)` for Telegram update types that are not part of the command/payload flow.
-- **Lifecycle**: `RunWithContext(...)` does not call `Close()` for you. Shut the bot down explicitly, and create a fresh `Bot` for the next run.
+- **Lifecycle**: `RunWithContext(...)` and `RunWebHookWithContext(...)` do not call `Close()` for you. Shut the bot down explicitly, and create a fresh `Bot` for the next run.
 
 ## Telegram Update Handling
 - Commands and payloads are handled through plugins.

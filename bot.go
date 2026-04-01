@@ -4,9 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
-	"reflect"
-	"strings"
 	"sync"
 	"time"
 
@@ -14,7 +11,6 @@ import (
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 	"git.scuroneko.dev/scuroneko/laniakea/utils"
 	"git.scuroneko.dev/scuroneko/slog"
-	"github.com/alitto/pond/v2"
 )
 
 // AppData is the generic shared application data type injected into bots,
@@ -63,7 +59,7 @@ var (
 	ErrNoPrefixes = errors.New("no prefixes defined")
 	// ErrNoPlugins reports that the bot was started without any registered plugins.
 	ErrNoPlugins = errors.New("no plugins defined")
-	// ErrBotAlreadyRun reports that Run or RunWithContext was called more than once.
+	// ErrBotAlreadyRun reports that Run, RunWithContext, or RunWebHookWithContext was called more than once.
 	ErrBotAlreadyRun = errors.New("bot can only be run once")
 
 	// ErrTokenRequired reports that BotOpts.Token was empty.
@@ -81,8 +77,10 @@ var (
 //   - Logging and rate limiting
 //   - Localization and draft message support
 //
-// Runtime accessors are safe for concurrent use. Configure the bot before Run.
-// A Bot is single-use: after Run or RunWithContext returns, create a new Bot for the next session.
+// Runtime accessors are safe for concurrent use. Configure the bot before Run,
+// RunWithContext, or RunWebHookWithContext.
+// A Bot is single-use: after Run, RunWithContext, or RunWebHookWithContext returns,
+// create a new Bot for the next session.
 type Bot[T AppData] struct {
 	token             string
 	debug             bool
@@ -94,6 +92,7 @@ type Bot[T AppData] struct {
 
 	logger        *slog.Logger                // Main bot logger (JSON stdout + optional file)
 	RequestLogger *slog.Logger                // Optional request-level API logging
+	webHookLogger *slog.Logger                // Webhook logger. Available only after Bot.RunWebHookWithContext.
 	extraLoggers  extypes.Slice[*slog.Logger] // API, Uploader, and custom loggers
 
 	plugins     []Plugin[T]     // Command/event handlers
@@ -233,39 +232,59 @@ func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
 //
 // Close shuts down, in order:
 //   - Registered plugins via Plugin.Close
+//   - Webhook logger (if initialized)
 //   - Uploader (waits for pending uploads)
 //   - API client internals
 //   - RequestLogger (if enabled)
 //   - Main logger
 //
-// RunWithContext does not call Close automatically. The caller is responsible
-// for invoking Close after RunWithContext returns to release these resources.
+// RunWithContext and RunWebHookWithContext do not call Close automatically.
+// The caller is responsible for invoking Close after runtime returns to release
+// these resources.
 //
 // Close returns a joined error containing all shutdown failures, if any.
 func (bot *Bot[T]) Close() error {
 	var e []error
+	logCloseErr := func(err error) {
+		if err == nil {
+			return
+		}
+		if bot.logger != nil {
+			bot.logger.Errorln(err)
+		}
+		e = append(e, err)
+	}
 
 	for _, p := range bot.plugins {
 		if err := p.Close(); err != nil {
 			e = append(e, err)
 		}
 	}
-	if err := bot.uploader.Close(); err != nil {
-		bot.logger.Errorln(err)
-		e = append(e, err)
+	if bot.webHookLogger != nil {
+		if err := bot.webHookLogger.Close(); err != nil {
+			logCloseErr(err)
+		}
+		bot.webHookLogger = nil
 	}
-	if err := bot.api.Close(); err != nil {
-		bot.logger.Errorln(err)
-		e = append(e, err)
+	if bot.uploader != nil {
+		if err := bot.uploader.Close(); err != nil {
+			logCloseErr(err)
+		}
+	}
+	if bot.api != nil {
+		if err := bot.api.Close(); err != nil {
+			logCloseErr(err)
+		}
 	}
 	if bot.RequestLogger != nil {
 		if err := bot.RequestLogger.Close(); err != nil {
-			bot.logger.Errorln(err)
-			e = append(e, err)
+			logCloseErr(err)
 		}
 	}
-	if err := bot.logger.Close(); err != nil {
-		e = append(e, err)
+	if bot.logger != nil {
+		if err := bot.logger.Close(); err != nil {
+			e = append(e, err)
+		}
 	}
 	return errors.Join(e...)
 }
@@ -327,6 +346,10 @@ func (bot *Bot[T]) L10n(lang, key string) string {
 //   - Finishes processing currently queued updates
 //   - Waits for registered runners to exit
 //
+// If you are switching an existing deployment from webhook delivery to polling,
+// delete the current webhook first with CloseWebHook or tgapi.DeleteWebhook.
+// Telegram keeps webhook delivery active until the webhook is removed.
+//
 // RunWithContext does not close API, uploader, or logger resources on return.
 // The caller must invoke Close after RunWithContext finishes.
 //
@@ -345,8 +368,6 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 	defer bot.finishRun()
 
 	bot.ExecRunners(ctx)
-
-	bot.logger.Infoln("Bot running. Press CTRL+C to exit.")
 
 	// Start update polling in a goroutine
 	go func() {
@@ -398,10 +419,7 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 				retryCount = 0
 
 				for _, update := range updates {
-					u := update // copy loop variable to avoid race condition
-					select {
-					case bot.updateQueue <- &u:
-					case <-ctx.Done():
+					if err := bot.enqueueUpdate(ctx, update); err != nil {
 						return
 					}
 				}
@@ -409,15 +427,10 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 		}
 	}()
 
+	bot.logger.Infoln("Bot running. Press CTRL+C to exit.")
 	// Start worker pool for concurrent update handling
-	pool := pond.NewPool(bot.maxWorkers)
-	for update := range bot.updateQueue {
-		u := update // capture loop variable
-		pool.Submit(func() {
-			bot.handle(ctx, u)
-		})
-	}
-	pool.Stop() // Wait for all tasks to complete and stop the pool
+	bot.startUpdateWorkers(ctx)
+
 	bot.runnerOnceWG.Wait()
 	bot.runnerBgWG.Wait()
 	return nil
@@ -431,146 +444,4 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 // For production use, prefer RunWithContext to handle SIGINT/SIGTERM gracefully.
 func (bot *Bot[T]) Run() error {
 	return bot.RunWithContext(context.Background())
-}
-
-func (bot *Bot[T]) initLoggers(opts *BotOpts) {
-	level := slog.FATAL
-	if opts.Debug {
-		level = slog.DEBUG
-	}
-
-	bot.logger = utils.CreateLogger("BOT", level)
-	if opts.WriteToFile {
-		path := fmt.Sprintf("%s/main.log", strings.TrimRight(opts.LoggerBasePath, "/"))
-		logger, err := utils.CreateFileLogger("BOT", level, path)
-		if err != nil {
-			bot.logger.Errorln(err)
-		} else {
-			bot.logger = logger
-		}
-	}
-
-	if opts.UseRequestLogger {
-		bot.RequestLogger = utils.CreateLogger("REQUESTS", level)
-		if opts.WriteToFile {
-			path := fmt.Sprintf("%s/requests.log", strings.TrimRight(opts.LoggerBasePath, "/"))
-			logger, err := utils.CreateFileLogger("REQUESTS", level, path)
-			if err != nil {
-				bot.logger.Errorln(err)
-			} else {
-				bot.RequestLogger = logger
-			}
-		}
-	}
-}
-
-func (bot *Bot[T]) beginRun() error {
-	bot.runStateMu.Lock()
-	defer bot.runStateMu.Unlock()
-	if bot.running || bot.ran {
-		return ErrBotAlreadyRun
-	}
-	bot.running = true
-	bot.ran = true
-	return nil
-}
-
-func (bot *Bot[T]) finishRun() {
-	bot.runStateMu.Lock()
-	bot.running = false
-	bot.runStateMu.Unlock()
-}
-
-func nextPollRetryDelay(prev time.Duration) time.Duration {
-	if prev <= 0 {
-		return time.Second
-	}
-	next := prev * 2
-	if next > 30*time.Second {
-		return 30 * time.Second
-	}
-	return next
-}
-
-func isNilValue[T any](v T) bool {
-	rv := reflect.ValueOf(v)
-	if !rv.IsValid() {
-		return true
-	}
-	switch rv.Kind() {
-	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
-		return rv.IsNil()
-	default:
-		return false
-	}
-}
-
-func shouldWarnOnValueAppData[T any]() bool {
-	t := reflect.TypeFor[T]()
-	if t == reflect.TypeFor[NoData]() {
-		return false
-	}
-	switch t.Kind() {
-	case reflect.Pointer, reflect.Interface, reflect.Map, reflect.Slice, reflect.Func, reflect.Chan:
-		return false
-	default:
-		return true
-	}
-}
-
-func clonePlugin[T AppData](p *Plugin[T]) Plugin[T] {
-	cloned := Plugin[T]{
-		name:        p.name,
-		commands:    make(map[string]*Command[T], len(p.commands)),
-		payloads:    make(map[string]*Command[T], len(p.payloads)),
-		scenes:      make(map[string]*Scene[T], len(p.scenes)),
-		middlewares: append(extypes.Slice[Middleware[T]](nil), p.middlewares...),
-		skipAutoCmd: p.skipAutoCmd,
-		logger:      p.logger,
-		handlers:    make(map[tgapi.UpdateType]CommandExecutor[T]),
-		onClose:     p.onClose,
-	}
-
-	for name, command := range p.commands {
-		cloned.commands[name] = cloneCommand(command)
-	}
-	for name, command := range p.payloads {
-		cloned.payloads[name] = cloneCommand(command)
-	}
-	for name, scene := range p.scenes {
-		cloned.scenes[name] = cloneScene(scene)
-	}
-	maps.Copy(cloned.handlers, p.handlers)
-
-	return cloned
-}
-
-func cloneCommand[T AppData](command *Command[T]) *Command[T] {
-	if command == nil {
-		return nil
-	}
-
-	cloned := *command
-	cloned.args = append(extypes.Slice[CommandArg](nil), command.args...)
-	cloned.middlewares = append(extypes.Slice[Middleware[T]](nil), command.middlewares...)
-	return &cloned
-}
-
-func cloneScene[T AppData](scene *Scene[T]) *Scene[T] {
-	if scene == nil {
-		return nil
-	}
-
-	cloned := *scene
-	cloned.steps = make(map[string]SceneHandler[T], len(scene.steps))
-	cloned.commands = make(map[string]SceneHandler[T], len(scene.commands))
-
-	for name, handler := range scene.steps {
-		cloned.steps[name] = handler
-	}
-	for name, handler := range scene.commands {
-		cloned.commands[name] = handler
-	}
-
-	return &cloned
 }

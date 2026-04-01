@@ -4,6 +4,21 @@
 
 ### Changed
 - Added missing godoc for the exported observer `Event` marker interface.
+- Webhook execution now shares the bot's queued update-dispatch path with polling, including worker-pool delivery, runner startup, single-use run semantics, and default fallback to bot-level update type filters when webhook-specific filters are not set.
+- Webhook godoc and the English and Russian READMEs now describe the bot-level webhook runtime, its single-use lifecycle, and the main `RunWebHookWithContext(...)` entry points more explicitly.
+- `Bot.Close()` once again releases only local resources and no longer deletes remote webhook registrations implicitly; explicit remote webhook teardown remains opt-in through `CloseWebHook()`.
+- Polling and webhook docs now explicitly state that a deployment must delete its webhook before switching from webhook delivery to long polling.
+- Webhook startup now validates path shape and TLS file count before remote webhook setup, and the shared webhook mux now serves both HTTP and TLS runtime paths consistently.
+- Webhook-related `tgapi` request params now use `int8` for `max_connections`, matching Telegram's `1..100` range and the higher-level webhook options API.
+- Webhook startup now also requires a non-empty `SecretToken` when the optional `/status` endpoint is enabled, preventing anonymous exposure of webhook operational metadata.
+- Webhook debug logging now records update metadata instead of dumping raw request bodies.
+- Package docs, README guidance, and core wiki pages now align with the current public API and runtime model, including `NoData`, `SetAppData(...)`, `SetL10n(...)`, `AddAppDataLoggerWriter(...)`, shared runner startup semantics, and the webhook runtime entry points.
+
+### Tests
+- Added regression coverage for webhook queue delivery, webhook runtime single-use behavior, runner startup in webhook mode, and default webhook `allowed_updates` inheritance from bot-level update type configuration.
+- Added regression coverage proving `Bot.Close()` does not make remote webhook delete requests.
+- Added webhook regression coverage for path validation, TLS file-count validation, oversized-body rejection, status-endpoint secret checks, and invalid TLS startup arguments.
+- Added webhook regression coverage proving `/status` cannot be enabled without a non-empty `SecretToken`.
 
 ## v1.0.0-rc.13
 

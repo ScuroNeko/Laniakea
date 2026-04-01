@@ -88,7 +88,8 @@ func (r Runner[T]) Timeout(timeout time.Duration) Runner[T] {
 //
 // Background runners listen for ctx.Done() and gracefully shut down when the context is canceled.
 //
-// This method is typically called once during bot startup in RunWithContext.
+// This method is typically called once during bot startup from RunWithContext or
+// RunWebHookWithContext.
 func (bot *Bot[T]) ExecRunners(ctx context.Context) {
 	bot.logger.Infoln("Executing runners...")
 	for _, runner := range bot.runners {
