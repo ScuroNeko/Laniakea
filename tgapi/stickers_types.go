@@ -38,8 +38,8 @@ const (
 // Sticker represents a sticker.
 // See https://core.telegram.org/bots/api#sticker
 type Sticker struct {
-	FileId       string      `json:"file_id"`
-	FileUniqueId string      `json:"file_unique_id"`
+	FileID       string      `json:"file_id"`
+	FileUniqueID string      `json:"file_unique_id"`
 	Type         StickerType `json:"type"`
 	Width        int         `json:"width"`
 	Height       int         `json:"height"`

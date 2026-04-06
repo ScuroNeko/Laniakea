@@ -19,10 +19,9 @@ type multipartEncodeParams struct {
 }
 
 func TestEncodeMultipartJSONFields(t *testing.T) {
-	threadID := 7
 	params := multipartEncodeParams{
 		ChatID:          42,
-		MessageThreadID: &threadID,
+		MessageThreadID: new(7),
 		ReplyMarkup: &tgapi.ReplyMarkup{
 			InlineKeyboard: [][]tgapi.InlineKeyboardButton{{
 				{Text: "A", CallbackData: "b"},

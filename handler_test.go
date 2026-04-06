@@ -9,10 +9,6 @@ import (
 	"git.scuroneko.dev/scuroneko/slog"
 )
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
 type recordingObserver struct {
 	started  []HandlerStartedEvent
 	finished []HandlerFinishedEvent
@@ -230,7 +226,7 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 				CallbackQuery: &tgapi.CallbackQuery{
 					ID:              "cb-2",
 					From:            tgapi.User{ID: 107},
-					InlineMessageID: ptr("inline-42"),
+					InlineMessageID: new("inline-42"),
 				},
 			},
 			wantFrom:        true,
@@ -907,7 +903,7 @@ func TestHandleCallbackPopulatesInlineTargets(t *testing.T) {
 			ID:              "cb-inline",
 			Data:            data,
 			From:            tgapi.User{ID: 8},
-			InlineMessageID: ptr("inline-55"),
+			InlineMessageID: new("inline-55"),
 		},
 	})
 

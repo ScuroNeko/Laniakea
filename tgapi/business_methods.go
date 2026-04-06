@@ -2,9 +2,9 @@ package tgapi
 
 import "context"
 
-// VerifyUserP holds parameters for the verifyUser method.
+// VerifyUser holds parameters for the verifyUser method.
 // See https://core.telegram.org/bots/api#verifyuser
-type VerifyUserP struct {
+type VerifyUser struct {
 	UserID            int64  `json:"user_id"`
 	CustomDescription string `json:"custom_description,omitempty"`
 }
@@ -12,7 +12,7 @@ type VerifyUserP struct {
 // VerifyUser verifies a user.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#verifyuser
-func (api *API) VerifyUser(params VerifyUserP) (bool, error) {
+func (api *API) VerifyUser(params VerifyUser) (bool, error) {
 	req := NewRequest[bool]("verifyUser", params)
 	return req.Do(api)
 }
@@ -20,14 +20,14 @@ func (api *API) VerifyUser(params VerifyUserP) (bool, error) {
 // VerifyUserWithContext is the context-aware variant of VerifyUser.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#verifyuser
-func (api *API) VerifyUserWithContext(ctx context.Context, params VerifyUserP) (bool, error) {
+func (api *API) VerifyUserWithContext(ctx context.Context, params VerifyUser) (bool, error) {
 	req := NewRequest[bool]("verifyUser", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// VerifyChatP holds parameters for the verifyChat method.
+// VerifyChat holds parameters for the verifyChat method.
 // See https://core.telegram.org/bots/api#verifychat
-type VerifyChatP struct {
+type VerifyChat struct {
 	ChatID            int64  `json:"chat_id"`
 	CustomDescription string `json:"custom_description,omitempty"`
 }
@@ -35,7 +35,7 @@ type VerifyChatP struct {
 // VerifyChat verifies a chat.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#verifychat
-func (api *API) VerifyChat(params VerifyChatP) (bool, error) {
+func (api *API) VerifyChat(params VerifyChat) (bool, error) {
 	req := NewRequest[bool]("verifyChat", params)
 	return req.Do(api)
 }
@@ -43,21 +43,21 @@ func (api *API) VerifyChat(params VerifyChatP) (bool, error) {
 // VerifyChatWithContext is the context-aware variant of VerifyChat.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#verifychat
-func (api *API) VerifyChatWithContext(ctx context.Context, params VerifyChatP) (bool, error) {
+func (api *API) VerifyChatWithContext(ctx context.Context, params VerifyChat) (bool, error) {
 	req := NewRequest[bool]("verifyChat", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// RemoveUserVerificationP holds parameters for the removeUserVerification method.
+// RemoveUserVerification holds parameters for the removeUserVerification method.
 // See https://core.telegram.org/bots/api#removeuserverification
-type RemoveUserVerificationP struct {
+type RemoveUserVerification struct {
 	UserID int64 `json:"user_id"`
 }
 
 // RemoveUserVerification removes a user's verification.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#removeuserverification
-func (api *API) RemoveUserVerification(params RemoveUserVerificationP) (bool, error) {
+func (api *API) RemoveUserVerification(params RemoveUserVerification) (bool, error) {
 	req := NewRequest[bool]("removeUserVerification", params)
 	return req.Do(api)
 }
@@ -65,21 +65,21 @@ func (api *API) RemoveUserVerification(params RemoveUserVerificationP) (bool, er
 // RemoveUserVerificationWithContext is the context-aware variant of RemoveUserVerification.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#removeuserverification
-func (api *API) RemoveUserVerificationWithContext(ctx context.Context, params RemoveUserVerificationP) (bool, error) {
+func (api *API) RemoveUserVerificationWithContext(ctx context.Context, params RemoveUserVerification) (bool, error) {
 	req := NewRequest[bool]("removeUserVerification", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// RemoveChatVerificationP holds parameters for the removeChatVerification method.
+// RemoveChatVerification holds parameters for the removeChatVerification method.
 // See https://core.telegram.org/bots/api#removechatverification
-type RemoveChatVerificationP struct {
+type RemoveChatVerification struct {
 	ChatID int64 `json:"chat_id"`
 }
 
 // RemoveChatVerification removes a chat's verification.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#removechatverification
-func (api *API) RemoveChatVerification(params RemoveChatVerificationP) (bool, error) {
+func (api *API) RemoveChatVerification(params RemoveChatVerification) (bool, error) {
 	req := NewRequest[bool]("removeChatVerification", params)
 	return req.Do(api)
 }
@@ -87,14 +87,14 @@ func (api *API) RemoveChatVerification(params RemoveChatVerificationP) (bool, er
 // RemoveChatVerificationWithContext is the context-aware variant of RemoveChatVerification.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#removechatverification
-func (api *API) RemoveChatVerificationWithContext(ctx context.Context, params RemoveChatVerificationP) (bool, error) {
+func (api *API) RemoveChatVerificationWithContext(ctx context.Context, params RemoveChatVerification) (bool, error) {
 	req := NewRequest[bool]("removeChatVerification", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// ReadBusinessMessageP holds parameters for the readBusinessMessage method.
+// ReadBusinessMessage holds parameters for the readBusinessMessage method.
 // See https://core.telegram.org/bots/api#readbusinessmessage
-type ReadBusinessMessageP struct {
+type ReadBusinessMessage struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 	ChatID               int64  `json:"chat_id"`
 	MessageID            int    `json:"message_id"`
@@ -103,7 +103,7 @@ type ReadBusinessMessageP struct {
 // ReadBusinessMessage marks a business message as read.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#readbusinessmessage
-func (api *API) ReadBusinessMessage(params ReadBusinessMessageP) (bool, error) {
+func (api *API) ReadBusinessMessage(params ReadBusinessMessage) (bool, error) {
 	req := NewRequest[bool]("readBusinessMessage", params)
 	return req.Do(api)
 }
@@ -111,20 +111,20 @@ func (api *API) ReadBusinessMessage(params ReadBusinessMessageP) (bool, error) {
 // ReadBusinessMessageWithContext is the context-aware variant of ReadBusinessMessage.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#readbusinessmessage
-func (api *API) ReadBusinessMessageWithContext(ctx context.Context, params ReadBusinessMessageP) (bool, error) {
+func (api *API) ReadBusinessMessageWithContext(ctx context.Context, params ReadBusinessMessage) (bool, error) {
 	req := NewRequest[bool]("readBusinessMessage", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// GetBusinessConnectionP holds parameters for the getBusinessConnection method.
+// GetBusinessConnection holds parameters for the getBusinessConnection method.
 // See https://core.telegram.org/bots/api#getbusinessconnection
-type GetBusinessConnectionP struct {
+type GetBusinessConnection struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 }
 
 // GetBusinessConnection returns information about a business connection.
 // See https://core.telegram.org/bots/api#getbusinessconnection
-func (api *API) GetBusinessConnection(params GetBusinessConnectionP) (BusinessConnection, error) {
+func (api *API) GetBusinessConnection(params GetBusinessConnection) (BusinessConnection, error) {
 	req := NewRequest[BusinessConnection]("getBusinessConnection", params)
 	return req.Do(api)
 }
@@ -132,14 +132,14 @@ func (api *API) GetBusinessConnection(params GetBusinessConnectionP) (BusinessCo
 // GetBusinessConnectionWithContext is the context-aware variant of GetBusinessConnection.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#getbusinessconnection
-func (api *API) GetBusinessConnectionWithContext(ctx context.Context, params GetBusinessConnectionP) (BusinessConnection, error) {
+func (api *API) GetBusinessConnectionWithContext(ctx context.Context, params GetBusinessConnection) (BusinessConnection, error) {
 	req := NewRequest[BusinessConnection]("getBusinessConnection", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// DeleteBusinessMessagesP holds parameters for the deleteBusinessMessages method.
+// DeleteBusinessMessages holds parameters for the deleteBusinessMessages method.
 // See https://core.telegram.org/bots/api#deletebusinessmessages
-type DeleteBusinessMessagesP struct {
+type DeleteBusinessMessages struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 	MessageIDs           []int  `json:"message_ids"`
 }
@@ -147,7 +147,7 @@ type DeleteBusinessMessagesP struct {
 // DeleteBusinessMessages deletes business messages.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#deletebusinessmessages
-func (api *API) DeleteBusinessMessages(params DeleteBusinessMessagesP) (bool, error) {
+func (api *API) DeleteBusinessMessages(params DeleteBusinessMessages) (bool, error) {
 	req := NewRequest[bool]("deleteBusinessMessages", params)
 	return req.Do(api)
 }
@@ -155,14 +155,14 @@ func (api *API) DeleteBusinessMessages(params DeleteBusinessMessagesP) (bool, er
 // DeleteBusinessMessagesWithContext is the context-aware variant of DeleteBusinessMessages.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#deletebusinessmessages
-func (api *API) DeleteBusinessMessagesWithContext(ctx context.Context, params DeleteBusinessMessagesP) (bool, error) {
+func (api *API) DeleteBusinessMessagesWithContext(ctx context.Context, params DeleteBusinessMessages) (bool, error) {
 	req := NewRequest[bool]("deleteBusinessMessages", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// SetBusinessAccountNameP holds parameters for the setBusinessAccountName method.
+// SetBusinessAccountName holds parameters for the setBusinessAccountName method.
 // See https://core.telegram.org/bots/api#setbusinessaccountname
-type SetBusinessAccountNameP struct {
+type SetBusinessAccountName struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 	FirstName            string `json:"first_name"`
 	LastName             string `json:"last_name,omitempty"`
@@ -171,7 +171,7 @@ type SetBusinessAccountNameP struct {
 // SetBusinessAccountName sets the first and last name of a business account.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#setbusinessaccountname
-func (api *API) SetBusinessAccountName(params SetBusinessAccountNameP) (bool, error) {
+func (api *API) SetBusinessAccountName(params SetBusinessAccountName) (bool, error) {
 	req := NewRequest[bool]("setBusinessAccountName", params)
 	return req.Do(api)
 }
@@ -179,14 +179,14 @@ func (api *API) SetBusinessAccountName(params SetBusinessAccountNameP) (bool, er
 // SetBusinessAccountNameWithContext is the context-aware variant of SetBusinessAccountName.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#setbusinessaccountname
-func (api *API) SetBusinessAccountNameWithContext(ctx context.Context, params SetBusinessAccountNameP) (bool, error) {
+func (api *API) SetBusinessAccountNameWithContext(ctx context.Context, params SetBusinessAccountName) (bool, error) {
 	req := NewRequest[bool]("setBusinessAccountName", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// SetBusinessAccountUsernameP holds parameters for the setBusinessAccountUsername method.
+// SetBusinessAccountUsername holds parameters for the setBusinessAccountUsername method.
 // See https://core.telegram.org/bots/api#setbusinessaccountusername
-type SetBusinessAccountUsernameP struct {
+type SetBusinessAccountUsername struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 	Username             string `json:"username,omitempty"`
 }
@@ -194,7 +194,7 @@ type SetBusinessAccountUsernameP struct {
 // SetBusinessAccountUsername sets the username of a business account.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#setbusinessaccountusername
-func (api *API) SetBusinessAccountUsername(params SetBusinessAccountUsernameP) (bool, error) {
+func (api *API) SetBusinessAccountUsername(params SetBusinessAccountUsername) (bool, error) {
 	req := NewRequest[bool]("setBusinessAccountUsername", params)
 	return req.Do(api)
 }
@@ -202,14 +202,14 @@ func (api *API) SetBusinessAccountUsername(params SetBusinessAccountUsernameP) (
 // SetBusinessAccountUsernameWithContext is the context-aware variant of SetBusinessAccountUsername.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#setbusinessaccountusername
-func (api *API) SetBusinessAccountUsernameWithContext(ctx context.Context, params SetBusinessAccountUsernameP) (bool, error) {
+func (api *API) SetBusinessAccountUsernameWithContext(ctx context.Context, params SetBusinessAccountUsername) (bool, error) {
 	req := NewRequest[bool]("setBusinessAccountUsername", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// SetBusinessAccountBioP holds parameters for the setBusinessAccountBio method.
+// SetBusinessAccountBio holds parameters for the setBusinessAccountBio method.
 // See https://core.telegram.org/bots/api#setbusinessaccountbio
-type SetBusinessAccountBioP struct {
+type SetBusinessAccountBio struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 	Bio                  string `json:"bio,omitempty"`
 }
@@ -217,7 +217,7 @@ type SetBusinessAccountBioP struct {
 // SetBusinessAccountBio sets the bio of a business account.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#setbusinessaccountbio
-func (api *API) SetBusinessAccountBio(params SetBusinessAccountBioP) (bool, error) {
+func (api *API) SetBusinessAccountBio(params SetBusinessAccountBio) (bool, error) {
 	req := NewRequest[bool]("setBusinessAccountBio", params)
 	return req.Do(api)
 }
@@ -225,7 +225,7 @@ func (api *API) SetBusinessAccountBio(params SetBusinessAccountBioP) (bool, erro
 // SetBusinessAccountBioWithContext is the context-aware variant of SetBusinessAccountBio.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#setbusinessaccountbio
-func (api *API) SetBusinessAccountBioWithContext(ctx context.Context, params SetBusinessAccountBioP) (bool, error) {
+func (api *API) SetBusinessAccountBioWithContext(ctx context.Context, params SetBusinessAccountBio) (bool, error) {
 	req := NewRequest[bool]("setBusinessAccountBio", params)
 	return req.DoWithContext(ctx, api)
 }
@@ -254,9 +254,9 @@ func (api *API) SetBusinessAccountProfilePhotoWithContext(ctx context.Context, p
 	return req.DoWithContext(ctx, api)
 }
 
-// RemoveBusinessAccountProfilePhotoP holds parameters for the removeBusinessAccountProfilePhoto method.
+// RemoveBusinessAccountProfilePhoto holds parameters for the removeBusinessAccountProfilePhoto method.
 // See https://core.telegram.org/bots/api#removebusinessaccountprofilephoto
-type RemoveBusinessAccountProfilePhotoP struct {
+type RemoveBusinessAccountProfilePhoto struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 	IsPublic             bool   `json:"is_public,omitempty"`
 }
@@ -264,7 +264,7 @@ type RemoveBusinessAccountProfilePhotoP struct {
 // RemoveBusinessAccountProfilePhoto removes the profile photo of a business account.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#removebusinessaccountprofilephoto
-func (api *API) RemoveBusinessAccountProfilePhoto(params RemoveBusinessAccountProfilePhotoP) (bool, error) {
+func (api *API) RemoveBusinessAccountProfilePhoto(params RemoveBusinessAccountProfilePhoto) (bool, error) {
 	req := NewRequest[bool]("removeBusinessAccountProfilePhoto", params)
 	return req.Do(api)
 }
@@ -272,14 +272,14 @@ func (api *API) RemoveBusinessAccountProfilePhoto(params RemoveBusinessAccountPr
 // RemoveBusinessAccountProfilePhotoWithContext is the context-aware variant of RemoveBusinessAccountProfilePhoto.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#removebusinessaccountprofilephoto
-func (api *API) RemoveBusinessAccountProfilePhotoWithContext(ctx context.Context, params RemoveBusinessAccountProfilePhotoP) (bool, error) {
+func (api *API) RemoveBusinessAccountProfilePhotoWithContext(ctx context.Context, params RemoveBusinessAccountProfilePhoto) (bool, error) {
 	req := NewRequest[bool]("removeBusinessAccountProfilePhoto", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// SetBusinessAccountGiftSettingsP holds parameters for the setBusinessAccountGiftSettings method.
+// SetBusinessAccountGiftSettings holds parameters for the setBusinessAccountGiftSettings method.
 // See https://core.telegram.org/bots/api#setbusinessaccountgiftsettings
-type SetBusinessAccountGiftSettingsP struct {
+type SetBusinessAccountGiftSettings struct {
 	BusinessConnectionID string            `json:"business_connection_id"`
 	ShowGiftButton       bool              `json:"show_gift_button"`
 	AcceptedGiftTypes    AcceptedGiftTypes `json:"accepted_gift_types"`
@@ -288,7 +288,7 @@ type SetBusinessAccountGiftSettingsP struct {
 // SetBusinessAccountGiftSettings sets gift settings for a business account.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#setbusinessaccountgiftsettings
-func (api *API) SetBusinessAccountGiftSettings(params SetBusinessAccountGiftSettingsP) (bool, error) {
+func (api *API) SetBusinessAccountGiftSettings(params SetBusinessAccountGiftSettings) (bool, error) {
 	req := NewRequest[bool]("setBusinessAccountGiftSettings", params)
 	return req.Do(api)
 }
@@ -296,20 +296,20 @@ func (api *API) SetBusinessAccountGiftSettings(params SetBusinessAccountGiftSett
 // SetBusinessAccountGiftSettingsWithContext is the context-aware variant of SetBusinessAccountGiftSettings.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#setbusinessaccountgiftsettings
-func (api *API) SetBusinessAccountGiftSettingsWithContext(ctx context.Context, params SetBusinessAccountGiftSettingsP) (bool, error) {
+func (api *API) SetBusinessAccountGiftSettingsWithContext(ctx context.Context, params SetBusinessAccountGiftSettings) (bool, error) {
 	req := NewRequest[bool]("setBusinessAccountGiftSettings", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// GetBusinessAccountStarBalanceP holds parameters for the getBusinessAccountStarBalance method.
+// GetBusinessAccountStarBalance holds parameters for the getBusinessAccountStarBalance method.
 // See https://core.telegram.org/bots/api#getbusinessaccountstarbalance
-type GetBusinessAccountStarBalanceP struct {
+type GetBusinessAccountStarBalance struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 }
 
 // GetBusinessAccountStarBalance returns the star balance of a business account.
 // See https://core.telegram.org/bots/api#getbusinessaccountstarbalance
-func (api *API) GetBusinessAccountStarBalance(params GetBusinessAccountStarBalanceP) (StarAmount, error) {
+func (api *API) GetBusinessAccountStarBalance(params GetBusinessAccountStarBalance) (StarAmount, error) {
 	req := NewRequest[StarAmount]("getBusinessAccountStarBalance", params)
 	return req.Do(api)
 }
@@ -317,14 +317,14 @@ func (api *API) GetBusinessAccountStarBalance(params GetBusinessAccountStarBalan
 // GetBusinessAccountStarBalanceWithContext is the context-aware variant of GetBusinessAccountStarBalance.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#getbusinessaccountstarbalance
-func (api *API) GetBusinessAccountStarBalanceWithContext(ctx context.Context, params GetBusinessAccountStarBalanceP) (StarAmount, error) {
+func (api *API) GetBusinessAccountStarBalanceWithContext(ctx context.Context, params GetBusinessAccountStarBalance) (StarAmount, error) {
 	req := NewRequest[StarAmount]("getBusinessAccountStarBalance", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// TransferBusinessAccountStarsP holds parameters for the transferBusinessAccountStars method.
+// TransferBusinessAccountStars holds parameters for the transferBusinessAccountStars method.
 // See https://core.telegram.org/bots/api#transferbusinessaccountstars
-type TransferBusinessAccountStarsP struct {
+type TransferBusinessAccountStars struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 	StarCount            int    `json:"star_count"`
 }
@@ -332,7 +332,7 @@ type TransferBusinessAccountStarsP struct {
 // TransferBusinessAccountStars transfers stars from a business account.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#transferbusinessaccountstars
-func (api *API) TransferBusinessAccountStars(params TransferBusinessAccountStarsP) (bool, error) {
+func (api *API) TransferBusinessAccountStars(params TransferBusinessAccountStars) (bool, error) {
 	req := NewRequest[bool]("transferBusinessAccountStars", params)
 	return req.Do(api)
 }
@@ -340,14 +340,14 @@ func (api *API) TransferBusinessAccountStars(params TransferBusinessAccountStars
 // TransferBusinessAccountStarsWithContext is the context-aware variant of TransferBusinessAccountStars.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#transferbusinessaccountstars
-func (api *API) TransferBusinessAccountStarsWithContext(ctx context.Context, params TransferBusinessAccountStarsP) (bool, error) {
+func (api *API) TransferBusinessAccountStarsWithContext(ctx context.Context, params TransferBusinessAccountStars) (bool, error) {
 	req := NewRequest[bool]("transferBusinessAccountStars", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// GetBusinessAccountGiftsP holds parameters for the getBusinessAccountGifts method.
+// GetBusinessAccountGifts holds parameters for the getBusinessAccountGifts method.
 // See https://core.telegram.org/bots/api#getbusinessaccountgifts
-type GetBusinessAccountGiftsP struct {
+type GetBusinessAccountGifts struct {
 	BusinessConnectionID        string `json:"business_connection_id"`
 	ExcludeUnsaved              bool   `json:"exclude_unsaved,omitempty"`
 	ExcludeSaved                bool   `json:"exclude_saved,omitempty"`
@@ -363,7 +363,7 @@ type GetBusinessAccountGiftsP struct {
 
 // GetBusinessAccountGifts returns gifts owned by a business account.
 // See https://core.telegram.org/bots/api#getbusinessaccountgifts
-func (api *API) GetBusinessAccountGifts(params GetBusinessAccountGiftsP) (OwnedGifts, error) {
+func (api *API) GetBusinessAccountGifts(params GetBusinessAccountGifts) (OwnedGifts, error) {
 	req := NewRequest[OwnedGifts]("getBusinessAccountGifts", params)
 	return req.Do(api)
 }
@@ -371,14 +371,14 @@ func (api *API) GetBusinessAccountGifts(params GetBusinessAccountGiftsP) (OwnedG
 // GetBusinessAccountGiftsWithContext is the context-aware variant of GetBusinessAccountGifts.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#getbusinessaccountgifts
-func (api *API) GetBusinessAccountGiftsWithContext(ctx context.Context, params GetBusinessAccountGiftsP) (OwnedGifts, error) {
+func (api *API) GetBusinessAccountGiftsWithContext(ctx context.Context, params GetBusinessAccountGifts) (OwnedGifts, error) {
 	req := NewRequest[OwnedGifts]("getBusinessAccountGifts", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// ConvertGiftToStarsP holds parameters for the convertGiftToStars method.
+// ConvertGiftToStars holds parameters for the convertGiftToStars method.
 // See https://core.telegram.org/bots/api#convertgifttostars
-type ConvertGiftToStarsP struct {
+type ConvertGiftToStars struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 	OwnedGiftID          string `json:"owned_gift_id"`
 }
@@ -386,7 +386,7 @@ type ConvertGiftToStarsP struct {
 // ConvertGiftToStars converts a gift to Telegram Stars.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#convertgifttostars
-func (api *API) ConvertGiftToStars(params ConvertGiftToStarsP) (bool, error) {
+func (api *API) ConvertGiftToStars(params ConvertGiftToStars) (bool, error) {
 	req := NewRequest[bool]("convertGiftToStars", params)
 	return req.Do(api)
 }
@@ -394,14 +394,14 @@ func (api *API) ConvertGiftToStars(params ConvertGiftToStarsP) (bool, error) {
 // ConvertGiftToStarsWithContext is the context-aware variant of ConvertGiftToStars.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#convertgifttostars
-func (api *API) ConvertGiftToStarsWithContext(ctx context.Context, params ConvertGiftToStarsP) (bool, error) {
+func (api *API) ConvertGiftToStarsWithContext(ctx context.Context, params ConvertGiftToStars) (bool, error) {
 	req := NewRequest[bool]("convertGiftToStars", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// UpgradeGiftP holds parameters for the upgradeGift method.
+// UpgradeGift holds parameters for the upgradeGift method.
 // See https://core.telegram.org/bots/api#upgradegift
-type UpgradeGiftP struct {
+type UpgradeGift struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 	OwnedGiftID          string `json:"owned_gift_id"`
 	KeepOriginalDetails  bool   `json:"keep_original_details,omitempty"`
@@ -411,7 +411,7 @@ type UpgradeGiftP struct {
 // UpgradeGift upgrades a gift.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#upgradegift
-func (api *API) UpgradeGift(params UpgradeGiftP) (bool, error) {
+func (api *API) UpgradeGift(params UpgradeGift) (bool, error) {
 	req := NewRequest[bool]("upgradeGift", params)
 	return req.Do(api)
 }
@@ -419,14 +419,14 @@ func (api *API) UpgradeGift(params UpgradeGiftP) (bool, error) {
 // UpgradeGiftWithContext is the context-aware variant of UpgradeGift.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#upgradegift
-func (api *API) UpgradeGiftWithContext(ctx context.Context, params UpgradeGiftP) (bool, error) {
+func (api *API) UpgradeGiftWithContext(ctx context.Context, params UpgradeGift) (bool, error) {
 	req := NewRequest[bool]("upgradeGift", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// TransferGiftP holds parameters for the transferGift method.
+// TransferGift holds parameters for the transferGift method.
 // See https://core.telegram.org/bots/api#transfergift
-type TransferGiftP struct {
+type TransferGift struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 	OwnedGiftID          string `json:"owned_gift_id"`
 	NewOwnerChatID       int64  `json:"new_owner_chat_id"`
@@ -436,7 +436,7 @@ type TransferGiftP struct {
 // TransferGift transfers a gift to another chat.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#transfergift
-func (api *API) TransferGift(params TransferGiftP) (bool, error) {
+func (api *API) TransferGift(params TransferGift) (bool, error) {
 	req := NewRequest[bool]("transferGift", params)
 	return req.Do(api)
 }
@@ -444,14 +444,14 @@ func (api *API) TransferGift(params TransferGiftP) (bool, error) {
 // TransferGiftWithContext is the context-aware variant of TransferGift.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#transfergift
-func (api *API) TransferGiftWithContext(ctx context.Context, params TransferGiftP) (bool, error) {
+func (api *API) TransferGiftWithContext(ctx context.Context, params TransferGift) (bool, error) {
 	req := NewRequest[bool]("transferGift", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// PostStoryP holds parameters for the postStory method.
+// PostStory holds parameters for the postStory method.
 // See https://core.telegram.org/bots/api#poststory
-type PostStoryP struct {
+type PostStory struct {
 	BusinessConnectionID string            `json:"business_connection_id"`
 	Content              InputStoryContent `json:"content"`
 	ActivePeriod         int               `json:"active_period"`
@@ -465,39 +465,24 @@ type PostStoryP struct {
 	ProtectContent bool `json:"protect_content,omitempty"`
 }
 
-// PostStoryPhoto posts a story with a photo.
+// PostStory posts a story with a photo.
 // See https://core.telegram.org/bots/api#poststory
-func (api *API) PostStoryPhoto(params PostStoryP) (Story, error) {
+func (api *API) PostStory(params PostStory) (Story, error) {
 	req := NewRequest[Story]("postStory", params)
 	return req.Do(api)
 }
 
-// PostStoryPhotoWithContext is the context-aware variant of PostStoryPhoto.
+// PostStoryWithContext is the context-aware variant of PostStoryPhoto.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#poststory
-func (api *API) PostStoryPhotoWithContext(ctx context.Context, params PostStoryP) (Story, error) {
+func (api *API) PostStoryWithContext(ctx context.Context, params PostStory) (Story, error) {
 	req := NewRequest[Story]("postStory", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// PostStoryVideo posts a story with a video.
-// See https://core.telegram.org/bots/api#poststory
-func (api *API) PostStoryVideo(params PostStoryP) (Story, error) {
-	req := NewRequest[Story]("postStory", params)
-	return req.Do(api)
-}
-
-// PostStoryVideoWithContext is the context-aware variant of PostStoryVideo.
-// It executes the same request but uses ctx for cancellation and deadlines.
-// See https://core.telegram.org/bots/api#poststory
-func (api *API) PostStoryVideoWithContext(ctx context.Context, params PostStoryP) (Story, error) {
-	req := NewRequest[Story]("postStory", params)
-	return req.DoWithContext(ctx, api)
-}
-
-// RepostStoryP holds parameters for the repostStory method.
+// RepostStory holds parameters for the repostStory method.
 // See https://core.telegram.org/bots/api#repoststory
-type RepostStoryP struct {
+type RepostStory struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 	FromChatID           int64  `json:"from_chat_id"`
 	FromStoryID          int    `json:"from_story_id"`
@@ -509,7 +494,7 @@ type RepostStoryP struct {
 // RepostStory reposts a story from another chat.
 // Returns the reposted story.
 // See https://core.telegram.org/bots/api#repoststory
-func (api *API) RepostStory(params RepostStoryP) (Story, error) {
+func (api *API) RepostStory(params RepostStory) (Story, error) {
 	req := NewRequest[Story]("repostStory", params)
 	return req.Do(api)
 }
@@ -517,14 +502,14 @@ func (api *API) RepostStory(params RepostStoryP) (Story, error) {
 // RepostStoryWithContext is the context-aware variant of RepostStory.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#repoststory
-func (api *API) RepostStoryWithContext(ctx context.Context, params RepostStoryP) (Story, error) {
+func (api *API) RepostStoryWithContext(ctx context.Context, params RepostStory) (Story, error) {
 	req := NewRequest[Story]("repostStory", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// EditStoryP holds parameters for the editStory method.
+// EditStory holds parameters for the editStory method.
 // See https://core.telegram.org/bots/api#editstory
-type EditStoryP struct {
+type EditStory struct {
 	BusinessConnectionID string            `json:"business_connection_id"`
 	StoryID              int               `json:"story_id"`
 	Content              InputStoryContent `json:"content"`
@@ -538,7 +523,7 @@ type EditStoryP struct {
 // EditStory edits an existing story.
 // Returns the updated story.
 // See https://core.telegram.org/bots/api#editstory
-func (api *API) EditStory(params EditStoryP) (Story, error) {
+func (api *API) EditStory(params EditStory) (Story, error) {
 	req := NewRequest[Story]("editStory", params)
 	return req.Do(api)
 }
@@ -546,14 +531,14 @@ func (api *API) EditStory(params EditStoryP) (Story, error) {
 // EditStoryWithContext is the context-aware variant of EditStory.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#editstory
-func (api *API) EditStoryWithContext(ctx context.Context, params EditStoryP) (Story, error) {
+func (api *API) EditStoryWithContext(ctx context.Context, params EditStory) (Story, error) {
 	req := NewRequest[Story]("editStory", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// DeleteStoryP holds parameters for the deleteStory method.
+// DeleteStory holds parameters for the deleteStory method.
 // See https://core.telegram.org/bots/api#deletestory
-type DeleteStoryP struct {
+type DeleteStory struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 	StoryID              int    `json:"story_id"`
 }
@@ -561,7 +546,7 @@ type DeleteStoryP struct {
 // DeleteStory deletes a story.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#deletestory
-func (api *API) DeleteStory(params DeleteStoryP) (bool, error) {
+func (api *API) DeleteStory(params DeleteStory) (bool, error) {
 	req := NewRequest[bool]("deleteStory", params)
 	return req.Do(api)
 }
@@ -569,7 +554,7 @@ func (api *API) DeleteStory(params DeleteStoryP) (bool, error) {
 // DeleteStoryWithContext is the context-aware variant of DeleteStory.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#deletestory
-func (api *API) DeleteStoryWithContext(ctx context.Context, params DeleteStoryP) (bool, error) {
+func (api *API) DeleteStoryWithContext(ctx context.Context, params DeleteStory) (bool, error) {
 	req := NewRequest[bool]("deleteStory", params)
 	return req.DoWithContext(ctx, api)
 }

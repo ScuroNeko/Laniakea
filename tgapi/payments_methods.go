@@ -2,9 +2,9 @@ package tgapi
 
 import "context"
 
-// SendInvoiceP holds parameters for the sendInvoice method.
+// SendInvoice holds parameters for the sendInvoice method.
 // See https://core.telegram.org/bots/api#sendinvoice
-type SendInvoiceP struct {
+type SendInvoice struct {
 	ChatID                int64 `json:"chat_id"`
 	MessageThreadID       int   `json:"message_thread_id,omitempty"`
 	DirectMessagesTopicID int   `json:"direct_messages_topic_id,omitempty"`
@@ -43,7 +43,7 @@ type SendInvoiceP struct {
 
 // SendInvoice sends an invoice.
 // See https://core.telegram.org/bots/api#sendinvoice
-func (api *API) SendInvoice(params SendInvoiceP) (Message, error) {
+func (api *API) SendInvoice(params SendInvoice) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendInvoice", params, params.ChatID)
 	return req.Do(api)
 }
@@ -51,14 +51,14 @@ func (api *API) SendInvoice(params SendInvoiceP) (Message, error) {
 // SendInvoiceWithContext is the context-aware variant of SendInvoice.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendinvoice
-func (api *API) SendInvoiceWithContext(ctx context.Context, params SendInvoiceP) (Message, error) {
+func (api *API) SendInvoiceWithContext(ctx context.Context, params SendInvoice) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendInvoice", params, params.ChatID)
 	return req.DoWithContext(ctx, api)
 }
 
-// CreateInvoiceLinkP holds parameters for the createInvoiceLink method.
+// CreateInvoiceLink holds parameters for the createInvoiceLink method.
 // See https://core.telegram.org/bots/api#createinvoicelink
-type CreateInvoiceLinkP struct {
+type CreateInvoiceLink struct {
 	BusinessConnectionID string `json:"business_connection_id,omitempty"`
 
 	Title         string         `json:"title"`
@@ -87,7 +87,7 @@ type CreateInvoiceLinkP struct {
 
 // CreateInvoiceLink creates an invoice link.
 // See https://core.telegram.org/bots/api#createinvoicelink
-func (api *API) CreateInvoiceLink(params CreateInvoiceLinkP) (string, error) {
+func (api *API) CreateInvoiceLink(params CreateInvoiceLink) (string, error) {
 	req := NewRequest[string]("createInvoiceLink", params)
 	return req.Do(api)
 }
@@ -95,14 +95,14 @@ func (api *API) CreateInvoiceLink(params CreateInvoiceLinkP) (string, error) {
 // CreateInvoiceLinkWithContext is the context-aware variant of CreateInvoiceLink.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#createinvoicelink
-func (api *API) CreateInvoiceLinkWithContext(ctx context.Context, params CreateInvoiceLinkP) (string, error) {
+func (api *API) CreateInvoiceLinkWithContext(ctx context.Context, params CreateInvoiceLink) (string, error) {
 	req := NewRequest[string]("createInvoiceLink", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// AnswerShippingQueryP holds parameters for the answerShippingQuery method.
+// AnswerShippingQuery holds parameters for the answerShippingQuery method.
 // See https://core.telegram.org/bots/api#answershippingquery
-type AnswerShippingQueryP struct {
+type AnswerShippingQuery struct {
 	ShippingQueryID string           `json:"shipping_query_id"`
 	OK              bool             `json:"ok"`
 	ShippingOptions []ShippingOption `json:"shipping_options,omitempty"`
@@ -112,7 +112,7 @@ type AnswerShippingQueryP struct {
 // AnswerShippingQuery answers a shipping query.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#answershippingquery
-func (api *API) AnswerShippingQuery(params AnswerShippingQueryP) (bool, error) {
+func (api *API) AnswerShippingQuery(params AnswerShippingQuery) (bool, error) {
 	req := NewRequest[bool]("answerShippingQuery", params)
 	return req.Do(api)
 }
@@ -120,14 +120,14 @@ func (api *API) AnswerShippingQuery(params AnswerShippingQueryP) (bool, error) {
 // AnswerShippingQueryWithContext is the context-aware variant of AnswerShippingQuery.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#answershippingquery
-func (api *API) AnswerShippingQueryWithContext(ctx context.Context, params AnswerShippingQueryP) (bool, error) {
+func (api *API) AnswerShippingQueryWithContext(ctx context.Context, params AnswerShippingQuery) (bool, error) {
 	req := NewRequest[bool]("answerShippingQuery", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// AnswerPreCheckoutQueryP holds parameters for the answerPreCheckoutQuery method.
+// AnswerPreCheckoutQuery holds parameters for the answerPreCheckoutQuery method.
 // See https://core.telegram.org/bots/api#answerprecheckoutquery
-type AnswerPreCheckoutQueryP struct {
+type AnswerPreCheckoutQuery struct {
 	PreCheckoutQueryID string `json:"pre_checkout_query_id"`
 	OK                 bool   `json:"ok"`
 	ErrorMessage       string `json:"error_message,omitempty"`
@@ -136,7 +136,7 @@ type AnswerPreCheckoutQueryP struct {
 // AnswerPreCheckoutQuery answers a pre-checkout query.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#answerprecheckoutquery
-func (api *API) AnswerPreCheckoutQuery(params AnswerPreCheckoutQueryP) (bool, error) {
+func (api *API) AnswerPreCheckoutQuery(params AnswerPreCheckoutQuery) (bool, error) {
 	req := NewRequest[bool]("answerPreCheckoutQuery", params)
 	return req.Do(api)
 }
@@ -144,7 +144,7 @@ func (api *API) AnswerPreCheckoutQuery(params AnswerPreCheckoutQueryP) (bool, er
 // AnswerPreCheckoutQueryWithContext is the context-aware variant of AnswerPreCheckoutQuery.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#answerprecheckoutquery
-func (api *API) AnswerPreCheckoutQueryWithContext(ctx context.Context, params AnswerPreCheckoutQueryP) (bool, error) {
+func (api *API) AnswerPreCheckoutQueryWithContext(ctx context.Context, params AnswerPreCheckoutQuery) (bool, error) {
 	req := NewRequest[bool]("answerPreCheckoutQuery", params)
 	return req.DoWithContext(ctx, api)
 }

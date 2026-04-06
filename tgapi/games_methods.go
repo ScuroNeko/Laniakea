@@ -2,9 +2,9 @@ package tgapi
 
 import "context"
 
-// SendGameP holds parameters for the sendGame method.
+// SendGame holds parameters for the sendGame method.
 // See https://core.telegram.org/bots/api#sendgame
-type SendGameP struct {
+type SendGame struct {
 	BusinessConnectionID string `json:"business_connection_id,omitempty"`
 	ChatID               int64  `json:"chat_id"`
 	MessageThreadID      int    `json:"message_thread_id,omitempty"`
@@ -21,7 +21,7 @@ type SendGameP struct {
 
 // SendGame sends a game message.
 // See https://core.telegram.org/bots/api#sendgame
-func (api *API) SendGame(params SendGameP) (Message, error) {
+func (api *API) SendGame(params SendGame) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendGame", params, params.ChatID)
 	return req.Do(api)
 }
@@ -29,14 +29,14 @@ func (api *API) SendGame(params SendGameP) (Message, error) {
 // SendGameWithContext is the context-aware variant of SendGame.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendgame
-func (api *API) SendGameWithContext(ctx context.Context, params SendGameP) (Message, error) {
+func (api *API) SendGameWithContext(ctx context.Context, params SendGame) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendGame", params, params.ChatID)
 	return req.DoWithContext(ctx, api)
 }
 
-// SetGameScoreP holds parameters for the setGameScore method.
+// SetGameScore holds parameters for the setGameScore method.
 // See https://core.telegram.org/bots/api#setgamescore
-type SetGameScoreP struct {
+type SetGameScore struct {
 	UserID             int64  `json:"user_id"`
 	Score              int    `json:"score"`
 	Force              bool   `json:"force,omitempty"`
@@ -50,7 +50,7 @@ type SetGameScoreP struct {
 // If inline_message_id is provided, returns a boolean success flag.
 // Otherwise returns the edited Message.
 // See https://core.telegram.org/bots/api#setgamescore
-func (api *API) SetGameScore(params SetGameScoreP) (Message, bool, error) {
+func (api *API) SetGameScore(params SetGameScore) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
 		req := NewRequestWithChatID[bool]("setGameScore", params, params.ChatID)
@@ -65,7 +65,7 @@ func (api *API) SetGameScore(params SetGameScoreP) (Message, bool, error) {
 // SetGameScoreWithContext is the context-aware variant of SetGameScore.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#setgamescore
-func (api *API) SetGameScoreWithContext(ctx context.Context, params SetGameScoreP) (Message, bool, error) {
+func (api *API) SetGameScoreWithContext(ctx context.Context, params SetGameScore) (Message, bool, error) {
 	var zero Message
 	if params.InlineMessageID != "" {
 		req := NewRequestWithChatID[bool]("setGameScore", params, params.ChatID)
@@ -77,9 +77,9 @@ func (api *API) SetGameScoreWithContext(ctx context.Context, params SetGameScore
 	return res, false, err
 }
 
-// GetGameHighScoresP holds parameters for the getGameHighScores method.
+// GetGameHighScores holds parameters for the getGameHighScores method.
 // See https://core.telegram.org/bots/api#getgamehighscores
-type GetGameHighScoresP struct {
+type GetGameHighScores struct {
 	UserID          int64  `json:"user_id"`
 	ChatID          int64  `json:"chat_id,omitempty"`
 	MessageID       int    `json:"message_id,omitempty"`
@@ -88,7 +88,7 @@ type GetGameHighScoresP struct {
 
 // GetGameHighScores returns game high score data for a user.
 // See https://core.telegram.org/bots/api#getgamehighscores
-func (api *API) GetGameHighScores(params GetGameHighScoresP) ([]GameHighScore, error) {
+func (api *API) GetGameHighScores(params GetGameHighScores) ([]GameHighScore, error) {
 	req := NewRequestWithChatID[[]GameHighScore]("getGameHighScores", params, params.ChatID)
 	return req.Do(api)
 }
@@ -96,7 +96,7 @@ func (api *API) GetGameHighScores(params GetGameHighScoresP) ([]GameHighScore, e
 // GetGameHighScoresWithContext is the context-aware variant of GetGameHighScores.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#getgamehighscores
-func (api *API) GetGameHighScoresWithContext(ctx context.Context, params GetGameHighScoresP) ([]GameHighScore, error) {
+func (api *API) GetGameHighScoresWithContext(ctx context.Context, params GetGameHighScores) ([]GameHighScore, error) {
 	req := NewRequestWithChatID[[]GameHighScore]("getGameHighScores", params, params.ChatID)
 	return req.DoWithContext(ctx, api)
 }

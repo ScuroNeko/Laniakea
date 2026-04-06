@@ -57,6 +57,8 @@ const (
 	UpdateTypeChatBoost UpdateType = "chat_boost"
 	// UpdateTypeRemovedChatBoost is a removed chat boost update.
 	UpdateTypeRemovedChatBoost UpdateType = "removed_chat_boost"
+
+	UpdateTypeManagedBot UpdateType = "managed_bot"
 )
 
 // Update represents an incoming update from Telegram.
@@ -91,6 +93,8 @@ type Update struct {
 	ChatJoinRequest  *ChatJoinRequest   `json:"chat_join_request,omitempty"`
 	ChatBoost        *ChatBoostUpdated  `json:"chat_boost,omitempty"`
 	RemovedChatBoost *ChatBoostRemoved  `json:"removed_chat_boost,omitempty"`
+
+	ManagedBot *ManagedBotUpdated `json:"managed_bot,omitempty"`
 }
 
 // UnmarshalJSON decodes an update and derives its Type from the populated payload field.
@@ -154,11 +158,33 @@ func (u *Update) UnmarshalJSON(data []byte) error {
 		u.Type = UpdateTypeChatBoost
 	case u.RemovedChatBoost != nil:
 		u.Type = UpdateTypeRemovedChatBoost
+	case u.ManagedBot != nil:
+		u.Type = UpdateTypeManagedBot
 	default:
 		u.Type = UpdateTypeUnknown
 	}
 
 	return nil
+}
+
+// WebhookInfo describes the current webhook status.
+// See https://core.telegram.org/bots/api#webhookinfo
+type WebhookInfo struct {
+	URL                          string   `json:"url"`
+	HasCustomCertificate         bool     `json:"has_custom_certificate"`
+	PendingUpdateCount           int      `json:"pending_update_count"`
+	IPAddress                    string   `json:"ip_address,omitempty"`
+	LastErrorDate                int      `json:"last_error_date,omitempty"`
+	LastErrorMessage             string   `json:"last_error_message,omitempty"`
+	LastSynchronizationErrorDate int      `json:"last_synchronization_error_date,omitempty"`
+	MaxConnections               int      `json:"max_connections,omitempty"`
+	AllowedUpdates               []string `json:"allowed_updates,omitempty"`
+}
+
+type ProximityAlertTriggered struct {
+	Traveler User `json:"traveler"`
+	Watcher  User `json:"watcher"`
+	Distance int  `json:"distance"`
 }
 
 // InlineQuery represents an incoming inline query.
@@ -182,113 +208,13 @@ type ChosenInlineResult struct {
 	Query           string    `json:"query"`
 }
 
-// ShippingQuery represents an incoming shipping query.
-// See https://core.telegram.org/bots/api#shippingquery
-type ShippingQuery struct {
-	ID              string          `json:"id"`
-	From            User            `json:"from"`
-	InvoicePayload  string          `json:"invoice_payload"`
-	ShippingAddress ShippingAddress `json:"shipping_address"`
-}
-
-// ShippingAddress represents a shipping address.
-// See https://core.telegram.org/bots/api#shippingaddress
-type ShippingAddress struct {
-	CountryCode string `json:"country_code"`
-	State       string `json:"state"`
-	City        string `json:"city"`
-	StreetLine1 string `json:"street_line1"`
-	StreetLine2 string `json:"street_line2"`
-	PostCode    string `json:"post_code"`
-}
-
-// OrderInfo represents information about an order.
-// See https://core.telegram.org/bots/api#orderinfo
-type OrderInfo struct {
-	Name            string          `json:"name"`
-	PhoneNumber     string          `json:"phone_number"`
-	Email           string          `json:"email"`
-	ShippingAddress ShippingAddress `json:"shipping_address"`
-}
-
-// PreCheckoutQuery represents an incoming pre-checkout query.
-// See https://core.telegram.org/bots/api#precheckoutquery
-type PreCheckoutQuery struct {
-	ID               string     `json:"id"`
-	From             User       `json:"from"`
-	Currency         string     `json:"currency"`
-	TotalAmount      int        `json:"total_amount"`
-	InvoicePayload   string     `json:"invoice_payload"`
-	ShippingOptionID string     `json:"shipping_option_id"`
-	OrderInfo        *OrderInfo `json:"order_info,omitempty"`
-}
-
-// PaidMediaPurchased represents a purchased paid media.
-// See https://core.telegram.org/bots/api#paidmediapurchased
-type PaidMediaPurchased struct {
-	From             User   `json:"from"`
-	PaidMediaPayload string `json:"paid_media_payload"`
-}
-
 // File represents a file ready to be downloaded.
 // See https://core.telegram.org/bots/api#file
 type File struct {
-	FileId       string `json:"file_id"`
+	FileID       string `json:"file_id"`
 	FileUniqueID string `json:"file_unique_id"`
 	FileSize     int64  `json:"file_size,omitempty"`
 	FilePath     string `json:"file_path,omitempty"`
-}
-
-// Audio represents an audio file to be treated as music by the Telegram clients.
-// See https://core.telegram.org/bots/api#audio
-type Audio struct {
-	FileID       string `json:"file_id"`
-	FileUniqueID string `json:"file_unique_id"`
-	Duration     int    `json:"duration"`
-
-	Performer string     `json:"performer,omitempty"`
-	Title     string     `json:"title,omitempty"`
-	FileName  string     `json:"file_name,omitempty"`
-	MimeType  string     `json:"mime_type,omitempty"`
-	FileSize  int64      `json:"file_size,omitempty"`
-	Thumbnail *PhotoSize `json:"thumbnail,omitempty"`
-}
-
-// PollOption contains information about one answer option in a poll.
-// See https://core.telegram.org/bots/api#polloption
-type PollOption struct {
-	Text         string          `json:"text"`
-	TextEntities []MessageEntity `json:"text_entities"`
-	VoterCount   int             `json:"voter_count"`
-}
-
-// Poll contains information about a poll.
-// See https://core.telegram.org/bots/api#poll
-type Poll struct {
-	ID               string          `json:"id"`
-	Question         string          `json:"question"`
-	QuestionEntities []MessageEntity `json:"question_entities"`
-	Options          []PollOption    `json:"options"`
-	TotalVoterCount  int             `json:"total_voter_count"`
-	IsClosed         bool            `json:"is_closed"`
-	IsAnonymous      bool            `json:"is_anonymous"`
-	Type             PollType        `json:"type"`
-
-	AllowsMultipleAnswers bool            `json:"allows_multiple_answers"`
-	CorrectOptionID       *int            `json:"correct_option_id,omitempty"`
-	Explanation           *string         `json:"explanation,omitempty"`
-	ExplanationEntities   []MessageEntity `json:"explanation_entities,omitempty"`
-	OpenPeriod            int             `json:"open_period,omitempty"`
-	CloseDate             int             `json:"close_date,omitempty"`
-}
-
-// PollAnswer represents an answer of a user in a poll.
-// See https://core.telegram.org/bots/api#pollanswer
-type PollAnswer struct {
-	PollID    string `json:"poll_id"`
-	VoterChat Chat   `json:"voter_chat"`
-	User      User   `json:"user"`
-	OptionIDS []int  `json:"option_ids"`
 }
 
 // ChatMemberUpdated represents changes in the status of a chat member.
@@ -352,16 +278,15 @@ type WebAppInfo struct {
 	URL string `json:"url"`
 }
 
+type WebAppData struct {
+	Data       string `json:"data"`
+	ButtonText string `json:"button_text"`
+}
+
 // StarAmount represents an amount of Telegram Stars.
 type StarAmount struct {
 	Amount         int `json:"amount"`
 	NanostarAmount int `json:"nanostar_amount"`
-}
-
-// Story represents a story.
-type Story struct {
-	Chat Chat `json:"chat"`
-	ID   int  `json:"id"`
 }
 
 // AcceptedGiftTypes represents the types of gifts accepted by a user or chat.
@@ -371,16 +296,6 @@ type AcceptedGiftTypes struct {
 	UniqueGifts         bool `json:"unique_gifts"`
 	PremiumSubscription bool `json:"premium_subscription"`
 	GiftsFromChannels   bool `json:"gifts_from_channels"`
-}
-
-// UniqueGiftColors represents color information for a unique gift.
-type UniqueGiftColors struct {
-	ModelCustomEmojiID    string `json:"model_custom_emoji_id"`
-	SymbolCustomEmojiID   string `json:"symbol_custom_emoji_id"`
-	LightThemeMainColor   int    `json:"light_theme_main_color"`
-	LightThemeOtherColors []int  `json:"light_theme_other_colors"`
-	DarkThemeMainColor    int    `json:"dark_theme_main_color"`
-	DarkThemeOtherColors  []int  `json:"dark_theme_other_colors"`
 }
 
 // GiftBackground represents the background of a gift.
@@ -412,6 +327,78 @@ type Gifts struct {
 	Gifts []Gift `json:"gifts"`
 }
 
+type UniqueGiftModel struct {
+	Name           string  `json:"name"`
+	Sticker        Sticker `json:"sticker"`
+	RarityPerMille int     `json:"rarity_per_mille"`
+	Rarity         string  `json:"rarity,omitempty"`
+}
+type UniqueGiftSymbol struct {
+	Name           string  `json:"name"`
+	Sticker        Sticker `json:"sticker"`
+	RarityPerMille int     `json:"rarity_per_mille"`
+}
+type UniqueGiftBackdropColors struct {
+	CenterColor int `json:"center_color"`
+	EdgeColor   int `json:"edge_color"`
+	SymbolColor int `json:"symbol_color"`
+	TextColor   int `json:"text_color"`
+}
+type UniqueGiftBackdrop struct {
+	Name           string                   `json:"name"`
+	Colors         UniqueGiftBackdropColors `json:"colors"`
+	RarityPerMille int                      `json:"rarity_per_mille"`
+}
+
+// UniqueGiftColors represents color information for a unique gift.
+type UniqueGiftColors struct {
+	ModelCustomEmojiID    string `json:"model_custom_emoji_id"`
+	SymbolCustomEmojiID   string `json:"symbol_custom_emoji_id"`
+	LightThemeMainColor   int    `json:"light_theme_main_color"`
+	LightThemeOtherColors []int  `json:"light_theme_other_colors"`
+	DarkThemeMainColor    int    `json:"dark_theme_main_color"`
+	DarkThemeOtherColors  []int  `json:"dark_theme_other_colors"`
+}
+
+type UniqueGift struct {
+	GiftID   string             `json:"gift_id"`
+	BaseName string             `json:"base_name"`
+	Name     string             `json:"name"`
+	Number   int                `json:"number"`
+	Model    UniqueGiftModel    `json:"model"`
+	Symbol   UniqueGiftSymbol   `json:"symbol"`
+	Backdrop UniqueGiftBackdrop `json:"backdrop"`
+
+	IsPremium        bool              `json:"is_premium,omitempty"`
+	IsBurned         bool              `json:"is_burned,omitempty"`
+	IsFromBlockchain bool              `json:"is_from_blockchain,omitempty"`
+	Colors           *UniqueGiftColors `json:"colors,omitempty"`
+	PublisherChat    *Chat             `json:"publisher_chat,omitempty"`
+}
+
+type GiftInfo struct {
+	Gift Gift `json:"gift"`
+
+	OwnedGiftID             string          `json:"owned_gift_id,omitempty"`
+	ConvertStarCount        int             `json:"convert_star_count,omitempty"`
+	PrepaidUpgradeStarCount int             `json:"prepaid_upgrade_star_count,omitempty"`
+	IsUpgradeSeparate       bool            `json:"is_upgrade_separate,omitempty"`
+	CanBeUpgraded           bool            `json:"can_be_upgraded,omitempty"`
+	Text                    string          `json:"text,omitempty"`
+	Entities                []MessageEntity `json:"entities,omitempty"`
+	IsPrivate               bool            `json:"is_private,omitempty"`
+	UniqueGiftNumber        int             `json:"unique_gift_number,omitempty"`
+}
+type UniqueGiftInfo struct {
+	Gift               UniqueGift `json:"gift"`
+	Origin             string     `json:"origin"`
+	LastResaleCurrency string     `json:"last_resale_currency,omitempty"`
+	LastResaleAmount   int        `json:"last_resale_amount,omitempty"`
+	OwnedGiftID        string     `json:"owned_gift_id,omitempty"`
+	TransferStarCount  int        `json:"transfer_star_count,omitempty"`
+	NextTransferDate   int        `json:"next_transfer_date,omitempty"`
+}
+
 // OwnedGiftType represents the type of an owned gift.
 type OwnedGiftType string
 
@@ -425,27 +412,27 @@ const (
 // OwnedGift represents a gift owned by a user or chat.
 type OwnedGift struct {
 	Type        OwnedGiftType `json:"type"`
-	OwnerGiftID *string       `json:"owner_gift_id,omitempty"`
-	SendDate    *int          `json:"send_date,omitempty"`
-	IsSaved     *bool         `json:"is_saved,omitempty"`
+	OwnedGiftID string        `json:"ownen_gift_id,omitempty"`
+	SendDate    int           `json:"send_date,omitempty"`
+	IsSaved     bool          `json:"is_saved,omitempty"`
 
 	// Fields specific to "regular" type
 	Gift                    Gift            `json:"gift"`
 	SenderUser              *User           `json:"sender_user,omitempty"`
 	Text                    string          `json:"text,omitempty"`
 	Entities                []MessageEntity `json:"entities,omitempty"`
-	IsPrivate               *bool           `json:"is_private,omitempty"`
-	CanBeUpgraded           *bool           `json:"can_be_upgraded,omitempty"`
-	WasRefunded             *bool           `json:"was_refunded,omitempty"`
-	ConvertStarCount        *int            `json:"convert_star_count,omitempty"`
-	PrepaidUpgradeStarCount *int            `json:"prepaid_upgrade_star_count,omitempty"`
-	IsUpgradeSeparate       *bool           `json:"is_upgrade_separate,omitempty"`
-	UniqueGiftNumber        *int            `json:"unique_gift_number,omitempty"`
+	IsPrivate               bool            `json:"is_private,omitempty"`
+	CanBeUpgraded           bool            `json:"can_be_upgraded,omitempty"`
+	WasRefunded             bool            `json:"was_refunded,omitempty"`
+	ConvertStarCount        int             `json:"convert_star_count,omitempty"`
+	PrepaidUpgradeStarCount int             `json:"prepaid_upgrade_star_count,omitempty"`
+	IsUpgradeSeparate       bool            `json:"is_upgrade_separate,omitempty"`
+	UniqueGiftNumber        int             `json:"unique_gift_number,omitempty"`
 
 	// Fields specific to "unique" type
-	CanBeTransferred  *bool `json:"can_be_transferred,omitempty"`
-	TransferStarCount *int  `json:"transfer_star_count,omitempty"`
-	NextTransferDate  *int  `json:"next_transfer_date,omitempty"`
+	CanBeTransferred  bool `json:"can_be_transferred,omitempty"`
+	TransferStarCount int  `json:"transfer_star_count,omitempty"`
+	NextTransferDate  int  `json:"next_transfer_date,omitempty"`
 }
 
 // OwnedGifts represents a list of owned gifts with pagination.
@@ -453,4 +440,95 @@ type OwnedGifts struct {
 	TotalCount int         `json:"total_count"`
 	Gifts      []OwnedGift `json:"gifts"`
 	NextOffset string      `json:"next_offset"`
+}
+
+type GiveawayCreated struct {
+	PrizeStarCount int `json:"prize_star_count,omitempty"`
+}
+
+type Giveaway struct {
+	Chats                []Chat `json:"chats"`
+	WinnersSelectionDate int    `json:"winners_selection_date"`
+	WinnerCount          int    `json:"winner_count"`
+
+	OnlyNewMembers                bool     `json:"only_new_members,omitempty"`
+	HasPublicWinners              bool     `json:"has_public_winners,omitempty"`
+	PrizeDescription              string   `json:"prize_description,omitempty"`
+	CountryCodes                  []string `json:"country_codes,omitempty"`
+	PrizeStarCount                int      `json:"prize_star_count,omitempty"`
+	PremiumSubscriptionMonthCount int      `json:"premium_subscription_month_count,omitempty"`
+}
+
+type GiveawayWinners struct {
+	Chat                 Chat   `json:"chat"`
+	GiveawayMessageID    int    `json:"giveaway_message_id"`
+	WinnersSelectionDate int    `json:"winners_selection_date"`
+	WinnerCount          int    `json:"winner_count"`
+	Winners              []User `json:"winners"`
+
+	AdditionalChatCount           int    `json:"additional_chat_count,omitempty"`
+	PrizeStarCount                int    `json:"prize_star_count,omitempty"`
+	PremiumSubscriptionMonthCount int    `json:"premium_subscription_month_count,omitempty"`
+	UnclaimedPrizeCount           int    `json:"unclaimed_prize_count,omitempty"`
+	OnlyNewMembers                bool   `json:"only_new_members,omitempty"`
+	WasRefunded                   bool   `json:"was_refunded,omitempty"`
+	PrizeDescription              string `json:"prize_description,omitempty"`
+}
+
+type GiveawayCompleted struct {
+	WinnerCount         int      `json:"winner_count"`
+	UnclaimedPrizeCount int      `json:"unclaimed_prize_count,omitempty"`
+	GiveawayMessage     *Message `json:"giveaway_message,omitempty"`
+	IsStarGiveaway      bool     `json:"is_star_giveaway,omitempty"`
+}
+
+type WriteAccessAllowed struct {
+	FromRequest        bool   `json:"from_request,omitempty"`
+	WebAppName         string `json:"web_app_name,omitempty"`
+	FromAttachmentMenu bool   `json:"from_attachment_menu,omitempty"`
+}
+
+type BackgroundFillType string
+
+const (
+	BackgroundFillSolidType            BackgroundFillType = "solid"
+	BackgroundFillGradientType         BackgroundFillType = "gradient"
+	BackgroundFillFreeformGradientType BackgroundFillType = "freeform_gradient"
+)
+
+type BackgroundFill struct {
+	Type BackgroundFillType `json:"type"`
+
+	Color int `json:"color,omitempty"`
+
+	TopColor      int `json:"top_color,omitempty"`
+	BottomColor   int `json:"bottom_color,omitempty"`
+	RotationAngle int `json:"rotation_angle,omitempty"`
+
+	Colors []int `json:"colors,omitempty"`
+}
+
+type BackgroundTypeType string
+
+const (
+	BackgroundTypeFillType      BackgroundTypeType = "fill"
+	BackgroundTypeWallpaperType BackgroundTypeType = "wallpaper"
+	BackgroundTypePatternType   BackgroundTypeType = "pattern"
+	BackgroundTypeChatThemeType BackgroundTypeType = "chat_theme"
+)
+
+type BackgroundType struct {
+	Type BackgroundTypeType `json:"type"`
+
+	Fill             *BackgroundFill `json:"fill,omitempty"`
+	DarkThemeDimming int             `json:"dark_theme_dimming,omitempty"`
+
+	Document  *Document `json:"document,omitempty"`
+	IsBlurred bool      `json:"is_blurred,omitempty"`
+	IsMoving  bool      `json:"is_moving,omitempty"`
+
+	Intensity  int  `json:"intensity,omitempty"`
+	IsInverted bool `json:"is_inverted,omitempty"`
+
+	ThemeName string `json:"theme_name,omitempty"`
 }

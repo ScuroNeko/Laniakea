@@ -61,6 +61,17 @@ func TestUpdateUnmarshalSetsType(t *testing.T) {
 			body: `{"update_id":4}`,
 			want: UpdateTypeUnknown,
 		},
+		{
+			name: "managed bot",
+			body: `{
+				"update_id": 5,
+				"managed_bot": {
+					"user": {"id": 11, "is_bot": false, "first_name": "Manager"},
+					"bot": {"id": 12, "is_bot": true, "first_name": "Worker"}
+				}
+			}`,
+			want: UpdateTypeManagedBot,
+		},
 	}
 
 	for _, tt := range tests {
@@ -75,7 +86,38 @@ func TestUpdateUnmarshalSetsType(t *testing.T) {
 			if tt.want == UpdateTypeChatBoost && update.ChatBoost.Boost.BoostID != "boost-1" {
 				t.Fatalf("unexpected boost id: got %q want %q", update.ChatBoost.Boost.BoostID, "boost-1")
 			}
+			if tt.want == UpdateTypeManagedBot && update.ManagedBot.Bot.ID != 12 {
+				t.Fatalf("unexpected managed bot id: got %d want %d", update.ManagedBot.Bot.ID, 12)
+			}
 		})
+	}
+}
+
+func TestPollUnmarshalSupportsBotAPI96Fields(t *testing.T) {
+	var poll Poll
+
+	body := `{
+		"id": "poll-1",
+		"question": "Pick winners",
+		"question_entities": [],
+		"options": [],
+		"total_voter_count": 2,
+		"is_closed": false,
+		"is_anonymous": false,
+		"type": "quiz",
+		"allows_multiple_answers": true,
+		"allows_revoting": true,
+		"correct_option_ids": [1, 3]
+	}`
+
+	if err := json.Unmarshal([]byte(body), &poll); err != nil {
+		t.Fatalf("Unmarshal returned error: %v", err)
+	}
+	if !poll.AllowsRevoting {
+		t.Fatal("expected allows_revoting to be decoded")
+	}
+	if len(poll.CorrectOptionIDs) != 2 || poll.CorrectOptionIDs[0] != 1 || poll.CorrectOptionIDs[1] != 3 {
+		t.Fatalf("unexpected correct option ids: %#v", poll.CorrectOptionIDs)
 	}
 }
 
@@ -112,5 +154,64 @@ func TestUpdateShippingQueryIsNilWhenAbsent(t *testing.T) {
 	}
 	if update.Type != UpdateTypeUnknown {
 		t.Fatalf("expected UpdateTypeUnknown, got %q", update.Type)
+	}
+}
+
+func TestMaybeInaccessibleMessageUnmarshalAccessibleMessage(t *testing.T) {
+	var wrapper MaybeInaccessibleMessage
+
+	body := `{
+		"message_id": 10,
+		"date": 1700000000,
+		"chat": {"id": 42, "type": "private"},
+		"text": "hello"
+	}`
+
+	if err := json.Unmarshal([]byte(body), &wrapper); err != nil {
+		t.Fatalf("Unmarshal returned error: %v", err)
+	}
+	if !wrapper.IsAccessible() {
+		t.Fatal("expected accessible message payload")
+	}
+	if wrapper.IsInaccessible() {
+		t.Fatal("expected inaccessible payload to be empty")
+	}
+	if wrapper.Message() == nil || wrapper.Message().Text != "hello" {
+		t.Fatalf("unexpected accessible payload: %#v", wrapper.Message())
+	}
+	if wrapper.MessageID() != 10 {
+		t.Fatalf("unexpected message id: got %d want %d", wrapper.MessageID(), 10)
+	}
+	if wrapper.Chat() == nil || wrapper.Chat().ID != 42 {
+		t.Fatalf("unexpected chat payload: %#v", wrapper.Chat())
+	}
+}
+
+func TestMaybeInaccessibleMessageUnmarshalInaccessibleMessage(t *testing.T) {
+	var wrapper MaybeInaccessibleMessage
+
+	body := `{
+		"message_id": 7,
+		"date": 0,
+		"chat": {"id": -1001, "type": "supergroup"}
+	}`
+
+	if err := json.Unmarshal([]byte(body), &wrapper); err != nil {
+		t.Fatalf("Unmarshal returned error: %v", err)
+	}
+	if wrapper.IsAccessible() {
+		t.Fatal("expected accessible payload to be empty")
+	}
+	if !wrapper.IsInaccessible() {
+		t.Fatal("expected inaccessible message payload")
+	}
+	if wrapper.InaccessibleMessage() == nil || wrapper.InaccessibleMessage().MessageID != 7 {
+		t.Fatalf("unexpected inaccessible payload: %#v", wrapper.InaccessibleMessage())
+	}
+	if wrapper.MessageID() != 7 {
+		t.Fatalf("unexpected message id: got %d want %d", wrapper.MessageID(), 7)
+	}
+	if wrapper.Chat() == nil || wrapper.Chat().ID != -1001 {
+		t.Fatalf("unexpected chat payload: %#v", wrapper.Chat())
 	}
 }

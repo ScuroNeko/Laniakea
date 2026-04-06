@@ -13,6 +13,7 @@ type User struct {
 	AddedToAttachmentMenu     *bool   `json:"added_to_attachment_menu,omitempty"`
 	CanJoinGroups             *bool   `json:"can_join_groups,omitempty"`
 	CanReadAllGroupMessages   *bool   `json:"can_read_all_group_messages,omitempty"`
+	CanManageBots             *bool   `json:"can_manage_bots,omitempty"`
 	SupportsInlineQueries     *bool   `json:"supports_inline_queries,omitempty"`
 	CanConnectToBusiness      *bool   `json:"can_connect_to_business,omitempty"`
 	HasMainWebApp             *bool   `json:"has_main_web_app,omitempty"`

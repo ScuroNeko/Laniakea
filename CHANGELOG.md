@@ -2,7 +2,50 @@
 
 ## v1.0.0-rc.14
 
+### Bot API 9.6
+
+#### Managed Bots
+- Added the field can_manage_bots to the class User.
+- Added the class KeyboardButtonRequestManagedBot and the field request_managed_bot to the class KeyboardButton.
+- Added the class ManagedBotCreated and the field managed_bot_created to the class Message.
+- Added updates about the creation of managed bots and the change of their token, represented by the class ManagedBotUpdated and the field managed_bot in the class Update.
+- Added the methods getManagedBotToken and replaceManagedBotToken.
+- Added the class PreparedKeyboardButton and the method savePreparedKeyboardButton, allowing bots to request users, chats and managed bots from Mini Apps.
+- Added the method requestChat to the class WebApp.
+- Added support for https://t.me/newbot/{manager_bot_username}/{suggested_bot_username}[?name={suggested_bot_name}] links, allowing bots to request the creation of a managed bot via a link.
+
+### Polls
+- Added support for quizzes with multiple correct answers.
+- Replaced the field correct_option_id with the field correct_option_ids in the class Poll.
+- Replaced the parameter correct_option_id with the parameter correct_option_ids in the method sendPoll.
+- Allowed to pass allows_multiple_answers for quizzes in the method sendPoll.
+- Increased the maximum time for automatic poll closure to 2628000 seconds.
+- Added the field allows_revoting to the class Poll.
+- Added the parameter allows_revoting to the method sendPoll.
+- Added the parameter shuffle_options to the method sendPoll.
+- Added the parameter allow_adding_options to the method sendPoll.
+- Added the parameter hide_results_until_closes to the method sendPoll.
+- Added the fields description and description_entities to the class Poll.
+- Added the parameters description, description_parse_mode, and description_entities to the method sendPoll.
+- Added the field persistent_id to the class PollOption, representing a persistent identifier for the option.
+- Added the field option_persistent_ids to the class PollAnswer.
+- Added the fields added_by_user and added_by_chat to the class PollOption, denoting the user and the chat which added the option.
+- Added the field addition_date to the class PollOption, describing the date when the option was added.
+- Added the class PollOptionAdded and the field poll_option_added to the class Message.
+- Added the class PollOptionDeleted and the field poll_option_deleted to the class Message.
+- Added the field poll_option_id to the class ReplyParameters, allowing bots to reply to a specific poll option.
+- Added the field reply_to_poll_option_id to the class Message.
+- Allowed “date_time” entities in checklist title, checklist task text, TextQuote, ReplyParameters quote, sendGift, and giftPremiumSubscription.
+
+**More info**: https://core.telegram.org/bots/api#april-3-2026
+
+### Breaking Changes
+- Exported `tgapi` request parameter structs were renamed from the `*P` suffix to their method names. Update code such as `tgapi.SendMessageP{...}` to `tgapi.SendMessage{...}`.
+
 ### Changed
+- *Support for Bot API 9.6*
+- Added missing godoc for recently introduced Telegram Bot API managed-bot, prepared-button, chat-owner, and video-quality exported declarations.
+- Renamed exported `tgapi` request parameter structs from the `*P` suffix to their method names, for example `SendMessageP` -> `SendMessage` and `SetWebhookP` -> `SetWebhook`.
 - Added missing godoc for the exported observer `Event` marker interface.
 - Webhook execution now shares the bot's queued update-dispatch path with polling, including worker-pool delivery, runner startup, single-use run semantics, and default fallback to bot-level update type filters when webhook-specific filters are not set.
 - Webhook godoc and the English and Russian READMEs now describe the bot-level webhook runtime, its single-use lifecycle, and the main `RunWebHookWithContext(...)` entry points more explicitly.
@@ -19,6 +62,8 @@
 - Added regression coverage proving `Bot.Close()` does not make remote webhook delete requests.
 - Added webhook regression coverage for path validation, TLS file-count validation, oversized-body rejection, status-endpoint secret checks, and invalid TLS startup arguments.
 - Added webhook regression coverage proving `/status` cannot be enabled without a non-empty `SecretToken`.
+- Added regression coverage for Bot API 9.6 poll decoding, `managed_bot` update decoding, and structured `setChatMenuButton(...)` request serialization.
+- Added regression coverage for `MaybeInaccessibleMessage` accessible and inaccessible JSON decoding.
 
 ## v1.0.0-rc.13
 

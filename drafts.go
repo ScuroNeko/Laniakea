@@ -221,7 +221,7 @@ func (d *Draft) Flush() error {
 		return err
 	}
 
-	params := tgapi.SendMessageP{
+	params := tgapi.SendMessage{
 		ChatID:    d.chatID,
 		ParseMode: d.parseMode,
 		Entities:  d.entities,
@@ -247,7 +247,7 @@ func (d *Draft) push(text string) error {
 	if err := validateMessageText(d.Message); err != nil {
 		return err
 	}
-	params := tgapi.SendMessageDraftP{
+	params := tgapi.SendMessageDraft{
 		ChatID:    d.chatID,
 		DraftID:   d.ID,
 		Text:      d.Message,

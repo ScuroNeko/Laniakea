@@ -2,9 +2,9 @@ package tgapi
 
 import "context"
 
-// GetUserProfilePhotosP holds parameters for the GetUserProfilePhotos method.
+// GetUserProfilePhotos holds parameters for the GetUserProfilePhotos method.
 // See https://core.telegram.org/bots/api#getuserprofilephotos
-type GetUserProfilePhotosP struct {
+type GetUserProfilePhotos struct {
 	UserID int64 `json:"user_id"`
 	Offset int   `json:"offset,omitempty"`
 	Limit  int   `json:"limit,omitempty"`
@@ -12,7 +12,7 @@ type GetUserProfilePhotosP struct {
 
 // GetUserProfilePhotos returns a list of profile pictures for a user.
 // See https://core.telegram.org/bots/api#getuserprofilephotos
-func (api *API) GetUserProfilePhotos(params GetUserProfilePhotosP) (UserProfilePhotos, error) {
+func (api *API) GetUserProfilePhotos(params GetUserProfilePhotos) (UserProfilePhotos, error) {
 	req := NewRequest[UserProfilePhotos]("getUserProfilePhotos", params)
 	return req.Do(api)
 }
@@ -20,14 +20,14 @@ func (api *API) GetUserProfilePhotos(params GetUserProfilePhotosP) (UserProfileP
 // GetUserProfilePhotosWithContext is the context-aware variant of GetUserProfilePhotos.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#getuserprofilephotos
-func (api *API) GetUserProfilePhotosWithContext(ctx context.Context, params GetUserProfilePhotosP) (UserProfilePhotos, error) {
+func (api *API) GetUserProfilePhotosWithContext(ctx context.Context, params GetUserProfilePhotos) (UserProfilePhotos, error) {
 	req := NewRequest[UserProfilePhotos]("getUserProfilePhotos", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// GetUserProfileAudiosP holds parameters for the GetUserProfileAudios method.
+// GetUserProfileAudios holds parameters for the GetUserProfileAudios method.
 // See https://core.telegram.org/bots/api#getuserprofileaudios
-type GetUserProfileAudiosP struct {
+type GetUserProfileAudios struct {
 	UserID int64 `json:"user_id"`
 	Offset int   `json:"offset,omitempty"`
 	Limit  int   `json:"limit,omitempty"`
@@ -35,7 +35,7 @@ type GetUserProfileAudiosP struct {
 
 // GetUserProfileAudios returns a list of profile audios for a user.
 // See https://core.telegram.org/bots/api#getuserprofileaudios
-func (api *API) GetUserProfileAudios(params GetUserProfileAudiosP) (UserProfileAudios, error) {
+func (api *API) GetUserProfileAudios(params GetUserProfileAudios) (UserProfileAudios, error) {
 	req := NewRequest[UserProfileAudios]("getUserProfileAudios", params)
 	return req.Do(api)
 }
@@ -43,14 +43,14 @@ func (api *API) GetUserProfileAudios(params GetUserProfileAudiosP) (UserProfileA
 // GetUserProfileAudiosWithContext is the context-aware variant of GetUserProfileAudios.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#getuserprofileaudios
-func (api *API) GetUserProfileAudiosWithContext(ctx context.Context, params GetUserProfileAudiosP) (UserProfileAudios, error) {
+func (api *API) GetUserProfileAudiosWithContext(ctx context.Context, params GetUserProfileAudios) (UserProfileAudios, error) {
 	req := NewRequest[UserProfileAudios]("getUserProfileAudios", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// SetUserEmojiStatusP holds parameters for the SetUserEmojiStatus method.
+// SetUserEmojiStatus holds parameters for the SetUserEmojiStatus method.
 // See https://core.telegram.org/bots/api#setuseremojistatus
-type SetUserEmojiStatusP struct {
+type SetUserEmojiStatus struct {
 	UserID         int64  `json:"user_id"`
 	EmojiID        string `json:"emoji_status_custom_emoji_id,omitempty"`
 	ExpirationDate int    `json:"emoji_status_expiration_date,omitempty"`
@@ -59,7 +59,7 @@ type SetUserEmojiStatusP struct {
 // SetUserEmojiStatus sets a custom emoji status for a user.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#setuseremojistatus
-func (api *API) SetUserEmojiStatus(params SetUserEmojiStatusP) (bool, error) {
+func (api *API) SetUserEmojiStatus(params SetUserEmojiStatus) (bool, error) {
 	req := NewRequest[bool]("setUserEmojiStatus", params)
 	return req.Do(api)
 }
@@ -67,14 +67,14 @@ func (api *API) SetUserEmojiStatus(params SetUserEmojiStatusP) (bool, error) {
 // SetUserEmojiStatusWithContext is the context-aware variant of SetUserEmojiStatus.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#setuseremojistatus
-func (api *API) SetUserEmojiStatusWithContext(ctx context.Context, params SetUserEmojiStatusP) (bool, error) {
+func (api *API) SetUserEmojiStatusWithContext(ctx context.Context, params SetUserEmojiStatus) (bool, error) {
 	req := NewRequest[bool]("setUserEmojiStatus", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// GetUserGiftsP holds parameters for the GetUserGifts method.
+// GetUserGifts holds parameters for the GetUserGifts method.
 // See https://core.telegram.org/bots/api#getusergifts
-type GetUserGiftsP struct {
+type GetUserGifts struct {
 	UserID                      int64  `json:"user_id"`
 	ExcludeUnlimited            bool   `json:"exclude_unlimited,omitempty"`
 	ExcludeLimitedUpgradable    bool   `json:"exclude_limited_upgradable,omitempty"`
@@ -88,7 +88,7 @@ type GetUserGiftsP struct {
 
 // GetUserGifts returns gifts owned by a user.
 // See https://core.telegram.org/bots/api#getusergifts
-func (api *API) GetUserGifts(params GetUserGiftsP) (OwnedGifts, error) {
+func (api *API) GetUserGifts(params GetUserGifts) (OwnedGifts, error) {
 	req := NewRequest[OwnedGifts]("getUserGifts", params)
 	return req.Do(api)
 }
@@ -96,7 +96,7 @@ func (api *API) GetUserGifts(params GetUserGiftsP) (OwnedGifts, error) {
 // GetUserGiftsWithContext is the context-aware variant of GetUserGifts.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#getusergifts
-func (api *API) GetUserGiftsWithContext(ctx context.Context, params GetUserGiftsP) (OwnedGifts, error) {
+func (api *API) GetUserGiftsWithContext(ctx context.Context, params GetUserGifts) (OwnedGifts, error) {
 	req := NewRequest[OwnedGifts]("getUserGifts", params)
 	return req.DoWithContext(ctx, api)
 }

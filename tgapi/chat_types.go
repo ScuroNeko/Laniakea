@@ -107,11 +107,12 @@ type ChatPermissions struct {
 	CanSendAudios        bool `json:"can_send_audios"`
 	CanSendDocuments     bool `json:"can_send_documents"`
 	CanSendPhotos        bool `json:"can_send_photos"`
+	CanSendVideos        bool `json:"can_send_videos"`
 	CanSendVideoNotes    bool `json:"can_send_video_notes"`
 	CanSendVoiceNotes    bool `json:"can_send_voice_notes"`
 	CanSendPolls         bool `json:"can_send_polls"`
 	CanSendOtherMessages bool `json:"can_send_other_messages"`
-	CanAddWebPagePreview bool `json:"can_add_web_page_preview"`
+	CanAddWebPagePreview bool `json:"can_add_web_page_previews"`
 	CanEditTag           bool `json:"can_edit_tag"`
 	CanChangeInfo        bool `json:"can_change_info"`
 	CanInviteUsers       bool `json:"can_invite_users"`
@@ -200,12 +201,13 @@ type ChatMember struct {
 	CanSendMessages      *bool `json:"can_send_messages,omitempty"`
 	CanSendAudios        *bool `json:"can_send_audios,omitempty"`
 	CanSendDocuments     *bool `json:"can_send_documents,omitempty"`
+	CanSendPhotos        *bool `json:"can_send_photos,omitempty"`
 	CanSendVideos        *bool `json:"can_send_videos,omitempty"`
 	CanSendVideoNotes    *bool `json:"can_send_video_notes,omitempty"`
 	CanSendVoiceNotes    *bool `json:"can_send_voice_notes,omitempty"`
 	CanSendPolls         *bool `json:"can_send_polls,omitempty"`
 	CanSendOtherMessages *bool `json:"can_send_other_messages,omitempty"`
-	CanAddWebPagePreview *bool `json:"can_add_web_page_preview,omitempty"`
+	CanAddWebPagePreview *bool `json:"can_add_web_page_previews,omitempty"`
 	CanEditTag           *bool `json:"can_edit_tag,omitempty"`
 }
 
@@ -234,6 +236,25 @@ type ChatBoost struct {
 // See https://core.telegram.org/bots/api#userchatboosts
 type UserChatBoosts struct {
 	Boosts []ChatBoost `json:"boosts"`
+}
+type ChatBoostAdded struct {
+	BoostCount int `json:"boost_count"`
+}
+
+type ChatBackground struct {
+	Type BackgroundType `json:"type"`
+}
+
+// ChatOwnerLeft describes a service message about a chat owner leaving.
+// See https://core.telegram.org/bots/api#chatownerleft
+type ChatOwnerLeft struct {
+	NewOwner *User `json:"new_owner,omitempty"`
+}
+
+// ChatOwnerChanged describes a service message about a chat owner change.
+// See https://core.telegram.org/bots/api#chatownerchanged
+type ChatOwnerChanged struct {
+	NewOwner User `json:"new_owner"`
 }
 
 // ChatAdministratorRights represents the rights of an administrator in a chat.

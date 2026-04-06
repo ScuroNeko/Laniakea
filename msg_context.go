@@ -100,7 +100,7 @@ func (ctx *MsgContext) edit(messageId int, text string, keyboard *InlineKeyboard
 		ctx.Logger.Errorln(err)
 		return nil
 	}
-	params := tgapi.EditMessageTextP{
+	params := tgapi.EditMessageText{
 		Text:      text,
 		ParseMode: parseMode,
 	}
@@ -184,7 +184,7 @@ func (ctx *MsgContext) editPhotoText(messageId int, text string, kb *InlineKeybo
 		ctx.Logger.Errorln(err)
 		return nil
 	}
-	params := tgapi.EditMessageCaptionP{
+	params := tgapi.EditMessageCaption{
 		Caption:   text,
 		ParseMode: parseMode,
 	}
@@ -250,7 +250,7 @@ func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard, parseMode t
 		ctx.Logger.Errorln(err)
 		return nil
 	}
-	params := tgapi.SendMessageP{
+	params := tgapi.SendMessage{
 		ChatID:    ctx.Msg.Chat.ID,
 		Text:      text,
 		ParseMode: parseMode,
@@ -380,7 +380,7 @@ func (ctx *MsgContext) answerPhoto(photoId, text string, kb *InlineKeyboard, par
 		ctx.Logger.Errorln(err)
 		return nil
 	}
-	params := tgapi.SendPhotoP{
+	params := tgapi.SendPhoto{
 		ChatID:    ctx.Msg.Chat.ID,
 		Caption:   text,
 		ParseMode: parseMode,
@@ -452,7 +452,7 @@ func (ctx *MsgContext) delete(messageId int) {
 		ctx.Logger.Errorln(ErrMessageContextNil)
 		return
 	}
-	_, err := ctx.Api.DeleteMessageWithContext(ctx.Context(), tgapi.DeleteMessageP{
+	_, err := ctx.Api.DeleteMessageWithContext(ctx.Context(), tgapi.DeleteMessage{
 		ChatID:    ctx.Msg.Chat.ID,
 		MessageID: messageId,
 	})
@@ -478,7 +478,7 @@ func (ctx *MsgContext) answerCallbackQuery(url, text string, showAlert bool) {
 	if len(ctx.CallbackQueryId) == 0 {
 		return
 	}
-	_, err := ctx.Api.AnswerCallbackQueryWithContext(ctx.Context(), tgapi.AnswerCallbackQueryP{
+	_, err := ctx.Api.AnswerCallbackQueryWithContext(ctx.Context(), tgapi.AnswerCallbackQuery{
 		CallbackQueryID: ctx.CallbackQueryId,
 		Text:            text, ShowAlert: showAlert, URL: url,
 	})
@@ -505,7 +505,7 @@ func (ctx *MsgContext) SendAction(action tgapi.ChatActionType) {
 		ctx.Logger.Errorln("Can't send action without chat message context")
 		return
 	}
-	params := tgapi.SendChatActionP{
+	params := tgapi.SendChatAction{
 		ChatID: ctx.Msg.Chat.ID, Action: action,
 	}
 	if ctx.Msg.MessageThreadID > 0 {

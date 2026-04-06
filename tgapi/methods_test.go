@@ -151,3 +151,60 @@ func TestGetUpdatesOmitsAllowedUpdatesWhenEmpty(t *testing.T) {
 		t.Fatalf("expected allowed_updates to be omitted, got %v", gotBody["allowed_updates"])
 	}
 }
+
+func TestSetChatMenuButtonSendsStructuredMenuButton(t *testing.T) {
+	var gotBody map[string]any
+
+	client := &http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			body, err := io.ReadAll(req.Body)
+			if err != nil {
+				t.Fatalf("failed to read request body: %v", err)
+			}
+			if err := json.Unmarshal(body, &gotBody); err != nil {
+				t.Fatalf("failed to decode request body: %v", err)
+			}
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(strings.NewReader(`{"ok":true,"result":true}`)),
+			}, nil
+		}),
+	}
+
+	api := NewAPI(
+		NewAPIOpts("token").
+			SetAPIUrl("https://example.test").
+			SetHTTPClient(client),
+	)
+	defer func() {
+		if err := api.Close(); err != nil {
+			t.Fatalf("Close returned error: %v", err)
+		}
+	}()
+
+	text := "Open"
+	if _, err := api.SetChatMenuButton(SetChatMenuButton{
+		ChatID: 42,
+		MenuButton: &MenuButton{
+			Type: MenuButtonWebAppType,
+			Text: &text,
+			WebApp: &WebAppInfo{
+				URL: "https://example.test/app",
+			},
+		},
+	}); err != nil {
+		t.Fatalf("SetChatMenuButton returned error: %v", err)
+	}
+
+	menuButton, ok := gotBody["menu_button"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected structured menu_button, got %#v", gotBody["menu_button"])
+	}
+	if menuButton["type"] != string(MenuButtonWebAppType) {
+		t.Fatalf("unexpected menu button type: %#v", menuButton["type"])
+	}
+	if menuButton["text"] != text {
+		t.Fatalf("unexpected menu button text: %#v", menuButton["text"])
+	}
+}

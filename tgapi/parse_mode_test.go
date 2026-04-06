@@ -7,7 +7,7 @@ import (
 )
 
 func TestParseNoneOmitsParseModeInJSON(t *testing.T) {
-	data, err := json.Marshal(SendMessageP{
+	data, err := json.Marshal(SendMessage{
 		ChatID:    42,
 		Text:      "hello",
 		ParseMode: ParseNone,
@@ -22,7 +22,7 @@ func TestParseNoneOmitsParseModeInJSON(t *testing.T) {
 }
 
 func TestParseModeStillSerializesExplicitModes(t *testing.T) {
-	data, err := json.Marshal(SendMessageP{
+	data, err := json.Marshal(SendMessage{
 		ChatID:    42,
 		Text:      "hello",
 		ParseMode: ParseMDV2,

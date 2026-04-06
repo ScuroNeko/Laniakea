@@ -2,9 +2,9 @@ package tgapi
 
 import "context"
 
-// SendPhotoP holds parameters for the sendPhoto method.
+// SendPhoto holds parameters for the sendPhoto method.
 // See https://core.telegram.org/bots/api#sendphoto
-type SendPhotoP struct {
+type SendPhoto struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
 	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
@@ -29,7 +29,7 @@ type SendPhotoP struct {
 
 // SendPhoto sends a photo.
 // See https://core.telegram.org/bots/api#sendphoto
-func (api *API) SendPhoto(params SendPhotoP) (Message, error) {
+func (api *API) SendPhoto(params SendPhoto) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendPhoto", params, params.ChatID)
 	return req.Do(api)
 }
@@ -37,14 +37,14 @@ func (api *API) SendPhoto(params SendPhotoP) (Message, error) {
 // SendPhotoWithContext is the context-aware variant of SendPhoto.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendphoto
-func (api *API) SendPhotoWithContext(ctx context.Context, params SendPhotoP) (Message, error) {
+func (api *API) SendPhotoWithContext(ctx context.Context, params SendPhoto) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendPhoto", params, params.ChatID)
 	return req.DoWithContext(ctx, api)
 }
 
-// SendAudioP holds parameters for the sendAudio method.
+// SendAudio holds parameters for the sendAudio method.
 // See https://core.telegram.org/bots/api#sendaudio
-type SendAudioP struct {
+type SendAudio struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
 	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
@@ -71,7 +71,7 @@ type SendAudioP struct {
 
 // SendAudio sends an audio file.
 // See https://core.telegram.org/bots/api#sendaudio
-func (api *API) SendAudio(params SendAudioP) (Message, error) {
+func (api *API) SendAudio(params SendAudio) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendAudio", params, params.ChatID)
 	return req.Do(api)
 }
@@ -79,14 +79,14 @@ func (api *API) SendAudio(params SendAudioP) (Message, error) {
 // SendAudioWithContext is the context-aware variant of SendAudio.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendaudio
-func (api *API) SendAudioWithContext(ctx context.Context, params SendAudioP) (Message, error) {
+func (api *API) SendAudioWithContext(ctx context.Context, params SendAudio) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendAudio", params, params.ChatID)
 	return req.DoWithContext(ctx, api)
 }
 
-// SendDocumentP holds parameters for the sendDocument method.
+// SendDocument holds parameters for the sendDocument method.
 // See https://core.telegram.org/bots/api#senddocument
-type SendDocumentP struct {
+type SendDocument struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
 	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
@@ -111,7 +111,7 @@ type SendDocumentP struct {
 
 // SendDocument sends a document.
 // See https://core.telegram.org/bots/api#senddocument
-func (api *API) SendDocument(params SendDocumentP) (Message, error) {
+func (api *API) SendDocument(params SendDocument) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendDocument", params, params.ChatID)
 	return req.Do(api)
 }
@@ -119,14 +119,14 @@ func (api *API) SendDocument(params SendDocumentP) (Message, error) {
 // SendDocumentWithContext is the context-aware variant of SendDocument.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#senddocument
-func (api *API) SendDocumentWithContext(ctx context.Context, params SendDocumentP) (Message, error) {
+func (api *API) SendDocumentWithContext(ctx context.Context, params SendDocument) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendDocument", params, params.ChatID)
 	return req.DoWithContext(ctx, api)
 }
 
-// SendVideoP holds parameters for the sendVideo method.
+// SendVideo holds parameters for the sendVideo method.
 // See https://core.telegram.org/bots/api#sendvideo
-type SendVideoP struct {
+type SendVideo struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
 	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
@@ -159,7 +159,7 @@ type SendVideoP struct {
 
 // SendVideo sends a video.
 // See https://core.telegram.org/bots/api#sendvideo
-func (api *API) SendVideo(params SendVideoP) (Message, error) {
+func (api *API) SendVideo(params SendVideo) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendVideo", params, params.ChatID)
 	return req.Do(api)
 }
@@ -167,14 +167,14 @@ func (api *API) SendVideo(params SendVideoP) (Message, error) {
 // SendVideoWithContext is the context-aware variant of SendVideo.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendvideo
-func (api *API) SendVideoWithContext(ctx context.Context, params SendVideoP) (Message, error) {
+func (api *API) SendVideoWithContext(ctx context.Context, params SendVideo) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendVideo", params, params.ChatID)
 	return req.DoWithContext(ctx, api)
 }
 
-// SendAnimationP holds parameters for the sendAnimation method.
+// SendAnimation holds parameters for the sendAnimation method.
 // See https://core.telegram.org/bots/api#sendanimation
-type SendAnimationP struct {
+type SendAnimation struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
 	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
@@ -203,7 +203,7 @@ type SendAnimationP struct {
 
 // SendAnimation sends an animation file (GIF or H.264/MPEG-4 AVC video without sound).
 // See https://core.telegram.org/bots/api#sendanimation
-func (api *API) SendAnimation(params SendAnimationP) (Message, error) {
+func (api *API) SendAnimation(params SendAnimation) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendAnimation", params, params.ChatID)
 	return req.Do(api)
 }
@@ -211,14 +211,14 @@ func (api *API) SendAnimation(params SendAnimationP) (Message, error) {
 // SendAnimationWithContext is the context-aware variant of SendAnimation.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendanimation
-func (api *API) SendAnimationWithContext(ctx context.Context, params SendAnimationP) (Message, error) {
+func (api *API) SendAnimationWithContext(ctx context.Context, params SendAnimation) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendAnimation", params, params.ChatID)
 	return req.DoWithContext(ctx, api)
 }
 
-// SendVoiceP holds parameters for the sendVoice method.
+// SendVoice holds parameters for the sendVoice method.
 // See https://core.telegram.org/bots/api#sendvoice
-type SendVoiceP struct {
+type SendVoice struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
 	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
@@ -241,7 +241,7 @@ type SendVoiceP struct {
 
 // SendVoice sends a voice note.
 // See https://core.telegram.org/bots/api#sendvoice
-func (api *API) SendVoice(params SendVoiceP) (Message, error) {
+func (api *API) SendVoice(params SendVoice) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendVoice", params, params.ChatID)
 	return req.Do(api)
 }
@@ -249,14 +249,14 @@ func (api *API) SendVoice(params SendVoiceP) (Message, error) {
 // SendVoiceWithContext is the context-aware variant of SendVoice.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendvoice
-func (api *API) SendVoiceWithContext(ctx context.Context, params SendVoiceP) (Message, error) {
+func (api *API) SendVoiceWithContext(ctx context.Context, params SendVoice) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendVoice", params, params.ChatID)
 	return req.DoWithContext(ctx, api)
 }
 
-// SendVideoNoteP holds parameters for the sendVideoNote method.
+// SendVideoNote holds parameters for the sendVideoNote method.
 // See https://core.telegram.org/bots/api#sendvideonote
-type SendVideoNoteP struct {
+type SendVideoNote struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
 	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
@@ -278,7 +278,7 @@ type SendVideoNoteP struct {
 
 // SendVideoNote sends a video note (rounded video message).
 // See https://core.telegram.org/bots/api#sendvideonote
-func (api *API) SendVideoNote(params SendVideoNoteP) (Message, error) {
+func (api *API) SendVideoNote(params SendVideoNote) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendVideoNote", params, params.ChatID)
 	return req.Do(api)
 }
@@ -286,14 +286,14 @@ func (api *API) SendVideoNote(params SendVideoNoteP) (Message, error) {
 // SendVideoNoteWithContext is the context-aware variant of SendVideoNote.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendvideonote
-func (api *API) SendVideoNoteWithContext(ctx context.Context, params SendVideoNoteP) (Message, error) {
+func (api *API) SendVideoNoteWithContext(ctx context.Context, params SendVideoNote) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendVideoNote", params, params.ChatID)
 	return req.DoWithContext(ctx, api)
 }
 
-// SendPaidMediaP holds parameters for the sendPaidMedia method.
+// SendPaidMedia holds parameters for the sendPaidMedia method.
 // See https://core.telegram.org/bots/api#sendpaidmedia
-type SendPaidMediaP struct {
+type SendPaidMedia struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
 	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
@@ -317,7 +317,7 @@ type SendPaidMediaP struct {
 
 // SendPaidMedia sends paid media.
 // See https://core.telegram.org/bots/api#sendpaidmedia
-func (api *API) SendPaidMedia(params SendPaidMediaP) (Message, error) {
+func (api *API) SendPaidMedia(params SendPaidMedia) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendPaidMedia", params, params.ChatID)
 	return req.Do(api)
 }
@@ -325,14 +325,14 @@ func (api *API) SendPaidMedia(params SendPaidMediaP) (Message, error) {
 // SendPaidMediaWithContext is the context-aware variant of SendPaidMedia.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendpaidmedia
-func (api *API) SendPaidMediaWithContext(ctx context.Context, params SendPaidMediaP) (Message, error) {
+func (api *API) SendPaidMediaWithContext(ctx context.Context, params SendPaidMedia) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendPaidMedia", params, params.ChatID)
 	return req.DoWithContext(ctx, api)
 }
 
-// SendMediaGroupP holds parameters for the sendMediaGroup method.
+// SendMediaGroup holds parameters for the sendMediaGroup method.
 // See https://core.telegram.org/bots/api#sendmediagroup
-type SendMediaGroupP struct {
+type SendMediaGroup struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
 	ChatID                int64  `json:"chat_id"`
 	MessageThreadID       int    `json:"message_thread_id,omitempty"`
@@ -348,7 +348,7 @@ type SendMediaGroupP struct {
 
 // SendMediaGroup sends a group of photos, videos, documents or audios as an album.
 // See https://core.telegram.org/bots/api#sendmediagroup
-func (api *API) SendMediaGroup(params SendMediaGroupP) ([]Message, error) {
+func (api *API) SendMediaGroup(params SendMediaGroup) ([]Message, error) {
 	req := NewRequestWithChatID[[]Message]("sendMediaGroup", params, params.ChatID)
 	return req.Do(api)
 }
@@ -356,7 +356,7 @@ func (api *API) SendMediaGroup(params SendMediaGroupP) ([]Message, error) {
 // SendMediaGroupWithContext is the context-aware variant of SendMediaGroup.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendmediagroup
-func (api *API) SendMediaGroupWithContext(ctx context.Context, params SendMediaGroupP) ([]Message, error) {
+func (api *API) SendMediaGroupWithContext(ctx context.Context, params SendMediaGroup) ([]Message, error) {
 	req := NewRequestWithChatID[[]Message]("sendMediaGroup", params, params.ChatID)
 	return req.DoWithContext(ctx, api)
 }

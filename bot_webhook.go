@@ -169,7 +169,7 @@ func (bot *Bot[T]) RunWebHookWithContext(ctx context.Context, opts *BotWebHookOp
 		if i.URL == "" {
 			bot.webHookLogger.Warnln("API returned webhook info with empty URL. There may be a long-poll")
 		} else {
-			_, err = bot.api.DeleteWebhookWithContext(runCtx, tgapi.DeleteWebhookP{})
+			_, err = bot.api.DeleteWebhookWithContext(runCtx, tgapi.DeleteWebhook{})
 			if err != nil {
 				return err
 			}
@@ -180,7 +180,7 @@ func (bot *Bot[T]) RunWebHookWithContext(ctx context.Context, opts *BotWebHookOp
 
 		var ok bool
 		if opts.Certificate != nil {
-			ok, err = bot.uploader.SetWebhookWithContext(runCtx, tgapi.UploadSetWebhookP{
+			ok, err = bot.uploader.SetWebhookWithContext(runCtx, tgapi.UploadSetWebhook{
 				URL:                fmt.Sprintf("%s%s", opts.URL, opts.Path),
 				IPAddress:          opts.IPAddress,
 				MaxConnections:     opts.MaxConnections,
@@ -189,7 +189,7 @@ func (bot *Bot[T]) RunWebHookWithContext(ctx context.Context, opts *BotWebHookOp
 				SecretToken:        opts.SecretToken,
 			}, tgapi.NewUploaderFile("certificate", opts.Certificate))
 		} else {
-			ok, err = bot.api.SetWebhookWithContext(runCtx, tgapi.SetWebhookP{
+			ok, err = bot.api.SetWebhookWithContext(runCtx, tgapi.SetWebhook{
 				URL:                fmt.Sprintf("%s%s", opts.URL, opts.Path),
 				IPAddress:          opts.IPAddress,
 				MaxConnections:     opts.MaxConnections,
@@ -229,7 +229,7 @@ func (bot *Bot[T]) CloseWebHook() error {
 	if bot.api == nil {
 		e = append(e, errors.New("bot api nil"))
 	} else {
-		if _, err := bot.api.DeleteWebhook(tgapi.DeleteWebhookP{}); err != nil {
+		if _, err := bot.api.DeleteWebhook(tgapi.DeleteWebhook{}); err != nil {
 			if bot.webHookLogger != nil {
 				bot.webHookLogger.Errorf("Failed to close webhook: %s", err.Error())
 			} else if bot.logger != nil {

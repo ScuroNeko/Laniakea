@@ -33,6 +33,48 @@ func (api *API) GetMeWithContext(ctx context.Context) (User, error) {
 	return req.DoWithContext(ctx, api)
 }
 
+// GetManagedBotToken holds parameters for the getManagedBotToken method.
+// See https://core.telegram.org/bots/api#getmanagedbottoken
+type GetManagedBotToken struct {
+	UserID int64 `json:"user_id"`
+}
+
+// GetManagedBotToken returns the current token of a managed bot.
+// See https://core.telegram.org/bots/api#getmanagedbottoken
+func (api *API) GetManagedBotToken(params GetManagedBotToken) (string, error) {
+	req := NewRequest[string]("getManagedBotToken", params)
+	return req.Do(api)
+}
+
+// GetManagedBotTokenWithContext is the context-aware variant of GetManagedBotToken.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#getmanagedbottoken
+func (api *API) GetManagedBotTokenWithContext(ctx context.Context, params GetManagedBotToken) (string, error) {
+	req := NewRequest[string]("getManagedBotToken", params)
+	return req.DoWithContext(ctx, api)
+}
+
+// ReplaceManagedBotToken holds parameters for the replaceManagedBotToken method.
+// See https://core.telegram.org/bots/api#replacemanagedbottoken
+type ReplaceManagedBotToken struct {
+	UserID int64 `json:"user_id"`
+}
+
+// ReplaceManagedBotToken replaces and returns the token of a managed bot.
+// See https://core.telegram.org/bots/api#replacemanagedbottoken
+func (api *API) ReplaceManagedBotToken(params ReplaceManagedBotToken) (string, error) {
+	req := NewRequest[string]("replaceManagedBotToken", params)
+	return req.Do(api)
+}
+
+// ReplaceManagedBotTokenWithContext is the context-aware variant of ReplaceManagedBotToken.
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#replacemanagedbottoken
+func (api *API) ReplaceManagedBotTokenWithContext(ctx context.Context, params ReplaceManagedBotToken) (string, error) {
+	req := NewRequest[string]("replaceManagedBotToken", params)
+	return req.DoWithContext(ctx, api)
+}
+
 // LogOut logs the bot out from the cloud Bot API server.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#logout
@@ -80,10 +122,10 @@ func (api *API) GetUpdatesWithContext(ctx context.Context, params UpdateParams) 
 	return req.DoWithContext(ctx, api)
 }
 
-// SetWebhookP holds parameters for the setWebhook method.
+// SetWebhook holds parameters for the setWebhook method.
 // To upload a self-signed certificate, use Uploader.SetWebhook.
 // See https://core.telegram.org/bots/api#setwebhook
-type SetWebhookP struct {
+type SetWebhook struct {
 	URL                string       `json:"url"`
 	IPAddress          string       `json:"ip_address,omitempty"`
 	MaxConnections     int8         `json:"max_connections,omitempty"`
@@ -96,7 +138,7 @@ type SetWebhookP struct {
 // For certificate upload, use Uploader.SetWebhook.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#setwebhook
-func (api *API) SetWebhook(params SetWebhookP) (bool, error) {
+func (api *API) SetWebhook(params SetWebhook) (bool, error) {
 	req := NewRequest[bool]("setWebhook", params)
 	return req.Do(api)
 }
@@ -105,21 +147,21 @@ func (api *API) SetWebhook(params SetWebhookP) (bool, error) {
 // It executes the same request but uses ctx for cancellation and deadlines.
 // For certificate upload, use Uploader.SetWebhook.
 // See https://core.telegram.org/bots/api#setwebhook
-func (api *API) SetWebhookWithContext(ctx context.Context, params SetWebhookP) (bool, error) {
+func (api *API) SetWebhookWithContext(ctx context.Context, params SetWebhook) (bool, error) {
 	req := NewRequest[bool]("setWebhook", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// DeleteWebhookP holds parameters for the deleteWebhook method.
+// DeleteWebhook holds parameters for the deleteWebhook method.
 // See https://core.telegram.org/bots/api#deletewebhook
-type DeleteWebhookP struct {
+type DeleteWebhook struct {
 	DropPendingUpdates bool `json:"drop_pending_updates,omitempty"`
 }
 
 // DeleteWebhook removes the current webhook integration.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#deletewebhook
-func (api *API) DeleteWebhook(params DeleteWebhookP) (bool, error) {
+func (api *API) DeleteWebhook(params DeleteWebhook) (bool, error) {
 	req := NewRequest[bool]("deleteWebhook", params)
 	return req.Do(api)
 }
@@ -127,7 +169,7 @@ func (api *API) DeleteWebhook(params DeleteWebhookP) (bool, error) {
 // DeleteWebhookWithContext is the context-aware variant of DeleteWebhook.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#deletewebhook
-func (api *API) DeleteWebhookWithContext(ctx context.Context, params DeleteWebhookP) (bool, error) {
+func (api *API) DeleteWebhookWithContext(ctx context.Context, params DeleteWebhook) (bool, error) {
 	req := NewRequest[bool]("deleteWebhook", params)
 	return req.DoWithContext(ctx, api)
 }
@@ -147,15 +189,15 @@ func (api *API) GetWebhookInfoWithContext(ctx context.Context) (WebhookInfo, err
 	return req.DoWithContext(ctx, api)
 }
 
-// GetFileP holds parameters for the getFile method.
+// GetFile holds parameters for the getFile method.
 // See https://core.telegram.org/bots/api#getfile
-type GetFileP struct {
-	FileId string `json:"file_id"`
+type GetFile struct {
+	FileID string `json:"file_id"`
 }
 
 // GetFile returns basic information about a file and prepares it for downloading.
 // See https://core.telegram.org/bots/api#getfile
-func (api *API) GetFile(params GetFileP) (File, error) {
+func (api *API) GetFile(params GetFile) (File, error) {
 	req := NewRequest[File]("getFile", params)
 	return req.Do(api)
 }
@@ -163,7 +205,7 @@ func (api *API) GetFile(params GetFileP) (File, error) {
 // GetFileWithContext is the context-aware variant of GetFile.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#getfile
-func (api *API) GetFileWithContext(ctx context.Context, params GetFileP) (File, error) {
+func (api *API) GetFileWithContext(ctx context.Context, params GetFile) (File, error) {
 	req := NewRequest[File]("getFile", params)
 	return req.DoWithContext(ctx, api)
 }

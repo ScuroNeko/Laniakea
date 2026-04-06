@@ -24,3 +24,9 @@ type PreparedInlineMessage struct {
 	ID             string `json:"id"`
 	ExpirationDate int    `json:"expiration_date"`
 }
+
+// PreparedKeyboardButton describes a prepared keyboard button.
+// See https://core.telegram.org/bots/api#preparedkeyboardbutton
+type PreparedKeyboardButton struct {
+	ID string `json:"id"`
+}

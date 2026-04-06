@@ -43,8 +43,8 @@ import (
 func (bot *Bot[T]) Updates(ctx context.Context) ([]tgapi.Update, error) {
 	offset := bot.GetUpdateOffset()
 	params := tgapi.UpdateParams{
-		Offset:         Ptr(offset),
-		Timeout:        Ptr(30),
+		Offset:         new(offset),
+		Timeout:        new(30),
 		AllowedUpdates: bot.GetUpdateTypes(),
 	}
 

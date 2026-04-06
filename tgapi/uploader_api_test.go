@@ -57,7 +57,7 @@ func TestUploaderEncodesJSONFieldsAndLeavesAcceptEncodingToHTTPTransport(t *test
 	}()
 
 	msg, err := uploader.SendPhoto(
-		UploadPhotoP{
+		UploadPhoto{
 			ChatID: 42,
 			CaptionEntities: []MessageEntity{{
 				Type:   MessageEntityBold,

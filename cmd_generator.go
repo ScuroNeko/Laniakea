@@ -112,7 +112,7 @@ func (bot *Bot[T]) AutoGenerateCommands() error {
 	}
 
 	// Clear existing commands to avoid duplication or stale entries
-	_, err := bot.api.DeleteMyCommands(tgapi.DeleteMyCommandsP{})
+	_, err := bot.api.DeleteMyCommands(tgapi.DeleteMyCommands{})
 	if err != nil {
 		return fmt.Errorf("failed to delete existing commands: %w", err)
 	}
@@ -125,7 +125,7 @@ func (bot *Bot[T]) AutoGenerateCommands() error {
 	}
 
 	for _, scope := range scopes {
-		_, err = bot.api.SetMyCommands(tgapi.SetMyCommandsP{
+		_, err = bot.api.SetMyCommands(tgapi.SetMyCommands{
 			Commands: commands,
 			Scope:    scope,
 		})
@@ -159,12 +159,12 @@ func (bot *Bot[T]) AutoGenerateCommandsForScope(scope *tgapi.BotCommandScope) er
 		return ErrTooManyCommands
 	}
 
-	_, err := bot.api.DeleteMyCommands(tgapi.DeleteMyCommandsP{Scope: scope})
+	_, err := bot.api.DeleteMyCommands(tgapi.DeleteMyCommands{Scope: scope})
 	if err != nil {
 		return fmt.Errorf("failed to delete existing commands: %w", err)
 	}
 
-	_, err = bot.api.SetMyCommands(tgapi.SetMyCommandsP{
+	_, err = bot.api.SetMyCommands(tgapi.SetMyCommands{
 		Commands: commands,
 		Scope:    scope,
 	})

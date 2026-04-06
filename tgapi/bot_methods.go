@@ -2,9 +2,9 @@ package tgapi
 
 import "context"
 
-// SetMyCommandsP holds parameters for the setMyCommands method.
+// SetMyCommands holds parameters for the setMyCommands method.
 // See https://core.telegram.org/bots/api#setmycommands
-type SetMyCommandsP struct {
+type SetMyCommands struct {
 	Commands []BotCommand     `json:"commands"`
 	Scope    *BotCommandScope `json:"scope,omitempty"`
 	Language string           `json:"language_code,omitempty"`
@@ -13,7 +13,7 @@ type SetMyCommandsP struct {
 // SetMyCommands changes the list of the bot's commands.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#setmycommands
-func (api *API) SetMyCommands(params SetMyCommandsP) (bool, error) {
+func (api *API) SetMyCommands(params SetMyCommands) (bool, error) {
 	req := NewRequest[bool]("setMyCommands", params)
 	return req.Do(api)
 }
@@ -21,14 +21,14 @@ func (api *API) SetMyCommands(params SetMyCommandsP) (bool, error) {
 // SetMyCommandsWithContext is the context-aware variant of SetMyCommands.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#setmycommands
-func (api *API) SetMyCommandsWithContext(ctx context.Context, params SetMyCommandsP) (bool, error) {
+func (api *API) SetMyCommandsWithContext(ctx context.Context, params SetMyCommands) (bool, error) {
 	req := NewRequest[bool]("setMyCommands", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// DeleteMyCommandsP holds parameters for the deleteMyCommands method.
+// DeleteMyCommands holds parameters for the deleteMyCommands method.
 // See https://core.telegram.org/bots/api#deletemycommands
-type DeleteMyCommandsP struct {
+type DeleteMyCommands struct {
 	Scope    *BotCommandScope `json:"scope,omitempty"`
 	Language string           `json:"language_code,omitempty"`
 }
@@ -36,7 +36,7 @@ type DeleteMyCommandsP struct {
 // DeleteMyCommands deletes the list of the bot's commands for the given scope and user language.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#deletemycommands
-func (api *API) DeleteMyCommands(params DeleteMyCommandsP) (bool, error) {
+func (api *API) DeleteMyCommands(params DeleteMyCommands) (bool, error) {
 	req := NewRequest[bool]("deleteMyCommands", params)
 	return req.Do(api)
 }
@@ -44,7 +44,7 @@ func (api *API) DeleteMyCommands(params DeleteMyCommandsP) (bool, error) {
 // DeleteMyCommandsWithContext is the context-aware variant of DeleteMyCommands.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#deletemycommands
-func (api *API) DeleteMyCommandsWithContext(ctx context.Context, params DeleteMyCommandsP) (bool, error) {
+func (api *API) DeleteMyCommandsWithContext(ctx context.Context, params DeleteMyCommands) (bool, error) {
 	req := NewRequest[bool]("deleteMyCommands", params)
 	return req.DoWithContext(ctx, api)
 }
@@ -203,16 +203,16 @@ func (api *API) GetMyShortDescriptionWithContext(ctx context.Context, params Get
 	return req.DoWithContext(ctx, api)
 }
 
-// SetMyProfilePhotoP holds parameters for the setMyProfilePhoto method.
+// SetMyProfilePhoto holds parameters for the setMyProfilePhoto method.
 // See https://core.telegram.org/bots/api#setmyprofilephoto
-type SetMyProfilePhotoP struct {
+type SetMyProfilePhoto struct {
 	Photo InputProfilePhoto `json:"photo"`
 }
 
 // SetMyProfilePhoto changes the bot's profile photo.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#setmyprofilephoto
-func (api *API) SetMyProfilePhoto(params SetMyProfilePhotoP) (bool, error) {
+func (api *API) SetMyProfilePhoto(params SetMyProfilePhoto) (bool, error) {
 	req := NewRequest[bool]("setMyProfilePhoto", params)
 	return req.Do(api)
 }
@@ -220,7 +220,7 @@ func (api *API) SetMyProfilePhoto(params SetMyProfilePhotoP) (bool, error) {
 // SetMyProfilePhotoWithContext is the context-aware variant of SetMyProfilePhoto.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#setmyprofilephoto
-func (api *API) SetMyProfilePhotoWithContext(ctx context.Context, params SetMyProfilePhotoP) (bool, error) {
+func (api *API) SetMyProfilePhotoWithContext(ctx context.Context, params SetMyProfilePhoto) (bool, error) {
 	req := NewRequest[bool]("setMyProfilePhoto", params)
 	return req.DoWithContext(ctx, api)
 }
@@ -241,17 +241,17 @@ func (api *API) RemoveMyProfilePhotoWithContext(ctx context.Context) (bool, erro
 	return req.DoWithContext(ctx, api)
 }
 
-// SetChatMenuButtonP holds parameters for the setChatMenuButton method.
+// SetChatMenuButton holds parameters for the setChatMenuButton method.
 // See https://core.telegram.org/bots/api#setchatmenubutton
-type SetChatMenuButtonP struct {
-	ChatID     int64          `json:"chat_id,omitempty"`
-	MenuButton MenuButtonType `json:"menu_button"`
+type SetChatMenuButton struct {
+	ChatID     int64       `json:"chat_id,omitempty"`
+	MenuButton *MenuButton `json:"menu_button,omitempty"`
 }
 
 // SetChatMenuButton changes the menu button for a given chat or the default menu button.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#setchatmenubutton
-func (api *API) SetChatMenuButton(params SetChatMenuButtonP) (bool, error) {
+func (api *API) SetChatMenuButton(params SetChatMenuButton) (bool, error) {
 	req := NewRequest[bool]("setChatMenuButton", params)
 	return req.Do(api)
 }
@@ -259,20 +259,20 @@ func (api *API) SetChatMenuButton(params SetChatMenuButtonP) (bool, error) {
 // SetChatMenuButtonWithContext is the context-aware variant of SetChatMenuButton.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#setchatmenubutton
-func (api *API) SetChatMenuButtonWithContext(ctx context.Context, params SetChatMenuButtonP) (bool, error) {
+func (api *API) SetChatMenuButtonWithContext(ctx context.Context, params SetChatMenuButton) (bool, error) {
 	req := NewRequest[bool]("setChatMenuButton", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// GetChatMenuButtonP holds parameters for the getChatMenuButton method.
+// GetChatMenuButton holds parameters for the getChatMenuButton method.
 // See https://core.telegram.org/bots/api#getchatmenubutton
-type GetChatMenuButtonP struct {
+type GetChatMenuButton struct {
 	ChatID int64 `json:"chat_id,omitempty"`
 }
 
 // GetChatMenuButton returns the current menu button for the given chat.
 // See https://core.telegram.org/bots/api#getchatmenubutton
-func (api *API) GetChatMenuButton(params GetChatMenuButtonP) (MenuButton, error) {
+func (api *API) GetChatMenuButton(params GetChatMenuButton) (MenuButton, error) {
 	req := NewRequest[MenuButton]("getChatMenuButton", params)
 	return req.Do(api)
 }
@@ -280,14 +280,14 @@ func (api *API) GetChatMenuButton(params GetChatMenuButtonP) (MenuButton, error)
 // GetChatMenuButtonWithContext is the context-aware variant of GetChatMenuButton.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#getchatmenubutton
-func (api *API) GetChatMenuButtonWithContext(ctx context.Context, params GetChatMenuButtonP) (MenuButton, error) {
+func (api *API) GetChatMenuButtonWithContext(ctx context.Context, params GetChatMenuButton) (MenuButton, error) {
 	req := NewRequest[MenuButton]("getChatMenuButton", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// SetMyDefaultAdministratorRightsP holds parameters for the setMyDefaultAdministratorRights method.
+// SetMyDefaultAdministratorRights holds parameters for the setMyDefaultAdministratorRights method.
 // See https://core.telegram.org/bots/api#setmydefaultadministratorrights
-type SetMyDefaultAdministratorRightsP struct {
+type SetMyDefaultAdministratorRights struct {
 	Rights      *ChatAdministratorRights `json:"rights"`
 	ForChannels bool                     `json:"for_channels"`
 }
@@ -295,7 +295,7 @@ type SetMyDefaultAdministratorRightsP struct {
 // SetMyDefaultAdministratorRights changes the default administrator rights for the bot.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#setmydefaultadministratorrights
-func (api *API) SetMyDefaultAdministratorRights(params SetMyDefaultAdministratorRightsP) (bool, error) {
+func (api *API) SetMyDefaultAdministratorRights(params SetMyDefaultAdministratorRights) (bool, error) {
 	req := NewRequest[bool]("setMyDefaultAdministratorRights", params)
 	return req.Do(api)
 }
@@ -303,20 +303,20 @@ func (api *API) SetMyDefaultAdministratorRights(params SetMyDefaultAdministrator
 // SetMyDefaultAdministratorRightsWithContext is the context-aware variant of SetMyDefaultAdministratorRights.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#setmydefaultadministratorrights
-func (api *API) SetMyDefaultAdministratorRightsWithContext(ctx context.Context, params SetMyDefaultAdministratorRightsP) (bool, error) {
+func (api *API) SetMyDefaultAdministratorRightsWithContext(ctx context.Context, params SetMyDefaultAdministratorRights) (bool, error) {
 	req := NewRequest[bool]("setMyDefaultAdministratorRights", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// GetMyDefaultAdministratorRightsP holds parameters for the getMyDefaultAdministratorRights method.
+// GetMyDefaultAdministratorRights holds parameters for the getMyDefaultAdministratorRights method.
 // See https://core.telegram.org/bots/api#getmydefaultadministratorrights
-type GetMyDefaultAdministratorRightsP struct {
+type GetMyDefaultAdministratorRights struct {
 	ForChannels bool `json:"for_channels"`
 }
 
 // GetMyDefaultAdministratorRights returns the current default administrator rights for the bot.
 // See https://core.telegram.org/bots/api#getmydefaultadministratorrights
-func (api *API) GetMyDefaultAdministratorRights(params GetMyDefaultAdministratorRightsP) (ChatAdministratorRights, error) {
+func (api *API) GetMyDefaultAdministratorRights(params GetMyDefaultAdministratorRights) (ChatAdministratorRights, error) {
 	req := NewRequest[ChatAdministratorRights]("getMyDefaultAdministratorRights", params)
 	return req.Do(api)
 }
@@ -324,7 +324,7 @@ func (api *API) GetMyDefaultAdministratorRights(params GetMyDefaultAdministrator
 // GetMyDefaultAdministratorRightsWithContext is the context-aware variant of GetMyDefaultAdministratorRights.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#getmydefaultadministratorrights
-func (api *API) GetMyDefaultAdministratorRightsWithContext(ctx context.Context, params GetMyDefaultAdministratorRightsP) (ChatAdministratorRights, error) {
+func (api *API) GetMyDefaultAdministratorRightsWithContext(ctx context.Context, params GetMyDefaultAdministratorRights) (ChatAdministratorRights, error) {
 	req := NewRequest[ChatAdministratorRights]("getMyDefaultAdministratorRights", params)
 	return req.DoWithContext(ctx, api)
 }
@@ -344,9 +344,9 @@ func (api *API) GetAvailableGiftsWithContext(ctx context.Context) (Gifts, error)
 	return req.DoWithContext(ctx, api)
 }
 
-// SendGiftP holds parameters for the sendGift method.
+// SendGift holds parameters for the sendGift method.
 // See https://core.telegram.org/bots/api#sendgift
-type SendGiftP struct {
+type SendGift struct {
 	UserID        int64           `json:"user_id,omitempty"`
 	ChatID        int64           `json:"chat_id,omitempty"`
 	GiftID        string          `json:"gift_id"`
@@ -359,7 +359,7 @@ type SendGiftP struct {
 // SendGift sends a gift to the given user or chat.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#sendgift
-func (api *API) SendGift(params SendGiftP) (bool, error) {
+func (api *API) SendGift(params SendGift) (bool, error) {
 	req := NewRequest[bool]("sendGift", params)
 	return req.Do(api)
 }
@@ -367,14 +367,14 @@ func (api *API) SendGift(params SendGiftP) (bool, error) {
 // SendGiftWithContext is the context-aware variant of SendGift.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendgift
-func (api *API) SendGiftWithContext(ctx context.Context, params SendGiftP) (bool, error) {
+func (api *API) SendGiftWithContext(ctx context.Context, params SendGift) (bool, error) {
 	req := NewRequest[bool]("sendGift", params)
 	return req.DoWithContext(ctx, api)
 }
 
-// GiftPremiumSubscriptionP holds parameters for the giftPremiumSubscription method.
+// GiftPremiumSubscription holds parameters for the giftPremiumSubscription method.
 // See https://core.telegram.org/bots/api#giftpremiumsubscription
-type GiftPremiumSubscriptionP struct {
+type GiftPremiumSubscription struct {
 	UserID        int64           `json:"user_id"`
 	MonthCount    int             `json:"month_count"`
 	StarCount     int             `json:"star_count"`
@@ -386,7 +386,7 @@ type GiftPremiumSubscriptionP struct {
 // GiftPremiumSubscription gifts a Telegram Premium subscription to the user.
 // Returns true on success.
 // See https://core.telegram.org/bots/api#giftpremiumsubscription
-func (api *API) GiftPremiumSubscription(params GiftPremiumSubscriptionP) (bool, error) {
+func (api *API) GiftPremiumSubscription(params GiftPremiumSubscription) (bool, error) {
 	req := NewRequest[bool]("giftPremiumSubscription", params)
 	return req.Do(api)
 }
@@ -394,7 +394,7 @@ func (api *API) GiftPremiumSubscription(params GiftPremiumSubscriptionP) (bool, 
 // GiftPremiumSubscriptionWithContext is the context-aware variant of GiftPremiumSubscription.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#giftpremiumsubscription
-func (api *API) GiftPremiumSubscriptionWithContext(ctx context.Context, params GiftPremiumSubscriptionP) (bool, error) {
+func (api *API) GiftPremiumSubscriptionWithContext(ctx context.Context, params GiftPremiumSubscription) (bool, error) {
 	req := NewRequest[bool]("giftPremiumSubscription", params)
 	return req.DoWithContext(ctx, api)
 }
