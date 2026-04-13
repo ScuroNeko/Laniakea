@@ -14,6 +14,8 @@ type HandlerEventKind string
 const (
 	// HandlerCommandKind identifies a command handler.
 	HandlerCommandKind HandlerEventKind = "command"
+	// HandlerMessageKind identifies a message fallback handler.
+	HandlerMessageKind HandlerEventKind = "message"
 	// HandlerPayloadKind identifies a callback payload handler.
 	HandlerPayloadKind HandlerEventKind = "payload"
 	// HandlerUpdateKind identifies a generic update handler.

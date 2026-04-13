@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.0-rc.15
+
+### Changed
+- Added plugin-level message fallback handlers for text messages and channel posts that do not match commands.
+
+### Tests
+- Added regression coverage for plugin message fallback routing, observer lifecycle events, command precedence, and middleware blocking.
+
 ## v1.0.0-rc.14
 
 ### Bot API 9.6

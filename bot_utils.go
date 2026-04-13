@@ -122,15 +122,16 @@ func shouldWarnOnValueAppData[T any]() bool {
 
 func clonePlugin[T AppData](p *Plugin[T]) Plugin[T] {
 	cloned := Plugin[T]{
-		name:        p.name,
-		commands:    make(map[string]*Command[T], len(p.commands)),
-		payloads:    make(map[string]*Command[T], len(p.payloads)),
-		scenes:      make(map[string]*Scene[T], len(p.scenes)),
-		middlewares: append(extypes.Slice[Middleware[T]](nil), p.middlewares...),
-		skipAutoCmd: p.skipAutoCmd,
-		logger:      p.logger,
-		handlers:    make(map[tgapi.UpdateType]CommandExecutor[T]),
-		onClose:     p.onClose,
+		name:            p.name,
+		commands:        make(map[string]*Command[T], len(p.commands)),
+		payloads:        make(map[string]*Command[T], len(p.payloads)),
+		scenes:          make(map[string]*Scene[T], len(p.scenes)),
+		middlewares:     append(extypes.Slice[Middleware[T]](nil), p.middlewares...),
+		skipAutoCmd:     p.skipAutoCmd,
+		logger:          p.logger,
+		messageFallback: p.messageFallback,
+		handlers:        make(map[tgapi.UpdateType]CommandExecutor[T]),
+		onClose:         p.onClose,
 	}
 
 	for name, command := range p.commands {

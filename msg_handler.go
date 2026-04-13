@@ -8,27 +8,14 @@ import (
 )
 
 func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) bool {
-	var msg *tgapi.Message
-	if update.Message != nil {
-		msg = update.Message
-	} else if update.ChannelPost != nil {
-		msg = update.ChannelPost
-	} else {
-		return false
-	}
-
-	var text string
-	if len(msg.Text) > 0 {
-		text = msg.Text
-	} else if len(msg.Caption) > 0 {
-		text = msg.Caption
-	} else {
+	text, ok := messageText(update)
+	if !ok {
 		return false
 	}
 
 	prefix, cmd, args := bot.parseCommand(text)
 	if cmd == "" {
-		return false
+		return bot.handleFallback(update, ctx)
 	}
 	ctx.Prefix = prefix
 
@@ -99,7 +86,98 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) bool {
 			return true
 		}
 	}
-	return false
+
+	return bot.handleFallback(update, ctx)
+}
+
+func (bot *Bot[T]) handleFallback(update *tgapi.Update, ctx *MsgContext) bool {
+	text, ok := messageText(update)
+	if !ok {
+		return false
+	}
+
+	prefix, _, _ := bot.parseCommand(text)
+	handled := false
+	for _, plugin := range bot.plugins {
+		if plugin.messageFallback == nil {
+			continue
+		}
+
+		pluginCtx := cloneMsgContext(ctx)
+		pluginCtx.Prefix = prefix
+		pluginCtx.Text = text
+		pluginCtx.Args = strings.Fields(text)
+		if plugin.logger != nil {
+			pluginCtx.Logger = plugin.logger
+		}
+		if !plugin.executeMiddlewares(pluginCtx, bot.appData) {
+			continue
+		}
+
+		startTime := time.Now()
+		bot.safeEmitEvent(pluginCtx.Context(), HandlerStartedEvent{
+			UpdateID:    update.UpdateID,
+			UpdateType:  update.Type,
+			Plugin:      plugin.name,
+			HandlerKind: HandlerMessageKind,
+			HandlerName: "message_fallback",
+			FromID:      pluginCtx.FromID,
+			ChatID:      pluginCtx.ChatID,
+		})
+		err := plugin.messageFallback(pluginCtx, bot.appData)
+		endEvent := HandlerFinishedEvent{
+			UpdateID:    update.UpdateID,
+			UpdateType:  update.Type,
+			Plugin:      plugin.name,
+			HandlerKind: HandlerMessageKind,
+			HandlerName: "message_fallback",
+			FromID:      pluginCtx.FromID,
+			ChatID:      pluginCtx.ChatID,
+			Duration:    time.Since(startTime),
+		}
+		if err != nil {
+			endEvent.Err = err
+			endEvent.UserFacing = IsUserError(err)
+		}
+		bot.safeEmitEvent(pluginCtx.Context(), endEvent)
+		if err != nil {
+			pluginCtx.error(err)
+			bot.safeEmitEvent(pluginCtx.Context(), ErrorEvent{
+				UpdateID:    update.UpdateID,
+				UpdateType:  update.Type,
+				Plugin:      plugin.name,
+				HandlerKind: HandlerMessageKind,
+				HandlerName: "message_fallback",
+				FromID:      pluginCtx.FromID,
+				ChatID:      pluginCtx.ChatID,
+				Err:         err,
+				UserFacing:  IsUserError(err),
+			})
+		}
+		handled = true
+	}
+	return handled
+}
+
+func messageText(update *tgapi.Update) (string, bool) {
+	var msg *tgapi.Message
+	if update.Message != nil {
+		msg = update.Message
+	} else if update.ChannelPost != nil {
+		msg = update.ChannelPost
+	} else {
+		return "", false
+	}
+
+	var text string
+	if len(msg.Text) > 0 {
+		text = msg.Text
+	} else if len(msg.Caption) > 0 {
+		text = msg.Caption
+	} else {
+		return "", false
+	}
+	return text, true
 }
 
 func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) bool {

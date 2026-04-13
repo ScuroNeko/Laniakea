@@ -13,13 +13,16 @@ type recordingObserver struct {
 	started  []HandlerStartedEvent
 	finished []HandlerFinishedEvent
 	errors   []ErrorEvent
+	handled  []UpdateHandledEvent
 	policies []PolicyCheckedEvent
 	runners  []RunnerFinishedEvent
 	retries  []PollingRetryEvent
 }
 
 func (*recordingObserver) OnReceiveUpdate(context.Context, UpdateReceivedEvent) {}
-func (*recordingObserver) OnHandledUpdate(context.Context, UpdateHandledEvent)  {}
+func (o *recordingObserver) OnHandledUpdate(_ context.Context, ev UpdateHandledEvent) {
+	o.handled = append(o.handled, ev)
+}
 func (o *recordingObserver) OnHandlerStarted(_ context.Context, ev HandlerStartedEvent) {
 	o.started = append(o.started, ev)
 }
@@ -581,6 +584,169 @@ func TestHandleUpdateObserverEmitsUpdateErrors(t *testing.T) {
 	}
 	if got := observer.finished[0]; got.HandlerKind != HandlerUpdateKind || got.HandlerName != string(tgapi.UpdateTypeInlineQuery) || got.Plugin != "test" || got.Err == nil || !got.UserFacing {
 		t.Fatalf("unexpected finished event: %#v", got)
+	}
+}
+
+func TestHandleMessageFallbackRunsAfterCommandMiss(t *testing.T) {
+	observer := &recordingObserver{}
+	called := false
+	plugin := NewPlugin[NoData]("test")
+	plugin.SetMessageFallback(func(ctx *MsgContext, db NoData) error {
+		called = true
+		if ctx.Text != "/missing hello world" {
+			t.Fatalf("unexpected fallback text: got %q", ctx.Text)
+		}
+		if ctx.Prefix != "/" {
+			t.Fatalf("unexpected fallback prefix: got %q", ctx.Prefix)
+		}
+		wantArgs := []string{"/missing", "hello", "world"}
+		if len(ctx.Args) != len(wantArgs) || ctx.Args[0] != wantArgs[0] || ctx.Args[1] != wantArgs[1] || ctx.Args[2] != wantArgs[2] {
+			t.Fatalf("unexpected fallback args: got %v want %v", ctx.Args, wantArgs)
+		}
+		return nil
+	})
+
+	bot := &Bot[NoData]{
+		logger:   slog.CreateLogger(),
+		prefixes: []string{"/"},
+		observer: observer,
+	}
+	bot.AddPlugins(plugin)
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 5,
+		Type:     tgapi.UpdateTypeMessage,
+		Message: &tgapi.Message{
+			MessageID: 1,
+			Text:      "/missing hello world",
+			From:      &tgapi.User{ID: 41},
+			Chat:      &tgapi.Chat{ID: 99},
+		},
+	})
+
+	if !called {
+		t.Fatal("expected message fallback to be called")
+	}
+	if len(observer.started) != 1 {
+		t.Fatalf("expected one started event, got %d", len(observer.started))
+	}
+	if got := observer.started[0]; got.HandlerKind != HandlerMessageKind || got.HandlerName != "message_fallback" || got.Plugin != "test" {
+		t.Fatalf("unexpected started event: %#v", got)
+	}
+	if len(observer.finished) != 1 {
+		t.Fatalf("expected one finished event, got %d", len(observer.finished))
+	}
+	if got := observer.finished[0]; got.HandlerKind != HandlerMessageKind || got.HandlerName != "message_fallback" || got.Plugin != "test" || got.Err != nil {
+		t.Fatalf("unexpected finished event: %#v", got)
+	}
+	if len(observer.handled) != 1 || !observer.handled[0].Handled {
+		t.Fatalf("expected handled update event, got %#v", observer.handled)
+	}
+}
+
+func TestHandleMessageFallbackRunsForPlainText(t *testing.T) {
+	called := false
+	plugin := NewPlugin[NoData]("test").SetMessageFallback(func(ctx *MsgContext, db NoData) error {
+		called = true
+		if ctx.Text != "hello fallback" {
+			t.Fatalf("unexpected fallback text: got %q", ctx.Text)
+		}
+		if ctx.Prefix != "" {
+			t.Fatalf("unexpected fallback prefix: got %q", ctx.Prefix)
+		}
+		return nil
+	})
+
+	bot := &Bot[NoData]{
+		logger:   slog.CreateLogger(),
+		prefixes: []string{"/"},
+	}
+	bot.AddPlugins(plugin)
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 6,
+		Type:     tgapi.UpdateTypeMessage,
+		Message: &tgapi.Message{
+			MessageID: 1,
+			Text:      "hello fallback",
+			From:      &tgapi.User{ID: 41},
+			Chat:      &tgapi.Chat{ID: 99},
+		},
+	})
+
+	if !called {
+		t.Fatal("expected message fallback to be called")
+	}
+}
+
+func TestHandleMessageFallbackRespectsMiddleware(t *testing.T) {
+	called := false
+	plugin := NewPlugin[NoData]("test")
+	plugin.AddMiddleware(NewMiddleware("block", func(ctx *MsgContext, db NoData) bool {
+		return false
+	}))
+	plugin.SetMessageFallback(func(ctx *MsgContext, db NoData) error {
+		called = true
+		return nil
+	})
+
+	bot := &Bot[NoData]{
+		logger:   slog.CreateLogger(),
+		prefixes: []string{"/"},
+	}
+	bot.AddPlugins(plugin)
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 7,
+		Type:     tgapi.UpdateTypeMessage,
+		Message: &tgapi.Message{
+			MessageID: 1,
+			Text:      "blocked",
+			From:      &tgapi.User{ID: 41},
+			Chat:      &tgapi.Chat{ID: 99},
+		},
+	})
+
+	if called {
+		t.Fatal("message fallback must not run when plugin middleware blocks")
+	}
+}
+
+func TestHandleMessageFallbackDoesNotRunWhenCommandMatches(t *testing.T) {
+	commandCalled := false
+	fallbackCalled := false
+	plugin := NewPlugin[NoData]("test")
+	plugin.NewCommand(func(ctx *MsgContext, db NoData) error {
+		commandCalled = true
+		return nil
+	}, "start")
+	plugin.SetMessageFallback(func(ctx *MsgContext, db NoData) error {
+		fallbackCalled = true
+		return nil
+	})
+
+	bot := &Bot[NoData]{
+		logger:   slog.CreateLogger(),
+		prefixes: []string{"/"},
+	}
+	bot.AddPlugins(plugin)
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 8,
+		Type:     tgapi.UpdateTypeMessage,
+		Message: &tgapi.Message{
+			MessageID: 1,
+			Text:      "/start",
+			From:      &tgapi.User{ID: 41},
+			Chat:      &tgapi.Chat{ID: 99},
+		},
+	})
+
+	if !commandCalled {
+		t.Fatal("expected command handler to be called")
+	}
+	if fallbackCalled {
+		t.Fatal("message fallback must not run when command matches")
 	}
 }
 

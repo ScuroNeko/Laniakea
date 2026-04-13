@@ -171,7 +171,8 @@ type Plugin[T AppData] struct {
 	skipAutoCmd bool                         // If true, all commands in this plugin are excluded from auto-help
 	logger      *slog.Logger
 
-	handlers map[tgapi.UpdateType]CommandExecutor[T]
+	messageFallback CommandExecutor[T]
+	handlers        map[tgapi.UpdateType]CommandExecutor[T]
 
 	onClose func() error
 }
@@ -243,18 +244,18 @@ func (p *Plugin[T]) AddScene(scene *Scene[T]) *Plugin[T] {
 	return p
 }
 
-// UsePolicy registers a Policy as plugin middleware for all plugin handlers.
-func (p *Plugin[T]) UsePolicy(name string, policy Policy[T]) *Plugin[T] {
-	mw := RequirePolicy(name, policy)
-	return p.AddMiddleware(mw)
-}
-
 // NewScene creates, registers, and returns a new scene owned by the plugin.
 func (p *Plugin[T]) NewScene(name string) *Scene[T] {
 	scene := NewScene[T](name)
 	scene.setPluginName(p.name)
 	p.AddScene(scene)
 	return scene
+}
+
+// UsePolicy registers a Policy as plugin middleware for all plugin handlers.
+func (p *Plugin[T]) UsePolicy(name string, policy Policy[T]) *Plugin[T] {
+	mw := RequirePolicy(name, policy)
+	return p.AddMiddleware(mw)
 }
 
 // AddUpdateHandler registers a handler for a non-command update type.
@@ -313,6 +314,13 @@ func (p *Plugin[T]) RemoveLogger() *Plugin[T] {
 // the original *Plugin does not update the Bot's internal copy.
 func (p *Plugin[T]) SetOnClose(f func() error) *Plugin[T] {
 	p.onClose = f
+	return p
+}
+
+// SetMessageFallback registers a fallback handler for messages that do not
+// match a command.
+func (p *Plugin[T]) SetMessageFallback(handler CommandExecutor[T]) *Plugin[T] {
+	p.messageFallback = handler
 	return p
 }
 
