@@ -53,7 +53,7 @@ func TestRequirePolicyStopsExecutionOnDeniedPolicy(t *testing.T) {
 		errorTemplate: "Error: %s",
 	}
 
-	mw := RequirePolicy[NoData]("deny", func(ctx *MsgContext, data NoData) error {
+	mw := RequirePolicy("deny", func(ctx *MsgContext, data NoData) error {
 		return AsUserError(errors.New("blocked"))
 	})
 
@@ -159,7 +159,7 @@ func TestRequireChatAdminUsesNormalizedIDs(t *testing.T) {
 
 func TestAllPoliciesReturnsFirstError(t *testing.T) {
 	want := AsUserError(errors.New("blocked"))
-	policy := AllPolicies[NoData](
+	policy := AllPolicies(
 		func(ctx *MsgContext, data NoData) error { return nil },
 		func(ctx *MsgContext, data NoData) error { return want },
 		func(ctx *MsgContext, data NoData) error {
@@ -175,7 +175,7 @@ func TestAllPoliciesReturnsFirstError(t *testing.T) {
 }
 
 func TestAnyPolicyAllowsLaterSuccessAfterInternalError(t *testing.T) {
-	policy := AnyPolicy[NoData](
+	policy := AnyPolicy(
 		func(ctx *MsgContext, data NoData) error { return AsInternalError(errors.New("temporary")) },
 		func(ctx *MsgContext, data NoData) error { return nil },
 	)
@@ -187,7 +187,7 @@ func TestAnyPolicyAllowsLaterSuccessAfterInternalError(t *testing.T) {
 
 func TestAnyPolicyReturnsInternalErrorWhenNonePass(t *testing.T) {
 	internal := AsInternalError(errors.New("temporary"))
-	policy := AnyPolicy[NoData](
+	policy := AnyPolicy(
 		func(ctx *MsgContext, data NoData) error { return AsUserError(errors.New("denied")) },
 		func(ctx *MsgContext, data NoData) error { return internal },
 	)
@@ -200,7 +200,7 @@ func TestAnyPolicyReturnsInternalErrorWhenNonePass(t *testing.T) {
 
 func TestAnyPolicyReturnsFirstDenyWhenNoPolicyPasses(t *testing.T) {
 	first := AsUserError(errors.New("first deny"))
-	policy := AnyPolicy[NoData](
+	policy := AnyPolicy(
 		func(ctx *MsgContext, data NoData) error { return first },
 		func(ctx *MsgContext, data NoData) error { return AsUserError(errors.New("second deny")) },
 	)
@@ -212,7 +212,7 @@ func TestAnyPolicyReturnsFirstDenyWhenNoPolicyPasses(t *testing.T) {
 }
 
 func TestNotPolicyInvertsUserDenyButPreservesInternalErrors(t *testing.T) {
-	inverted := NotPolicy[NoData](func(ctx *MsgContext, data NoData) error {
+	inverted := NotPolicy(func(ctx *MsgContext, data NoData) error {
 		return AsUserError(errors.New("denied"))
 	})
 	if err := inverted(&MsgContext{Logger: slog.CreateLogger()}, NoData{}); err != nil {
@@ -220,7 +220,7 @@ func TestNotPolicyInvertsUserDenyButPreservesInternalErrors(t *testing.T) {
 	}
 
 	internal := AsInternalError(errors.New("temporary"))
-	preserve := NotPolicy[NoData](func(ctx *MsgContext, data NoData) error {
+	preserve := NotPolicy(func(ctx *MsgContext, data NoData) error {
 		return internal
 	})
 	err := preserve(&MsgContext{Logger: slog.CreateLogger()}, NoData{})
@@ -240,7 +240,7 @@ func TestRequirePolicyEmitsObserverEvents(t *testing.T) {
 			ChatID:   20,
 		}
 
-		mw := RequirePolicy[NoData]("allow", func(ctx *MsgContext, data NoData) error {
+		mw := RequirePolicy("allow", func(ctx *MsgContext, data NoData) error {
 			return nil
 		})
 
@@ -264,7 +264,7 @@ func TestRequirePolicyEmitsObserverEvents(t *testing.T) {
 			errorTemplate: "%s",
 		}
 
-		mw := RequirePolicy[NoData]("deny", func(ctx *MsgContext, data NoData) error {
+		mw := RequirePolicy("deny", func(ctx *MsgContext, data NoData) error {
 			return AsInternalError(errors.New("blocked"))
 		})
 

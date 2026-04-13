@@ -362,9 +362,9 @@ func statusHandler[T any](bot *Bot[T], opts *BotWebHookOpts) http.HandlerFunc {
 func (bot *Bot[T]) newWebHookMux(ctx context.Context, opts *BotWebHookOpts) *http.ServeMux {
 	r := http.NewServeMux()
 	if opts.UseStatusPath {
-		r.HandleFunc("/status", statusHandler[T](bot, opts))
+		r.HandleFunc("/status", statusHandler(bot, opts))
 	}
-	r.HandleFunc(opts.Path, updateHandler[T](ctx, bot, opts.SecretToken))
+	r.HandleFunc(opts.Path, updateHandler(ctx, bot, opts.SecretToken))
 	return r
 }
 func (bot *Bot[T]) runWebHook(ctx context.Context, opts *BotWebHookOpts) error {

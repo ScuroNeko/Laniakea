@@ -6,7 +6,7 @@ import (
 )
 
 func TestValidateArgsRequiresFullMatch(t *testing.T) {
-	intCmd := NewCommand[NoData](func(ctx *MsgContext, db NoData) error { return nil }, "int", NewCommandArg("n").SetValueType(CommandValueIntType).SetRequired())
+	intCmd := NewCommand(func(ctx *MsgContext, db NoData) error { return nil }, "int", NewCommandArg("n").SetValueType(CommandValueIntType).SetRequired())
 	if err := intCmd.validateArgs([]string{"123"}); err != nil {
 		t.Fatalf("expected valid integer argument, got %v", err)
 	}
@@ -14,7 +14,7 @@ func TestValidateArgsRequiresFullMatch(t *testing.T) {
 		t.Fatalf("expected ErrCmdArgRegexpMismatch for partial int match, got %v", err)
 	}
 
-	boolCmd := NewCommand[NoData](func(ctx *MsgContext, db NoData) error { return nil }, "bool", NewCommandArg("flag").SetValueType(CommandValueBoolType).SetRequired())
+	boolCmd := NewCommand(func(ctx *MsgContext, db NoData) error { return nil }, "bool", NewCommandArg("flag").SetValueType(CommandValueBoolType).SetRequired())
 	if err := boolCmd.validateArgs([]string{"false"}); err != nil {
 		t.Fatalf("expected valid bool argument, got %v", err)
 	}
@@ -24,7 +24,7 @@ func TestValidateArgsRequiresFullMatch(t *testing.T) {
 }
 
 func TestValidateArgsEnforcesRequiredArgIndex(t *testing.T) {
-	cmd := NewCommand[NoData](
+	cmd := NewCommand(
 		func(ctx *MsgContext, db NoData) error { return nil },
 		"mixed",
 		NewCommandArg("optional"),
