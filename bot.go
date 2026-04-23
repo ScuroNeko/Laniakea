@@ -154,10 +154,6 @@ func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
 
 	updateQueue := make(chan *tgapi.Update, 512)
 
-	//var limiter *utils.RateLimiter
-	//if opts.RateLimit > 0 {
-	//	limiter = utils.NewRateLimiter()
-	//}
 	limiter := utils.NewRateLimiter()
 	limiter.SetGlobalRate(opts.RateLimit)
 

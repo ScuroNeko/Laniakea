@@ -192,7 +192,6 @@ func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, erro
 		methodPrefix = "/test"
 	}
 	url := fmt.Sprintf("%s/bot%s%s/%s", api.apiUrl, api.token, methodPrefix, r.method)
-
 	req, err := http.NewRequestWithContext(ctx, "POST", url, nil)
 	if err != nil {
 		return zero, fmt.Errorf("failed to create request: %w", err)

@@ -21,7 +21,7 @@ type UpdateParams struct {
 // GetMe returns basic information about the bot.
 // See https://core.telegram.org/bots/api#getme
 func (api *API) GetMe() (User, error) {
-	req := NewRequest[User, EmptyParams]("getMe", NoParams)
+	req := NewRequest[User]("getMe", NoParams)
 	return req.Do(api)
 }
 
@@ -29,7 +29,7 @@ func (api *API) GetMe() (User, error) {
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#getme
 func (api *API) GetMeWithContext(ctx context.Context) (User, error) {
-	req := NewRequest[User, EmptyParams]("getMe", NoParams)
+	req := NewRequest[User]("getMe", NoParams)
 	return req.DoWithContext(ctx, api)
 }
 

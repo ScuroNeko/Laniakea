@@ -3,9 +3,13 @@
 ## v1.0.0-rc.15
 
 ### Changed
+- Added file-based `BotOpts` loading and saving through `LoadBotOptsFile(...)`, `SaveBotOptsFile(...)`, and the `BotOptsFileCodec` API, with built-in JSON support.
 - Added plugin-level message fallback handlers for text messages and channel posts that do not match commands.
+- Added godoc for the exported `BotOpts` file codec and load/save helpers.
+- README, README_RU, and bot-configuration wiki pages now document file-based `BotOpts` loading, built-in JSON support, env placeholder expansion, and custom codec usage including the TOML example.
 
 ### Tests
+- Added regression coverage for JSON `BotOpts` file codecs, file load/save helpers, decode failures, and env placeholder expansion.
 - Added regression coverage for plugin message fallback routing, observer lifecycle events, command precedence, and middleware blocking.
 
 ## v1.0.0-rc.14

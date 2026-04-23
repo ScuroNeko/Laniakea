@@ -120,6 +120,35 @@ func main() {
 9. `RunWebHookWithContext(...)`: Starts the bot-owned webhook runtime when Telegram should deliver updates over HTTP instead of long polling.
 10. A `Bot` instance is single-use. After `Run()`, `RunWithContext()`, or `RunWebHookWithContext()` returns, create a new bot instance for the next session.
 
+## File-Based Config
+
+`BotOpts` can also be loaded from or saved to config files through the file codec API.
+
+Built in:
+- `BotOptsFileJsonCodec` for JSON files.
+
+Example:
+
+```go
+codec := laniakea.BotOptsFileJsonCodec{}
+opts, err := laniakea.LoadBotOptsFile(codec, "config.json")
+if err != nil {
+	log.Fatal(err)
+}
+
+bot, err := laniakea.NewBot[laniakea.NoData](opts)
+if err != nil {
+	log.Fatal(err)
+}
+```
+
+Placeholders like `{{ TG_TOKEN }}` inside the file are expanded from environment variables before decoding.
+
+You can also implement your own codec for other formats by satisfying `BotOptsFileCodec`.
+Only JSON is supported out of the box right now. If you want another format such as TOML, use `BotOptsFileJsonCodec` as the reference implementation for your own codec.
+
+See the full guide in the wiki: [Bot Options and Configuration](https://git.scuroneko.dev/ScuroNeko/Laniakea/wiki/Bot-Options-and-Configuration)
+
 ## Webhook Runtime
 
 Laniakea also supports a bot-owned webhook runtime through `RunWebHookWithContext(...)` and `RunWebHook(...)`.
