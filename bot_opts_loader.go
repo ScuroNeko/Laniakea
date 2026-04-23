@@ -104,12 +104,21 @@ func (codec BotOptsFileJsonCodec) ToBytes(opts *BotOpts) ([]byte, error) {
 	return data, nil
 }
 
+func (codec BotOptsFileJsonCodec) Load(filename string) (*BotOpts, error) {
+	return LoadBotOptsFile(codec, filename)
+}
+func (codec BotOptsFileJsonCodec) Save(filename string, opts *BotOpts) error {
+	return SaveBotOptsFile(codec, filename, opts)
+}
+
 var envParameterRegex = regexp.MustCompile(`\{\{\s*(\w+)\s*\}\}`)
 
 // BotOptsFileCodec decodes and encodes BotOpts file formats.
 type BotOptsFileCodec interface {
 	FromBytes([]byte) (*BotOpts, error)
 	ToBytes(*BotOpts) ([]byte, error)
+	Load(filename string) (*BotOpts, error)
+	Save(filename string, opts *BotOpts) error
 }
 
 // LoadBotOptsFile reads a config file, expands env placeholders, and decodes BotOpts.

@@ -7,10 +7,12 @@
 - Added plugin-level message fallback handlers for text messages and channel posts that do not match commands.
 - Added godoc for the exported `BotOpts` file codec and load/save helpers.
 - README, README_RU, and bot-configuration wiki pages now document file-based `BotOpts` loading, built-in JSON support, env placeholder expansion, and custom codec usage including the TOML example.
+- Active scenes now let unmatched slash-commands continue into normal bot command routing instead of also executing the current scene step or scene message fallback.
 
 ### Tests
 - Added regression coverage for JSON `BotOpts` file codecs, file load/save helpers, decode failures, and env placeholder expansion.
 - Added regression coverage for plugin message fallback routing, observer lifecycle events, command precedence, and middleware blocking.
+- Added regression coverage proving unmatched slash-commands do not trigger active scene step handlers before normal bot command routing.
 
 ## v1.0.0-rc.14
 

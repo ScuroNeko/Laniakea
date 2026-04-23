@@ -81,6 +81,10 @@ func (bot *Bot[T]) executeScene(ctx *SceneContext, scene *Scene[T]) (bool, error
 			}
 			return ok, err
 		}
+
+		// Unmatched slash-commands should continue through normal bot command routing
+		// instead of also triggering the active scene step or fallback handler.
+		return false, nil
 	}
 	ctx.Text = text
 	ctx.Args = nil

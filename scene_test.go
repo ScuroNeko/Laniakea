@@ -509,6 +509,74 @@ func TestScenePassDoesNotPersistSessionData(t *testing.T) {
 	}
 }
 
+func TestSceneUnmatchedCommandFallsThroughWithoutRunningStep(t *testing.T) {
+	commandCalled := false
+	stepCalled := false
+
+	plugin := NewPlugin[NoData]("wizard")
+	plugin.NewScene("signup").
+		SetEntry("start").
+		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
+			stepCalled = true
+			return ctx.Stay(), nil
+		})
+	plugin.NewCommand(func(ctx *MsgContext, db NoData) error {
+		commandCalled = true
+		return nil
+	}, "ping")
+
+	bot := &Bot[NoData]{
+		logger:             slog.CreateLogger(),
+		prefixes:           []string{"/"},
+		sessionStore:       NewMemorySessionStore(),
+		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
+	}
+	bot.AddPlugins(plugin)
+
+	enterCtx := &MsgContext{
+		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
+		FromID:       42,
+		sceneRuntime: bot,
+	}
+	if err := enterCtx.EnterScene("signup"); err != nil {
+		t.Fatalf("EnterScene returned error: %v", err)
+	}
+
+	key, ok := buildSceneKey(SceneScopeUserChat, &MsgContext{
+		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
+		FromID: 42,
+	})
+	if !ok {
+		t.Fatal("expected scene key to be built")
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 5,
+		Type:     tgapi.UpdateTypeMessage,
+		Message: &tgapi.Message{
+			MessageID: 10,
+			Text:      "/ping",
+			Chat:      &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate},
+			From:      &tgapi.User{ID: 42},
+		},
+	})
+
+	if !commandCalled {
+		t.Fatal("expected normal command routing to handle /ping")
+	}
+	if stepCalled {
+		t.Fatal("scene step must not run for an unmatched slash-command")
+	}
+
+	after, err := bot.sessionStore.Get(key)
+	if err != nil {
+		t.Fatalf("Get after handle returned error: %v", err)
+	}
+	if after.Scene != "signup" || after.Step != "start" {
+		t.Fatalf("unexpected session after command fallback: %#v", after)
+	}
+}
+
 func TestSceneMessageFallbackRunsWhenNoCommandOrStepMatch(t *testing.T) {
 	fallbackCalled := false
 

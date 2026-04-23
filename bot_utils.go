@@ -41,7 +41,7 @@ func (bot *Bot[T]) initLoggers(opts *BotOpts) {
 		level = slog.DEBUG
 	}
 
-	bot.logger = utils.CreateLogger("BOT", level)
+	bot.logger = utils.CreateLogger("BOT", level).AddReplacer(bot.token, "<TOKEN>")
 	if opts.WriteToFile {
 		path := fmt.Sprintf("%s/main.log", strings.TrimRight(opts.LoggerBasePath, "/"))
 		logger, err := utils.CreateFileLogger("BOT", level, path)
@@ -53,7 +53,7 @@ func (bot *Bot[T]) initLoggers(opts *BotOpts) {
 	}
 
 	if opts.UseRequestLogger {
-		bot.RequestLogger = utils.CreateLogger("REQUESTS", level)
+		bot.RequestLogger = utils.CreateLogger("REQUESTS", level).AddReplacer(bot.token, "<TOKEN>")
 		if opts.WriteToFile {
 			path := fmt.Sprintf("%s/requests.log", strings.TrimRight(opts.LoggerBasePath, "/"))
 			logger, err := utils.CreateFileLogger("REQUESTS", level, path)
