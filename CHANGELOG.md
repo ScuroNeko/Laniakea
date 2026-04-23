@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.0-rc.16
+
+### Changed
+- Bot loggers now apply the configured token replacer consistently across the main bot logger, request logger, internal API and uploader loggers, webhook logger, and auto-managed plugin loggers, so bot tokens stay masked in both stdout and file-backed logs.
+
+### Tests
+- Added regression coverage proving token masking still applies after `initLoggers(...)` switches loggers to file-backed writers and that auto-managed plugin loggers inherit token masking as well.
+
 ## v1.0.0-rc.15
 
 ### Changed

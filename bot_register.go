@@ -30,6 +30,7 @@ func (bot *Bot[T]) AddPlugins(plugin ...*Plugin[T]) *Bot[T] {
 		if cloned.logger == nil {
 			cloned.logger = utils.CreateLogger(cloned.name, level)
 		}
+		bot.addTokenReplacer(cloned.logger)
 		bot.plugins = append(bot.plugins, cloned)
 		if bot.logger != nil {
 			bot.logger.Debugln(fmt.Sprintf("plugins with name \"%s\" registered", cloned.name))
@@ -145,7 +146,7 @@ func (bot *Bot[T]) AddAppDataLoggerWriter(writer AppDataLogger[T]) *Bot[T] {
 	if bot.RequestLogger != nil {
 		bot.RequestLogger.AddWriter(w)
 	}
-	for _, l := range bot.extraLoggers {
+	for _, l := range bot.managedExtraLoggers() {
 		l.AddWriter(w)
 	}
 	for _, p := range bot.plugins {
@@ -153,5 +154,7 @@ func (bot *Bot[T]) AddAppDataLoggerWriter(writer AppDataLogger[T]) *Bot[T] {
 			p.logger.AddWriter(w)
 		}
 	}
+	bot.addTokenReplacer(bot.logger, bot.RequestLogger)
+	bot.addTokenReplacer(bot.managedExtraLoggers()...)
 	return bot
 }

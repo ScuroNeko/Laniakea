@@ -153,6 +153,7 @@ func (bot *Bot[T]) RunWebHookWithContext(ctx context.Context, opts *BotWebHookOp
 	}
 
 	bot.webHookLogger = utils.CreateLogger("WEBHOOK", bot.GetLoggerLevel())
+	bot.addTokenReplacer(bot.webHookLogger)
 	if opts.SecretToken == "" {
 		bot.webHookLogger.Warnln("Bot webhook secret token empty. It's VERY recommended to set secret.")
 	}

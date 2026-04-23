@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 
@@ -14,6 +15,39 @@ import (
 	"git.scuroneko.dev/scuroneko/slog"
 	"github.com/alitto/pond/v2"
 )
+
+func (bot *Bot[T]) addTokenReplacer(loggers ...*slog.Logger) {
+	if bot.token == "" {
+		return
+	}
+	for _, logger := range loggers {
+		if logger == nil {
+			continue
+		}
+		logger.AddReplacer(bot.token, "<TOKEN>")
+	}
+}
+
+func appendUniqueLogger(loggers []*slog.Logger, logger *slog.Logger) []*slog.Logger {
+	if logger == nil {
+		return loggers
+	}
+	if slices.Contains(loggers, logger) {
+		return loggers
+	}
+	return append(loggers, logger)
+}
+
+func (bot *Bot[T]) managedExtraLoggers() []*slog.Logger {
+	loggers := append([]*slog.Logger(nil), bot.extraLoggers...)
+	if bot.api != nil {
+		loggers = appendUniqueLogger(loggers, bot.api.GetLogger())
+	}
+	if bot.uploader != nil {
+		loggers = appendUniqueLogger(loggers, bot.uploader.GetLogger())
+	}
+	return loggers
+}
 
 func (bot *Bot[T]) enqueueUpdate(ctx context.Context, update tgapi.Update) error {
 	select {
@@ -41,7 +75,7 @@ func (bot *Bot[T]) initLoggers(opts *BotOpts) {
 		level = slog.DEBUG
 	}
 
-	bot.logger = utils.CreateLogger("BOT", level).AddReplacer(bot.token, "<TOKEN>")
+	bot.logger = utils.CreateLogger("BOT", level)
 	if opts.WriteToFile {
 		path := fmt.Sprintf("%s/main.log", strings.TrimRight(opts.LoggerBasePath, "/"))
 		logger, err := utils.CreateFileLogger("BOT", level, path)
@@ -53,7 +87,7 @@ func (bot *Bot[T]) initLoggers(opts *BotOpts) {
 	}
 
 	if opts.UseRequestLogger {
-		bot.RequestLogger = utils.CreateLogger("REQUESTS", level).AddReplacer(bot.token, "<TOKEN>")
+		bot.RequestLogger = utils.CreateLogger("REQUESTS", level)
 		if opts.WriteToFile {
 			path := fmt.Sprintf("%s/requests.log", strings.TrimRight(opts.LoggerBasePath, "/"))
 			logger, err := utils.CreateFileLogger("REQUESTS", level, path)
@@ -64,6 +98,9 @@ func (bot *Bot[T]) initLoggers(opts *BotOpts) {
 			}
 		}
 	}
+
+	bot.addTokenReplacer(bot.logger, bot.RequestLogger)
+	bot.addTokenReplacer(bot.managedExtraLoggers()...)
 }
 
 func (bot *Bot[T]) beginRun() error {

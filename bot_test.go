@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -133,6 +134,124 @@ func TestInitLoggersFallsBackToStdoutLoggerOnFileError(t *testing.T) {
 	}
 	if err := bot.logger.Close(); err != nil {
 		t.Fatalf("failed to close main logger: %v", err)
+	}
+}
+
+func TestInitLoggersAppliesTokenReplacerToFileLoggers(t *testing.T) {
+	tempDir := t.TempDir()
+	api := tgapi.NewAPI(tgapi.NewAPIOpts("secret-token"))
+	uploader := tgapi.NewUploader(api)
+	bot := &Bot[NoData]{token: "secret-token", api: api, uploader: uploader}
+	t.Cleanup(func() {
+		if err := uploader.Close(); err != nil {
+			t.Fatalf("failed to close uploader: %v", err)
+		}
+	})
+	t.Cleanup(func() {
+		if err := api.Close(); err != nil {
+			t.Fatalf("failed to close api: %v", err)
+		}
+	})
+
+	bot.initLoggers(&BotOpts{
+		Debug:            true,
+		WriteToFile:      true,
+		UseRequestLogger: true,
+		LoggerBasePath:   tempDir,
+	})
+
+	apiPath := filepath.Join(tempDir, "api.log")
+	apiFile, err := os.OpenFile(apiPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		t.Fatalf("failed to open api log: %v", err)
+	}
+	defer func() { _ = apiFile.Close() }()
+	bot.api.GetLogger().AddWriter(bot.api.GetLogger().CreateTextWriter(apiFile))
+
+	uploaderPath := filepath.Join(tempDir, "uploader.log")
+	uploaderFile, err := os.OpenFile(uploaderPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		t.Fatalf("failed to open uploader log: %v", err)
+	}
+	defer func() { _ = uploaderFile.Close() }()
+	bot.uploader.GetLogger().AddWriter(bot.uploader.GetLogger().CreateTextWriter(uploaderFile))
+
+	bot.logger.Infoln("main secret-token")
+	bot.RequestLogger.Infoln("request secret-token")
+	bot.api.GetLogger().Infoln("api secret-token")
+	bot.uploader.GetLogger().Infoln("uploader secret-token")
+
+	if err := bot.RequestLogger.Close(); err != nil {
+		t.Fatalf("failed to close request logger: %v", err)
+	}
+	if err := bot.logger.Close(); err != nil {
+		t.Fatalf("failed to close main logger: %v", err)
+	}
+
+	mainLog, err := os.ReadFile(filepath.Join(tempDir, "main.log"))
+	if err != nil {
+		t.Fatalf("failed to read main log: %v", err)
+	}
+	requestLog, err := os.ReadFile(filepath.Join(tempDir, "requests.log"))
+	if err != nil {
+		t.Fatalf("failed to read request log: %v", err)
+	}
+	apiLog, err := os.ReadFile(apiPath)
+	if err != nil {
+		t.Fatalf("failed to read api log: %v", err)
+	}
+	uploaderLog, err := os.ReadFile(uploaderPath)
+	if err != nil {
+		t.Fatalf("failed to read uploader log: %v", err)
+	}
+
+	for _, tt := range []struct {
+		name string
+		data string
+	}{
+		{name: "main", data: string(mainLog)},
+		{name: "request", data: string(requestLog)},
+		{name: "api", data: string(apiLog)},
+		{name: "uploader", data: string(uploaderLog)},
+	} {
+		if strings.Contains(tt.data, "secret-token") {
+			t.Fatalf("%s log leaked raw token: %q", tt.name, tt.data)
+		}
+		if !strings.Contains(tt.data, "<TOKEN>") {
+			t.Fatalf("%s log did not contain masked token: %q", tt.name, tt.data)
+		}
+	}
+}
+
+func TestAddPluginsAppliesTokenReplacerToPluginLogger(t *testing.T) {
+	bot := &Bot[NoData]{
+		token:  "secret-token",
+		logger: slog.CreateLogger(),
+	}
+	defer func() { _ = bot.logger.Close() }()
+
+	plugin := NewPlugin[NoData]("demo")
+	bot.AddPlugins(plugin)
+
+	logPath := filepath.Join(t.TempDir(), "plugin.log")
+	file, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		t.Fatalf("failed to open plugin log: %v", err)
+	}
+	defer func() { _ = file.Close() }()
+
+	bot.plugins[0].logger.AddWriter(bot.plugins[0].logger.CreateTextWriter(file))
+	bot.plugins[0].logger.Infoln("plugin secret-token")
+
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("failed to read plugin log: %v", err)
+	}
+	if strings.Contains(string(data), "secret-token") {
+		t.Fatalf("plugin log leaked raw token: %q", string(data))
+	}
+	if !strings.Contains(string(data), "<TOKEN>") {
+		t.Fatalf("plugin log did not contain masked token: %q", string(data))
 	}
 }
 

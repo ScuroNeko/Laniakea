@@ -220,6 +220,7 @@ func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
 		bot.logger.Warn("Can't get bot username. Named command handlers won't work!")
 	}
 	bot.logger.Infoln(fmt.Sprintf("Authorized as %s (@%s)", u.FirstName, Val(u.Username, "unknown")))
+	bot.logger.Debugln("Bot initialized with configuration:", fmt.Sprintf("%+v", opts))
 
 	return bot, nil
 }
