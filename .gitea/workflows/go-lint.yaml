@@ -1,13 +1,12 @@
 name: Golang lint
-run-name: Linting code in ${{ gitea.repository }} by ${{ gitea.actor }}
+run-name: Linting code
 on: [push]
 
 jobs:
   lint:
     runs-on: go-latest
     steps:
-      - name: Check out repository code
+      - name: Checkout repository code
         uses: actions/checkout@v6
-
       - name: Run golangci-lint
         run: golangci-lint run
