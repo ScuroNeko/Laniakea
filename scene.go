@@ -21,6 +21,7 @@ type Scene[T any] struct {
 
 	steps    map[string]SceneHandler[T]
 	commands map[string]SceneHandler[T]
+	payloads map[string]SceneHandler[T]
 	message  SceneHandler[T]
 }
 
@@ -32,6 +33,7 @@ func NewScene[T any](name string) *Scene[T] {
 		Entry:    "",
 		steps:    make(map[string]SceneHandler[T]),
 		commands: make(map[string]SceneHandler[T]),
+		payloads: make(map[string]SceneHandler[T]),
 		message:  nil,
 	}
 }
@@ -65,6 +67,12 @@ func (s *Scene[T]) OnCommand(cmd string, handler SceneHandler[T]) *Scene[T] {
 	return s
 }
 
+// OnPayload registers a callback payload handler active while the scene is running.
+func (s *Scene[T]) OnPayload(cmd string, handler SceneHandler[T]) *Scene[T] {
+	s.payloads[cmd] = handler
+	return s
+}
+
 // OnMessage registers a fallback handler used when no scene command or step matches.
 func (s *Scene[T]) OnMessage(handler SceneHandler[T]) *Scene[T] {
 	s.message = handler
@@ -73,6 +81,14 @@ func (s *Scene[T]) OnMessage(handler SceneHandler[T]) *Scene[T] {
 
 func (s *Scene[T]) executeCommand(cmd string, ctx *SceneContext, db T) (SceneResult, bool, error) {
 	handler, ok := s.commands[cmd]
+	if !ok {
+		return SceneResult{}, false, nil
+	}
+	result, err := handler(ctx, db)
+	return result, true, err
+}
+func (s *Scene[T]) executePayload(cmd string, ctx *SceneContext, db T) (SceneResult, bool, error) {
+	handler, ok := s.payloads[cmd]
 	if !ok {
 		return SceneResult{}, false, nil
 	}

@@ -4,9 +4,12 @@
 
 ### Changed
 - Bot loggers now apply the configured token replacer consistently across the main bot logger, request logger, internal API and uploader loggers, webhook logger, and auto-managed plugin loggers, so bot tokens stay masked in both stdout and file-backed logs.
+- JSON `BotOpts` files now write `version`, reject newer unsupported config versions, keep older unversioned files loadable, and preserve the loaded file version in `BotOpts.FileConfigVersion`.
+- Active scenes now support scene-local callback payload handlers through `Scene.OnPayload(...)`, including observer lifecycle events for scene payload execution.
 
 ### Tests
 - Added regression coverage proving token masking still applies after `initLoggers(...)` switches loggers to file-backed writers and that auto-managed plugin loggers inherit token masking as well.
+- Added regression coverage for JSON config version handling and scene-local payload routing, including observer lifecycle events and callback fallthrough behavior.
 
 ## v1.0.0-rc.15
 

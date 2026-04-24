@@ -430,6 +430,204 @@ func TestSceneMessageObserverEmitsLifecycleEvents(t *testing.T) {
 	}
 }
 
+func TestScenePayloadHandlerRunsBeforeStep(t *testing.T) {
+	payloadCalled := false
+	stepCalled := false
+
+	plugin := NewPlugin[NoData]("wizard")
+	plugin.NewScene("signup").
+		SetEntry("start").
+		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
+			stepCalled = true
+			return ctx.Stay(), nil
+		}).
+		OnPayload("confirm", func(ctx *SceneContext, db NoData) (SceneResult, error) {
+			payloadCalled = true
+			if got, want := ctx.Args, []string{"7", "ok"}; len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+				t.Fatalf("unexpected payload args: got %v want %v", got, want)
+			}
+			if ctx.Text != "" {
+				t.Fatalf("callback flow must not populate Text, got %q", ctx.Text)
+			}
+			return ctx.Exit(), nil
+		})
+
+	bot := &Bot[NoData]{
+		logger:             slog.CreateLogger(),
+		payloadType:        BotPayloadJson,
+		sessionStore:       NewMemorySessionStore(),
+		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
+	}
+	bot.AddPlugins(plugin)
+
+	enterCtx := &MsgContext{
+		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
+		FromID:       42,
+		sceneRuntime: bot,
+	}
+	if err := enterCtx.EnterScene("signup"); err != nil {
+		t.Fatalf("EnterScene returned error: %v", err)
+	}
+
+	data, err := encodeJsonPayload(CallbackData{Command: "confirm", Args: []string{"7", "ok"}})
+	if err != nil {
+		t.Fatalf("encodeJsonPayload returned error: %v", err)
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 25,
+		Type:     tgapi.UpdateTypeCallbackQuery,
+		CallbackQuery: &tgapi.CallbackQuery{
+			ID:   "cb-scene",
+			Data: data,
+			From: tgapi.User{ID: 42},
+			Message: &tgapi.Message{
+				MessageID: 12,
+				Chat:      &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate},
+			},
+		},
+	})
+
+	if !payloadCalled {
+		t.Fatal("expected scene payload handler to be called")
+	}
+	if stepCalled {
+		t.Fatal("expected scene payload to short-circuit the active step")
+	}
+}
+
+func TestScenePayloadObserverEmitsLifecycleEvents(t *testing.T) {
+	observer := &recordingObserver{}
+	plugin := NewPlugin[NoData]("wizard")
+	plugin.NewScene("signup").
+		SetEntry("start").
+		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
+			return ctx.Stay(), nil
+		}).
+		OnPayload("confirm", func(ctx *SceneContext, db NoData) (SceneResult, error) {
+			return ctx.Exit(), nil
+		})
+
+	bot := &Bot[NoData]{
+		logger:             slog.CreateLogger(),
+		payloadType:        BotPayloadJson,
+		sessionStore:       NewMemorySessionStore(),
+		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
+		observer:           observer,
+	}
+	bot.AddPlugins(plugin)
+
+	enterCtx := &MsgContext{
+		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
+		FromID:       42,
+		sceneRuntime: bot,
+	}
+	if err := enterCtx.EnterScene("signup"); err != nil {
+		t.Fatalf("EnterScene returned error: %v", err)
+	}
+
+	data, err := encodeJsonPayload(CallbackData{Command: "confirm"})
+	if err != nil {
+		t.Fatalf("encodeJsonPayload returned error: %v", err)
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 26,
+		Type:     tgapi.UpdateTypeCallbackQuery,
+		CallbackQuery: &tgapi.CallbackQuery{
+			ID:   "cb-scene",
+			Data: data,
+			From: tgapi.User{ID: 42},
+			Message: &tgapi.Message{
+				MessageID: 13,
+				Chat:      &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate},
+			},
+		},
+	})
+
+	if len(observer.started) != 1 {
+		t.Fatalf("expected one scene started event, got %d", len(observer.started))
+	}
+	if got := observer.started[0]; got.HandlerKind != HandlerScenePayloadKind || got.HandlerName != "confirm" || got.Plugin != "wizard" {
+		t.Fatalf("unexpected scene payload started event: %#v", got)
+	}
+	if len(observer.finished) != 1 {
+		t.Fatalf("expected one scene finished event, got %d", len(observer.finished))
+	}
+	if got := observer.finished[0]; got.HandlerKind != HandlerScenePayloadKind || got.HandlerName != "confirm" || got.Plugin != "wizard" || got.Err != nil {
+		t.Fatalf("unexpected scene payload finished event: %#v", got)
+	}
+}
+
+func TestSceneUnmatchedPayloadFallsThroughWithoutRunningStep(t *testing.T) {
+	stepCalled := false
+
+	plugin := NewPlugin[NoData]("wizard")
+	plugin.NewPayload(func(ctx *MsgContext, db NoData) error { return nil }, "ping")
+	plugin.NewScene("signup").
+		SetEntry("start").
+		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
+			stepCalled = true
+			return ctx.Stay(), nil
+		})
+
+	bot := &Bot[NoData]{
+		logger:             slog.CreateLogger(),
+		payloadType:        BotPayloadJson,
+		sessionStore:       NewMemorySessionStore(),
+		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
+	}
+	bot.AddPlugins(plugin)
+
+	enterCtx := &MsgContext{
+		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
+		FromID:       42,
+		sceneRuntime: bot,
+	}
+	if err := enterCtx.EnterScene("signup"); err != nil {
+		t.Fatalf("EnterScene returned error: %v", err)
+	}
+
+	key, ok := buildSceneKey(SceneScopeUserChat, &MsgContext{
+		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
+		FromID: 42,
+	})
+	if !ok {
+		t.Fatal("expected scene key to be built")
+	}
+
+	data, err := encodeJsonPayload(CallbackData{Command: "ping"})
+	if err != nil {
+		t.Fatalf("encodeJsonPayload returned error: %v", err)
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 27,
+		Type:     tgapi.UpdateTypeCallbackQuery,
+		CallbackQuery: &tgapi.CallbackQuery{
+			ID:   "cb-global",
+			Data: data,
+			From: tgapi.User{ID: 42},
+			Message: &tgapi.Message{
+				MessageID: 14,
+				Chat:      &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate},
+			},
+		},
+	})
+
+	if stepCalled {
+		t.Fatal("scene step must not run for an unmatched payload")
+	}
+
+	after, err := bot.sessionStore.Get(key)
+	if err != nil {
+		t.Fatalf("Get after handle returned error: %v", err)
+	}
+	if after.Scene != "signup" || after.Step != "start" {
+		t.Fatalf("unexpected session after payload fallback: %#v", after)
+	}
+}
+
 func TestScenePassDoesNotPersistSessionData(t *testing.T) {
 	commandCalled := false
 

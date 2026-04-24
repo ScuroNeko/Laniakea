@@ -2,6 +2,7 @@ package laniakea
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"regexp"
@@ -9,8 +10,16 @@ import (
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
 
+// ConfigVersion is the current version of the built-in JSON BotOpts file format.
+const ConfigVersion = 1
+
+// ErrConfigVersionMismatch reports that a config file declares a newer version
+// than this library knows how to decode.
+var ErrConfigVersionMismatch = fmt.Errorf("config version mismatch: expected %d", ConfigVersion)
+
 // BotOptsFileJson is the JSON file representation of BotOpts.
 type BotOptsFileJson struct {
+	Version       int                `json:"version"`
 	Token         string             `json:"token"`
 	UpdateTypes   []tgapi.UpdateType `json:"update_types"`
 	Debug         bool               `json:"debug"`
@@ -41,6 +50,9 @@ func (codec BotOptsFileJsonCodec) FromBytes(data []byte) (*BotOpts, error) {
 	if err != nil {
 		return nil, err
 	}
+	if fileOpts.Version > ConfigVersion {
+		return nil, ErrConfigVersionMismatch
+	}
 	opts := &BotOpts{
 		Token:         fileOpts.Token,
 		UpdateTypes:   fileOpts.UpdateTypes,
@@ -59,6 +71,8 @@ func (codec BotOptsFileJsonCodec) FromBytes(data []byte) (*BotOpts, error) {
 
 		StrictPayloadType: fileOpts.StrictPayloadType,
 		MaxWorkers:        fileOpts.MaxWorkers,
+
+		FileConfigVersion: fileOpts.Version,
 	}
 	return opts, nil
 }
@@ -66,6 +80,7 @@ func (codec BotOptsFileJsonCodec) FromBytes(data []byte) (*BotOpts, error) {
 // ToBytes encodes BotOpts into JSON file bytes.
 func (codec BotOptsFileJsonCodec) ToBytes(opts *BotOpts) ([]byte, error) {
 	fileOpts := &BotOptsFileJson{
+		Version:       ConfigVersion,
 		Token:         opts.Token,
 		UpdateTypes:   opts.UpdateTypes,
 		Debug:         opts.Debug,

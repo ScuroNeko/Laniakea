@@ -86,6 +86,41 @@ func (bot *Bot[T]) executeScene(ctx *SceneContext, scene *Scene[T]) (bool, error
 		// instead of also triggering the active scene step or fallback handler.
 		return false, nil
 	}
+
+	query := ctx.Update.CallbackQuery
+	if query != nil {
+		data, err := bot.decodePayload(query.Data)
+		if err != nil {
+			return false, err
+		}
+		ctx.Args = data.Args
+		cmd := data.Command
+		if _, ok := scene.payloads[cmd]; ok {
+			startTime := time.Now()
+			bot.emitSceneStarted(ctx, scene, HandlerScenePayloadKind, cmd)
+			res, _, err := scene.executePayload(cmd, ctx, bot.appData)
+			if err != nil {
+				bot.emitSceneFinished(ctx, scene, HandlerScenePayloadKind, cmd, startTime, err)
+				bot.emitSceneError(ctx, scene, HandlerScenePayloadKind, cmd, err)
+				return false, err
+			}
+			from := ctx.sess.Step
+			ok, err := bot.applySceneResult(scene, ctx, res)
+			bot.emitSceneFinished(ctx, scene, HandlerScenePayloadKind, cmd, startTime, err)
+			if err != nil {
+				bot.emitSceneError(ctx, scene, HandlerScenePayloadKind, cmd, err)
+			}
+			if ok {
+				bot.emitSceneTransition(ctx, scene, from, res)
+			}
+			return ok, err
+		}
+
+		// Unmatched payloads should not trigger the active scene step or fallback handler.
+		// This allows using payloads for other bot features like pagination without interfering with active scenes.
+		return false, nil
+	}
+
 	ctx.Text = text
 	ctx.Args = nil
 	ctx.Prefix = ""

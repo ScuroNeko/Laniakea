@@ -209,6 +209,16 @@ func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
 	}
 	bot.initLoggers(opts)
 
+	if opts.FileConfigVersion > 0 && opts.FileConfigVersion < ConfigVersion {
+		bot.logger.Warnln(
+			fmt.Sprintf(
+				"Config file version %d is older than library version %d; please update your config file to access new features and avoid compatibility issues",
+				opts.FileConfigVersion,
+				ConfigVersion,
+			),
+		)
+	}
+
 	// Fetch bot info to validate token and get username
 	u, err := api.GetMe()
 	if err != nil {

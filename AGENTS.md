@@ -123,9 +123,12 @@ Prefer the repository’s documented commands. If multiple choices exist, use th
 
 ## Commit message format
 - When the user asks for a commit message, the agent must produce it in this format:
-  1. a short summary line;
-  2. up to three additional lines with only the most important changes;
-  3. each additional line must start on its own new line.
+  1. one to four short lines;
+  2. each line must use the format `(<kind>): <text>`;
+  3. `<kind>` must be a short change type such as `fix`, `new`, `tests`, `doc`, `refactor`, or `ci/cd`;
+  4. `<text>` must be a concise 1-5 word description of the change or function;
+  5. each line must start on its own new line;
+  6. when multiple lines are present, kinds must be ordered from top to bottom by this priority: `new`, `fix`, `refactor`, `ci/cd`, `tests`, `doc`.
 - The agent must output the commit message as a plain multiline block that the user can copy directly.
 - Do not collapse the lines into a paragraph, bullet list, or wrapped prose explanation.
 - Keep commit text concise and high-signal.

@@ -30,6 +30,8 @@ const (
 	HandlerSceneStepKind HandlerEventKind = "scene_step"
 	// HandlerSceneCommandKind identifies a scene-local command handler.
 	HandlerSceneCommandKind HandlerEventKind = "scene_command"
+	// HandlerScenePayloadKind identifies a scene-local callback payload handler.
+	HandlerScenePayloadKind HandlerEventKind = "scene_payload"
 	// HandlerSceneMessageKind identifies a scene message fallback handler.
 	HandlerSceneMessageKind HandlerEventKind = "scene_message"
 )

@@ -204,13 +204,11 @@ func cloneScene[T AppData](scene *Scene[T]) *Scene[T] {
 	cloned := *scene
 	cloned.steps = make(map[string]SceneHandler[T], len(scene.steps))
 	cloned.commands = make(map[string]SceneHandler[T], len(scene.commands))
+	cloned.payloads = make(map[string]SceneHandler[T], len(scene.payloads))
 
-	for name, handler := range scene.steps {
-		cloned.steps[name] = handler
-	}
-	for name, handler := range scene.commands {
-		cloned.commands[name] = handler
-	}
+	maps.Copy(cloned.steps, scene.steps)
+	maps.Copy(cloned.commands, scene.commands)
+	maps.Copy(cloned.payloads, scene.payloads)
 
 	return &cloned
 }

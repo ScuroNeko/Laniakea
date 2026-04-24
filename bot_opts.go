@@ -62,6 +62,12 @@ type BotOpts struct {
 
 	// MaxWorkers is the maximum number of update handlers that may run concurrently.
 	MaxWorkers int
+
+	// FileConfigVersion stores the version declared by the config file used to
+	// load these options.
+	//
+	// It is zero when the options were not loaded from a versioned file.
+	FileConfigVersion int
 }
 
 // LoadOptsFromEnv loads BotOpts from environment variables.
@@ -125,7 +131,8 @@ func LoadOptsFromEnv() *BotOpts {
 		DropRLOverflow:    os.Getenv("DROP_RL_OVERFLOW") == "true",
 		StrictPayloadType: os.Getenv("STRICT_PAYLOAD_TYPE") == "true",
 
-		MaxWorkers: maxWorkers,
+		MaxWorkers:        maxWorkers,
+		FileConfigVersion: ConfigVersion,
 	}
 }
 

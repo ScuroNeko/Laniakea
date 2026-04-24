@@ -1,6 +1,7 @@
 package laniakea
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -26,6 +27,7 @@ func TestBotOptsFileJsonCodecRoundTrip(t *testing.T) {
 		DropRLOverflow:    true,
 		StrictPayloadType: true,
 		MaxWorkers:        64,
+		FileConfigVersion: ConfigVersion,
 	}
 
 	data, err := codec.ToBytes(want)
@@ -74,6 +76,9 @@ func TestLoadBotOptsFileExpandsEnvPlaceholders(t *testing.T) {
 	if got.ErrorTemplate != "Error: %s" {
 		t.Fatalf("unexpected error template: got %q", got.ErrorTemplate)
 	}
+	if got.FileConfigVersion != 0 {
+		t.Fatalf("unexpected file config version: got %d want 0", got.FileConfigVersion)
+	}
 }
 
 func TestLoadBotOptsFileReturnsDecodeError(t *testing.T) {
@@ -92,13 +97,14 @@ func TestSaveBotOptsFileWritesEncodedData(t *testing.T) {
 	dir := t.TempDir()
 	filename := filepath.Join(dir, "config.json")
 	want := &BotOpts{
-		Token:         "TOKEN",
-		UpdateTypes:   []tgapi.UpdateType{tgapi.UpdateTypeMessage},
-		ErrorTemplate: "Error: %s",
-		Prefixes:      []string{"/"},
-		APIUrl:        "https://api.example.invalid",
-		RateLimit:     30,
-		MaxWorkers:    32,
+		Token:             "TOKEN",
+		UpdateTypes:       []tgapi.UpdateType{tgapi.UpdateTypeMessage},
+		ErrorTemplate:     "Error: %s",
+		Prefixes:          []string{"/"},
+		APIUrl:            "https://api.example.invalid",
+		RateLimit:         30,
+		MaxWorkers:        32,
+		FileConfigVersion: ConfigVersion,
 	}
 
 	if err := SaveBotOptsFile(BotOptsFileJsonCodec{}, filename, want); err != nil {
@@ -112,5 +118,22 @@ func TestSaveBotOptsFileWritesEncodedData(t *testing.T) {
 
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("saved file mismatch:\n got: %#v\nwant: %#v", got, want)
+	}
+}
+
+func TestLoadBotOptsFileRejectsFutureConfigVersion(t *testing.T) {
+	dir := t.TempDir()
+	filename := filepath.Join(dir, "config.json")
+	data := []byte(`{
+		"version": 2,
+		"token": "TOKEN"
+	}`)
+	if err := os.WriteFile(filename, data, 0o644); err != nil {
+		t.Fatalf("WriteFile returned error: %v", err)
+	}
+
+	_, err := LoadBotOptsFile(BotOptsFileJsonCodec{}, filename)
+	if !errors.Is(err, ErrConfigVersionMismatch) {
+		t.Fatalf("expected ErrConfigVersionMismatch, got %v", err)
 	}
 }
