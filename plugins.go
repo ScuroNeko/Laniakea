@@ -7,7 +7,7 @@ import (
 	"git.scuroneko.dev/scuroneko/extypes"
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 	"git.scuroneko.dev/scuroneko/laniakea/utils"
-	"git.scuroneko.dev/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
 // CommandValueType defines the expected type of command argument.
@@ -169,7 +169,7 @@ type Plugin[T AppData] struct {
 	scenes      map[string]*Scene[T]         // Optional scenes for multi-step interactions
 	middlewares extypes.Slice[Middleware[T]] // Shared middlewares for all commands/payloads
 	skipAutoCmd bool                         // If true, all commands in this plugin are excluded from auto-help
-	logger      *slog.Logger
+	logger      *sneklog.Logger
 
 	messageFallback CommandExecutor[T]
 	handlers        map[tgapi.UpdateType]CommandExecutor[T]
@@ -293,7 +293,7 @@ func (p *Plugin[T]) SkipCommandAutoGen() *Plugin[T] {
 //
 // Call this before Bot.AddPlugins. If the plugin is already registered, changing
 // the original *Plugin does not update the Bot's internal copy.
-func (p *Plugin[T]) SetLogger(l *slog.Logger) *Plugin[T] {
+func (p *Plugin[T]) SetLogger(l *sneklog.Logger) *Plugin[T] {
 	p.logger = l
 	return p
 }

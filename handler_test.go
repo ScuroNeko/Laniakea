@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
-	"git.scuroneko.dev/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
 type recordingObserver struct {
@@ -55,7 +55,7 @@ func TestCheckPrefixesSkipsEmptyPrefixes(t *testing.T) {
 }
 
 func TestBotMiddlewareReceivesLogger(t *testing.T) {
-	logger := slog.CreateLogger()
+	logger := sneklog.CreateLogger()
 	called := false
 
 	bot := &Bot[NoData]{
@@ -468,7 +468,7 @@ func TestHandleUpdateHandlersPopulateFromContext(t *testing.T) {
 			})
 
 			bot := &Bot[NoData]{
-				logger:  slog.CreateLogger(),
+				logger:  sneklog.CreateLogger(),
 				plugins: []Plugin[NoData]{clonePlugin(plugin)},
 			}
 
@@ -514,7 +514,7 @@ func TestHandleUpdateHandlersReceiveIsolatedContexts(t *testing.T) {
 	})
 
 	bot := &Bot[NoData]{
-		logger: slog.CreateLogger(),
+		logger: sneklog.CreateLogger(),
 		plugins: []Plugin[NoData]{
 			clonePlugin(first),
 			clonePlugin(second),
@@ -543,7 +543,7 @@ func TestHandleUpdateObserverEmitsUpdateErrors(t *testing.T) {
 	})
 
 	bot := &Bot[NoData]{
-		logger:   slog.CreateLogger(),
+		logger:   sneklog.CreateLogger(),
 		plugins:  []Plugin[NoData]{clonePlugin(plugin)},
 		observer: observer,
 	}
@@ -607,7 +607,7 @@ func TestHandleMessageFallbackRunsAfterCommandMiss(t *testing.T) {
 	})
 
 	bot := &Bot[NoData]{
-		logger:   slog.CreateLogger(),
+		logger:   sneklog.CreateLogger(),
 		prefixes: []string{"/"},
 		observer: observer,
 	}
@@ -658,7 +658,7 @@ func TestHandleMessageFallbackRunsForPlainText(t *testing.T) {
 	})
 
 	bot := &Bot[NoData]{
-		logger:   slog.CreateLogger(),
+		logger:   sneklog.CreateLogger(),
 		prefixes: []string{"/"},
 	}
 	bot.AddPlugins(plugin)
@@ -691,7 +691,7 @@ func TestHandleMessageFallbackRespectsMiddleware(t *testing.T) {
 	})
 
 	bot := &Bot[NoData]{
-		logger:   slog.CreateLogger(),
+		logger:   sneklog.CreateLogger(),
 		prefixes: []string{"/"},
 	}
 	bot.AddPlugins(plugin)
@@ -726,7 +726,7 @@ func TestHandleMessageFallbackDoesNotRunWhenCommandMatches(t *testing.T) {
 	})
 
 	bot := &Bot[NoData]{
-		logger:   slog.CreateLogger(),
+		logger:   sneklog.CreateLogger(),
 		prefixes: []string{"/"},
 	}
 	bot.AddPlugins(plugin)
@@ -771,7 +771,7 @@ func TestHandleChannelPostCommandWithSenderChat(t *testing.T) {
 	}, "ping")
 
 	bot := &Bot[NoData]{
-		logger:   slog.CreateLogger(),
+		logger:   sneklog.CreateLogger(),
 		prefixes: []string{"/"},
 		plugins:  []Plugin[NoData]{clonePlugin(plugin)},
 	}
@@ -808,7 +808,7 @@ func TestCommandHandlerBindArgsEndToEnd(t *testing.T) {
 	)
 
 	bot := &Bot[NoData]{
-		logger:   slog.CreateLogger(),
+		logger:   sneklog.CreateLogger(),
 		prefixes: []string{"/"},
 		plugins:  []Plugin[NoData]{clonePlugin(plugin)},
 	}
@@ -845,7 +845,7 @@ func TestPayloadHandlerBindArgsEndToEnd(t *testing.T) {
 	)
 
 	bot := &Bot[NoData]{
-		logger:      slog.CreateLogger(),
+		logger:      sneklog.CreateLogger(),
 		payloadType: BotPayloadJson,
 		plugins:     []Plugin[NoData]{clonePlugin(plugin)},
 	}
@@ -898,7 +898,7 @@ func TestHandleEditedMessageStaysOutOfCommandFlow(t *testing.T) {
 	})
 
 	bot := &Bot[NoData]{
-		logger:   slog.CreateLogger(),
+		logger:   sneklog.CreateLogger(),
 		prefixes: []string{"/"},
 		plugins:  []Plugin[NoData]{clonePlugin(plugin)},
 	}
@@ -940,7 +940,7 @@ func TestHandleEditedChannelPostStaysOutOfCommandFlow(t *testing.T) {
 	})
 
 	bot := &Bot[NoData]{
-		logger:   slog.CreateLogger(),
+		logger:   sneklog.CreateLogger(),
 		prefixes: []string{"/"},
 		plugins:  []Plugin[NoData]{clonePlugin(plugin)},
 	}
@@ -993,7 +993,7 @@ func TestHandleCallbackPopulatesMessageTargets(t *testing.T) {
 	}, "approve")
 
 	bot := &Bot[NoData]{
-		logger:      slog.CreateLogger(),
+		logger:      sneklog.CreateLogger(),
 		payloadType: BotPayloadJson,
 		plugins:     []Plugin[NoData]{clonePlugin(plugin)},
 	}
@@ -1052,7 +1052,7 @@ func TestHandleCallbackPopulatesInlineTargets(t *testing.T) {
 	}, "inline.approve")
 
 	bot := &Bot[NoData]{
-		logger:      slog.CreateLogger(),
+		logger:      sneklog.CreateLogger(),
 		payloadType: BotPayloadJson,
 		plugins:     []Plugin[NoData]{clonePlugin(plugin)},
 	}
@@ -1086,7 +1086,7 @@ func TestHandleCallbackObserverEmitsPayloadEvents(t *testing.T) {
 	}, "approve")
 
 	bot := &Bot[NoData]{
-		logger:      slog.CreateLogger(),
+		logger:      sneklog.CreateLogger(),
 		payloadType: BotPayloadJson,
 		plugins:     []Plugin[NoData]{clonePlugin(plugin)},
 		observer:    observer,
@@ -1137,7 +1137,7 @@ func TestHandleCallbackObserverEmitsPayloadErrors(t *testing.T) {
 	}, "approve")
 
 	bot := &Bot[NoData]{
-		logger:      slog.CreateLogger(),
+		logger:      sneklog.CreateLogger(),
 		payloadType: BotPayloadJson,
 		plugins:     []Plugin[NoData]{clonePlugin(plugin)},
 		observer:    observer,
@@ -1182,7 +1182,7 @@ func TestHandleCallbackObserverEmitsPayloadErrors(t *testing.T) {
 func TestHandleCallbackObserverEmitsDecodeErrors(t *testing.T) {
 	observer := &recordingObserver{}
 	bot := &Bot[NoData]{
-		logger:      slog.CreateLogger(),
+		logger:      sneklog.CreateLogger(),
 		payloadType: BotPayloadJson,
 		observer:    observer,
 	}

@@ -6,13 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	"git.scuroneko.dev/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
 func TestCreateFileLoggerWritesToConfiguredFile(t *testing.T) {
 	logPath := filepath.Join(t.TempDir(), "main.log")
 
-	logger, err := CreateFileLogger("TEST", slog.DEBUG, logPath)
+	logger, err := CreateFileLogger("TEST", sneklog.DEBUG, logPath)
 	if err != nil {
 		t.Fatalf("CreateFileLogger returned error: %v", err)
 	}
@@ -28,7 +28,7 @@ func TestCreateFileLoggerWritesToConfiguredFile(t *testing.T) {
 	if !strings.Contains(string(data), "hello from file logger") {
 		t.Fatalf("expected log message in file, got %q", string(data))
 	}
-	if !strings.Contains(string(data), "[TEST]") {
+	if !strings.Contains(string(data), "TEST:") {
 		t.Fatalf("expected prefix in file, got %q", string(data))
 	}
 }

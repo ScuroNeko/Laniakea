@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
-	"git.scuroneko.dev/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
 func TestDraftFlushRequiresChatID(t *testing.T) {
@@ -24,7 +24,7 @@ func TestMsgContextNewDraftWorksWithoutLimiter(t *testing.T) {
 		Msg: &tgapi.Message{
 			Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate},
 		},
-		Logger:        slog.CreateLogger(),
+		Logger:        sneklog.CreateLogger(),
 		draftProvider: NewRandomDraftProvider(&tgapi.API{}),
 	}
 

@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
-	"git.scuroneko.dev/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
@@ -51,7 +51,7 @@ func TestAutoGenerateCommandsChecksLimitBeforeDelete(t *testing.T) {
 
 	bot := &Bot[NoData]{
 		api:     api,
-		logger:  slog.CreateLogger(),
+		logger:  sneklog.CreateLogger(),
 		plugins: []Plugin[NoData]{*plugin},
 	}
 

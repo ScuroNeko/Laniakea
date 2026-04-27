@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"git.scuroneko.dev/scuroneko/laniakea/utils"
-	"git.scuroneko.dev/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
 // APIOpts holds configuration options for initializing the Telegram API client.
@@ -85,7 +85,7 @@ func (opts *APIOpts) SetLimiterDrop(b bool) *APIOpts {
 type API struct {
 	token         string
 	client        *http.Client
-	logger        *slog.Logger
+	logger        *sneklog.Logger
 	useTestServer bool
 	apiUrl        string
 
@@ -137,7 +137,7 @@ func (api *API) Close() error {
 
 // GetLogger returns the internal logger for custom logging.
 // See https://core.telegram.org/bots/api
-func (api *API) GetLogger() *slog.Logger {
+func (api *API) GetLogger() *sneklog.Logger {
 	return api.logger
 }
 

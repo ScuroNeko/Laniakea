@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
-	"git.scuroneko.dev/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
 type failingSessionStore struct {
@@ -56,7 +56,7 @@ func TestBotAddPluginsPreservesScenesAndHandlesThem(t *testing.T) {
 		})
 
 	bot := &Bot[NoData]{
-		logger:             slog.CreateLogger(),
+		logger:             sneklog.CreateLogger(),
 		prefixes:           []string{"/"},
 		sessionStore:       NewMemorySessionStore(),
 		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
@@ -149,7 +149,7 @@ func TestEnterSceneRejectsMissingEntryConfiguration(t *testing.T) {
 		plugin.NewScene("signup")
 
 		bot := &Bot[NoData]{
-			logger:             slog.CreateLogger(),
+			logger:             sneklog.CreateLogger(),
 			sessionStore:       NewMemorySessionStore(),
 			sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
 		}
@@ -172,7 +172,7 @@ func TestEnterSceneRejectsMissingEntryConfiguration(t *testing.T) {
 		plugin.NewScene("signup").SetEntry("start")
 
 		bot := &Bot[NoData]{
-			logger:             slog.CreateLogger(),
+			logger:             sneklog.CreateLogger(),
 			sessionStore:       NewMemorySessionStore(),
 			sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
 		}
@@ -231,7 +231,7 @@ func TestSceneCommandHandlerRunsBeforeStep(t *testing.T) {
 		})
 
 	bot := &Bot[NoData]{
-		logger:             slog.CreateLogger(),
+		logger:             sneklog.CreateLogger(),
 		prefixes:           []string{"/"},
 		sessionStore:       NewMemorySessionStore(),
 		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
@@ -279,7 +279,7 @@ func TestSceneCommandObserverEmitsLifecycleEvents(t *testing.T) {
 		})
 
 	bot := &Bot[NoData]{
-		logger:             slog.CreateLogger(),
+		logger:             sneklog.CreateLogger(),
 		prefixes:           []string{"/"},
 		sessionStore:       NewMemorySessionStore(),
 		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
@@ -331,7 +331,7 @@ func TestSceneStepObserverEmitsLifecycleEvents(t *testing.T) {
 		})
 
 	bot := &Bot[NoData]{
-		logger:             slog.CreateLogger(),
+		logger:             sneklog.CreateLogger(),
 		prefixes:           []string{"/"},
 		sessionStore:       NewMemorySessionStore(),
 		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
@@ -386,7 +386,7 @@ func TestSceneMessageObserverEmitsLifecycleEvents(t *testing.T) {
 		})
 
 	bot := &Bot[NoData]{
-		logger:             slog.CreateLogger(),
+		logger:             sneklog.CreateLogger(),
 		prefixes:           []string{"/"},
 		sessionStore:       NewMemorySessionStore(),
 		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
@@ -453,7 +453,7 @@ func TestScenePayloadHandlerRunsBeforeStep(t *testing.T) {
 		})
 
 	bot := &Bot[NoData]{
-		logger:             slog.CreateLogger(),
+		logger:             sneklog.CreateLogger(),
 		payloadType:        BotPayloadJson,
 		sessionStore:       NewMemorySessionStore(),
 		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
@@ -509,7 +509,7 @@ func TestScenePayloadObserverEmitsLifecycleEvents(t *testing.T) {
 		})
 
 	bot := &Bot[NoData]{
-		logger:             slog.CreateLogger(),
+		logger:             sneklog.CreateLogger(),
 		payloadType:        BotPayloadJson,
 		sessionStore:       NewMemorySessionStore(),
 		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
@@ -572,7 +572,7 @@ func TestSceneUnmatchedPayloadFallsThroughWithoutRunningStep(t *testing.T) {
 		})
 
 	bot := &Bot[NoData]{
-		logger:             slog.CreateLogger(),
+		logger:             sneklog.CreateLogger(),
 		payloadType:        BotPayloadJson,
 		sessionStore:       NewMemorySessionStore(),
 		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
@@ -648,7 +648,7 @@ func TestScenePassDoesNotPersistSessionData(t *testing.T) {
 		})
 
 	bot := &Bot[NoData]{
-		logger:             slog.CreateLogger(),
+		logger:             sneklog.CreateLogger(),
 		prefixes:           []string{"/"},
 		sessionStore:       NewMemorySessionStore(),
 		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
@@ -724,7 +724,7 @@ func TestSceneUnmatchedCommandFallsThroughWithoutRunningStep(t *testing.T) {
 	}, "ping")
 
 	bot := &Bot[NoData]{
-		logger:             slog.CreateLogger(),
+		logger:             sneklog.CreateLogger(),
 		prefixes:           []string{"/"},
 		sessionStore:       NewMemorySessionStore(),
 		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
@@ -793,7 +793,7 @@ func TestSceneMessageFallbackRunsWhenNoCommandOrStepMatch(t *testing.T) {
 		})
 
 	bot := &Bot[NoData]{
-		logger:             slog.CreateLogger(),
+		logger:             sneklog.CreateLogger(),
 		prefixes:           []string{"/"},
 		sessionStore:       NewMemorySessionStore(),
 		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
@@ -838,7 +838,7 @@ func TestSceneMessageFallbackRunsWhenNoCommandOrStepMatch(t *testing.T) {
 
 func TestFindSceneSessionSupportsUserScopeWithoutMessage(t *testing.T) {
 	bot := &Bot[NoData]{
-		logger:             slog.CreateLogger(),
+		logger:             sneklog.CreateLogger(),
 		sessionStore:       NewMemorySessionStore(),
 		sceneScopePriority: []SceneScope{SceneScopeUser, SceneScopeChat, SceneScopeUserChat},
 	}
@@ -865,7 +865,7 @@ func TestSceneStoreErrorsPropagate(t *testing.T) {
 
 	t.Run("find scene session get error", func(t *testing.T) {
 		bot := &Bot[NoData]{
-			logger:             slog.CreateLogger(),
+			logger:             sneklog.CreateLogger(),
 			sessionStore:       failingSessionStore{getErr: getErr},
 			sceneScopePriority: []SceneScope{SceneScopeUser},
 		}
@@ -881,7 +881,7 @@ func TestSceneStoreErrorsPropagate(t *testing.T) {
 			return ctx.Stay(), nil
 		})
 		bot := &Bot[NoData]{
-			logger:             slog.CreateLogger(),
+			logger:             sneklog.CreateLogger(),
 			sessionStore:       failingSessionStore{setErr: setErr},
 			sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
 		}

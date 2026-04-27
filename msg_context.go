@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
-	"git.scuroneko.dev/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
 // MsgContext holds the normalized per-update context passed to command, payload,
@@ -46,7 +46,7 @@ type MsgContext struct {
 
 	// Logger is the logger assigned by the matched plugin for the current handler call.
 	// It may fall back to the bot logger when the plugin has no dedicated logger.
-	Logger *slog.Logger
+	Logger *sneklog.Logger
 
 	// InlineMsgId is the inline message identifier for callback queries that target
 	// an inline message instead of a chat message.

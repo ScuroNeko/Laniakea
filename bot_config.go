@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
-	"git.scuroneko.dev/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
 // AddPrefixes adds one or more command prefixes (e.g., "/", "!").
@@ -187,14 +187,14 @@ func (bot *Bot[T]) SetErrorTemplate(s string) *Bot[T] {
 // SetDebug enables or disables debug logging.
 func (bot *Bot[T]) SetDebug(debug bool) *Bot[T] {
 	bot.debug = debug
-	level := slog.FATAL
+	level := sneklog.FATAL
 	if debug {
-		level = slog.DEBUG
+		level = sneklog.DEBUG
 	}
 
 	bot.logger.Level(level)
-	if bot.RequestLogger != nil {
-		bot.RequestLogger.Level(level)
+	if bot.requestLogger != nil {
+		bot.requestLogger.Level(level)
 	}
 	for _, p := range bot.plugins {
 		if p.logger == nil {

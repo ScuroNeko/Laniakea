@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
-	"git.scuroneko.dev/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
 func TestAnswerPhotoIncludesDirectMessagesTopicID(t *testing.T) {
@@ -50,7 +50,7 @@ func TestAnswerPhotoIncludesDirectMessagesTopicID(t *testing.T) {
 			Chat:               &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate},
 			DirectMessageTopic: &tgapi.DirectMessageTopic{TopicID: 77},
 		},
-		Logger: slog.CreateLogger(),
+		Logger: sneklog.CreateLogger(),
 	}
 
 	answer := ctx.AnswerPhoto("photo-id", "caption")
@@ -202,7 +202,7 @@ func TestErrorDefaultRemainsUserVisibleForMessageFlow(t *testing.T) {
 	ctx := &MsgContext{
 		Api:           api,
 		Msg:           &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
-		Logger:        slog.CreateLogger(),
+		Logger:        sneklog.CreateLogger(),
 		errorTemplate: "Error: %s",
 	}
 
@@ -238,7 +238,7 @@ func TestErrorInternalSkipsUserReplyForMessageFlow(t *testing.T) {
 	ctx := &MsgContext{
 		Api:           api,
 		Msg:           &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
-		Logger:        slog.CreateLogger(),
+		Logger:        sneklog.CreateLogger(),
 		errorTemplate: "Error: %s",
 	}
 
@@ -266,7 +266,7 @@ func TestErrorInternalSkipsCallbackAnswer(t *testing.T) {
 
 	ctx := &MsgContext{
 		Api:             api,
-		Logger:          slog.CreateLogger(),
+		Logger:          sneklog.CreateLogger(),
 		errorTemplate:   "%s",
 		CallbackQueryId: "cb-1",
 	}
@@ -309,7 +309,7 @@ func TestErrorUserVisibleAnswersCallback(t *testing.T) {
 
 	ctx := &MsgContext{
 		Api:             api,
-		Logger:          slog.CreateLogger(),
+		Logger:          sneklog.CreateLogger(),
 		errorTemplate:   "Oops: %s",
 		CallbackQueryId: "cb-1",
 	}
@@ -327,7 +327,7 @@ func TestErrorUserVisibleAnswersCallback(t *testing.T) {
 func TestAnswerRejectsEmptyMessage(t *testing.T) {
 	ctx := &MsgContext{
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
-		Logger: slog.CreateLogger(),
+		Logger: sneklog.CreateLogger(),
 	}
 
 	if answer := ctx.Answer(""); answer != nil {
@@ -357,7 +357,7 @@ func TestAnswerRejectsLongMessageWithoutSendingRequest(t *testing.T) {
 	ctx := &MsgContext{
 		Api:    api,
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
-		Logger: slog.CreateLogger(),
+		Logger: sneklog.CreateLogger(),
 	}
 
 	if answer := ctx.Answer(strings.Repeat("a", maxMessageTextLen+1)); answer != nil {
@@ -441,7 +441,7 @@ func TestAnswerLongSplitsRequestsAndAttachesKeyboardToLastChunk(t *testing.T) {
 	ctx := &MsgContext{
 		Api:    api,
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
-		Logger: slog.CreateLogger(),
+		Logger: sneklog.CreateLogger(),
 	}
 	kb := NewInlineKeyboardJson(1).AddCallbackButton("A", "cmd")
 	text := strings.Repeat("a", maxMessageTextLen) + " " + strings.Repeat("b", 32)

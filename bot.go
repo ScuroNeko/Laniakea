@@ -10,7 +10,7 @@ import (
 	"git.scuroneko.dev/scuroneko/extypes"
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 	"git.scuroneko.dev/scuroneko/laniakea/utils"
-	"git.scuroneko.dev/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
 // AppData is the generic shared application data type injected into bots,
@@ -38,11 +38,11 @@ type AppData any
 // Use Bot[NoData] to indicate no shared dependency injection is required.
 type NoData struct{ AppData }
 
-// AppDataLogger builds a slog.LoggerWriter from injected application data.
+// AppDataLogger builds a sneklog.LoggerWriter from injected application data.
 //
 // Use it when shared application data exposes a log sink or adapter that should
 // receive framework logs.
-type AppDataLogger[T AppData] func(data T) slog.LoggerWriter
+type AppDataLogger[T AppData] func(data T) sneklog.LoggerWriter
 
 // BotPayloadType defines the serialization format for callback data payloads.
 type BotPayloadType string
@@ -90,10 +90,11 @@ type Bot[T AppData] struct {
 	strictPayloadType bool
 	maxWorkers        int
 
-	logger        *slog.Logger                // Main bot logger (JSON stdout + optional file)
-	RequestLogger *slog.Logger                // Optional request-level API logging
-	webHookLogger *slog.Logger                // Webhook logger. Available only after Bot.RunWebHookWithContext.
-	extraLoggers  extypes.Slice[*slog.Logger] // API, Uploader, and custom loggers
+	logger        *sneklog.Logger // Main bot logger (JSON stdout + optional file)
+	requestLogger *sneklog.Logger // Optional request-level API logging
+	useReqLogger  bool
+	webHookLogger *sneklog.Logger                // Webhook logger. Available only after Bot.RunWebHookWithContext.
+	extraLoggers  extypes.Slice[*sneklog.Logger] // API, Uploader, and custom loggers
 
 	plugins     []Plugin[T]     // Command/event handlers
 	middlewares []Middleware[T] // Pre-processing filters (sorted by order)
@@ -187,12 +188,14 @@ func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
 		debug:             opts.Debug,
 		prefixes:          prefixes,
 		token:             opts.Token,
-		plugins:           make([]Plugin[T], 0),
-		updateTypes:       append([]tgapi.UpdateType{}, opts.UpdateTypes...),
-		runners:           make([]Runner[T], 0),
-		extraLoggers:      make([]*slog.Logger, 0),
-		l10n:              &L10n{},
-		draftProvider:     NewRandomDraftProvider(api),
+		useReqLogger:      opts.UseRequestLogger,
+
+		plugins:       make([]Plugin[T], 0),
+		updateTypes:   append([]tgapi.UpdateType{}, opts.UpdateTypes...),
+		runners:       make([]Runner[T], 0),
+		extraLoggers:  make([]*sneklog.Logger, 0),
+		l10n:          &L10n{},
+		draftProvider: NewRandomDraftProvider(api),
 
 		sessionStore:       NewMemorySessionStore(),
 		sceneScopePriority: []SceneScope{SceneScopeUserChat, SceneScopeChat, SceneScopeUser},
@@ -233,6 +236,24 @@ func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
 	bot.logger.Debugln("Bot initialized with configuration:", fmt.Sprintf("%+v", opts))
 
 	return bot, nil
+}
+
+// SetLogger replaces the main bot logger.
+func (b *Bot[T]) SetLogger(l *sneklog.Logger) *Bot[T] {
+	b.logger = l
+	return b
+}
+
+// SetRequestLogger replaces the request-level logger.
+func (b *Bot[T]) SetRequestLogger(l *sneklog.Logger) *Bot[T] {
+	b.requestLogger = l
+	return b
+}
+
+// SetWebHookLogger replaces the webhook logger.
+func (b *Bot[T]) SetWebHookLogger(l *sneklog.Logger) *Bot[T] {
+	b.webHookLogger = l
+	return b
 }
 
 // Close gracefully shuts down bot-owned resources.
@@ -283,8 +304,8 @@ func (bot *Bot[T]) Close() error {
 			logCloseErr(err)
 		}
 	}
-	if bot.RequestLogger != nil {
-		if err := bot.RequestLogger.Close(); err != nil {
+	if bot.requestLogger != nil {
+		if err := bot.requestLogger.Close(); err != nil {
 			logCloseErr(err)
 		}
 	}
@@ -322,14 +343,20 @@ func (bot *Bot[T]) SetUpdateOffset(offset int) {
 }
 
 // GetLogger returns the main bot logger.
-func (bot *Bot[T]) GetLogger() *slog.Logger { return bot.logger }
+func (bot *Bot[T]) GetLogger() *sneklog.Logger { return bot.logger }
+
+// GetRequestLogger returns the request-level logger, if configured.
+func (bot *Bot[T]) GetRequestLogger() *sneklog.Logger { return bot.requestLogger }
+
+// GetWebHookLogger returns the webhook logger, if configured.
+func (bot *Bot[T]) GetWebHookLogger() *sneklog.Logger { return bot.webHookLogger }
 
 // GetLoggerLevel returns the effective log level derived from the bot's debug
 // flag.
-func (bot *Bot[T]) GetLoggerLevel() slog.LogLevel {
-	level := slog.FATAL
+func (bot *Bot[T]) GetLoggerLevel() sneklog.LogLevel {
+	level := sneklog.FATAL
 	if bot.debug {
-		level = slog.DEBUG
+		level = sneklog.DEBUG
 	}
 	return level
 }
@@ -373,6 +400,22 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 		return err
 	}
 	defer bot.finishRun()
+	if !bot.useReqLogger && bot.requestLogger != nil {
+		bot.logger.Warnln("Opts#UseRequestLogger is false, but Bot#requestLogger present. Remove Bot#SetRequestLogger or set Opts#UseRequestLogger to true!")
+		err := bot.requestLogger.Close()
+		if err != nil {
+			bot.logger.Errorln(err)
+		}
+		bot.requestLogger = nil
+	}
+	if bot.webHookLogger != nil {
+		bot.logger.Warnln("Bot#webHookLogger present. You shouldn't set this, if ran in Long Polling mode!")
+		err := bot.webHookLogger.Close()
+		if err != nil {
+			bot.logger.Errorln(err)
+		}
+		bot.webHookLogger = nil
+	}
 
 	bot.ExecRunners(ctx)
 

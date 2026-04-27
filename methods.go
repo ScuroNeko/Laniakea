@@ -53,13 +53,13 @@ func (bot *Bot[T]) Updates(ctx context.Context) ([]tgapi.Update, error) {
 		return nil, err
 	}
 
-	if bot.RequestLogger != nil {
+	if bot.requestLogger != nil {
 		for _, u := range updates {
 			j, err := json.Marshal(u)
 			if err != nil {
 				bot.GetLogger().Error(err)
 			}
-			bot.RequestLogger.Debugf("UPDATE %s\n", j)
+			bot.requestLogger.Debugf("UPDATE %s\n", j)
 		}
 	}
 	if len(updates) > 0 {

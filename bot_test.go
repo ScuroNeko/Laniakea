@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
-	"git.scuroneko.dev/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
 type pollingRoundTripFunc func(*http.Request) (*http.Response, error)
@@ -59,7 +59,7 @@ func TestGetUpdateTypesReturnsCopy(t *testing.T) {
 }
 
 func TestAddPluginsSnapshotsConfiguration(t *testing.T) {
-	bot := &Bot[NoData]{logger: slog.CreateLogger()}
+	bot := &Bot[NoData]{logger: sneklog.CreateLogger()}
 	plugin := NewPlugin[NoData]("demo")
 
 	cmd := plugin.NewCommand(func(ctx *MsgContext, db NoData) error { return nil }, "start")
@@ -100,7 +100,7 @@ func TestBotPayloadTypeConfiguration(t *testing.T) {
 }
 
 func TestAddPluginsSkipsNilPlugin(t *testing.T) {
-	bot := &Bot[NoData]{logger: slog.CreateLogger()}
+	bot := &Bot[NoData]{logger: sneklog.CreateLogger()}
 	plugin := NewPlugin[NoData]("demo")
 
 	bot.AddPlugins(nil, plugin)
@@ -126,10 +126,10 @@ func TestInitLoggersFallsBackToStdoutLoggerOnFileError(t *testing.T) {
 	if bot.logger == nil {
 		t.Fatal("expected main logger fallback")
 	}
-	if bot.RequestLogger == nil {
+	if bot.requestLogger == nil {
 		t.Fatal("expected request logger fallback")
 	}
-	if err := bot.RequestLogger.Close(); err != nil {
+	if err := bot.requestLogger.Close(); err != nil {
 		t.Fatalf("failed to close request logger: %v", err)
 	}
 	if err := bot.logger.Close(); err != nil {
@@ -177,11 +177,11 @@ func TestInitLoggersAppliesTokenReplacerToFileLoggers(t *testing.T) {
 	bot.uploader.GetLogger().AddWriter(bot.uploader.GetLogger().CreateTextWriter(uploaderFile))
 
 	bot.logger.Infoln("main secret-token")
-	bot.RequestLogger.Infoln("request secret-token")
+	bot.requestLogger.Infoln("request secret-token")
 	bot.api.GetLogger().Infoln("api secret-token")
 	bot.uploader.GetLogger().Infoln("uploader secret-token")
 
-	if err := bot.RequestLogger.Close(); err != nil {
+	if err := bot.requestLogger.Close(); err != nil {
 		t.Fatalf("failed to close request logger: %v", err)
 	}
 	if err := bot.logger.Close(); err != nil {
@@ -226,7 +226,7 @@ func TestInitLoggersAppliesTokenReplacerToFileLoggers(t *testing.T) {
 func TestAddPluginsAppliesTokenReplacerToPluginLogger(t *testing.T) {
 	bot := &Bot[NoData]{
 		token:  "secret-token",
-		logger: slog.CreateLogger(),
+		logger: sneklog.CreateLogger(),
 	}
 	defer func() { _ = bot.logger.Close() }()
 
@@ -276,10 +276,10 @@ func TestNextPollRetryDelay(t *testing.T) {
 }
 
 func TestAddDatabaseLoggerWriterSkipsWhenAppDataIsUnset(t *testing.T) {
-	bot := &Bot[NoData]{logger: slog.CreateLogger()}
+	bot := &Bot[NoData]{logger: sneklog.CreateLogger()}
 	called := false
 
-	bot.AddAppDataLoggerWriter(func(db NoData) slog.LoggerWriter {
+	bot.AddAppDataLoggerWriter(func(db NoData) sneklog.LoggerWriter {
 		called = true
 		return nil
 	})
@@ -292,12 +292,12 @@ func TestAddDatabaseLoggerWriterSkipsWhenAppDataIsUnset(t *testing.T) {
 func TestAddDatabaseLoggerWriterSkipsWhenAppDataIsNil(t *testing.T) {
 	type testDB struct{}
 
-	bot := &Bot[*testDB]{logger: slog.CreateLogger()}
+	bot := &Bot[*testDB]{logger: sneklog.CreateLogger()}
 	var db *testDB
 	bot.SetAppData(db)
 
 	called := false
-	bot.AddAppDataLoggerWriter(func(db *testDB) slog.LoggerWriter {
+	bot.AddAppDataLoggerWriter(func(db *testDB) sneklog.LoggerWriter {
 		called = true
 		return nil
 	})
@@ -336,13 +336,13 @@ func TestShouldWarnOnValueAppData(t *testing.T) {
 func TestSetAppDataMarksValueWarningOnce(t *testing.T) {
 	type testDB struct{}
 
-	bot := &Bot[testDB]{logger: slog.CreateLogger()}
+	bot := &Bot[testDB]{logger: sneklog.CreateLogger()}
 	bot.SetAppData(testDB{})
 	if !bot.warnedValueData {
 		t.Fatal("expected value-typed app data to mark warning state")
 	}
 
-	ptrBot := &Bot[*testDB]{logger: slog.CreateLogger()}
+	ptrBot := &Bot[*testDB]{logger: sneklog.CreateLogger()}
 	ptrBot.SetAppData(&testDB{})
 	if ptrBot.warnedValueData {
 		t.Fatal("did not expect pointer-typed app data to mark warning state")
@@ -350,7 +350,7 @@ func TestSetAppDataMarksValueWarningOnce(t *testing.T) {
 }
 
 func TestSetObserverAndGetObserver(t *testing.T) {
-	bot := &Bot[NoData]{logger: slog.CreateLogger()}
+	bot := &Bot[NoData]{logger: sneklog.CreateLogger()}
 	observer := testObserver{}
 
 	if got := bot.GetObserver(); got != nil {
@@ -364,7 +364,7 @@ func TestSetObserverAndGetObserver(t *testing.T) {
 }
 
 func TestSetObserverNilClearsObserver(t *testing.T) {
-	bot := &Bot[NoData]{logger: slog.CreateLogger()}
+	bot := &Bot[NoData]{logger: sneklog.CreateLogger()}
 	bot.SetObserver(testObserver{})
 
 	if bot.GetObserver() == nil {
@@ -382,7 +382,7 @@ func TestRunWithContextRejectsSecondRun(t *testing.T) {
 	cancel()
 
 	bot := &Bot[NoData]{
-		logger:      slog.CreateLogger(),
+		logger:      sneklog.CreateLogger(),
 		prefixes:    []string{"/"},
 		plugins:     []Plugin[NoData]{{name: "demo"}},
 		updateQueue: make(chan *tgapi.Update, 1),
@@ -394,6 +394,32 @@ func TestRunWithContextRejectsSecondRun(t *testing.T) {
 	}
 	if err := bot.RunWithContext(ctx); !errors.Is(err, ErrBotAlreadyRun) {
 		t.Fatalf("expected ErrBotAlreadyRun on second run, got %v", err)
+	}
+}
+
+func TestRunWithContextKeepsEnabledRequestLogger(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	requestLogger := sneklog.CreateLogger()
+	bot := &Bot[NoData]{
+		logger:        sneklog.CreateLogger(),
+		requestLogger: requestLogger,
+		useReqLogger:  true,
+		prefixes:      []string{"/"},
+		plugins:       []Plugin[NoData]{{name: "demo"}},
+		updateQueue:   make(chan *tgapi.Update, 1),
+		maxWorkers:    1,
+	}
+	t.Cleanup(func() {
+		_ = bot.Close()
+	})
+
+	if err := bot.RunWithContext(ctx); err != nil {
+		t.Fatalf("RunWithContext returned error: %v", err)
+	}
+	if got := bot.GetRequestLogger(); got != requestLogger {
+		t.Fatalf("expected enabled request logger to be preserved, got %#v", got)
 	}
 }
 
@@ -418,8 +444,8 @@ func TestCloseDoesNotDeleteWebhook(t *testing.T) {
 	uploader := tgapi.NewUploader(api)
 
 	bot := &Bot[NoData]{
-		logger:        slog.CreateLogger(),
-		webHookLogger: slog.CreateLogger(),
+		logger:        sneklog.CreateLogger(),
+		webHookLogger: sneklog.CreateLogger(),
 		api:           api,
 		uploader:      uploader,
 	}
@@ -457,7 +483,7 @@ func TestRunWithContextEmitsPollingRetryAndErrorEvents(t *testing.T) {
 	}()
 
 	bot := &Bot[NoData]{
-		logger:      slog.CreateLogger(),
+		logger:      sneklog.CreateLogger(),
 		api:         api,
 		prefixes:    []string{"/"},
 		plugins:     []Plugin[NoData]{{name: "demo"}},
@@ -489,7 +515,7 @@ func TestBotConfigurationFreezesAfterRunStarts(t *testing.T) {
 
 	makeBot := func() *Bot[*testDB] {
 		return &Bot[*testDB]{
-			logger:             slog.CreateLogger(),
+			logger:             sneklog.CreateLogger(),
 			prefixes:           []string{"/"},
 			updateTypes:        []tgapi.UpdateType{tgapi.UpdateTypeMessage},
 			payloadType:        BotPayloadBase64,
@@ -681,7 +707,7 @@ func TestBotConfigurationFreezesAfterRunStarts(t *testing.T) {
 
 func TestAddPluginsAndRuntimeRegistrationsNoOpAfterRunStarts(t *testing.T) {
 	bot := &Bot[NoData]{
-		logger:      slog.CreateLogger(),
+		logger:      sneklog.CreateLogger(),
 		prefixes:    []string{"/"},
 		middlewares: []Middleware[NoData]{NewMiddleware("base", func(ctx *MsgContext, db NoData) bool { return true })},
 		runners:     []Runner[NoData]{NewRunner("base", func(bot *Bot[NoData]) error { return nil })},

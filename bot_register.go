@@ -129,7 +129,7 @@ func (bot *Bot[T]) AddRunner(runner Runner[T]) *Bot[T] {
 //
 // Example:
 //
-//	bot.AddAppDataLoggerWriter(func(data *MyAppData) slog.LoggerWriter {
+//	bot.AddAppDataLoggerWriter(func(data *MyAppData) sneklog.LoggerWriter {
 //	    return data.QueryLogger()
 //	})
 func (bot *Bot[T]) AddAppDataLoggerWriter(writer AppDataLogger[T]) *Bot[T] {
@@ -143,8 +143,8 @@ func (bot *Bot[T]) AddAppDataLoggerWriter(writer AppDataLogger[T]) *Bot[T] {
 	}
 	w := writer(bot.appData)
 	bot.logger.AddWriter(w)
-	if bot.RequestLogger != nil {
-		bot.RequestLogger.AddWriter(w)
+	if bot.requestLogger != nil {
+		bot.requestLogger.AddWriter(w)
 	}
 	for _, l := range bot.managedExtraLoggers() {
 		l.AddWriter(w)
@@ -154,7 +154,7 @@ func (bot *Bot[T]) AddAppDataLoggerWriter(writer AppDataLogger[T]) *Bot[T] {
 			p.logger.AddWriter(w)
 		}
 	}
-	bot.addTokenReplacer(bot.logger, bot.RequestLogger)
+	bot.addTokenReplacer(bot.logger, bot.requestLogger)
 	bot.addTokenReplacer(bot.managedExtraLoggers()...)
 	return bot
 }

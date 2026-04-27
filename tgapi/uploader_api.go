@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"git.scuroneko.dev/scuroneko/laniakea/utils"
-	"git.scuroneko.dev/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
 const (
@@ -65,7 +65,7 @@ func (f UploaderFile) SetType(t UploaderFileType) UploaderFile {
 // (InputFile/multipart). For JSON-only calls (file_id, URL, plain params), use API.
 type Uploader struct {
 	api    *API
-	logger *slog.Logger
+	logger *sneklog.Logger
 }
 
 // NewUploader creates a multipart uploader bound to an API client.
@@ -85,7 +85,7 @@ func (u *Uploader) Close() error { return u.logger.Close() }
 
 // GetLogger returns uploader logger instance.
 // See https://core.telegram.org/bots/api
-func (u *Uploader) GetLogger() *slog.Logger { return u.logger }
+func (u *Uploader) GetLogger() *sneklog.Logger { return u.logger }
 
 // UploaderRequest is a low-level multipart upload request wrapper.
 //

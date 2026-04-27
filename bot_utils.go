@@ -12,11 +12,12 @@ import (
 	"git.scuroneko.dev/scuroneko/extypes"
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 	"git.scuroneko.dev/scuroneko/laniakea/utils"
-	"git.scuroneko.dev/scuroneko/slog"
+
+	"git.scuroneko.dev/scuroneko/sneklog/v2"
 	"github.com/alitto/pond/v2"
 )
 
-func (bot *Bot[T]) addTokenReplacer(loggers ...*slog.Logger) {
+func (bot *Bot[T]) addTokenReplacer(loggers ...*sneklog.Logger) {
 	if bot.token == "" {
 		return
 	}
@@ -28,7 +29,7 @@ func (bot *Bot[T]) addTokenReplacer(loggers ...*slog.Logger) {
 	}
 }
 
-func appendUniqueLogger(loggers []*slog.Logger, logger *slog.Logger) []*slog.Logger {
+func appendUniqueLogger(loggers []*sneklog.Logger, logger *sneklog.Logger) []*sneklog.Logger {
 	if logger == nil {
 		return loggers
 	}
@@ -38,8 +39,8 @@ func appendUniqueLogger(loggers []*slog.Logger, logger *slog.Logger) []*slog.Log
 	return append(loggers, logger)
 }
 
-func (bot *Bot[T]) managedExtraLoggers() []*slog.Logger {
-	loggers := append([]*slog.Logger(nil), bot.extraLoggers...)
+func (bot *Bot[T]) managedExtraLoggers() []*sneklog.Logger {
+	loggers := append([]*sneklog.Logger(nil), bot.extraLoggers...)
 	if bot.api != nil {
 		loggers = appendUniqueLogger(loggers, bot.api.GetLogger())
 	}
@@ -70,36 +71,38 @@ func (bot *Bot[T]) startUpdateWorkers(ctx context.Context) {
 }
 
 func (bot *Bot[T]) initLoggers(opts *BotOpts) {
-	level := slog.FATAL
+	level := sneklog.FATAL
 	if opts.Debug {
-		level = slog.DEBUG
+		level = sneklog.DEBUG
 	}
 
-	bot.logger = utils.CreateLogger("BOT", level)
-	if opts.WriteToFile {
-		path := fmt.Sprintf("%s/main.log", strings.TrimRight(opts.LoggerBasePath, "/"))
-		logger, err := utils.CreateFileLogger("BOT", level, path)
-		if err != nil {
-			bot.logger.Errorln(err)
-		} else {
-			bot.logger = logger
+	if bot.logger == nil {
+		bot.logger = utils.CreateLogger("BOT", level)
+		if opts.WriteToFile {
+			path := fmt.Sprintf("%s/main.log", strings.TrimRight(opts.LoggerBasePath, "/"))
+			logger, err := utils.CreateFileLogger("BOT", level, path)
+			if err != nil {
+				bot.logger.Errorln(err)
+			} else {
+				bot.logger = logger
+			}
 		}
 	}
 
-	if opts.UseRequestLogger {
-		bot.RequestLogger = utils.CreateLogger("REQUESTS", level)
+	if opts.UseRequestLogger && bot.requestLogger == nil {
+		bot.requestLogger = utils.CreateLogger("REQUESTS", level)
 		if opts.WriteToFile {
 			path := fmt.Sprintf("%s/requests.log", strings.TrimRight(opts.LoggerBasePath, "/"))
 			logger, err := utils.CreateFileLogger("REQUESTS", level, path)
 			if err != nil {
 				bot.logger.Errorln(err)
 			} else {
-				bot.RequestLogger = logger
+				bot.requestLogger = logger
 			}
 		}
 	}
 
-	bot.addTokenReplacer(bot.logger, bot.RequestLogger)
+	bot.addTokenReplacer(bot.logger, bot.requestLogger)
 	bot.addTokenReplacer(bot.managedExtraLoggers()...)
 }
 

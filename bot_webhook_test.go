@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
-	"git.scuroneko.dev/scuroneko/slog"
+	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
 func TestEnqueueUpdateCopiesValue(t *testing.T) {
@@ -35,7 +35,7 @@ func TestEnqueueUpdateCopiesValue(t *testing.T) {
 func TestUpdateHandlerEnqueuesUpdate(t *testing.T) {
 	bot := &Bot[NoData]{
 		updateQueue:   make(chan *tgapi.Update, 1),
-		webHookLogger: slog.CreateLogger(),
+		webHookLogger: sneklog.CreateLogger(),
 	}
 	t.Cleanup(func() {
 		_ = bot.webHookLogger.Close()
@@ -66,7 +66,7 @@ func TestUpdateHandlerEnqueuesUpdate(t *testing.T) {
 
 func TestRunWebhookRuntimeRejectsSecondRun(t *testing.T) {
 	bot := &Bot[NoData]{
-		logger:      slog.CreateLogger(),
+		logger:      sneklog.CreateLogger(),
 		updateQueue: make(chan *tgapi.Update, 1),
 		maxWorkers:  1,
 	}
@@ -86,7 +86,7 @@ func TestRunWebhookRuntimeExecutesRunners(t *testing.T) {
 	var calls atomic.Int32
 
 	bot := &Bot[NoData]{
-		logger:      slog.CreateLogger(),
+		logger:      sneklog.CreateLogger(),
 		updateQueue: make(chan *tgapi.Update, 1),
 		maxWorkers:  1,
 		runners: []Runner[NoData]{
@@ -185,7 +185,7 @@ func TestValidateWebhookTLSFiles(t *testing.T) {
 func TestUpdateHandlerRejectsOversizedBody(t *testing.T) {
 	bot := &Bot[NoData]{
 		updateQueue:   make(chan *tgapi.Update, 1),
-		webHookLogger: slog.CreateLogger(),
+		webHookLogger: sneklog.CreateLogger(),
 	}
 	t.Cleanup(func() {
 		_ = bot.webHookLogger.Close()
@@ -222,7 +222,7 @@ func TestStatusHandlerRequiresMatchingSecret(t *testing.T) {
 
 	bot := &Bot[NoData]{
 		api:           api,
-		webHookLogger: slog.CreateLogger(),
+		webHookLogger: sneklog.CreateLogger(),
 	}
 	t.Cleanup(func() {
 		_ = bot.webHookLogger.Close()
