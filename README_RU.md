@@ -126,12 +126,12 @@ func main() {
 `BotOpts` можно не только собирать вручную или из environment, но и загружать и сохранять через file codec API.
 
 Из коробки доступно:
-- `BotOptsFileJsonCodec` для JSON-файлов.
+- `BotOptsFileJSONCodec` для JSON-файлов.
 
 Пример:
 
 ```go
-codec := laniakea.BotOptsFileJsonCodec{}
+codec := laniakea.BotOptsFileJSONCodec{}
 opts, err := laniakea.LoadBotOptsFile(codec, "config.json")
 if err != nil {
 	log.Fatal(err)
@@ -146,7 +146,7 @@ if err != nil {
 Плейсхолдеры вида `{{ TG_TOKEN }}` внутри файла перед декодированием разворачиваются из переменных окружения.
 
 Для других форматов можно реализовать собственный codec через интерфейс `BotOptsFileCodec`.
-Из коробки сейчас поддерживается только JSON. Если нужен другой формат, например TOML, используй `BotOptsFileJsonCodec` как эталонную реализацию собственного codec.
+Из коробки сейчас поддерживается только JSON. Если нужен другой формат, например TOML, используй `BotOptsFileJSONCodec` как эталонную реализацию собственного codec.
 
 Подробности есть в wiki: [Bot Options and Configuration RU](https://git.scuroneko.dev/ScuroNeko/Laniakea/wiki/Bot-Options-and-Configuration-RU)
 
@@ -198,12 +198,12 @@ func myHandler(ctx *laniakea.MsgContext, db *MyDB) error {
 - `Keyboard(text string, keyboard *InlineKeyboard) *AnswerMessage`: Отправляет сообщение с parse_mode none и Inline клавиатурой.
 - `KeyboardLong(text string, keyboard *InlineKeyboard) []*AnswerMessage`: Разбивает длинный plain text на несколько сообщений и вешает клавиатуру на последний chunk.
 - `KeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage`: Отправляет сообщение, отформатированное MarkdownV2 (экранирование на вашей стороне), и Inline клавиатурой.
-- `AnswerPhoto(photoId, text string) *AnswerMessage`: Отправляет фотографию с подписью и parse_mode none.
-- `AnswerPhotoMarkdown(photoId, text string) *AnswerMessage`: Отправляет фотографию с подписью, отформатированной MarkdownV2 (экранирование на вашей стороне).
+- `AnswerPhoto(photoID, text string) *AnswerMessage`: Отправляет фотографию с подписью и parse_mode none.
+- `AnswerPhotoMarkdown(photoID, text string) *AnswerMessage`: Отправляет фотографию с подписью, отформатированной MarkdownV2 (экранирование на вашей стороне).
 - `EditCallback(text string)`: Редактирует сообщение с `parse_mode` none после нажатия inline-кнопки.
 - `EditCallbackMarkdown(text string)`: Редактирует сообщение в формате MarkdownV2 (экранирование на вашей стороне) после нажатия inline-кнопки.
 - `SendAction(action tgapi.ChatActionType)`: Отправляет действие "печатает", "загружает фото" и т.д.
-- Поля: `Text`, `Args`, `From`, `FromID`, `Msg`, `InlineMsgId`, `CallbackQueryId` и другие.
+- Поля: `Text`, `Args`, `From`, `FromID`, `Msg`, `InlineMsgID`, `CallbackQueryID` и другие.
 - И много других методов и полей!
 
 ### App Data
@@ -313,7 +313,7 @@ func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 - Middleware может изменять MsgContext (например, добавлять пользовательские поля) перед запуском команды.
 
 ## ⚙️ Расширенная настройка
-- **Инлайн-клавиатуры**: Создавайте клавиатуры с помощью `laniakea.NewInlineKeyboardJson`, `laniakea.NewInlineKeyboardBase64` или `laniakea.NewInlineKeyboard`. `Bot.SetPayloadType(...)` задаёт payload format по умолчанию, а `InlineKeyboard.SetPayloadType(...)` переопределяет его для конкретной клавиатуры.
+- **Инлайн-клавиатуры**: Создавайте клавиатуры с помощью `laniakea.NewInlineKeyboardJSON`, `laniakea.NewInlineKeyboardBase64` или `laniakea.NewInlineKeyboard`. `Bot.SetPayloadType(...)` задаёт payload format по умолчанию, а `InlineKeyboard.SetPayloadType(...)` переопределяет его для конкретной клавиатуры.
 - **Ограничение запросов**: Передайте настроенный `utils.RateLimiter` через `BotOpts` для корректной обработки лимитов Telegram.
 - **Локализация**: `L10n` безопасен для конкурентного использования после подключения к боту.
 - **Пользовательские update handlers**: Используйте `plugin.AddUpdateHandler(...)` для Telegram update types вне command/payload flow.

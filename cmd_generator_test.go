@@ -34,7 +34,7 @@ func TestAutoGenerateCommandsChecksLimitBeforeDelete(t *testing.T) {
 	}
 	api := tgapi.NewAPI(
 		tgapi.NewAPIOpts("token").
-			SetAPIUrl("https://example.test").
+			SetAPIURL("https://example.test").
 			SetHTTPClient(client),
 	)
 	defer func() {
@@ -51,7 +51,7 @@ func TestAutoGenerateCommandsChecksLimitBeforeDelete(t *testing.T) {
 
 	bot := &Bot[NoData]{
 		api:     api,
-		logger:  sneklog.CreateLogger(),
+		logger:  sneklog.NewLogger(),
 		plugins: []Plugin[NoData]{*plugin},
 	}
 

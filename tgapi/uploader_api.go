@@ -70,12 +70,13 @@ type Uploader struct {
 
 // NewUploader creates a multipart uploader bound to an API client.
 func NewUploader(api *API) *Uploader {
-	logger := utils.CreateLogger("UPLOADER", utils.GetLoggerLevel())
 	if api == nil {
-		logger.Errorln("api is nil")
-		_ = logger.Close()
 		return nil
 	}
+	logger := utils.CreateLogger(
+		"UPLOADER", utils.GetLoggerLevel(),
+		api.logFormat, api.logFormatter,
+	)
 	return &Uploader{api, logger}
 }
 
@@ -97,18 +98,18 @@ type UploaderRequest[R, P any] struct {
 	method string
 	files  []UploaderFile
 	params P
-	chatId int64
+	chatID int64
 }
 
 // NewUploaderRequest creates a low-level multipart upload request with no associated chat ID.
 func NewUploaderRequest[R, P any](method string, params P, files ...UploaderFile) UploaderRequest[R, P] {
-	return UploaderRequest[R, P]{method: method, files: files, params: params, chatId: 0}
+	return UploaderRequest[R, P]{method: method, files: files, params: params, chatID: 0}
 }
 
 // NewUploaderRequestWithChatID creates a low-level multipart upload request with an associated chat ID.
 // The chat ID is used for per-chat rate limiting.
-func NewUploaderRequestWithChatID[R, P any](method string, params P, chatId int64, files ...UploaderFile) UploaderRequest[R, P] {
-	return UploaderRequest[R, P]{method: method, files: files, params: params, chatId: chatId}
+func NewUploaderRequestWithChatID[R, P any](method string, params P, chatID int64, files ...UploaderFile) UploaderRequest[R, P] {
+	return UploaderRequest[R, P]{method: method, files: files, params: params, chatID: chatID}
 }
 
 func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, error) {
@@ -118,11 +119,11 @@ func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, 
 	if up.api.useTestServer {
 		methodPrefix = "/test"
 	}
-	url := fmt.Sprintf("%s/bot%s%s/%s", up.api.apiUrl, up.api.token, methodPrefix, r.method)
+	url := fmt.Sprintf("%s/bot%s%s/%s", up.api.apiURL, up.api.token, methodPrefix, r.method)
 
 	for {
 		if up.api.Limiter != nil {
-			if err := up.api.Limiter.Check(ctx, up.api.dropOverflowLimit, r.chatId); err != nil {
+			if err := up.api.Limiter.Check(ctx, up.api.dropOverflowLimit, r.chatID); err != nil {
 				return zero, err
 			}
 		}
@@ -161,10 +162,10 @@ func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, 
 		if !response.Ok {
 			if response.ErrorCode == 429 && response.Parameters != nil && response.Parameters.RetryAfter != nil {
 				after := *response.Parameters.RetryAfter
-				up.logger.Warnf("Rate limited, retry after %d seconds (chat: %d)", after, r.chatId)
+				up.logger.Warnf("Rate limited, retry after %d seconds (chat: %d)", after, r.chatID)
 				if up.api.Limiter != nil {
-					if r.chatId > 0 {
-						up.api.Limiter.SetChatLock(r.chatId, after)
+					if r.chatID > 0 {
+						up.api.Limiter.SetChatLock(r.chatID, after)
 					} else {
 						up.api.Limiter.SetGlobalLock(after)
 					}

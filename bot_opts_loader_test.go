@@ -10,8 +10,8 @@ import (
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
 
-func TestBotOptsFileJsonCodecRoundTrip(t *testing.T) {
-	codec := BotOptsFileJsonCodec{}
+func TestBotOptsFileJSONCodecRoundTrip(t *testing.T) {
+	codec := BotOptsFileJSONCodec{}
 	want := &BotOpts{
 		Token:             "TOKEN",
 		UpdateTypes:       []tgapi.UpdateType{tgapi.UpdateTypeMessage, tgapi.UpdateTypeCallbackQuery},
@@ -22,7 +22,7 @@ func TestBotOptsFileJsonCodecRoundTrip(t *testing.T) {
 		UseRequestLogger:  true,
 		WriteToFile:       true,
 		UseTestServer:     true,
-		APIUrl:            "https://api.example.invalid",
+		APIURL:            "https://api.example.invalid",
 		RateLimit:         42,
 		DropRLOverflow:    true,
 		StrictPayloadType: true,
@@ -62,7 +62,7 @@ func TestLoadBotOptsFileExpandsEnvPlaceholders(t *testing.T) {
 		t.Fatalf("WriteFile returned error: %v", err)
 	}
 
-	got, err := LoadBotOptsFile(BotOptsFileJsonCodec{}, filename)
+	got, err := LoadBotOptsFile(BotOptsFileJSONCodec{}, filename)
 	if err != nil {
 		t.Fatalf("LoadBotOptsFile returned error: %v", err)
 	}
@@ -70,8 +70,8 @@ func TestLoadBotOptsFileExpandsEnvPlaceholders(t *testing.T) {
 	if got.Token != "TOKEN_FROM_ENV" {
 		t.Fatalf("unexpected token: got %q want %q", got.Token, "TOKEN_FROM_ENV")
 	}
-	if got.APIUrl != "https://api.example.invalid" {
-		t.Fatalf("unexpected api url: got %q want %q", got.APIUrl, "https://api.example.invalid")
+	if got.APIURL != "https://api.example.invalid" {
+		t.Fatalf("unexpected api url: got %q want %q", got.APIURL, "https://api.example.invalid")
 	}
 	if got.ErrorTemplate != "Error: %s" {
 		t.Fatalf("unexpected error template: got %q", got.ErrorTemplate)
@@ -88,7 +88,7 @@ func TestLoadBotOptsFileReturnsDecodeError(t *testing.T) {
 		t.Fatalf("WriteFile returned error: %v", err)
 	}
 
-	if _, err := LoadBotOptsFile(BotOptsFileJsonCodec{}, filename); err == nil {
+	if _, err := LoadBotOptsFile(BotOptsFileJSONCodec{}, filename); err == nil {
 		t.Fatal("expected decode error, got nil")
 	}
 }
@@ -101,17 +101,17 @@ func TestSaveBotOptsFileWritesEncodedData(t *testing.T) {
 		UpdateTypes:       []tgapi.UpdateType{tgapi.UpdateTypeMessage},
 		ErrorTemplate:     "Error: %s",
 		Prefixes:          []string{"/"},
-		APIUrl:            "https://api.example.invalid",
+		APIURL:            "https://api.example.invalid",
 		RateLimit:         30,
 		MaxWorkers:        32,
 		FileConfigVersion: ConfigVersion,
 	}
 
-	if err := SaveBotOptsFile(BotOptsFileJsonCodec{}, filename, want); err != nil {
+	if err := SaveBotOptsFile(BotOptsFileJSONCodec{}, filename, want); err != nil {
 		t.Fatalf("SaveBotOptsFile returned error: %v", err)
 	}
 
-	got, err := LoadBotOptsFile(BotOptsFileJsonCodec{}, filename)
+	got, err := LoadBotOptsFile(BotOptsFileJSONCodec{}, filename)
 	if err != nil {
 		t.Fatalf("LoadBotOptsFile returned error: %v", err)
 	}
@@ -132,7 +132,7 @@ func TestLoadBotOptsFileRejectsFutureConfigVersion(t *testing.T) {
 		t.Fatalf("WriteFile returned error: %v", err)
 	}
 
-	_, err := LoadBotOptsFile(BotOptsFileJsonCodec{}, filename)
+	_, err := LoadBotOptsFile(BotOptsFileJSONCodec{}, filename)
 	if !errors.Is(err, ErrConfigVersionMismatch) {
 		t.Fatalf("expected ErrConfigVersionMismatch, got %v", err)
 	}

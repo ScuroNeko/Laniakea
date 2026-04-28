@@ -19,10 +19,10 @@ const (
 // InlineKbButtonBuilder is a fluent builder for creating a single inline keyboard button.
 //
 // Use NewInlineKbButton() to start, then chain methods to configure:
-//   - SetIconCustomEmojiId() — adds a custom emoji icon
+//   - SetIconCustomEmojiID() — adds a custom emoji icon
 //   - SetStyle() — sets visual style (danger/success/primary)
-//   - SetUrl() — makes button open a URL
-//   - SetCallbackDataJson() — attaches structured command + args for bot handling
+//   - SetURL() — makes button open a URL
+//   - SetCallbackDataJSON() — attaches structured command + args for bot handling
 //
 // Call build() to produce the final tgapi.InlineKeyboardButton.
 // Builder methods are immutable — each returns a copy.
@@ -40,9 +40,9 @@ func NewInlineKbButton(text string) InlineKbButtonBuilder {
 	return InlineKbButtonBuilder{text: text}
 }
 
-// SetIconCustomEmojiId sets a custom emoji ID to display as the button's icon.
+// SetIconCustomEmojiID sets a custom emoji ID to display as the button's icon.
 // This is a Telegram Bot API feature for custom emoji icons.
-func (b InlineKbButtonBuilder) SetIconCustomEmojiId(id string) InlineKbButtonBuilder {
+func (b InlineKbButtonBuilder) SetIconCustomEmojiID(id string) InlineKbButtonBuilder {
 	b.iconCustomEmojiID = id
 	return b
 }
@@ -55,22 +55,22 @@ func (b InlineKbButtonBuilder) SetStyle(style tgapi.KeyboardButtonStyle) InlineK
 	return b
 }
 
-// SetUrl sets a URL that will be opened when the button is pressed.
+// SetURL sets a URL that will be opened when the button is pressed.
 // If both URL and CallbackData are set, Telegram will prioritize URL.
-func (b InlineKbButtonBuilder) SetUrl(url string) InlineKbButtonBuilder {
+func (b InlineKbButtonBuilder) SetURL(url string) InlineKbButtonBuilder {
 	b.url = url
 	return b
 }
 
-// SetCallbackDataJson sets a structured callback payload that will be sent to the bot
+// SetCallbackDataJSON sets a structured callback payload that will be sent to the bot
 // when the button is pressed. The command and arguments are serialized as JSON.
 //
 // Args are converted to strings using fmt.Sprint. Non-string types (e.g., int, bool)
 // are safely serialized, but complex structs may not serialize usefully.
 //
-// Example: SetCallbackDataJson("delete_user", 123, "confirm") → {"cmd":"delete_user","args":["123","confirm"]}.
-func (b InlineKbButtonBuilder) SetCallbackDataJson(cmd string, args ...any) InlineKbButtonBuilder {
-	b.callbackData = NewCallbackData(cmd, args...).ToJson()
+// Example: SetCallbackDataJSON("delete_user", 123, "confirm") → {"cmd":"delete_user","args":["123","confirm"]}.
+func (b InlineKbButtonBuilder) SetCallbackDataJSON(cmd string, args ...any) InlineKbButtonBuilder {
+	b.callbackData = NewCallbackData(cmd, args...).ToJSON()
 	return b
 }
 
@@ -107,12 +107,12 @@ type InlineKeyboard struct {
 	payloadType BotPayloadType // Serialization format for callback data (JSON or Base64)
 }
 
-// NewInlineKeyboardJson creates a new keyboard builder with the specified maximum
+// NewInlineKeyboardJSON creates a new keyboard builder with the specified maximum
 // number of buttons per row.
 //
-// Example: NewInlineKeyboardJson(3) creates a keyboard with at most 3 buttons per line.
-func NewInlineKeyboardJson(maxRow int) *InlineKeyboard {
-	return NewInlineKeyboard(BotPayloadJson, maxRow)
+// Example: NewInlineKeyboardJSON(3) creates a keyboard with at most 3 buttons per line.
+func NewInlineKeyboardJSON(maxRow int) *InlineKeyboard {
+	return NewInlineKeyboard(BotPayloadJSON, maxRow)
 }
 
 // NewInlineKeyboardBase64 creates a new keyboard builder with the specified maximum
@@ -126,7 +126,7 @@ func NewInlineKeyboardBase64(maxRow int) *InlineKeyboard {
 // NewInlineKeyboard creates a new keyboard builder with the specified payload encoding
 // type and maximum number of buttons per row.
 //
-// Use NewInlineKeyboardJson or NewInlineKeyboardBase64 for the common cases.
+// Use NewInlineKeyboardJSON or NewInlineKeyboardBase64 for the common cases.
 func NewInlineKeyboard(payloadType BotPayloadType, maxRow int) *InlineKeyboard {
 	return &InlineKeyboard{
 		CurrentLine: make(extypes.Slice[tgapi.InlineKeyboardButton], 0),
@@ -163,15 +163,15 @@ func (in *InlineKeyboard) append(button tgapi.InlineKeyboardButton) *InlineKeybo
 	return in
 }
 
-// AddUrlButton adds a button that opens a URL when pressed.
+// AddURLButton adds a button that opens a URL when pressed.
 // No callback data is attached.
-func (in *InlineKeyboard) AddUrlButton(text, url string) *InlineKeyboard {
+func (in *InlineKeyboard) AddURLButton(text, url string) *InlineKeyboard {
 	return in.append(tgapi.InlineKeyboardButton{Text: text, URL: url})
 }
 
-// AddUrlButtonStyle adds a button with a visual style that opens a URL.
+// AddURLButtonStyle adds a button with a visual style that opens a URL.
 // Style must be one of: ButtonStyleDanger, ButtonStyleSuccess, ButtonStylePrimary.
-func (in *InlineKeyboard) AddUrlButtonStyle(text string, style tgapi.KeyboardButtonStyle, url string) *InlineKeyboard {
+func (in *InlineKeyboard) AddURLButtonStyle(text string, style tgapi.KeyboardButtonStyle, url string) *InlineKeyboard {
 	return in.append(tgapi.InlineKeyboardButton{Text: text, Style: style, URL: url})
 }
 
@@ -253,15 +253,15 @@ func NewCallbackData(command string, args ...any) CallbackData {
 	}
 }
 
-// ToJson serializes the CallbackData to a JSON string.
+// ToJSON serializes the CallbackData to a JSON string.
 //
 // If serialization fails (e.g., due to unmarshalable fields), returns a fallback
 // JSON object: {"cmd":""} to prevent breaking Telegram's API.
 //
 // This fallback ensures the bot receives a valid JSON payload even if internal
 // errors occur — avoiding "invalid callback_data" errors from Telegram.
-func (d CallbackData) ToJson() string {
-	data, err := encodeJsonPayload(d)
+func (d CallbackData) ToJSON() string {
+	data, err := encodeJSONPayload(d)
 	if err != nil {
 		// Fallback: return minimal valid JSON to avoid Telegram API rejection
 		return `{"cmd":""}`
@@ -280,14 +280,14 @@ func (d CallbackData) ToBase64() string {
 }
 
 // Encode serializes the CallbackData according to the specified payload type.
-// Supported types: BotPayloadJson and BotPayloadBase64.
+// Supported types: BotPayloadJSON and BotPayloadBase64.
 // For unknown types, returns an empty string.
 func (d CallbackData) Encode(t BotPayloadType) string {
 	switch t {
 	case BotPayloadBase64:
 		return d.ToBase64()
-	case BotPayloadJson:
-		return d.ToJson()
+	case BotPayloadJSON:
+		return d.ToJSON()
 	}
 	return ""
 }

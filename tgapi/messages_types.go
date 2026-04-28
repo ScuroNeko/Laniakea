@@ -103,7 +103,7 @@ type Message struct {
 	SenderBusinessBot    *User          `json:"sender_business_bot,omitempty"`
 	SenderTag            string         `json:"sender_tag,omitempty"`
 	Date                 int            `json:"date"`
-	BusinessConnectionId string         `json:"business_connection_id,omitempty"`
+	BusinessConnectionID string         `json:"business_connection_id,omitempty"`
 	Chat                 *Chat          `json:"chat,omitempty"`
 	ForwardOrigin        *MessageOrigin `json:"forward_origin,omitempty"`
 
@@ -121,7 +121,7 @@ type Message struct {
 	HasProtectedContent    bool   `json:"has_protected_content,omitempty"`
 	IsFromOffline          bool   `json:"is_from_offline,omitempty"`
 	IsPaidPost             bool   `json:"is_paid_post,omitempty"`
-	MediaGroupId           string `json:"media_group_id,omitempty"`
+	MediaGroupID           string `json:"media_group_id,omitempty"`
 	AuthorSignature        string `json:"author_signature,omitempty"`
 	PaidStarCount          int    `json:"paid_star_count,omitempty"`
 
@@ -316,8 +316,8 @@ const (
 	MessageEntityCashtag MessageEntityType = "cashtag"
 	// MessageEntityBotCommand identifies a bot command entity.
 	MessageEntityBotCommand MessageEntityType = "bot_command"
-	// MessageEntityUrl identifies a URL entity.
-	MessageEntityUrl MessageEntityType = "url"
+	// MessageEntityURL identifies a URL entity.
+	MessageEntityURL MessageEntityType = "url"
 	// MessageEntityEmail identifies an email entity.
 	MessageEntityEmail MessageEntityType = "email"
 	// MessageEntityPhoneNumber identifies a phone number entity.
@@ -537,7 +537,7 @@ const (
 	// ChatActionUploadVideoNote tells Telegram the bot is uploading a video note.
 	ChatActionUploadVideoNote ChatActionType = "upload_video_note"
 	// ChatActionUploadVideoNone is a deprecated alias for ChatActionUploadVideoNote.
-	ChatActionUploadVideoNone ChatActionType = ChatActionUploadVideoNote
+	ChatActionUploadVideoNone = ChatActionUploadVideoNote
 )
 
 // MessageReactionUpdated represents a change of a reaction on a message.

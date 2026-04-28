@@ -59,7 +59,7 @@ func TestGetUpdateTypesReturnsCopy(t *testing.T) {
 }
 
 func TestAddPluginsSnapshotsConfiguration(t *testing.T) {
-	bot := &Bot[NoData]{logger: sneklog.CreateLogger()}
+	bot := &Bot[NoData]{logger: sneklog.NewLogger()}
 	plugin := NewPlugin[NoData]("demo")
 
 	cmd := plugin.NewCommand(func(ctx *MsgContext, db NoData) error { return nil }, "start")
@@ -89,8 +89,8 @@ func TestBotPayloadTypeConfiguration(t *testing.T) {
 	if got := bot.GetPayloadType(); got != BotPayloadBase64 {
 		t.Fatalf("unexpected initial payload type: %q", got)
 	}
-	bot.SetPayloadType(BotPayloadJson)
-	if got := bot.GetPayloadType(); got != BotPayloadJson {
+	bot.SetPayloadType(BotPayloadJSON)
+	if got := bot.GetPayloadType(); got != BotPayloadJSON {
 		t.Fatalf("unexpected updated payload type: %q", got)
 	}
 	bot.SetStrictPayloadType(true)
@@ -100,7 +100,7 @@ func TestBotPayloadTypeConfiguration(t *testing.T) {
 }
 
 func TestAddPluginsSkipsNilPlugin(t *testing.T) {
-	bot := &Bot[NoData]{logger: sneklog.CreateLogger()}
+	bot := &Bot[NoData]{logger: sneklog.NewLogger()}
 	plugin := NewPlugin[NoData]("demo")
 
 	bot.AddPlugins(nil, plugin)
@@ -166,7 +166,7 @@ func TestInitLoggersAppliesTokenReplacerToFileLoggers(t *testing.T) {
 		t.Fatalf("failed to open api log: %v", err)
 	}
 	defer func() { _ = apiFile.Close() }()
-	bot.api.GetLogger().AddWriter(bot.api.GetLogger().CreateTextWriter(apiFile))
+	bot.api.GetLogger().AddWriters(bot.api.GetLogger().CreateTextWriter(apiFile))
 
 	uploaderPath := filepath.Join(tempDir, "uploader.log")
 	uploaderFile, err := os.OpenFile(uploaderPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -174,7 +174,7 @@ func TestInitLoggersAppliesTokenReplacerToFileLoggers(t *testing.T) {
 		t.Fatalf("failed to open uploader log: %v", err)
 	}
 	defer func() { _ = uploaderFile.Close() }()
-	bot.uploader.GetLogger().AddWriter(bot.uploader.GetLogger().CreateTextWriter(uploaderFile))
+	bot.uploader.GetLogger().AddWriters(bot.uploader.GetLogger().CreateTextWriter(uploaderFile))
 
 	bot.logger.Infoln("main secret-token")
 	bot.requestLogger.Infoln("request secret-token")
@@ -226,7 +226,7 @@ func TestInitLoggersAppliesTokenReplacerToFileLoggers(t *testing.T) {
 func TestAddPluginsAppliesTokenReplacerToPluginLogger(t *testing.T) {
 	bot := &Bot[NoData]{
 		token:  "secret-token",
-		logger: sneklog.CreateLogger(),
+		logger: sneklog.NewLogger(),
 	}
 	defer func() { _ = bot.logger.Close() }()
 
@@ -240,7 +240,7 @@ func TestAddPluginsAppliesTokenReplacerToPluginLogger(t *testing.T) {
 	}
 	defer func() { _ = file.Close() }()
 
-	bot.plugins[0].logger.AddWriter(bot.plugins[0].logger.CreateTextWriter(file))
+	bot.plugins[0].logger.AddWriters(bot.plugins[0].logger.CreateTextWriter(file))
 	bot.plugins[0].logger.Infoln("plugin secret-token")
 
 	data, err := os.ReadFile(logPath)
@@ -276,7 +276,7 @@ func TestNextPollRetryDelay(t *testing.T) {
 }
 
 func TestAddDatabaseLoggerWriterSkipsWhenAppDataIsUnset(t *testing.T) {
-	bot := &Bot[NoData]{logger: sneklog.CreateLogger()}
+	bot := &Bot[NoData]{logger: sneklog.NewLogger()}
 	called := false
 
 	bot.AddAppDataLoggerWriter(func(db NoData) sneklog.LoggerWriter {
@@ -292,7 +292,7 @@ func TestAddDatabaseLoggerWriterSkipsWhenAppDataIsUnset(t *testing.T) {
 func TestAddDatabaseLoggerWriterSkipsWhenAppDataIsNil(t *testing.T) {
 	type testDB struct{}
 
-	bot := &Bot[*testDB]{logger: sneklog.CreateLogger()}
+	bot := &Bot[*testDB]{logger: sneklog.NewLogger()}
 	var db *testDB
 	bot.SetAppData(db)
 
@@ -336,13 +336,13 @@ func TestShouldWarnOnValueAppData(t *testing.T) {
 func TestSetAppDataMarksValueWarningOnce(t *testing.T) {
 	type testDB struct{}
 
-	bot := &Bot[testDB]{logger: sneklog.CreateLogger()}
+	bot := &Bot[testDB]{logger: sneklog.NewLogger()}
 	bot.SetAppData(testDB{})
 	if !bot.warnedValueData {
 		t.Fatal("expected value-typed app data to mark warning state")
 	}
 
-	ptrBot := &Bot[*testDB]{logger: sneklog.CreateLogger()}
+	ptrBot := &Bot[*testDB]{logger: sneklog.NewLogger()}
 	ptrBot.SetAppData(&testDB{})
 	if ptrBot.warnedValueData {
 		t.Fatal("did not expect pointer-typed app data to mark warning state")
@@ -350,7 +350,7 @@ func TestSetAppDataMarksValueWarningOnce(t *testing.T) {
 }
 
 func TestSetObserverAndGetObserver(t *testing.T) {
-	bot := &Bot[NoData]{logger: sneklog.CreateLogger()}
+	bot := &Bot[NoData]{logger: sneklog.NewLogger()}
 	observer := testObserver{}
 
 	if got := bot.GetObserver(); got != nil {
@@ -364,7 +364,7 @@ func TestSetObserverAndGetObserver(t *testing.T) {
 }
 
 func TestSetObserverNilClearsObserver(t *testing.T) {
-	bot := &Bot[NoData]{logger: sneklog.CreateLogger()}
+	bot := &Bot[NoData]{logger: sneklog.NewLogger()}
 	bot.SetObserver(testObserver{})
 
 	if bot.GetObserver() == nil {
@@ -382,7 +382,7 @@ func TestRunWithContextRejectsSecondRun(t *testing.T) {
 	cancel()
 
 	bot := &Bot[NoData]{
-		logger:      sneklog.CreateLogger(),
+		logger:      sneklog.NewLogger(),
 		prefixes:    []string{"/"},
 		plugins:     []Plugin[NoData]{{name: "demo"}},
 		updateQueue: make(chan *tgapi.Update, 1),
@@ -401,9 +401,9 @@ func TestRunWithContextKeepsEnabledRequestLogger(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	requestLogger := sneklog.CreateLogger()
+	requestLogger := sneklog.NewLogger()
 	bot := &Bot[NoData]{
-		logger:        sneklog.CreateLogger(),
+		logger:        sneklog.NewLogger(),
 		requestLogger: requestLogger,
 		useReqLogger:  true,
 		prefixes:      []string{"/"},
@@ -438,14 +438,14 @@ func TestCloseDoesNotDeleteWebhook(t *testing.T) {
 
 	api := tgapi.NewAPI(
 		tgapi.NewAPIOpts("token").
-			SetAPIUrl("http://example.invalid").
+			SetAPIURL("http://example.invalid").
 			SetHTTPClient(client),
 	)
 	uploader := tgapi.NewUploader(api)
 
 	bot := &Bot[NoData]{
-		logger:        sneklog.CreateLogger(),
-		webHookLogger: sneklog.CreateLogger(),
+		logger:        sneklog.NewLogger(),
+		webHookLogger: sneklog.NewLogger(),
 		api:           api,
 		uploader:      uploader,
 	}
@@ -475,7 +475,7 @@ func TestRunWithContextEmitsPollingRetryAndErrorEvents(t *testing.T) {
 
 	api := tgapi.NewAPI(
 		tgapi.NewAPIOpts("token").
-			SetAPIUrl("http://example.invalid").
+			SetAPIURL("http://example.invalid").
 			SetHTTPClient(client),
 	)
 	defer func() {
@@ -483,7 +483,7 @@ func TestRunWithContextEmitsPollingRetryAndErrorEvents(t *testing.T) {
 	}()
 
 	bot := &Bot[NoData]{
-		logger:      sneklog.CreateLogger(),
+		logger:      sneklog.NewLogger(),
 		api:         api,
 		prefixes:    []string{"/"},
 		plugins:     []Plugin[NoData]{{name: "demo"}},
@@ -515,7 +515,7 @@ func TestBotConfigurationFreezesAfterRunStarts(t *testing.T) {
 
 	makeBot := func() *Bot[*testDB] {
 		return &Bot[*testDB]{
-			logger:             sneklog.CreateLogger(),
+			logger:             sneklog.NewLogger(),
 			prefixes:           []string{"/"},
 			updateTypes:        []tgapi.UpdateType{tgapi.UpdateTypeMessage},
 			payloadType:        BotPayloadBase64,
@@ -587,7 +587,7 @@ func TestBotConfigurationFreezesAfterRunStarts(t *testing.T) {
 				}
 				t.Cleanup(bot.finishRun)
 
-				bot.SetPayloadType(BotPayloadJson)
+				bot.SetPayloadType(BotPayloadJSON)
 				if bot.payloadType != BotPayloadBase64 {
 					t.Fatalf("payloadType mutated after configuration freeze: got %q want %q", bot.payloadType, BotPayloadBase64)
 				}
@@ -707,7 +707,7 @@ func TestBotConfigurationFreezesAfterRunStarts(t *testing.T) {
 
 func TestAddPluginsAndRuntimeRegistrationsNoOpAfterRunStarts(t *testing.T) {
 	bot := &Bot[NoData]{
-		logger:      sneklog.CreateLogger(),
+		logger:      sneklog.NewLogger(),
 		prefixes:    []string{"/"},
 		middlewares: []Middleware[NoData]{NewMiddleware("base", func(ctx *MsgContext, db NoData) bool { return true })},
 		runners:     []Runner[NoData]{NewRunner("base", func(bot *Bot[NoData]) error { return nil })},

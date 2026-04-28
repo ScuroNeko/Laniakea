@@ -2,9 +2,6 @@ package tgapi
 
 import "errors"
 
-// ErrRateLimit reports that a request exceeded the configured rate limiter.
-var ErrRateLimit = errors.New("rate limit exceeded")
-
 // ErrPoolUnexpected reports an unexpected result type returned from the worker pool.
 var ErrPoolUnexpected = errors.New("unexpected response from pool")
 

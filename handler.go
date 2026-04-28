@@ -26,7 +26,7 @@ func (bot *Bot[T]) handle(parentCtx context.Context, u *tgapi.Update) {
 	defer cancel()
 
 	msgCtx := &MsgContext{
-		Update: *u, Api: bot.api,
+		Update: *u, API: bot.api,
 		Logger:        bot.logger,
 		errorTemplate: bot.errorTemplate,
 		l10n:          bot.l10n,
@@ -113,7 +113,7 @@ func cloneMsgContext(src *MsgContext) *MsgContext {
 	return &cloned
 }
 
-func encodeJsonPayload(d CallbackData) (string, error) {
+func encodeJSONPayload(d CallbackData) (string, error) {
 	b, err := json.Marshal(d)
 	if err != nil {
 		return "", err
@@ -121,14 +121,14 @@ func encodeJsonPayload(d CallbackData) (string, error) {
 	return string(b), nil
 }
 
-func decodeJsonPayload(s string) (CallbackData, error) {
+func decodeJSONPayload(s string) (CallbackData, error) {
 	var data CallbackData
 	err := json.Unmarshal([]byte(s), &data)
 	return data, err
 }
 
 func encodeBase64Payload(d CallbackData) (string, error) {
-	data, err := encodeJsonPayload(d)
+	data, err := encodeJSONPayload(d)
 	if err != nil {
 		return "", err
 	}
@@ -142,7 +142,7 @@ func decodeBase64Payload(s string) (CallbackData, error) {
 	if err != nil {
 		return CallbackData{}, err
 	}
-	return decodeJsonPayload(string(b))
+	return decodeJSONPayload(string(b))
 }
 
 func decodePayload(payloadType BotPayloadType, s string, strict bool) (CallbackData, BotPayloadType, error) {
@@ -155,18 +155,18 @@ func decodePayload(payloadType BotPayloadType, s string, strict bool) (CallbackD
 		if strict {
 			return CallbackData{}, "", fmt.Errorf("%w: expected %s", ErrPayloadTypeMismatch, BotPayloadBase64)
 		}
-		data, err = decodeJsonPayload(s)
+		data, err = decodeJSONPayload(s)
 		if err != nil {
 			return CallbackData{}, "", err
 		}
-		return data, BotPayloadJson, nil
-	case BotPayloadJson:
-		data, err := decodeJsonPayload(s)
+		return data, BotPayloadJSON, nil
+	case BotPayloadJSON:
+		data, err := decodeJSONPayload(s)
 		if err == nil {
-			return data, BotPayloadJson, nil
+			return data, BotPayloadJSON, nil
 		}
 		if strict {
-			return CallbackData{}, "", fmt.Errorf("%w: expected %s", ErrPayloadTypeMismatch, BotPayloadJson)
+			return CallbackData{}, "", fmt.Errorf("%w: expected %s", ErrPayloadTypeMismatch, BotPayloadJSON)
 		}
 		data, err = decodeBase64Payload(s)
 		if err != nil {
@@ -183,7 +183,7 @@ func (bot *Bot[T]) decodePayload(s string) (CallbackData, error) {
 		return CallbackData{}, err
 	}
 	if decodedType == BotPayloadBase64 && bot.debug && bot.logger != nil {
-		bot.logger.Debugf("decoded callback payload base64->json: raw=%q json=%s", s, data.ToJson())
+		bot.logger.Debugf("decoded callback payload base64->json: raw=%q json=%s", s, data.ToJSON())
 	}
 	return data, nil
 }

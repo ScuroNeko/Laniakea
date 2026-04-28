@@ -6,6 +6,13 @@ import (
 	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
+type LogFormat string
+
+const (
+	LogFormatText LogFormat = "text"
+	LogFormatJSON LogFormat = "json"
+)
+
 // GetLoggerLevel returns DEBUG when DEBUG=true in env, otherwise FATAL.
 func GetLoggerLevel() sneklog.LogLevel {
 	level := sneklog.FATAL
@@ -17,12 +24,28 @@ func GetLoggerLevel() sneklog.LogLevel {
 
 // CreateLogger creates a logger with the shared default policy:
 // JSON stdout output, provided prefix, and provided level.
-func CreateLogger(prefix string, level sneklog.LogLevel) *sneklog.Logger {
-	logger := sneklog.CreateLogger().Level(level)
-	if prefix != "" {
-		logger.Prefix(prefix)
+func CreateLogger(
+	name string, level sneklog.LogLevel,
+	format LogFormat, formatter *sneklog.Formatter,
+) *sneklog.Logger {
+	logger := sneklog.NewLogger().SetLevel(level)
+	if name != "" {
+		logger.SetName(name)
 	}
-	logger.AddWriter(logger.CreateJsonStdoutWriter())
+	switch format {
+	case LogFormatJSON:
+		writer := logger.CreateJsonStdoutWriter()
+		if formatter != nil {
+			writer.SetFormatter(formatter)
+		}
+		logger.AddWriters(writer)
+	default:
+		writer := logger.CreateTextStdoutWriter()
+		if formatter != nil {
+			writer.SetFormatter(formatter)
+		}
+		logger.AddWriters(writer)
+	}
 	return logger
 }
 
@@ -31,12 +54,31 @@ func CreateLogger(prefix string, level sneklog.LogLevel) *sneklog.Logger {
 //
 // The returned logger is always non-nil. When file writer creation fails, the
 // logger still writes to stdout and the error is returned to the caller.
-func CreateFileLogger(prefix string, level sneklog.LogLevel, filePath string) (*sneklog.Logger, error) {
-	logger := CreateLogger(prefix, level)
-	fileWriter, err := logger.CreateTextFileWriter(filePath)
-	if err != nil {
-		return logger, err
+func CreateFileLogger(
+	prefix string, level sneklog.LogLevel, filePath string,
+	format LogFormat, formatter *sneklog.Formatter,
+) (*sneklog.Logger, error) {
+	logger := CreateLogger(prefix, level, format, formatter)
+
+	switch format {
+	case LogFormatJSON:
+		writer, err := logger.CreateJsonFileWriter(filePath)
+		if err != nil {
+			return logger, err
+		}
+		if formatter != nil {
+			writer.SetFormatter(formatter)
+		}
+		logger.AddWriters(writer)
+	default:
+		writer, err := logger.CreateTextFileWriter(filePath)
+		if err != nil {
+			return logger, err
+		}
+		if formatter != nil {
+			writer.SetFormatter(formatter)
+		}
+		logger.AddWriters(writer)
 	}
-	logger.AddWriter(fileWriter)
 	return logger, nil
 }

@@ -256,7 +256,7 @@ func (api *API) openFileByLink(ctx context.Context, link string) (io.ReadCloser,
 	if api.useTestServer {
 		methodPrefix = "/test"
 	}
-	u := fmt.Sprintf("%s/file/bot%s%s/%s", api.apiUrl, api.token, methodPrefix, link)
+	u := fmt.Sprintf("%s/file/bot%s%s/%s", api.apiURL, api.token, methodPrefix, link)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {

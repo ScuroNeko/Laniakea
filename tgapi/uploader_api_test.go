@@ -40,7 +40,7 @@ func TestUploaderEncodesJSONFieldsAndLeavesAcceptEncodingToHTTPTransport(t *test
 
 	api := NewAPI(
 		NewAPIOpts("token").
-			SetAPIUrl("https://example.test").
+			SetAPIURL("https://example.test").
 			SetHTTPClient(client),
 	)
 	defer func() {

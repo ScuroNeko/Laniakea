@@ -19,7 +19,10 @@ type APIOpts struct {
 	token         string
 	client        *http.Client
 	useTestServer bool
-	apiUrl        string
+	apiURL        string
+
+	logFormat    utils.LogFormat
+	logFormatter *sneklog.Formatter
 
 	limiter           *utils.RateLimiter
 	dropOverflowLimit bool
@@ -32,7 +35,7 @@ func NewAPIOpts(token string) *APIOpts {
 		token:         token,
 		client:        nil,
 		useTestServer: false,
-		apiUrl:        "https://api.telegram.org",
+		apiURL:        "https://api.telegram.org",
 	}
 }
 
@@ -52,12 +55,21 @@ func (opts *APIOpts) UseTestServer(use bool) *APIOpts {
 	return opts
 }
 
-// SetAPIUrl overrides the default Telegram API URL.
+// SetAPIURL overrides the default Telegram API URL.
 // Useful for self-hosted bots or proxies.
-func (opts *APIOpts) SetAPIUrl(apiUrl string) *APIOpts {
-	if apiUrl != "" {
-		opts.apiUrl = apiUrl
+func (opts *APIOpts) SetAPIURL(apiURL string) *APIOpts {
+	if apiURL != "" {
+		opts.apiURL = apiURL
 	}
+	return opts
+}
+
+func (opts *APIOpts) SetLogFormat(format utils.LogFormat) *APIOpts {
+	opts.logFormat = format
+	return opts
+}
+func (opts *APIOpts) SetLogFormatter(formatter *sneklog.Formatter) *APIOpts {
+	opts.logFormatter = formatter
 	return opts
 }
 
@@ -87,7 +99,10 @@ type API struct {
 	client        *http.Client
 	logger        *sneklog.Logger
 	useTestServer bool
-	apiUrl        string
+	apiURL        string
+
+	logFormat    utils.LogFormat
+	logFormatter *sneklog.Formatter
 
 	pool              *workerPool
 	Limiter           *utils.RateLimiter
@@ -97,12 +112,13 @@ type API struct {
 // NewAPI creates a new API client from options.
 // Always call Close() when done to release resources.
 func NewAPI(opts *APIOpts) *API {
-	l := utils.CreateLogger("API", utils.GetLoggerLevel())
 	if opts == nil {
-		l.Errorln("Set API options")
-		_ = l.Close()
 		return nil
 	}
+	logger := utils.CreateLogger(
+		"API", utils.GetLoggerLevel(),
+		opts.logFormat, opts.logFormatter,
+	)
 
 	client := opts.client
 	if client == nil {
@@ -113,11 +129,15 @@ func NewAPI(opts *APIOpts) *API {
 	pool.start()
 
 	return &API{
-		token:             opts.token,
-		client:            client,
-		logger:            l,
-		useTestServer:     opts.useTestServer,
-		apiUrl:            opts.apiUrl,
+		token:         opts.token,
+		client:        client,
+		logger:        logger,
+		useTestServer: opts.useTestServer,
+		apiURL:        opts.apiURL,
+
+		logFormat:    opts.logFormat,
+		logFormatter: opts.logFormatter,
+
 		pool:              pool,
 		Limiter:           opts.limiter,
 		dropOverflowLimit: opts.dropOverflowLimit,
@@ -147,9 +167,9 @@ type ResponseParameters struct {
 	RetryAfter      *int   `json:"retry_after,omitempty"`
 }
 
-// ApiResponse is the standard Telegram Bot API response structure.
+// TelegramResponse is the standard Telegram Bot API response structure.
 // Generic over Result type R.
-type ApiResponse[R any] struct {
+type TelegramResponse[R any] struct {
 	Ok          bool                `json:"ok"`
 	Description string              `json:"description,omitempty"`
 	Result      R                   `json:"result,omitempty"`
@@ -166,7 +186,7 @@ type ApiResponse[R any] struct {
 type TelegramRequest[R, P any] struct {
 	method string
 	params P
-	chatId int64
+	chatID int64
 }
 
 // NewRequest creates a low-level TelegramRequest with no associated chat ID.
@@ -176,8 +196,8 @@ func NewRequest[R, P any](method string, params P) TelegramRequest[R, P] {
 
 // NewRequestWithChatID creates a low-level TelegramRequest with an associated chat ID.
 // The chat ID is used for per-chat rate limiting.
-func NewRequestWithChatID[R, P any](method string, params P, chatId int64) TelegramRequest[R, P] {
-	return TelegramRequest[R, P]{method, params, chatId}
+func NewRequestWithChatID[R, P any](method string, params P, chatID int64) TelegramRequest[R, P] {
+	return TelegramRequest[R, P]{method, params, chatID}
 }
 
 func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, error) {
@@ -191,7 +211,7 @@ func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, erro
 	if api.useTestServer {
 		methodPrefix = "/test"
 	}
-	url := fmt.Sprintf("%s/bot%s%s/%s", api.apiUrl, api.token, methodPrefix, r.method)
+	url := fmt.Sprintf("%s/bot%s%s/%s", api.apiURL, api.token, methodPrefix, r.method)
 	req, err := http.NewRequestWithContext(ctx, "POST", url, nil)
 	if err != nil {
 		return zero, fmt.Errorf("failed to create request: %w", err)
@@ -204,7 +224,7 @@ func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, erro
 	for {
 		// Apply rate limiting before making the request
 		if api.Limiter != nil {
-			if err := api.Limiter.Check(ctx, api.dropOverflowLimit, r.chatId); err != nil {
+			if err := api.Limiter.Check(ctx, api.dropOverflowLimit, r.chatID); err != nil {
 				return zero, err
 			}
 		}
@@ -235,12 +255,12 @@ func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, erro
 			// Handle rate limiting (429)
 			if response.ErrorCode == 429 && response.Parameters != nil && response.Parameters.RetryAfter != nil {
 				after := *response.Parameters.RetryAfter
-				api.logger.Warnf("Rate limited by Telegram, retry after %d seconds (chat: %d)", after, r.chatId)
+				api.logger.Warnf("Rate limited by Telegram, retry after %d seconds (chat: %d)", after, r.chatID)
 
 				// Apply cooldown to global or chat-specific limiter
 				if api.Limiter != nil {
-					if r.chatId > 0 {
-						api.Limiter.SetChatLock(r.chatId, after)
+					if r.chatID > 0 {
+						api.Limiter.SetChatLock(r.chatID, after)
 					} else {
 						api.Limiter.SetGlobalLock(after)
 					}
@@ -302,8 +322,8 @@ func readBody(body io.ReadCloser) ([]byte, error) {
 }
 
 // Internal helper that parses a typed Telegram API response body.
-func parseBody[R any](data []byte) (ApiResponse[R], error) {
-	var resp ApiResponse[R]
+func parseBody[R any](data []byte) (TelegramResponse[R], error) {
+	var resp TelegramResponse[R]
 	err := json.Unmarshal(data, &resp)
 	if err != nil {
 		return resp, fmt.Errorf("failed to unmarshal JSON: %w", err)

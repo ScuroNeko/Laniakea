@@ -23,7 +23,7 @@ func TestGetFileByLinkUsesConfiguredAPIURL(t *testing.T) {
 
 	api := NewAPI(
 		NewAPIOpts("token").
-			SetAPIUrl("https://example.test").
+			SetAPIURL("https://example.test").
 			SetHTTPClient(client),
 	)
 	defer func() {
@@ -47,7 +47,7 @@ func TestGetFileByLinkUsesConfiguredAPIURL(t *testing.T) {
 func TestOpenFileByLinkStreamsResponseBody(t *testing.T) {
 	api := NewAPI(
 		NewAPIOpts("token").
-			SetAPIUrl("https://example.test").
+			SetAPIURL("https://example.test").
 			SetHTTPClient(&http.Client{
 				Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 					return &http.Response{
@@ -94,7 +94,7 @@ func TestGetFileByLinkReturnsHTTPStatusError(t *testing.T) {
 
 	api := NewAPI(
 		NewAPIOpts("token").
-			SetAPIUrl("https://example.test").
+			SetAPIURL("https://example.test").
 			SetHTTPClient(client),
 	)
 	defer func() {
@@ -131,7 +131,7 @@ func TestGetUpdatesOmitsAllowedUpdatesWhenEmpty(t *testing.T) {
 
 	api := NewAPI(
 		NewAPIOpts("token").
-			SetAPIUrl("https://example.test").
+			SetAPIURL("https://example.test").
 			SetHTTPClient(client),
 	)
 	defer func() {
@@ -174,7 +174,7 @@ func TestSetChatMenuButtonSendsStructuredMenuButton(t *testing.T) {
 
 	api := NewAPI(
 		NewAPIOpts("token").
-			SetAPIUrl("https://example.test").
+			SetAPIURL("https://example.test").
 			SetHTTPClient(client),
 	)
 	defer func() {

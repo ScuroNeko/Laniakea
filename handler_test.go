@@ -55,7 +55,7 @@ func TestCheckPrefixesSkipsEmptyPrefixes(t *testing.T) {
 }
 
 func TestBotMiddlewareReceivesLogger(t *testing.T) {
-	logger := sneklog.CreateLogger()
+	logger := sneklog.NewLogger()
 	called := false
 
 	bot := &Bot[NoData]{
@@ -391,14 +391,14 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 			if ctx.ChatID != tt.wantChatID {
 				t.Fatalf("unexpected ChatID: got %d want %d", ctx.ChatID, tt.wantChatID)
 			}
-			if ctx.CallbackQueryId != tt.wantCallbackID {
-				t.Fatalf("unexpected CallbackQueryId: got %q want %q", ctx.CallbackQueryId, tt.wantCallbackID)
+			if ctx.CallbackQueryID != tt.wantCallbackID {
+				t.Fatalf("unexpected CallbackQueryID: got %q want %q", ctx.CallbackQueryID, tt.wantCallbackID)
 			}
-			if ctx.CallbackMsgId != tt.wantCallbackMsgID {
-				t.Fatalf("unexpected CallbackMsgId: got %d want %d", ctx.CallbackMsgId, tt.wantCallbackMsgID)
+			if ctx.CallbackMsgID != tt.wantCallbackMsgID {
+				t.Fatalf("unexpected CallbackMsgID: got %d want %d", ctx.CallbackMsgID, tt.wantCallbackMsgID)
 			}
-			if ctx.InlineMsgId != tt.wantInlineMsgID {
-				t.Fatalf("unexpected InlineMsgId: got %q want %q", ctx.InlineMsgId, tt.wantInlineMsgID)
+			if ctx.InlineMsgID != tt.wantInlineMsgID {
+				t.Fatalf("unexpected InlineMsgID: got %q want %q", ctx.InlineMsgID, tt.wantInlineMsgID)
 			}
 			if ctx.Text != "" {
 				t.Fatalf("prepareUpdateCtx must not populate Text, got %q", ctx.Text)
@@ -468,7 +468,7 @@ func TestHandleUpdateHandlersPopulateFromContext(t *testing.T) {
 			})
 
 			bot := &Bot[NoData]{
-				logger:  sneklog.CreateLogger(),
+				logger:  sneklog.NewLogger(),
 				plugins: []Plugin[NoData]{clonePlugin(plugin)},
 			}
 
@@ -514,7 +514,7 @@ func TestHandleUpdateHandlersReceiveIsolatedContexts(t *testing.T) {
 	})
 
 	bot := &Bot[NoData]{
-		logger: sneklog.CreateLogger(),
+		logger: sneklog.NewLogger(),
 		plugins: []Plugin[NoData]{
 			clonePlugin(first),
 			clonePlugin(second),
@@ -543,7 +543,7 @@ func TestHandleUpdateObserverEmitsUpdateErrors(t *testing.T) {
 	})
 
 	bot := &Bot[NoData]{
-		logger:   sneklog.CreateLogger(),
+		logger:   sneklog.NewLogger(),
 		plugins:  []Plugin[NoData]{clonePlugin(plugin)},
 		observer: observer,
 	}
@@ -607,7 +607,7 @@ func TestHandleMessageFallbackRunsAfterCommandMiss(t *testing.T) {
 	})
 
 	bot := &Bot[NoData]{
-		logger:   sneklog.CreateLogger(),
+		logger:   sneklog.NewLogger(),
 		prefixes: []string{"/"},
 		observer: observer,
 	}
@@ -658,7 +658,7 @@ func TestHandleMessageFallbackRunsForPlainText(t *testing.T) {
 	})
 
 	bot := &Bot[NoData]{
-		logger:   sneklog.CreateLogger(),
+		logger:   sneklog.NewLogger(),
 		prefixes: []string{"/"},
 	}
 	bot.AddPlugins(plugin)
@@ -691,7 +691,7 @@ func TestHandleMessageFallbackRespectsMiddleware(t *testing.T) {
 	})
 
 	bot := &Bot[NoData]{
-		logger:   sneklog.CreateLogger(),
+		logger:   sneklog.NewLogger(),
 		prefixes: []string{"/"},
 	}
 	bot.AddPlugins(plugin)
@@ -726,7 +726,7 @@ func TestHandleMessageFallbackDoesNotRunWhenCommandMatches(t *testing.T) {
 	})
 
 	bot := &Bot[NoData]{
-		logger:   sneklog.CreateLogger(),
+		logger:   sneklog.NewLogger(),
 		prefixes: []string{"/"},
 	}
 	bot.AddPlugins(plugin)
@@ -771,7 +771,7 @@ func TestHandleChannelPostCommandWithSenderChat(t *testing.T) {
 	}, "ping")
 
 	bot := &Bot[NoData]{
-		logger:   sneklog.CreateLogger(),
+		logger:   sneklog.NewLogger(),
 		prefixes: []string{"/"},
 		plugins:  []Plugin[NoData]{clonePlugin(plugin)},
 	}
@@ -808,7 +808,7 @@ func TestCommandHandlerBindArgsEndToEnd(t *testing.T) {
 	)
 
 	bot := &Bot[NoData]{
-		logger:   sneklog.CreateLogger(),
+		logger:   sneklog.NewLogger(),
 		prefixes: []string{"/"},
 		plugins:  []Plugin[NoData]{clonePlugin(plugin)},
 	}
@@ -845,17 +845,17 @@ func TestPayloadHandlerBindArgsEndToEnd(t *testing.T) {
 	)
 
 	bot := &Bot[NoData]{
-		logger:      sneklog.CreateLogger(),
-		payloadType: BotPayloadJson,
+		logger:      sneklog.NewLogger(),
+		payloadType: BotPayloadJSON,
 		plugins:     []Plugin[NoData]{clonePlugin(plugin)},
 	}
 
-	data, err := encodeJsonPayload(CallbackData{
+	data, err := encodeJSONPayload(CallbackData{
 		Command: "approve",
 		Args:    []string{"7", "looks", "good"},
 	})
 	if err != nil {
-		t.Fatalf("encodeJsonPayload returned error: %v", err)
+		t.Fatalf("encodeJSONPayload returned error: %v", err)
 	}
 
 	bot.handle(context.Background(), &tgapi.Update{
@@ -898,7 +898,7 @@ func TestHandleEditedMessageStaysOutOfCommandFlow(t *testing.T) {
 	})
 
 	bot := &Bot[NoData]{
-		logger:   sneklog.CreateLogger(),
+		logger:   sneklog.NewLogger(),
 		prefixes: []string{"/"},
 		plugins:  []Plugin[NoData]{clonePlugin(plugin)},
 	}
@@ -940,7 +940,7 @@ func TestHandleEditedChannelPostStaysOutOfCommandFlow(t *testing.T) {
 	})
 
 	bot := &Bot[NoData]{
-		logger:   sneklog.CreateLogger(),
+		logger:   sneklog.NewLogger(),
 		prefixes: []string{"/"},
 		plugins:  []Plugin[NoData]{clonePlugin(plugin)},
 	}
@@ -968,14 +968,14 @@ func TestHandleCallbackPopulatesMessageTargets(t *testing.T) {
 	plugin := NewPlugin[NoData]("test")
 	plugin.NewPayload(func(ctx *MsgContext, db NoData) error {
 		called = true
-		if ctx.CallbackQueryId != "cb-msg" {
-			t.Fatalf("unexpected CallbackQueryId: %q", ctx.CallbackQueryId)
+		if ctx.CallbackQueryID != "cb-msg" {
+			t.Fatalf("unexpected CallbackQueryID: %q", ctx.CallbackQueryID)
 		}
-		if ctx.CallbackMsgId != 55 {
-			t.Fatalf("unexpected CallbackMsgId: %d", ctx.CallbackMsgId)
+		if ctx.CallbackMsgID != 55 {
+			t.Fatalf("unexpected CallbackMsgID: %d", ctx.CallbackMsgID)
 		}
-		if ctx.InlineMsgId != "" {
-			t.Fatalf("did not expect InlineMsgId, got %q", ctx.InlineMsgId)
+		if ctx.InlineMsgID != "" {
+			t.Fatalf("did not expect InlineMsgID, got %q", ctx.InlineMsgID)
 		}
 		if ctx.Msg == nil {
 			t.Fatal("expected callback message context")
@@ -993,14 +993,14 @@ func TestHandleCallbackPopulatesMessageTargets(t *testing.T) {
 	}, "approve")
 
 	bot := &Bot[NoData]{
-		logger:      sneklog.CreateLogger(),
-		payloadType: BotPayloadJson,
+		logger:      sneklog.NewLogger(),
+		payloadType: BotPayloadJSON,
 		plugins:     []Plugin[NoData]{clonePlugin(plugin)},
 	}
 
-	data, err := encodeJsonPayload(CallbackData{Command: "approve", Args: []string{"7", "ok"}})
+	data, err := encodeJSONPayload(CallbackData{Command: "approve", Args: []string{"7", "ok"}})
 	if err != nil {
-		t.Fatalf("encodeJsonPayload returned error: %v", err)
+		t.Fatalf("encodeJSONPayload returned error: %v", err)
 	}
 
 	bot.handle(context.Background(), &tgapi.Update{
@@ -1027,14 +1027,14 @@ func TestHandleCallbackPopulatesInlineTargets(t *testing.T) {
 	plugin := NewPlugin[NoData]("test")
 	plugin.NewPayload(func(ctx *MsgContext, db NoData) error {
 		called = true
-		if ctx.CallbackQueryId != "cb-inline" {
-			t.Fatalf("unexpected CallbackQueryId: %q", ctx.CallbackQueryId)
+		if ctx.CallbackQueryID != "cb-inline" {
+			t.Fatalf("unexpected CallbackQueryID: %q", ctx.CallbackQueryID)
 		}
-		if ctx.CallbackMsgId != 0 {
-			t.Fatalf("did not expect CallbackMsgId, got %d", ctx.CallbackMsgId)
+		if ctx.CallbackMsgID != 0 {
+			t.Fatalf("did not expect CallbackMsgID, got %d", ctx.CallbackMsgID)
 		}
-		if ctx.InlineMsgId != "inline-55" {
-			t.Fatalf("unexpected InlineMsgId: %q", ctx.InlineMsgId)
+		if ctx.InlineMsgID != "inline-55" {
+			t.Fatalf("unexpected InlineMsgID: %q", ctx.InlineMsgID)
 		}
 		if ctx.Msg != nil {
 			t.Fatalf("did not expect callback chat message context, got %#v", ctx.Msg)
@@ -1052,14 +1052,14 @@ func TestHandleCallbackPopulatesInlineTargets(t *testing.T) {
 	}, "inline.approve")
 
 	bot := &Bot[NoData]{
-		logger:      sneklog.CreateLogger(),
-		payloadType: BotPayloadJson,
+		logger:      sneklog.NewLogger(),
+		payloadType: BotPayloadJSON,
 		plugins:     []Plugin[NoData]{clonePlugin(plugin)},
 	}
 
-	data, err := encodeJsonPayload(CallbackData{Command: "inline.approve", Args: []string{"9"}})
+	data, err := encodeJSONPayload(CallbackData{Command: "inline.approve", Args: []string{"9"}})
 	if err != nil {
-		t.Fatalf("encodeJsonPayload returned error: %v", err)
+		t.Fatalf("encodeJSONPayload returned error: %v", err)
 	}
 
 	bot.handle(context.Background(), &tgapi.Update{
@@ -1086,15 +1086,15 @@ func TestHandleCallbackObserverEmitsPayloadEvents(t *testing.T) {
 	}, "approve")
 
 	bot := &Bot[NoData]{
-		logger:      sneklog.CreateLogger(),
-		payloadType: BotPayloadJson,
+		logger:      sneklog.NewLogger(),
+		payloadType: BotPayloadJSON,
 		plugins:     []Plugin[NoData]{clonePlugin(plugin)},
 		observer:    observer,
 	}
 
-	data, err := encodeJsonPayload(CallbackData{Command: "approve", Args: []string{"7"}})
+	data, err := encodeJSONPayload(CallbackData{Command: "approve", Args: []string{"7"}})
 	if err != nil {
-		t.Fatalf("encodeJsonPayload returned error: %v", err)
+		t.Fatalf("encodeJSONPayload returned error: %v", err)
 	}
 
 	bot.handle(context.Background(), &tgapi.Update{
@@ -1137,15 +1137,15 @@ func TestHandleCallbackObserverEmitsPayloadErrors(t *testing.T) {
 	}, "approve")
 
 	bot := &Bot[NoData]{
-		logger:      sneklog.CreateLogger(),
-		payloadType: BotPayloadJson,
+		logger:      sneklog.NewLogger(),
+		payloadType: BotPayloadJSON,
 		plugins:     []Plugin[NoData]{clonePlugin(plugin)},
 		observer:    observer,
 	}
 
-	data, err := encodeJsonPayload(CallbackData{Command: "approve", Args: []string{"7"}})
+	data, err := encodeJSONPayload(CallbackData{Command: "approve", Args: []string{"7"}})
 	if err != nil {
-		t.Fatalf("encodeJsonPayload returned error: %v", err)
+		t.Fatalf("encodeJSONPayload returned error: %v", err)
 	}
 
 	bot.handle(context.Background(), &tgapi.Update{
@@ -1182,8 +1182,8 @@ func TestHandleCallbackObserverEmitsPayloadErrors(t *testing.T) {
 func TestHandleCallbackObserverEmitsDecodeErrors(t *testing.T) {
 	observer := &recordingObserver{}
 	bot := &Bot[NoData]{
-		logger:      sneklog.CreateLogger(),
-		payloadType: BotPayloadJson,
+		logger:      sneklog.NewLogger(),
+		payloadType: BotPayloadJSON,
 		observer:    observer,
 	}
 
@@ -1202,7 +1202,7 @@ func TestHandleCallbackObserverEmitsDecodeErrors(t *testing.T) {
 		},
 		Logger:          bot.logger,
 		ctx:             context.Background(),
-		CallbackQueryId: "cb-bad",
+		CallbackQueryID: "cb-bad",
 		From:            &tgapi.User{ID: 7},
 		FromID:          7,
 		sceneRuntime:    bot,

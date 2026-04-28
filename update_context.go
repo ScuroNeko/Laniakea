@@ -142,15 +142,15 @@ func (bot *Bot[T]) prepareUpdateCtx(u *tgapi.Update, ctx *MsgContext) {
 		if u.CallbackQuery != nil {
 			if u.CallbackQuery.Message != nil {
 				ctx.Msg = u.CallbackQuery.Message
-				ctx.CallbackMsgId = u.CallbackQuery.Message.MessageID
+				ctx.CallbackMsgID = u.CallbackQuery.Message.MessageID
 				if u.CallbackQuery.Message.Chat != nil {
 					chat = u.CallbackQuery.Message.Chat
 				}
 			}
 			if u.CallbackQuery.InlineMessageID != nil {
-				ctx.InlineMsgId = *u.CallbackQuery.InlineMessageID
+				ctx.InlineMsgID = *u.CallbackQuery.InlineMessageID
 			}
-			ctx.CallbackQueryId = u.CallbackQuery.ID
+			ctx.CallbackQueryID = u.CallbackQuery.ID
 			from = &u.CallbackQuery.From
 		}
 	case tgapi.UpdateTypeShippingQuery:

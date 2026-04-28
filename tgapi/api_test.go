@@ -40,7 +40,7 @@ func TestAPILeavesAcceptEncodingToHTTPTransport(t *testing.T) {
 
 	api := NewAPI(
 		NewAPIOpts("token").
-			SetAPIUrl("https://example.test").
+			SetAPIURL("https://example.test").
 			SetHTTPClient(client),
 	)
 	defer func() {
@@ -77,7 +77,7 @@ func TestAPICloseClosesIdleConnections(t *testing.T) {
 
 	api := NewAPI(
 		NewAPIOpts("token").
-			SetAPIUrl("https://example.test").
+			SetAPIURL("https://example.test").
 			SetHTTPClient(&http.Client{Transport: transport}),
 	)
 

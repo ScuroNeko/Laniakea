@@ -35,7 +35,7 @@ func TestEnqueueUpdateCopiesValue(t *testing.T) {
 func TestUpdateHandlerEnqueuesUpdate(t *testing.T) {
 	bot := &Bot[NoData]{
 		updateQueue:   make(chan *tgapi.Update, 1),
-		webHookLogger: sneklog.CreateLogger(),
+		webHookLogger: sneklog.NewLogger(),
 	}
 	t.Cleanup(func() {
 		_ = bot.webHookLogger.Close()
@@ -66,7 +66,7 @@ func TestUpdateHandlerEnqueuesUpdate(t *testing.T) {
 
 func TestRunWebhookRuntimeRejectsSecondRun(t *testing.T) {
 	bot := &Bot[NoData]{
-		logger:      sneklog.CreateLogger(),
+		logger:      sneklog.NewLogger(),
 		updateQueue: make(chan *tgapi.Update, 1),
 		maxWorkers:  1,
 	}
@@ -86,7 +86,7 @@ func TestRunWebhookRuntimeExecutesRunners(t *testing.T) {
 	var calls atomic.Int32
 
 	bot := &Bot[NoData]{
-		logger:      sneklog.CreateLogger(),
+		logger:      sneklog.NewLogger(),
 		updateQueue: make(chan *tgapi.Update, 1),
 		maxWorkers:  1,
 		runners: []Runner[NoData]{
@@ -185,7 +185,7 @@ func TestValidateWebhookTLSFiles(t *testing.T) {
 func TestUpdateHandlerRejectsOversizedBody(t *testing.T) {
 	bot := &Bot[NoData]{
 		updateQueue:   make(chan *tgapi.Update, 1),
-		webHookLogger: sneklog.CreateLogger(),
+		webHookLogger: sneklog.NewLogger(),
 	}
 	t.Cleanup(func() {
 		_ = bot.webHookLogger.Close()
@@ -213,7 +213,7 @@ func TestStatusHandlerRequiresMatchingSecret(t *testing.T) {
 	}
 	api := tgapi.NewAPI(
 		tgapi.NewAPIOpts("token").
-			SetAPIUrl("http://example.invalid").
+			SetAPIURL("http://example.invalid").
 			SetHTTPClient(client),
 	)
 	defer func() {
@@ -222,7 +222,7 @@ func TestStatusHandlerRequiresMatchingSecret(t *testing.T) {
 
 	bot := &Bot[NoData]{
 		api:           api,
-		webHookLogger: sneklog.CreateLogger(),
+		webHookLogger: sneklog.NewLogger(),
 	}
 	t.Cleanup(func() {
 		_ = bot.webHookLogger.Close()

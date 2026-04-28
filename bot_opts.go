@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/laniakea/utils"
+	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
 // BotOpts holds configuration options for initializing a Bot.
@@ -45,8 +47,8 @@ type BotOpts struct {
 	// UseTestServer uses Telegram's test server (https://api.test.telegram.org).
 	UseTestServer bool
 
-	// APIUrl overrides the default Telegram API endpoint (useful for proxies or self-hosted).
-	APIUrl string
+	// APIURL overrides the default Telegram API endpoint (useful for proxies or self-hosted).
+	APIURL string
 
 	// RateLimit is the maximum number of API requests per second.
 	// Telegram allows up to 30 req/s for most bots. Defaults to 30.
@@ -68,6 +70,9 @@ type BotOpts struct {
 	//
 	// It is zero when the options were not loaded from a versioned file.
 	FileConfigVersion int
+
+	LogFormat    utils.LogFormat
+	LogFormatter *sneklog.Formatter
 }
 
 // LoadOptsFromEnv loads BotOpts from environment variables.
@@ -87,6 +92,7 @@ type BotOpts struct {
 //   - DROP_RL_OVERFLOW: "true" to drop updates on rate limit overflow
 //   - STRICT_PAYLOAD_TYPE: "true" to reject callback payloads encoded in a different format
 //   - MAX_WORKERS: maximum number of concurrent update handlers (default: 32)
+//   - JSON_LOG:
 //
 // Returns a populated BotOpts.
 // NewBot validates required fields and returns ErrTokenRequired when TG_TOKEN is missing.
@@ -125,14 +131,15 @@ func LoadOptsFromEnv() *BotOpts {
 		WriteToFile:      os.Getenv("WRITE_TO_FILE") == "true",
 
 		UseTestServer: os.Getenv("USE_TEST_SERVER") == "true",
-		APIUrl:        os.Getenv("API_URL"),
+		APIURL:        os.Getenv("API_URL"),
 
 		RateLimit:         rateLimit,
 		DropRLOverflow:    os.Getenv("DROP_RL_OVERFLOW") == "true",
 		StrictPayloadType: os.Getenv("STRICT_PAYLOAD_TYPE") == "true",
 
 		MaxWorkers:        maxWorkers,
-		FileConfigVersion: ConfigVersion,
+		FileConfigVersion: 0,
+		LogFormat:         utils.LogFormat(os.Getenv("LOG_FORMAT")),
 	}
 }
 
@@ -200,10 +207,10 @@ func (opts *BotOpts) SetUseTestServer(use bool) *BotOpts {
 	return opts
 }
 
-// SetAPIUrl overrides the default Telegram API endpoint (useful for proxies or self-hosted).
+// SetAPIURL overrides the default Telegram API endpoint (useful for proxies or self-hosted).
 // If not set, defaults to "https://api.telegram.org".
-func (opts *BotOpts) SetAPIUrl(url string) *BotOpts {
-	opts.APIUrl = url
+func (opts *BotOpts) SetAPIURL(url string) *BotOpts {
+	opts.APIURL = url
 	return opts
 }
 
@@ -244,6 +251,15 @@ func (opts *BotOpts) SetStrictPayloadType(strict bool) *BotOpts {
 // The default is 32. Monitor queue length and processing latency to fine-tune.
 func (opts *BotOpts) SetMaxWorkers(workers int) *BotOpts {
 	opts.MaxWorkers = workers
+	return opts
+}
+
+func (opts *BotOpts) SetLogFormat(format utils.LogFormat) *BotOpts {
+	opts.LogFormat = format
+	return opts
+}
+func (opts *BotOpts) SetLogFormatter(formatter *sneklog.Formatter) *BotOpts {
+	opts.LogFormatter = formatter
 	return opts
 }
 

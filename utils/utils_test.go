@@ -12,7 +12,7 @@ import (
 func TestCreateFileLoggerWritesToConfiguredFile(t *testing.T) {
 	logPath := filepath.Join(t.TempDir(), "main.log")
 
-	logger, err := CreateFileLogger("TEST", sneklog.DEBUG, logPath)
+	logger, err := CreateFileLogger("TEST", sneklog.DEBUG, logPath, LogFormatText, nil)
 	if err != nil {
 		t.Fatalf("CreateFileLogger returned error: %v", err)
 	}

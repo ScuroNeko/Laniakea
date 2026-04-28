@@ -28,7 +28,7 @@ func (bot *Bot[T]) AddPlugins(plugin ...*Plugin[T]) *Bot[T] {
 		}
 		cloned := clonePlugin(p)
 		if cloned.logger == nil {
-			cloned.logger = utils.CreateLogger(cloned.name, level)
+			cloned.logger = utils.CreateLogger(cloned.name, level, bot.logFormat, bot.logFormatter)
 		}
 		bot.addTokenReplacer(cloned.logger)
 		bot.plugins = append(bot.plugins, cloned)
@@ -142,16 +142,16 @@ func (bot *Bot[T]) AddAppDataLoggerWriter(writer AppDataLogger[T]) *Bot[T] {
 		return bot
 	}
 	w := writer(bot.appData)
-	bot.logger.AddWriter(w)
+	bot.logger.AddWriters(w)
 	if bot.requestLogger != nil {
-		bot.requestLogger.AddWriter(w)
+		bot.requestLogger.AddWriters(w)
 	}
 	for _, l := range bot.managedExtraLoggers() {
-		l.AddWriter(w)
+		l.AddWriters(w)
 	}
 	for _, p := range bot.plugins {
 		if p.logger != nil {
-			p.logger.AddWriter(w)
+			p.logger.AddWriters(w)
 		}
 	}
 	bot.addTokenReplacer(bot.logger, bot.requestLogger)

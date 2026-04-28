@@ -13,18 +13,18 @@ func TestDraftFlushRequiresChatID(t *testing.T) {
 	draft := NewRandomDraftProvider(&tgapi.API{}).NewDraft(tgapi.ParseNone)
 	draft.Message = "hello"
 
-	if err := draft.Flush(); err != ErrDraftChatIDZero {
+	if err := draft.Flush(); !errors.Is(err, ErrDraftChatIDZero) {
 		t.Fatalf("expected ErrDraftChatIDZero, got %v", err)
 	}
 }
 
 func TestMsgContextNewDraftWorksWithoutLimiter(t *testing.T) {
 	ctx := &MsgContext{
-		Api: &tgapi.API{},
+		API: &tgapi.API{},
 		Msg: &tgapi.Message{
 			Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate},
 		},
-		Logger:        sneklog.CreateLogger(),
+		Logger:        sneklog.NewLogger(),
 		draftProvider: NewRandomDraftProvider(&tgapi.API{}),
 	}
 

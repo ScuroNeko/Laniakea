@@ -76,11 +76,12 @@ func (bot *Bot[T]) initLoggers(opts *BotOpts) {
 		level = sneklog.DEBUG
 	}
 
+	format, formatter := opts.LogFormat, opts.LogFormatter
 	if bot.logger == nil {
-		bot.logger = utils.CreateLogger("BOT", level)
+		bot.logger = utils.CreateLogger("BOT", level, format, formatter)
 		if opts.WriteToFile {
 			path := fmt.Sprintf("%s/main.log", strings.TrimRight(opts.LoggerBasePath, "/"))
-			logger, err := utils.CreateFileLogger("BOT", level, path)
+			logger, err := utils.CreateFileLogger("BOT", level, path, format, formatter)
 			if err != nil {
 				bot.logger.Errorln(err)
 			} else {
@@ -90,10 +91,10 @@ func (bot *Bot[T]) initLoggers(opts *BotOpts) {
 	}
 
 	if opts.UseRequestLogger && bot.requestLogger == nil {
-		bot.requestLogger = utils.CreateLogger("REQUESTS", level)
+		bot.requestLogger = utils.CreateLogger("REQUESTS", level, format, formatter)
 		if opts.WriteToFile {
 			path := fmt.Sprintf("%s/requests.log", strings.TrimRight(opts.LoggerBasePath, "/"))
-			logger, err := utils.CreateFileLogger("REQUESTS", level, path)
+			logger, err := utils.CreateFileLogger("REQUESTS", level, path, format, formatter)
 			if err != nil {
 				bot.logger.Errorln(err)
 			} else {

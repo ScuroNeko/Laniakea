@@ -35,7 +35,7 @@ func TestAnswerPhotoIncludesDirectMessagesTopicID(t *testing.T) {
 
 	api := tgapi.NewAPI(
 		tgapi.NewAPIOpts("token").
-			SetAPIUrl("https://example.test").
+			SetAPIURL("https://example.test").
 			SetHTTPClient(client),
 	)
 	defer func() {
@@ -45,12 +45,12 @@ func TestAnswerPhotoIncludesDirectMessagesTopicID(t *testing.T) {
 	}()
 
 	ctx := &MsgContext{
-		Api: api,
+		API: api,
 		Msg: &tgapi.Message{
 			Chat:               &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate},
 			DirectMessageTopic: &tgapi.DirectMessageTopic{TopicID: 77},
 		},
-		Logger: sneklog.CreateLogger(),
+		Logger: sneklog.NewLogger(),
 	}
 
 	answer := ctx.AnswerPhoto("photo-id", "caption")
@@ -190,7 +190,7 @@ func TestErrorDefaultRemainsUserVisibleForMessageFlow(t *testing.T) {
 
 	api := tgapi.NewAPI(
 		tgapi.NewAPIOpts("token").
-			SetAPIUrl("https://example.test").
+			SetAPIURL("https://example.test").
 			SetHTTPClient(client),
 	)
 	defer func() {
@@ -200,9 +200,9 @@ func TestErrorDefaultRemainsUserVisibleForMessageFlow(t *testing.T) {
 	}()
 
 	ctx := &MsgContext{
-		Api:           api,
+		API:           api,
 		Msg:           &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
-		Logger:        sneklog.CreateLogger(),
+		Logger:        sneklog.NewLogger(),
 		errorTemplate: "Error: %s",
 	}
 
@@ -226,7 +226,7 @@ func TestErrorInternalSkipsUserReplyForMessageFlow(t *testing.T) {
 
 	api := tgapi.NewAPI(
 		tgapi.NewAPIOpts("token").
-			SetAPIUrl("https://example.test").
+			SetAPIURL("https://example.test").
 			SetHTTPClient(client),
 	)
 	defer func() {
@@ -236,9 +236,9 @@ func TestErrorInternalSkipsUserReplyForMessageFlow(t *testing.T) {
 	}()
 
 	ctx := &MsgContext{
-		Api:           api,
+		API:           api,
 		Msg:           &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
-		Logger:        sneklog.CreateLogger(),
+		Logger:        sneklog.NewLogger(),
 		errorTemplate: "Error: %s",
 	}
 
@@ -255,7 +255,7 @@ func TestErrorInternalSkipsCallbackAnswer(t *testing.T) {
 
 	api := tgapi.NewAPI(
 		tgapi.NewAPIOpts("token").
-			SetAPIUrl("https://example.test").
+			SetAPIURL("https://example.test").
 			SetHTTPClient(client),
 	)
 	defer func() {
@@ -265,10 +265,10 @@ func TestErrorInternalSkipsCallbackAnswer(t *testing.T) {
 	}()
 
 	ctx := &MsgContext{
-		Api:             api,
-		Logger:          sneklog.CreateLogger(),
+		API:             api,
+		Logger:          sneklog.NewLogger(),
 		errorTemplate:   "%s",
-		CallbackQueryId: "cb-1",
+		CallbackQueryID: "cb-1",
 	}
 
 	ctx.error(AsInternalError(errors.New("boom")))
@@ -298,7 +298,7 @@ func TestErrorUserVisibleAnswersCallback(t *testing.T) {
 
 	api := tgapi.NewAPI(
 		tgapi.NewAPIOpts("token").
-			SetAPIUrl("https://example.test").
+			SetAPIURL("https://example.test").
 			SetHTTPClient(client),
 	)
 	defer func() {
@@ -308,10 +308,10 @@ func TestErrorUserVisibleAnswersCallback(t *testing.T) {
 	}()
 
 	ctx := &MsgContext{
-		Api:             api,
-		Logger:          sneklog.CreateLogger(),
+		API:             api,
+		Logger:          sneklog.NewLogger(),
 		errorTemplate:   "Oops: %s",
-		CallbackQueryId: "cb-1",
+		CallbackQueryID: "cb-1",
 	}
 
 	ctx.error(AsUserError(errors.New("boom")))
@@ -327,7 +327,7 @@ func TestErrorUserVisibleAnswersCallback(t *testing.T) {
 func TestAnswerRejectsEmptyMessage(t *testing.T) {
 	ctx := &MsgContext{
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
-		Logger: sneklog.CreateLogger(),
+		Logger: sneklog.NewLogger(),
 	}
 
 	if answer := ctx.Answer(""); answer != nil {
@@ -345,7 +345,7 @@ func TestAnswerRejectsLongMessageWithoutSendingRequest(t *testing.T) {
 
 	api := tgapi.NewAPI(
 		tgapi.NewAPIOpts("token").
-			SetAPIUrl("https://example.test").
+			SetAPIURL("https://example.test").
 			SetHTTPClient(client),
 	)
 	defer func() {
@@ -355,9 +355,9 @@ func TestAnswerRejectsLongMessageWithoutSendingRequest(t *testing.T) {
 	}()
 
 	ctx := &MsgContext{
-		Api:    api,
+		API:    api,
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
-		Logger: sneklog.CreateLogger(),
+		Logger: sneklog.NewLogger(),
 	}
 
 	if answer := ctx.Answer(strings.Repeat("a", maxMessageTextLen+1)); answer != nil {
@@ -429,7 +429,7 @@ func TestAnswerLongSplitsRequestsAndAttachesKeyboardToLastChunk(t *testing.T) {
 
 	api := tgapi.NewAPI(
 		tgapi.NewAPIOpts("token").
-			SetAPIUrl("https://example.test").
+			SetAPIURL("https://example.test").
 			SetHTTPClient(client),
 	)
 	defer func() {
@@ -439,11 +439,11 @@ func TestAnswerLongSplitsRequestsAndAttachesKeyboardToLastChunk(t *testing.T) {
 	}()
 
 	ctx := &MsgContext{
-		Api:    api,
+		API:    api,
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
-		Logger: sneklog.CreateLogger(),
+		Logger: sneklog.NewLogger(),
 	}
-	kb := NewInlineKeyboardJson(1).AddCallbackButton("A", "cmd")
+	kb := NewInlineKeyboardJSON(1).AddCallbackButton("A", "cmd")
 	text := strings.Repeat("a", maxMessageTextLen) + " " + strings.Repeat("b", 32)
 
 	messages := ctx.KeyboardLong(text, kb)

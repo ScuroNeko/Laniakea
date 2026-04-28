@@ -472,7 +472,7 @@ func (api *API) SendChatActionWithContext(ctx context.Context, params SendChatAc
 // See https://core.telegram.org/bots/api#setmessagereaction
 type SetMessageReaction struct {
 	ChatID    int64          `json:"chat_id"`
-	MessageId int            `json:"message_id"`
+	MessageID int            `json:"message_id"`
 	Reaction  []ReactionType `json:"reaction"`
 	IsBig     bool           `json:"is_big,omitempty"`
 }

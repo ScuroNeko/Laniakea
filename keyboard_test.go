@@ -8,7 +8,7 @@ import (
 )
 
 func TestInlineKeyboardWrapsRowsAndEncodesJSONPayloads(t *testing.T) {
-	kb := NewInlineKeyboardJson(2).
+	kb := NewInlineKeyboardJSON(2).
 		AddCallbackButton("A", "cmd", 1).
 		AddCallbackButton("B", "cmd", 2).
 		AddCallbackButton("C", "cmd", 3)
@@ -33,7 +33,7 @@ func TestInlineKeyboardBuilderPreservesConfiguredButtonFields(t *testing.T) {
 		AddButton(
 			NewInlineKbButton("Docs").
 				SetStyle(ButtonStylePrimary).
-				SetUrl("https://example.test"),
+				SetURL("https://example.test"),
 		)
 
 	button := kb.Get().InlineKeyboard[0][0]
@@ -46,8 +46,8 @@ func TestInlineKeyboardBuilderPreservesConfiguredButtonFields(t *testing.T) {
 }
 
 func TestInlineKeyboardGetPayloadTypeReturnsLocalOverride(t *testing.T) {
-	kb := NewInlineKeyboardJson(2)
-	if got := kb.GetPayloadType(); got != BotPayloadJson {
+	kb := NewInlineKeyboardJSON(2)
+	if got := kb.GetPayloadType(); got != BotPayloadJSON {
 		t.Fatalf("unexpected initial payload type: %q", got)
 	}
 	kb.SetPayloadType(BotPayloadBase64)
@@ -60,7 +60,7 @@ func TestDecodePayloadAcceptsBase64KeyboardPayloadWhenBotPrefersJSON(t *testing.
 	kb := NewInlineKeyboardBase64(1).
 		AddCallbackButton("A", "cmd", 1, "two")
 
-	got, _, err := decodePayload(BotPayloadJson, kb.Get().InlineKeyboard[0][0].CallbackData, false)
+	got, _, err := decodePayload(BotPayloadJSON, kb.Get().InlineKeyboard[0][0].CallbackData, false)
 	if err != nil {
 		t.Fatalf("decodePayload returned error: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestDecodePayloadAcceptsBase64KeyboardPayloadWhenBotPrefersJSON(t *testing.
 }
 
 func TestDecodePayloadAcceptsJSONKeyboardPayloadWhenBotPrefersBase64(t *testing.T) {
-	kb := NewInlineKeyboardJson(1).
+	kb := NewInlineKeyboardJSON(1).
 		AddCallbackButton("A", "cmd", 1, "two")
 
 	got, _, err := decodePayload(BotPayloadBase64, kb.Get().InlineKeyboard[0][0].CallbackData, false)
@@ -90,7 +90,7 @@ func TestDecodePayloadStrictRejectsMismatchedType(t *testing.T) {
 	kb := NewInlineKeyboardBase64(1).
 		AddCallbackButton("A", "cmd", 1)
 
-	_, _, err := decodePayload(BotPayloadJson, kb.Get().InlineKeyboard[0][0].CallbackData, true)
+	_, _, err := decodePayload(BotPayloadJSON, kb.Get().InlineKeyboard[0][0].CallbackData, true)
 	if !errors.Is(err, ErrPayloadTypeMismatch) {
 		t.Fatalf("expected ErrPayloadTypeMismatch, got %v", err)
 	}

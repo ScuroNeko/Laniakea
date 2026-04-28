@@ -8,6 +8,7 @@ import (
 	"regexp"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/laniakea/utils"
 )
 
 // ConfigVersion is the current version of the built-in JSON BotOpts file format.
@@ -17,35 +18,39 @@ const ConfigVersion = 1
 // than this library knows how to decode.
 var ErrConfigVersionMismatch = fmt.Errorf("config version mismatch: expected %d", ConfigVersion)
 
-// BotOptsFileJson is the JSON file representation of BotOpts.
-type BotOptsFileJson struct {
-	Version       int                `json:"version"`
-	Token         string             `json:"token"`
-	UpdateTypes   []tgapi.UpdateType `json:"update_types"`
-	Debug         bool               `json:"debug"`
-	ErrorTemplate string             `json:"error_template"`
-	Prefixes      []string           `json:"prefixes"`
-	Logger        struct {
-		LoggerBasePath   string `json:"base_path"`
-		UseRequestLogger bool   `json:"use_request_logger"`
-		WriteToFile      bool   `json:"write_to_file"`
-	} `json:"logger"`
-	API struct {
-		UseTestServer  bool   `json:"use_test_server"`
-		APIUrl         string `json:"url"`
-		RateLimit      int    `json:"rate_limit"`
-		DropRLOverflow bool   `json:"drop_overflow"`
-	} `json:"api"`
-	StrictPayloadType bool `json:"strict_payload_type"`
-	MaxWorkers        int  `json:"max_workers"`
+type botOptsFileJSONLogger struct {
+	LoggerBasePath   string          `json:"base_path"`
+	UseRequestLogger bool            `json:"use_request_logger"`
+	WriteToFile      bool            `json:"write_to_file"`
+	LogFormat        utils.LogFormat `json:"log_format"`
+}
+type botOptsFileJSONAPI struct {
+	UseTestServer  bool   `json:"use_test_server"`
+	APIURL         string `json:"url"`
+	RateLimit      int    `json:"rate_limit"`
+	DropRLOverflow bool   `json:"drop_overflow"`
 }
 
-// BotOptsFileJsonCodec encodes and decodes BotOpts using BotOptsFileJson.
-type BotOptsFileJsonCodec struct{}
+// BotOptsFileJSON is the JSON file representation of BotOpts.
+type BotOptsFileJSON struct {
+	Version           int                   `json:"version"`
+	Token             string                `json:"token"`
+	UpdateTypes       []tgapi.UpdateType    `json:"update_types"`
+	Debug             bool                  `json:"debug"`
+	ErrorTemplate     string                `json:"error_template"`
+	Prefixes          []string              `json:"prefixes"`
+	Logger            botOptsFileJSONLogger `json:"logger"`
+	API               botOptsFileJSONAPI    `json:"api"`
+	StrictPayloadType bool                  `json:"strict_payload_type"`
+	MaxWorkers        int                   `json:"max_workers"`
+}
+
+// BotOptsFileJSONCodec encodes and decodes BotOpts using BotOptsFileJSON.
+type BotOptsFileJSONCodec struct{}
 
 // FromBytes decodes BotOpts from JSON file bytes.
-func (codec BotOptsFileJsonCodec) FromBytes(data []byte) (*BotOpts, error) {
-	fileOpts := new(BotOptsFileJson)
+func (codec BotOptsFileJSONCodec) FromBytes(data []byte) (*BotOpts, error) {
+	fileOpts := new(BotOptsFileJSON)
 	err := json.Unmarshal(data, fileOpts)
 	if err != nil {
 		return nil, err
@@ -63,9 +68,10 @@ func (codec BotOptsFileJsonCodec) FromBytes(data []byte) (*BotOpts, error) {
 		LoggerBasePath:   fileOpts.Logger.LoggerBasePath,
 		UseRequestLogger: fileOpts.Logger.UseRequestLogger,
 		WriteToFile:      fileOpts.Logger.WriteToFile,
+		LogFormat:        fileOpts.Logger.LogFormat,
 
 		UseTestServer:  fileOpts.API.UseTestServer,
-		APIUrl:         fileOpts.API.APIUrl,
+		APIURL:         fileOpts.API.APIURL,
 		RateLimit:      fileOpts.API.RateLimit,
 		DropRLOverflow: fileOpts.API.DropRLOverflow,
 
@@ -78,37 +84,26 @@ func (codec BotOptsFileJsonCodec) FromBytes(data []byte) (*BotOpts, error) {
 }
 
 // ToBytes encodes BotOpts into JSON file bytes.
-func (codec BotOptsFileJsonCodec) ToBytes(opts *BotOpts) ([]byte, error) {
-	fileOpts := &BotOptsFileJson{
+func (codec BotOptsFileJSONCodec) ToBytes(opts *BotOpts) ([]byte, error) {
+	fileOpts := &BotOptsFileJSON{
 		Version:       ConfigVersion,
 		Token:         opts.Token,
 		UpdateTypes:   opts.UpdateTypes,
 		Debug:         opts.Debug,
 		ErrorTemplate: opts.ErrorTemplate,
 		Prefixes:      opts.Prefixes,
-
-		Logger: struct {
-			LoggerBasePath   string `json:"base_path"`
-			UseRequestLogger bool   `json:"use_request_logger"`
-			WriteToFile      bool   `json:"write_to_file"`
-		}{
+		Logger: botOptsFileJSONLogger{
 			LoggerBasePath:   opts.LoggerBasePath,
 			UseRequestLogger: opts.UseRequestLogger,
 			WriteToFile:      opts.WriteToFile,
+			LogFormat:        opts.LogFormat,
 		},
-
-		API: struct {
-			UseTestServer  bool   `json:"use_test_server"`
-			APIUrl         string `json:"url"`
-			RateLimit      int    `json:"rate_limit"`
-			DropRLOverflow bool   `json:"drop_overflow"`
-		}{
+		API: botOptsFileJSONAPI{
 			UseTestServer:  opts.UseTestServer,
-			APIUrl:         opts.APIUrl,
+			APIURL:         opts.APIURL,
 			RateLimit:      opts.RateLimit,
 			DropRLOverflow: opts.DropRLOverflow,
 		},
-
 		StrictPayloadType: opts.StrictPayloadType,
 		MaxWorkers:        opts.MaxWorkers,
 	}
@@ -119,10 +114,10 @@ func (codec BotOptsFileJsonCodec) ToBytes(opts *BotOpts) ([]byte, error) {
 	return data, nil
 }
 
-func (codec BotOptsFileJsonCodec) Load(filename string) (*BotOpts, error) {
+func (codec BotOptsFileJSONCodec) Load(filename string) (*BotOpts, error) {
 	return LoadBotOptsFile(codec, filename)
 }
-func (codec BotOptsFileJsonCodec) Save(filename string, opts *BotOpts) error {
+func (codec BotOptsFileJSONCodec) Save(filename string, opts *BotOpts) error {
 	return SaveBotOptsFile(codec, filename, opts)
 }
 

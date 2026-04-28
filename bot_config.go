@@ -19,7 +19,7 @@ func (bot *Bot[T]) AddPrefixes(prefixes ...string) *Bot[T] {
 }
 
 // SetDraftProvider replaces the default DraftProvider with a custom one.
-// Useful for using LinearDraftIdGenerator to persist draft IDs across restarts.
+// Useful for using LinearDraftIDGenerator to persist draft IDs across restarts.
 func (bot *Bot[T]) SetDraftProvider(p *DraftProvider) *Bot[T] {
 	if !bot.configMutable("SetDraftProvider") {
 		return bot
@@ -192,15 +192,15 @@ func (bot *Bot[T]) SetDebug(debug bool) *Bot[T] {
 		level = sneklog.DEBUG
 	}
 
-	bot.logger.Level(level)
+	bot.logger.SetLevel(level)
 	if bot.requestLogger != nil {
-		bot.requestLogger.Level(level)
+		bot.requestLogger.SetLevel(level)
 	}
 	for _, p := range bot.plugins {
 		if p.logger == nil {
 			continue
 		}
-		p.logger.Level(level)
+		p.logger.SetLevel(level)
 	}
 	return bot
 }

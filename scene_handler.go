@@ -218,12 +218,14 @@ func (bot *Bot[T]) emitSceneTransition(ctx *SceneContext, scene *Scene[T], from 
 		return
 	}
 
-	to := from
+	var to string
 	switch result.Action {
 	case SceneActionNext:
 		to = result.Next
 	case SceneActionExit:
 		to = ""
+	default:
+		to = from
 	}
 
 	bot.safeEmitEvent(ctx.Context(), SceneTransitionEvent{

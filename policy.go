@@ -143,7 +143,7 @@ func RequireChatAdmin[T AppData]() Policy[T] {
 			return AsInternalError(errors.New("chat-admin policy requires message chat context"))
 		}
 
-		member, err := ctx.Api.GetChatMember(tgapi.GetChatMember{
+		member, err := ctx.API.GetChatMember(tgapi.GetChatMember{
 			ChatID: ctx.ChatID,
 			UserID: ctx.FromID,
 		})
@@ -166,7 +166,7 @@ func RequireChatCreator[T AppData]() Policy[T] {
 			return AsInternalError(errors.New("chat-creator policy requires message chat context"))
 		}
 
-		member, err := ctx.Api.GetChatMember(tgapi.GetChatMember{
+		member, err := ctx.API.GetChatMember(tgapi.GetChatMember{
 			ChatID: ctx.ChatID,
 			UserID: ctx.FromID,
 		})
@@ -189,12 +189,12 @@ func RequireBotAdmin[T AppData]() Policy[T] {
 			return AsInternalError(errors.New("bot-admin policy requires message chat context"))
 		}
 
-		bot, err := ctx.Api.GetMe()
+		bot, err := ctx.API.GetMe()
 		if err != nil {
 			return AsInternalError(fmt.Errorf("failed to fetch bot info: %w", err))
 		}
 
-		member, err := ctx.Api.GetChatMember(tgapi.GetChatMember{
+		member, err := ctx.API.GetChatMember(tgapi.GetChatMember{
 			ChatID: ctx.ChatID,
 			UserID: bot.ID,
 		})

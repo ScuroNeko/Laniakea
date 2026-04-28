@@ -264,7 +264,7 @@ func (p *Plugin[T]) AddUpdateHandler(t tgapi.UpdateType, handler CommandExecutor
 	switch t {
 	case tgapi.UpdateTypeMessage, tgapi.UpdateTypeChannelPost, tgapi.UpdateTypeCallbackQuery:
 		if p.logger == nil {
-			logger := utils.CreateLogger(p.name, utils.GetLoggerLevel())
+			logger := utils.CreateLogger(p.name, utils.GetLoggerLevel(), utils.LogFormatText, nil)
 			logger.Warnf("%s can't be registred through AddUpdateHandler. Use AddPayload/NewPayload or AddCommand/NewCommand", t)
 			_ = logger.Close()
 			return p

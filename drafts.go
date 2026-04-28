@@ -9,29 +9,29 @@ import (
 )
 
 // Interface for generating unique draft IDs.
-type draftIdGenerator interface {
+type draftIDGenerator interface {
 	// Next returns the next unique draft ID.
 	Next() uint64
 }
 
-// RandomDraftIdGenerator generates draft IDs using cryptographically secure random numbers.
+// RandomDraftIDGenerator generates draft IDs using cryptographically secure random numbers.
 // Suitable for distributed systems or when ID predictability is undesirable.
-type RandomDraftIdGenerator struct{}
+type RandomDraftIDGenerator struct{}
 
 // Next returns a random 64-bit unsigned integer.
-func (g *RandomDraftIdGenerator) Next() uint64 {
+func (g *RandomDraftIDGenerator) Next() uint64 {
 	return rand.Uint64()
 }
 
-// LinearDraftIdGenerator generates draft IDs using a monotonically increasing counter.
+// LinearDraftIDGenerator generates draft IDs using a monotonically increasing counter.
 // Useful for debugging, persistence, or when drafts must be ordered.
-type LinearDraftIdGenerator struct {
-	lastId atomic.Uint64
+type LinearDraftIDGenerator struct {
+	lastID atomic.Uint64
 }
 
-// Next returns the next linear ID, atomically incremented.
-func (g *LinearDraftIdGenerator) Next() uint64 {
-	return g.lastId.Add(1)
+// Next returns the next linear ID, atomically incremented.о
+func (g *LinearDraftIDGenerator) Next() uint64 {
+	return g.lastID.Add(1)
 }
 
 // DraftProvider manages a collection of Drafts and a shared draft ID generator.
@@ -41,7 +41,7 @@ type DraftProvider struct {
 	mu        sync.RWMutex
 	api       *tgapi.API
 	drafts    map[uint64]*Draft
-	generator draftIdGenerator
+	generator draftIDGenerator
 }
 
 // NewRandomDraftProvider creates a new DraftProvider using random draft IDs.
@@ -50,7 +50,7 @@ type DraftProvider struct {
 // All drafts created via this provider will have unpredictable, unique IDs.
 func NewRandomDraftProvider(api *tgapi.API) *DraftProvider {
 	return &DraftProvider{
-		api: api, generator: &RandomDraftIdGenerator{},
+		api: api, generator: &RandomDraftIDGenerator{},
 		drafts: make(map[uint64]*Draft),
 	}
 }
@@ -63,8 +63,8 @@ func NewRandomDraftProvider(api *tgapi.API) *DraftProvider {
 // This is useful when you need to store draft IDs externally (e.g., in a database)
 // and want to reconstruct drafts after restart.
 func NewLinearDraftProvider(api *tgapi.API, startValue uint64) *DraftProvider {
-	g := &LinearDraftIdGenerator{}
-	g.lastId.Store(startValue)
+	g := &LinearDraftIDGenerator{}
+	g.lastID.Store(startValue)
 	return &DraftProvider{
 		api:       api,
 		generator: g,

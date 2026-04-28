@@ -50,8 +50,8 @@ type BotPayloadType string
 var (
 	// BotPayloadBase64 encodes callback data as a Base64 string.
 	BotPayloadBase64 BotPayloadType = "base64"
-	// BotPayloadJson encodes callback data as a JSON string.
-	BotPayloadJson BotPayloadType = "json"
+	// BotPayloadJSON encodes callback data as a JSON string.
+	BotPayloadJSON BotPayloadType = "json"
 )
 
 var (
@@ -90,6 +90,8 @@ type Bot[T AppData] struct {
 	strictPayloadType bool
 	maxWorkers        int
 
+	logFormat     utils.LogFormat
+	logFormatter  *sneklog.Formatter
 	logger        *sneklog.Logger // Main bot logger (JSON stdout + optional file)
 	requestLogger *sneklog.Logger // Optional request-level API logging
 	useReqLogger  bool
@@ -159,10 +161,12 @@ func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
 	limiter.SetGlobalRate(opts.RateLimit)
 
 	apiOpts := tgapi.NewAPIOpts(opts.Token).
-		SetAPIUrl(opts.APIUrl).
+		SetAPIURL(opts.APIURL).
 		UseTestServer(opts.UseTestServer).
 		SetLimiter(limiter).
-		SetLimiterDrop(opts.DropRLOverflow)
+		SetLimiterDrop(opts.DropRLOverflow).
+		SetLogFormat(opts.LogFormat).
+		SetLogFormatter(opts.LogFormatter)
 	api := tgapi.NewAPI(apiOpts)
 	uploader := tgapi.NewUploader(api)
 
@@ -188,6 +192,8 @@ func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
 		debug:             opts.Debug,
 		prefixes:          prefixes,
 		token:             opts.Token,
+		logFormat:         opts.LogFormat,
+		logFormatter:      opts.LogFormatter,
 		useReqLogger:      opts.UseRequestLogger,
 
 		plugins:       make([]Plugin[T], 0),
@@ -239,21 +245,21 @@ func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
 }
 
 // SetLogger replaces the main bot logger.
-func (b *Bot[T]) SetLogger(l *sneklog.Logger) *Bot[T] {
-	b.logger = l
-	return b
+func (bot *Bot[T]) SetLogger(l *sneklog.Logger) *Bot[T] {
+	bot.logger = l
+	return bot
 }
 
 // SetRequestLogger replaces the request-level logger.
-func (b *Bot[T]) SetRequestLogger(l *sneklog.Logger) *Bot[T] {
-	b.requestLogger = l
-	return b
+func (bot *Bot[T]) SetRequestLogger(l *sneklog.Logger) *Bot[T] {
+	bot.requestLogger = l
+	return bot
 }
 
 // SetWebHookLogger replaces the webhook logger.
-func (b *Bot[T]) SetWebHookLogger(l *sneklog.Logger) *Bot[T] {
-	b.webHookLogger = l
-	return b
+func (bot *Bot[T]) SetWebHookLogger(l *sneklog.Logger) *Bot[T] {
+	bot.webHookLogger = l
+	return bot
 }
 
 // Close gracefully shuts down bot-owned resources.

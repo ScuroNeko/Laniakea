@@ -125,12 +125,12 @@ func main() {
 `BotOpts` can also be loaded from or saved to config files through the file codec API.
 
 Built in:
-- `BotOptsFileJsonCodec` for JSON files.
+- `BotOptsFileJSONCodec` for JSON files.
 
 Example:
 
 ```go
-codec := laniakea.BotOptsFileJsonCodec{}
+codec := laniakea.BotOptsFileJSONCodec{}
 opts, err := laniakea.LoadBotOptsFile(codec, "config.json")
 if err != nil {
 	log.Fatal(err)
@@ -145,7 +145,7 @@ if err != nil {
 Placeholders like `{{ TG_TOKEN }}` inside the file are expanded from environment variables before decoding.
 
 You can also implement your own codec for other formats by satisfying `BotOptsFileCodec`.
-Only JSON is supported out of the box right now. If you want another format such as TOML, use `BotOptsFileJsonCodec` as the reference implementation for your own codec.
+Only JSON is supported out of the box right now. If you want another format such as TOML, use `BotOptsFileJSONCodec` as the reference implementation for your own codec.
 
 See the full guide in the wiki: [Bot Options and Configuration](https://git.scuroneko.dev/ScuroNeko/Laniakea/wiki/Bot-Options-and-Configuration)
 
@@ -198,12 +198,12 @@ Provides access to the incoming message and useful reply methods:
 - `Keyboard(text string, keyboard *InlineKeyboard) *AnswerMessage`: Sends a message with parse_mode none and inline keyboard.
 - `KeyboardLong(text string, keyboard *InlineKeyboard) []*AnswerMessage`: Splits long plain text into multiple messages and attaches the keyboard to the final chunk.
 - `KeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage`: Sends a message formatted with MarkdownV2 (you handle escaping) and inline keyboard.
-- `AnswerPhoto(photoId, text string) *AnswerMessage`: Sends a message with photo with parse_mode none.
-- `AnswerPhotoMarkdown(photoId, text string) *AnswerMessage`: Sends a photo with MarkdownV2 caption (you handle escaping).
+- `AnswerPhoto(photoID, text string) *AnswerMessage`: Sends a message with photo with parse_mode none.
+- `AnswerPhotoMarkdown(photoID, text string) *AnswerMessage`: Sends a photo with MarkdownV2 caption (you handle escaping).
 - `EditCallback(text string)`: Edits message with parse_mode none after clicking inline button.
 - `EditCallbackMarkdown(text string)`: Edits a message formatted with MarkdownV2 (you handle escaping) after clicking inline button.
 - `SendAction(action tgapi.ChatActionType)`: Sends a “typing”, “uploading photo”, etc., action.
-- Fields: `Text`, `Args`, `From`, `FromID`, `Msg`, `InlineMsgId`, `CallbackQueryId`, etc.
+- Fields: `Text`, `Args`, `From`, `FromID`, `Msg`, `InlineMsgID`, `CallbackQueryID`, etc.
 - And more methods and fields!
 
 ### tgapi: API and Uploader
@@ -316,7 +316,7 @@ func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 - Middleware can modify the MsgContext (e.g., add custom fields) before the command runs.
 
 ## ⚙️ Advanced Configuration
-- **Inline Keyboards**: Build keyboards using `laniakea.NewInlineKeyboardJson`, `laniakea.NewInlineKeyboardBase64`, or `laniakea.NewInlineKeyboard`. `Bot.SetPayloadType(...)` defines the default payload format, and `InlineKeyboard.SetPayloadType(...)` overrides it for one keyboard.
+- **Inline Keyboards**: Build keyboards using `laniakea.NewInlineKeyboardJSON`, `laniakea.NewInlineKeyboardBase64`, or `laniakea.NewInlineKeyboard`. `Bot.SetPayloadType(...)` defines the default payload format, and `InlineKeyboard.SetPayloadType(...)` overrides it for one keyboard.
 - **Rate Limiting**: Pass a configured utils.RateLimiter via BotOpts to handle Telegram's rate limits gracefully.
 - **Localization**: `L10n` is safe for concurrent use once attached to the bot.
 - **Custom Update Handlers**: Use `plugin.AddUpdateHandler(...)` for Telegram update types that are not part of the command/payload flow.
