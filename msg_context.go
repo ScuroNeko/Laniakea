@@ -756,10 +756,7 @@ func (ctx *MsgContext) EnterSceneStep(name, step string) error {
 		return ErrCantFindSession
 	}
 
-	session := SceneSession{
-		Scene: scene.Name,
-		Step:  step,
-	}
+	session := SceneSession{Scene: scene.Name, Step: step}
 
 	return ctx.sceneRuntime.setSession(key, session)
 }
@@ -789,4 +786,35 @@ func (ctx *MsgContext) ExitScene() error {
 	}
 
 	return ctx.sceneRuntime.deleteSession(key)
+}
+
+// IsCallback reports whether the context belongs to a callback query.
+func (ctx *MsgContext) IsCallback() bool {
+	return ctx.CallbackQueryID != "" || ctx.CallbackMsgID > 0 || ctx.InlineMsgID != ""
+}
+
+// HasPhoto reports whether the current message contains a photo payload.
+func (ctx *MsgContext) HasPhoto() bool {
+	return ctx.Msg != nil && ctx.Msg.Photo.Len() > 0
+}
+
+func (ctx *MsgContext) upsertKeyboard(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
+	if ctx.IsCallback() {
+		if ctx.HasPhoto() {
+			ctx.CallbackDelete()
+			return ctx.answer(text, keyboard, parseMode)
+		}
+		return ctx.editCallback(text, keyboard, parseMode)
+	}
+	return ctx.answer(text, keyboard, parseMode)
+}
+
+// UpsertKeyboard edits a callback message or sends a new plain-text message with a keyboard.
+func (ctx *MsgContext) UpsertKeyboard(text string, keyboard *InlineKeyboard) *AnswerMessage {
+	return ctx.upsertKeyboard(text, keyboard, tgapi.ParseNone)
+}
+
+// UpsertKeyboardMarkdown edits a callback message or sends a new MarkdownV2 message with a keyboard.
+func (ctx *MsgContext) UpsertKeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage {
+	return ctx.upsertKeyboard(text, keyboard, tgapi.ParseMDV2)
 }

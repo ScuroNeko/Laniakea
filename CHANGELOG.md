@@ -2,13 +2,19 @@
 
 ## v1.0.0
 
+### Added
+- Added `MsgContext.IsCallback()` and `MsgContext.HasPhoto()` helpers for callback-aware handler code.
+- Added `MsgContext.UpsertKeyboard(...)` and `MsgContext.UpsertKeyboardMarkdown(...)` helpers that edit callback messages, replace photo callback messages with a fresh chat message, and send a new chat message outside callback flow.
+
 ### Changed
+- Version metadata now reports the stable `v1.0.0` release instead of `v1.0.0-rc.16`.
 - Bot-level middleware blocks now emit a final `UpdateHandledEvent` with `Handled=false`, keeping observer update lifecycles balanced.
 - `BotOpts`, `tgapi.APIOpts`, and logger utility godoc now document `LOG_FORMAT`, `LogFormat`, and logger formatting options consistently.
 
 ### Tests
 - Added regression coverage proving bot-level middleware blocks still complete the observer update lifecycle.
 - Added webhook runtime regression coverage for request enqueue through worker execution of a command handler.
+- Added regression coverage for inline callback keyboard upserts and callback target detection.
 
 ## v1.0.0-rc.16
 

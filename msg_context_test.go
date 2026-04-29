@@ -324,6 +324,90 @@ func TestErrorUserVisibleAnswersCallback(t *testing.T) {
 	}
 }
 
+func TestIsCallbackIncludesInlineCallbackTargets(t *testing.T) {
+	tests := []struct {
+		name string
+		ctx  MsgContext
+		want bool
+	}{
+		{name: "callback query id", ctx: MsgContext{CallbackQueryID: "cb-1"}, want: true},
+		{name: "callback message id", ctx: MsgContext{CallbackMsgID: 12}, want: true},
+		{name: "inline message id", ctx: MsgContext{InlineMsgID: "inline-1"}, want: true},
+		{name: "not callback", ctx: MsgContext{}, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.ctx.IsCallback(); got != tt.want {
+				t.Fatalf("IsCallback() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestUpsertKeyboardEditsInlineCallback(t *testing.T) {
+	var requests int
+	var gotPath string
+	var gotBody map[string]any
+
+	client := &http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			requests++
+			gotPath = req.URL.Path
+			body, err := io.ReadAll(req.Body)
+			if err != nil {
+				t.Fatalf("failed to read request body: %v", err)
+			}
+			if err := json.Unmarshal(body, &gotBody); err != nil {
+				t.Fatalf("failed to decode request body: %v", err)
+			}
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(strings.NewReader(`{"ok":true,"result":true}`)),
+			}, nil
+		}),
+	}
+
+	api := tgapi.NewAPI(
+		tgapi.NewAPIOpts("token").
+			SetAPIURL("https://example.test").
+			SetHTTPClient(client),
+	)
+	defer func() {
+		if err := api.Close(); err != nil {
+			t.Fatalf("Close returned error: %v", err)
+		}
+	}()
+
+	ctx := &MsgContext{
+		API:         api,
+		InlineMsgID: "inline-1",
+		Logger:      sneklog.NewLogger(),
+	}
+	kb := NewInlineKeyboardJSON(1).AddCallbackButton("A", "cmd")
+
+	answer := ctx.UpsertKeyboard("updated", kb)
+	if answer == nil {
+		t.Fatal("expected answer message")
+	}
+	if requests != 1 {
+		t.Fatalf("expected one edit request, got %d", requests)
+	}
+	if gotPath != "/bottoken/editMessageText" {
+		t.Fatalf("unexpected request path: %s", gotPath)
+	}
+	if got := gotBody["inline_message_id"]; got != "inline-1" {
+		t.Fatalf("unexpected inline_message_id: %v", got)
+	}
+	if got := gotBody["text"]; got != "updated" {
+		t.Fatalf("unexpected text: %v", got)
+	}
+	if _, ok := gotBody["reply_markup"]; !ok {
+		t.Fatal("expected reply_markup in edit request")
+	}
+}
+
 func TestAnswerRejectsEmptyMessage(t *testing.T) {
 	ctx := &MsgContext{
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},

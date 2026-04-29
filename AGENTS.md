@@ -96,6 +96,9 @@ Prefer the repository’s documented commands. If multiple choices exist, use th
 - Changes made only in `AGENTS.md` must not be added to `CHANGELOG.md`.
 - Add changes only to the section for the next version after the latest published git tag.
 - The agent must check the latest published tag, `CHANGELOG.md`, and `utils/version.go` before editing the changelog.
+- Before editing `CHANGELOG.md`, the agent must inspect the full diff between the latest published tag and the current worktree, for example `git diff --name-status <latest-tag> -- .` and targeted `git diff <latest-tag> -- <files>`.
+- Changelog entries must be based on all user-visible changes present between the latest published tag and the current files, including earlier uncommitted or pre-existing worktree changes, not only changes made in the current turn.
+- The agent must not add changelog entries for changes that are not present in the diff from the latest published tag, and must remove or rewrite stale entries that no longer match that diff.
 - The agent must verify that the target changelog version matches the version declared in `utils/version.go`.
 - If the latest published tag is, for example, `v1.0.0`, and `CHANGELOG.md` does not yet contain the next version section, the agent must stop and ask the user which version the change belongs to:
   1. `v1.0.1`
@@ -103,7 +106,7 @@ Prefer the repository’s documented commands. If multiple choices exist, use th
   3. `v2.0.0`
 - The agent must not guess the next version when that section is missing.
 - If the user-selected version does not match `utils/version.go`, the agent must warn about the mismatch and require the version file to be updated before proceeding.
-- Changelog entries must describe all user-visible behavior changes made in the turn, including API additions, fixes, behavior changes, and breaking changes.
+- Changelog entries must describe all user-visible behavior changes in the diff from the latest published tag, including API additions, fixes, behavior changes, and breaking changes.
 - When a framework backlog item recorded in `TODO.md` is completed, the agent must also update the backlog status using the existing format:
   1. move the completed item into the top of the `Done` section;
   2. replace the numbered backlog label with a version tag, for example `1. Scene Model` becomes `[v2.0.0] Scene Model`;
