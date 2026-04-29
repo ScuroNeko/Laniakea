@@ -64,10 +64,13 @@ func (opts *APIOpts) SetAPIURL(apiURL string) *APIOpts {
 	return opts
 }
 
+// SetLogFormat sets the output format used by API-managed loggers.
 func (opts *APIOpts) SetLogFormat(format utils.LogFormat) *APIOpts {
 	opts.logFormat = format
 	return opts
 }
+
+// SetLogFormatter sets the formatter used by API-managed logger writers.
 func (opts *APIOpts) SetLogFormatter(formatter *sneklog.Formatter) *APIOpts {
 	opts.logFormatter = formatter
 	return opts

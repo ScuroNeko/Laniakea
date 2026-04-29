@@ -46,6 +46,14 @@ func (bot *Bot[T]) handle(parentCtx context.Context, u *tgapi.Update) {
 
 	for _, middleware := range bot.middlewares {
 		if !middleware.Execute(msgCtx, bot.appData) {
+			bot.safeEmitEvent(ctx, UpdateHandledEvent{
+				UpdateID:   u.UpdateID,
+				UpdateType: u.Type,
+				FromID:     msgCtx.FromID,
+				ChatID:     msgCtx.ChatID,
+				Duration:   time.Since(startTime),
+				Handled:    false,
+			})
 			return
 		}
 	}

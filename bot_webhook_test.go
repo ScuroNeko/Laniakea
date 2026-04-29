@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 	"git.scuroneko.dev/scuroneko/sneklog/v2"
@@ -105,6 +106,55 @@ func TestRunWebhookRuntimeExecutesRunners(t *testing.T) {
 	}
 	if got := calls.Load(); got != 1 {
 		t.Fatalf("expected runner to execute once, got %d", got)
+	}
+}
+
+func TestRunWebhookRuntimeProcessesEnqueuedUpdate(t *testing.T) {
+	var calls atomic.Int32
+	plugin := NewPlugin[NoData]("demo")
+	plugin.NewCommand(func(ctx *MsgContext, db NoData) error {
+		calls.Add(1)
+		return nil
+	}, "start")
+
+	bot := &Bot[NoData]{
+		logger:        sneklog.NewLogger(),
+		webHookLogger: sneklog.NewLogger(),
+		prefixes:      []string{"/"},
+		plugins:       []Plugin[NoData]{*plugin},
+		updateQueue:   make(chan *tgapi.Update, 1),
+		maxWorkers:    1,
+	}
+	t.Cleanup(func() {
+		_ = bot.logger.Close()
+		_ = bot.webHookLogger.Close()
+	})
+
+	err := bot.runWebhookRuntime(context.Background(), func(ctx context.Context) error {
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"update_id":9,"message":{"message_id":1,"date":1,"chat":{"id":1,"type":"private"},"from":{"id":2,"is_bot":false,"first_name":"Test"},"text":"/start"}}`))
+		rec := httptest.NewRecorder()
+
+		updateHandler(ctx, bot, "").ServeHTTP(rec, req)
+		if rec.Result().StatusCode != http.StatusOK {
+			t.Fatalf("unexpected status: got %d want %d", rec.Result().StatusCode, http.StatusOK)
+		}
+
+		deadline := time.After(time.Second)
+		for calls.Load() == 0 {
+			select {
+			case <-deadline:
+				t.Fatal("webhook runtime did not process enqueued update")
+			default:
+				time.Sleep(time.Millisecond)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("runWebhookRuntime returned error: %v", err)
+	}
+	if calls.Load() != 1 {
+		t.Fatalf("expected command handler to run once, got %d", calls.Load())
 	}
 }
 

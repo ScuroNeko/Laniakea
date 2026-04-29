@@ -6,10 +6,13 @@ import (
 	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
+// LogFormat selects the writer format used by framework loggers.
 type LogFormat string
 
 const (
+	// LogFormatText writes human-readable text logs.
 	LogFormatText LogFormat = "text"
+	// LogFormatJSON writes structured JSON logs.
 	LogFormatJSON LogFormat = "json"
 )
 
@@ -22,8 +25,8 @@ func GetLoggerLevel() sneklog.LogLevel {
 	return level
 }
 
-// CreateLogger creates a logger with the shared default policy:
-// JSON stdout output, provided prefix, and provided level.
+// CreateLogger creates a logger with stdout output, the provided name, level,
+// format, and optional formatter.
 func CreateLogger(
 	name string, level sneklog.LogLevel,
 	format LogFormat, formatter *sneklog.Formatter,

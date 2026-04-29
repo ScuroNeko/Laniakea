@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.0.0
+
+### Changed
+- Bot-level middleware blocks now emit a final `UpdateHandledEvent` with `Handled=false`, keeping observer update lifecycles balanced.
+- `BotOpts`, `tgapi.APIOpts`, and logger utility godoc now document `LOG_FORMAT`, `LogFormat`, and logger formatting options consistently.
+
+### Tests
+- Added regression coverage proving bot-level middleware blocks still complete the observer update lifecycle.
+- Added webhook runtime regression coverage for request enqueue through worker execution of a command handler.
+
 ## v1.0.0-rc.16
 
 ### Breaking Changes

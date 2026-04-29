@@ -71,7 +71,9 @@ type BotOpts struct {
 	// It is zero when the options were not loaded from a versioned file.
 	FileConfigVersion int
 
-	LogFormat    utils.LogFormat
+	// LogFormat selects text or JSON output for bot-managed loggers.
+	LogFormat utils.LogFormat
+	// LogFormatter customizes bot-managed logger writers when supported.
 	LogFormatter *sneklog.Formatter
 }
 
@@ -92,7 +94,7 @@ type BotOpts struct {
 //   - DROP_RL_OVERFLOW: "true" to drop updates on rate limit overflow
 //   - STRICT_PAYLOAD_TYPE: "true" to reject callback payloads encoded in a different format
 //   - MAX_WORKERS: maximum number of concurrent update handlers (default: 32)
-//   - JSON_LOG:
+//   - LOG_FORMAT: logger output format, "text" or "json" (default: "text")
 //
 // Returns a populated BotOpts.
 // NewBot validates required fields and returns ErrTokenRequired when TG_TOKEN is missing.
@@ -254,10 +256,13 @@ func (opts *BotOpts) SetMaxWorkers(workers int) *BotOpts {
 	return opts
 }
 
+// SetLogFormat sets the output format used by bot-managed loggers.
 func (opts *BotOpts) SetLogFormat(format utils.LogFormat) *BotOpts {
 	opts.LogFormat = format
 	return opts
 }
+
+// SetLogFormatter sets the formatter used by bot-managed logger writers.
 func (opts *BotOpts) SetLogFormatter(formatter *sneklog.Formatter) *BotOpts {
 	opts.LogFormatter = formatter
 	return opts

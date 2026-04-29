@@ -10,6 +10,7 @@ import (
 )
 
 type recordingObserver struct {
+	received []UpdateReceivedEvent
 	started  []HandlerStartedEvent
 	finished []HandlerFinishedEvent
 	errors   []ErrorEvent
@@ -19,7 +20,9 @@ type recordingObserver struct {
 	retries  []PollingRetryEvent
 }
 
-func (*recordingObserver) OnReceiveUpdate(context.Context, UpdateReceivedEvent) {}
+func (o *recordingObserver) OnReceiveUpdate(_ context.Context, ev UpdateReceivedEvent) {
+	o.received = append(o.received, ev)
+}
 func (o *recordingObserver) OnHandledUpdate(_ context.Context, ev UpdateHandledEvent) {
 	o.handled = append(o.handled, ev)
 }
@@ -584,6 +587,44 @@ func TestHandleUpdateObserverEmitsUpdateErrors(t *testing.T) {
 	}
 	if got := observer.finished[0]; got.HandlerKind != HandlerUpdateKind || got.HandlerName != string(tgapi.UpdateTypeInlineQuery) || got.Plugin != "test" || got.Err == nil || !got.UserFacing {
 		t.Fatalf("unexpected finished event: %#v", got)
+	}
+}
+
+func TestHandleObserverCompletesUpdateWhenBotMiddlewareBlocks(t *testing.T) {
+	observer := &recordingObserver{}
+	bot := &Bot[NoData]{
+		logger:   sneklog.NewLogger(),
+		observer: observer,
+		middlewares: []Middleware[NoData]{
+			NewMiddleware("block", func(ctx *MsgContext, db NoData) bool {
+				return false
+			}),
+		},
+	}
+
+	bot.handle(context.Background(), &tgapi.Update{
+		UpdateID: 8,
+		Type:     tgapi.UpdateTypeMessage,
+		Message: &tgapi.Message{
+			MessageID: 1,
+			Date:      1,
+			Chat:      &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate},
+			Text:      "/start",
+		},
+	})
+
+	if len(observer.received) != 1 {
+		t.Fatalf("expected one received event, got %d", len(observer.received))
+	}
+	if len(observer.handled) != 1 {
+		t.Fatalf("expected one handled event, got %d", len(observer.handled))
+	}
+	got := observer.handled[0]
+	if got.UpdateID != 8 || got.UpdateType != tgapi.UpdateTypeMessage || got.ChatID != 42 || got.Handled {
+		t.Fatalf("unexpected handled event: %#v", got)
+	}
+	if len(observer.started) != 0 || len(observer.finished) != 0 || len(observer.errors) != 0 {
+		t.Fatalf("middleware block should not emit handler lifecycle or errors: started=%d finished=%d errors=%d", len(observer.started), len(observer.finished), len(observer.errors))
 	}
 }
 
