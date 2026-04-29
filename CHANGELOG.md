@@ -2,17 +2,35 @@
 
 ## v1.0.0-rc.16
 
+### Breaking Changes
+- Replaced `git.scuroneko.dev/scuroneko/slog` with `git.scuroneko.dev/scuroneko/sneklog/v2` across public logger APIs, including `AppDataLogger`, logger getters, and custom logger setters.
+- Renamed exported `Json`, `Url`, and `Id` identifiers to idiomatic `JSON`, `URL`, and `ID` spellings, including `BotOpts.APIURL`, `BotOpts.SetAPIURL(...)`, `tgapi.APIOpts.SetAPIURL(...)`, `BotOptsFileJSONCodec`, `BotPayloadJSON`, and related README examples.
+- Made the request logger field internal; use `Bot.SetRequestLogger(...)` and `Bot.GetRequestLogger()` instead of accessing `Bot.RequestLogger` directly.
+
+### Added
+- Added `Bot.UpdatesIter(...)` as an iterator wrapper around a single `Bot.Updates(...)` call, including error delivery through the iterator.
+- Added scene-local callback payload handlers through `Scene.OnPayload(...)`, including observer lifecycle events for scene payload execution.
+- Added configurable logger output through `BotOpts.LogFormat`, `BotOpts.SetLogFormat(...)`, `BotOpts.SetLogFormatter(...)`, `tgapi.APIOpts.SetLogFormat(...)`, and `tgapi.APIOpts.SetLogFormatter(...)`.
+- Added JSON BotOpts file format versioning through `ConfigVersion`, `ErrConfigVersionMismatch`, and `BotOpts.FileConfigVersion`.
+- Added `Bot.SetLogger(...)`, `Bot.SetRequestLogger(...)`, `Bot.SetWebHookLogger(...)`, `Bot.GetRequestLogger()`, and `Bot.GetWebHookLogger()` helpers for explicit logger customization.
+
 ### Changed
-- Updated `slog` to `v2`.
-- Bot loggers now apply the configured token replacer consistently across the main bot logger, request logger, internal API and uploader loggers, webhook logger, and auto-managed plugin loggers, so bot tokens stay masked in both stdout and file-backed logs.
+- Updated `pond/v2` to `v2.7.1`.
+- `Bot.RunWithContext(...)` now closes an explicitly set request logger when `UseRequestLogger` is false and closes webhook loggers before long-polling startup.
+- Bot loggers now apply the configured token replacer consistently across the main bot logger, request logger, internal API and uploader loggers, webhook logger, app-data logger writers, and auto-managed plugin loggers.
 - JSON `BotOpts` files now write `version`, reject newer unsupported config versions, keep older unversioned files loadable, and preserve the loaded file version in `BotOpts.FileConfigVersion`.
-- Active scenes now support scene-local callback payload handlers through `Scene.OnPayload(...)`, including observer lifecycle events for scene payload execution.
-- Updated Go initialism names for JSON, URL, ID, and API helpers.
+- `Bot.RunWithContext(...)` treats `context.DeadlineExceeded` like `context.Canceled` and exits polling without retry logging.
+- README and README_RU now use the current `JSON`, `URL`, and `ID` public API names.
+
+### Fixed
+- Fixed the go-lint workflow file to end with a newline.
 
 ### Tests
+- Added regression coverage for `Bot.UpdatesIter(...)` error delivery and early iterator stop behavior.
+- Added regression coverage proving `Bot.RunWithContext(...)` preserves polling retry attempts and backoff delays across repeated getUpdates failures.
 - Added regression coverage proving polling startup preserves an enabled request logger.
 - Updated file logger regression coverage for the current `sneklog` text prefix format.
-- Added regression coverage proving token masking still applies after `initLoggers(...)` switches loggers to file-backed writers and that auto-managed plugin loggers inherit token masking as well.
+- Added regression coverage proving token masking still applies after `initLoggers(...)` switches loggers to file-backed writers and that auto-managed plugin loggers inherit token masking.
 - Added regression coverage for JSON config version handling and scene-local payload routing, including observer lifecycle events and callback fallthrough behavior.
 - Updated logger helper tests for the explicit log format and formatter parameters.
 

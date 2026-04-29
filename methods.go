@@ -3,6 +3,7 @@ package laniakea
 import (
 	"context"
 	"encoding/json"
+	"iter"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
@@ -66,4 +67,23 @@ func (bot *Bot[T]) Updates(ctx context.Context) ([]tgapi.Update, error) {
 		bot.SetUpdateOffset(updates[len(updates)-1].UpdateID + 1)
 	}
 	return updates, err
+}
+
+// UpdatesIter fetches updates once and yields each update in order.
+//
+// If fetching updates fails, the iterator yields the error once with a zero
+// update and then stops.
+func (bot *Bot[T]) UpdatesIter(ctx context.Context) iter.Seq2[tgapi.Update, error] {
+	return func(yield func(tgapi.Update, error) bool) {
+		updates, err := bot.Updates(ctx)
+		if err != nil {
+			yield(tgapi.Update{}, err)
+			return
+		}
+		for _, u := range updates {
+			if !yield(u, nil) {
+				return
+			}
+		}
+	}
 }

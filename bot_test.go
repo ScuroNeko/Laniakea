@@ -24,12 +24,13 @@ func (f pollingRoundTripFunc) RoundTrip(req *http.Request) (*http.Response, erro
 
 type pollingRetryObserver struct {
 	recordingObserver
-	cancel context.CancelFunc
+	cancel      context.CancelFunc
+	cancelAfter int
 }
 
 func (o *pollingRetryObserver) OnPollingRetry(ctx context.Context, ev PollingRetryEvent) {
 	o.recordingObserver.OnPollingRetry(ctx, ev)
-	if o.cancel != nil {
+	if o.cancel != nil && (o.cancelAfter == 0 || len(o.retries) >= o.cancelAfter) {
 		o.cancel()
 	}
 }
@@ -507,6 +508,55 @@ func TestRunWithContextEmitsPollingRetryAndErrorEvents(t *testing.T) {
 	}
 	if got := observer.errors[0]; got.HandlerKind != HandlerPollingKind || got.HandlerName != "getUpdates" || got.Plugin != "bot" || got.Err == nil || got.UserFacing {
 		t.Fatalf("unexpected polling error event: %#v", got)
+	}
+}
+
+func TestRunWithContextPreservesPollingRetryBackoff(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	observer := &pollingRetryObserver{cancel: cancel, cancelAfter: 2}
+
+	client := &http.Client{
+		Transport: pollingRoundTripFunc(func(r *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(strings.NewReader(`{"ok":false,"error_code":500,"description":"boom"}`)),
+			}, nil
+		}),
+	}
+
+	api := tgapi.NewAPI(
+		tgapi.NewAPIOpts("token").
+			SetAPIURL("http://example.invalid").
+			SetHTTPClient(client),
+	)
+	defer func() {
+		_ = api.Close()
+	}()
+
+	bot := &Bot[NoData]{
+		logger:      sneklog.NewLogger(),
+		api:         api,
+		prefixes:    []string{"/"},
+		plugins:     []Plugin[NoData]{{name: "demo"}},
+		updateQueue: make(chan *tgapi.Update, 1),
+		maxWorkers:  1,
+		observer:    observer,
+	}
+
+	if err := bot.RunWithContext(ctx); err != nil {
+		t.Fatalf("RunWithContext returned error: %v", err)
+	}
+
+	if len(observer.retries) != 2 {
+		t.Fatalf("expected two polling retry events, got %d", len(observer.retries))
+	}
+	if got := observer.retries[0]; got.Attempt != 1 || got.Delay != time.Second {
+		t.Fatalf("unexpected first retry event: %#v", got)
+	}
+	if got := observer.retries[1]; got.Attempt != 2 || got.Delay != 2*time.Second {
+		t.Fatalf("unexpected second retry event: %#v", got)
 	}
 }
 

@@ -442,7 +442,7 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 			default:
 				updates, err := bot.Updates(ctx)
 				if err != nil {
-					if errors.Is(err, context.Canceled) {
+					if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 						return
 					}
 					bot.logger.Errorln("failed to fetch updates:", err)
