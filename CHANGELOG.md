@@ -5,6 +5,7 @@
 ### Added
 - Added `MsgContext.IsCallback()` and `MsgContext.HasPhoto()` helpers for callback-aware handler code.
 - Added `MsgContext.UpsertKeyboard(...)` and `MsgContext.UpsertKeyboardMarkdown(...)` helpers that edit callback messages, replace photo callback messages with a fresh chat message, and send a new chat message outside callback flow.
+- Added `CommandGroup`, `NewCommandGroup(...)`, `Plugin.CommandGroup(...)`, and `Plugin.AddCommandGroup(...)` helpers for registering prefixed command groups with shared middleware.
 
 ### Changed
 - Version metadata now reports the stable `v1.0.0` release instead of `v1.0.0-rc.16`.
@@ -15,6 +16,7 @@
 - Added regression coverage proving bot-level middleware blocks still complete the observer update lifecycle.
 - Added webhook runtime regression coverage for request enqueue through worker execution of a command handler.
 - Added regression coverage for inline callback keyboard upserts and callback target detection.
+- Added regression coverage for command group prefixing, middleware order, clone behavior, and plugin registration.
 
 ## v1.0.0-rc.16
 

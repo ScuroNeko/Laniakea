@@ -2,6 +2,7 @@ package laniakea
 
 import (
 	"encoding/json"
+	"maps"
 	"sync"
 )
 
@@ -109,6 +110,23 @@ func (s *Scene[T]) executeMessage(ctx *SceneContext, db T) (SceneResult, bool, e
 	}
 	result, err := s.message(ctx, db)
 	return result, true, err
+}
+
+func (s *Scene[T]) clone() *Scene[T] {
+	if s == nil {
+		return nil
+	}
+
+	cloned := *s
+	cloned.steps = make(map[string]SceneHandler[T], len(s.steps))
+	cloned.commands = make(map[string]SceneHandler[T], len(s.commands))
+	cloned.payloads = make(map[string]SceneHandler[T], len(s.payloads))
+
+	maps.Copy(cloned.steps, s.steps)
+	maps.Copy(cloned.commands, s.commands)
+	maps.Copy(cloned.payloads, s.payloads)
+
+	return &cloned
 }
 
 // SceneSession stores the active scene state for one session key.

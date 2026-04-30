@@ -176,43 +176,15 @@ func clonePlugin[T AppData](p *Plugin[T]) Plugin[T] {
 	}
 
 	for name, command := range p.commands {
-		cloned.commands[name] = cloneCommand(command)
+		cloned.commands[name] = command.clone()
 	}
 	for name, command := range p.payloads {
-		cloned.payloads[name] = cloneCommand(command)
+		cloned.payloads[name] = command.clone()
 	}
 	for name, scene := range p.scenes {
-		cloned.scenes[name] = cloneScene(scene)
+		cloned.scenes[name] = scene.clone()
 	}
 	maps.Copy(cloned.handlers, p.handlers)
 
 	return cloned
-}
-
-func cloneCommand[T AppData](command *Command[T]) *Command[T] {
-	if command == nil {
-		return nil
-	}
-
-	cloned := *command
-	cloned.args = append(extypes.Slice[CommandArg](nil), command.args...)
-	cloned.middlewares = append(extypes.Slice[Middleware[T]](nil), command.middlewares...)
-	return &cloned
-}
-
-func cloneScene[T AppData](scene *Scene[T]) *Scene[T] {
-	if scene == nil {
-		return nil
-	}
-
-	cloned := *scene
-	cloned.steps = make(map[string]SceneHandler[T], len(scene.steps))
-	cloned.commands = make(map[string]SceneHandler[T], len(scene.commands))
-	cloned.payloads = make(map[string]SceneHandler[T], len(scene.payloads))
-
-	maps.Copy(cloned.steps, scene.steps)
-	maps.Copy(cloned.commands, scene.commands)
-	maps.Copy(cloned.payloads, scene.payloads)
-
-	return &cloned
 }

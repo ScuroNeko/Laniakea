@@ -2,159 +2,12 @@ package laniakea
 
 import (
 	"errors"
-	"regexp"
 
 	"git.scuroneko.dev/scuroneko/extypes"
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 	"git.scuroneko.dev/scuroneko/laniakea/utils"
 	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
-
-// CommandValueType defines the expected type of command argument.
-type CommandValueType string
-
-const (
-	// CommandValueStringType expects any non-empty string.
-	CommandValueStringType CommandValueType = "string"
-	// CommandValueIntType expects a decimal integer (digits only).
-	CommandValueIntType CommandValueType = "int"
-	// CommandValueBoolType expects a exact "true" or "false".
-	CommandValueBoolType CommandValueType = "bool"
-	// CommandValueAnyType accepts any input without validation.
-	CommandValueAnyType CommandValueType = "any"
-)
-
-var (
-	// CommandRegexInt matches one or more digits.
-	CommandRegexInt = regexp.MustCompile(`^\d+$`)
-	// CommandRegexString matches any non-empty string.
-	CommandRegexString = regexp.MustCompile(`^.+$`)
-	// CommandRegexBool matches true or false.
-	CommandRegexBool = regexp.MustCompile(`^(true|false)$`)
-)
-
-// ErrCmdArgCountMismatch is returned when the number of provided arguments
-// is less than the number of required arguments.
-var ErrCmdArgCountMismatch = errors.New("command arg count mismatch")
-
-// ErrCmdArgRegexpMismatch is returned when an argument fails regex validation.
-var ErrCmdArgRegexpMismatch = errors.New("command arg regexp mismatch")
-
-var (
-	errCommandNotFound = errors.New("command not found")
-	errPayloadNotFound = errors.New("payload not found")
-)
-
-// CommandArg defines a single argument for a command, including type, regex,
-// and whether it is required.
-type CommandArg struct {
-	valueType CommandValueType // Type of expected value
-	text      string           // Human-readable description (not used in validation)
-	regex     *regexp.Regexp   // Regex used to validate input
-	required  bool             // Whether this argument must be provided
-}
-
-// NewCommandArg creates a new CommandArg with the given text and type.
-// Uses a default regex based on the type (string or int).
-// For CommandValueAnyType, no validation is performed.
-func NewCommandArg(text string) CommandArg {
-	return CommandArg{CommandValueAnyType, text, CommandRegexString, false}
-}
-
-// SetValueType sets expected value type and switches built-in validation regexp.
-func (c CommandArg) SetValueType(t CommandValueType) CommandArg {
-	regex := CommandRegexString
-	switch t {
-	case CommandValueIntType:
-		regex = CommandRegexInt
-	case CommandValueBoolType:
-		regex = CommandRegexBool
-	case CommandValueAnyType:
-		regex = nil // Skip validation
-	}
-	c.valueType = t
-	c.regex = regex
-	return c
-}
-
-// SetRequired marks this argument as required.
-// Returns the receiver for method chaining.
-func (c CommandArg) SetRequired() CommandArg {
-	c.required = true
-	return c
-}
-
-// CommandExecutor is the function type that executes a command.
-// It receives the message context and injected application data.
-// Returning a non-nil error routes it through the bot's error handler.
-type CommandExecutor[T AppData] func(ctx *MsgContext, dbContext T) error
-
-// Command represents a bot command with arguments, description, and executor.
-// Can be registered in a Plugin and optionally skipped from auto-generation.
-type Command[T AppData] struct {
-	command     string                       // The command trigger (e.g., "/start")
-	description string                       // Human-readable description for help
-	exec        CommandExecutor[T]           // Function to execute when command is triggered
-	args        extypes.Slice[CommandArg]    // List of expected arguments
-	middlewares extypes.Slice[Middleware[T]] // Optional middleware chain
-	skipAutoCmd bool                         // If true, this command won't be auto-added to help menus
-}
-
-// NewCommand creates a new Command with the given executor, command string, and arguments.
-// The command string should not include the leading slash (e.g., "start", not "/start").
-func NewCommand[T any](exec CommandExecutor[T], command string, args ...CommandArg) *Command[T] {
-	return &Command[T]{command, "", exec, args, make(extypes.Slice[Middleware[T]], 0), false}
-}
-
-// NewPayload creates a new Command with the given executor, command payload string, and arguments.
-// The command string can contain any symbols, but it is recommended to use only "_", "-", ".", a-z, A-Z, and 0-9.
-func NewPayload[T any](exec CommandExecutor[T], command string, args ...CommandArg) *Command[T] {
-	return &Command[T]{command, "", exec, args, make(extypes.Slice[Middleware[T]], 0), false}
-}
-
-// Use adds a middleware to the command's execution chain.
-// Middlewares are executed in the order they are added.
-func (c *Command[T]) Use(m Middleware[T]) *Command[T] {
-	c.middlewares = c.middlewares.Push(m)
-	return c
-}
-
-// SetDescription sets the human-readable description of the command.
-func (c *Command[T]) SetDescription(desc string) *Command[T] {
-	c.description = desc
-	return c
-}
-
-// SkipCommandAutoGen marks this command to be excluded from auto-generated help menus.
-func (c *Command[T]) SkipCommandAutoGen() *Command[T] {
-	c.skipAutoCmd = true
-	return c
-}
-
-// Internal helper that validates provided command arguments.
-func (c *Command[T]) validateArgs(args []string) error {
-	for i := range c.args.Len() {
-		if i >= len(args) && c.args.Get(i).required {
-			return ErrCmdArgCountMismatch
-		}
-	}
-
-	// Validate each argument against its regex
-	for i, arg := range args {
-		if i >= c.args.Len() {
-			// Extra arguments beyond defined args are ignored
-			break
-		}
-		cmdArg := c.args.Get(i)
-		if cmdArg.regex == nil {
-			continue // Skip validation for CommandValueAnyType
-		}
-		if !cmdArg.regex.MatchString(arg) {
-			return ErrCmdArgRegexpMismatch
-		}
-	}
-	return nil
-}
 
 // Plugin represents a collection of commands and payloads (e.g., callback handlers),
 // with shared middleware and configuration.
@@ -222,6 +75,36 @@ func (p *Plugin[T]) AddPayload(command *Command[T]) *Plugin[T] {
 		return p
 	}
 	p.payloads[command.command] = command
+	return p
+}
+
+// CommandGroup configures and registers a prefixed command group.
+func (p *Plugin[T]) CommandGroup(prefix string, groupFunc func(group *CommandGroup[T])) *Plugin[T] {
+	if groupFunc == nil {
+		return p
+	}
+	group := NewCommandGroup[T](prefix)
+	groupFunc(group)
+	if len(group.commands) == 0 {
+		return p
+	}
+	for _, cmd := range group.Build() {
+		p.AddCommand(cmd)
+	}
+	return p
+}
+
+// AddCommandGroup registers every command built by group.
+func (p *Plugin[T]) AddCommandGroup(group *CommandGroup[T]) *Plugin[T] {
+	if group == nil {
+		return p
+	}
+	if len(group.commands) == 0 {
+		return p
+	}
+	for _, cmd := range group.Build() {
+		p.AddCommand(cmd)
+	}
 	return p
 }
 
