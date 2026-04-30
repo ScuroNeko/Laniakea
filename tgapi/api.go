@@ -83,10 +83,10 @@ func (opts *APIOpts) SetLimiter(limiter *utils.RateLimiter) *APIOpts {
 	return opts
 }
 
-// SetLimiterDrop enables "drop mode" for rate limiting.
+// SetDropRateLimitOverflow enables "drop mode" for rate limiting.
 // If true, requests exceeding limits return ErrDropOverflow immediately.
 // If false, requests block until capacity is available.
-func (opts *APIOpts) SetLimiterDrop(b bool) *APIOpts {
+func (opts *APIOpts) SetDropRateLimitOverflow(b bool) *APIOpts {
 	opts.dropOverflowLimit = b
 	return opts
 }

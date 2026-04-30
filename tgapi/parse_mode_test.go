@@ -25,7 +25,7 @@ func TestParseModeStillSerializesExplicitModes(t *testing.T) {
 	data, err := json.Marshal(SendMessage{
 		ChatID:    42,
 		Text:      "hello",
-		ParseMode: ParseMDV2,
+		ParseMode: ParseMarkdownV2,
 	})
 	if err != nil {
 		t.Fatalf("Marshal returned error: %v", err)

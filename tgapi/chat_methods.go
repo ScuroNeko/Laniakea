@@ -652,15 +652,15 @@ func (api *API) GetChatAdministratorsWithContext(ctx context.Context, params Get
 	return req.DoWithContext(ctx, api)
 }
 
-// GetChatMembersCount holds parameters for the getChatMemberCount method.
+// GetChatMemberCount holds parameters for the getChatMemberCount method.
 // See https://core.telegram.org/bots/api#getchatmembercount
-type GetChatMembersCount struct {
+type GetChatMemberCount struct {
 	ChatID int64 `json:"chat_id"`
 }
 
 // GetChatMemberCount returns the number of members in a chat.
 // See https://core.telegram.org/bots/api#getchatmembercount
-func (api *API) GetChatMemberCount(params GetChatMembersCount) (int, error) {
+func (api *API) GetChatMemberCount(params GetChatMemberCount) (int, error) {
 	req := NewRequestWithChatID[int]("getChatMemberCount", params, params.ChatID)
 	return req.Do(api)
 }
@@ -668,7 +668,7 @@ func (api *API) GetChatMemberCount(params GetChatMembersCount) (int, error) {
 // GetChatMemberCountWithContext is the context-aware variant of GetChatMemberCount.
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#getchatmembercount
-func (api *API) GetChatMemberCountWithContext(ctx context.Context, params GetChatMembersCount) (int, error) {
+func (api *API) GetChatMemberCountWithContext(ctx context.Context, params GetChatMemberCount) (int, error) {
 	req := NewRequestWithChatID[int]("getChatMemberCount", params, params.ChatID)
 	return req.DoWithContext(ctx, api)
 }

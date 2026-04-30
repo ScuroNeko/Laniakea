@@ -10,8 +10,8 @@ import (
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
 
-// CmdRegexp matches command names allowed for Telegram command registration.
-var CmdRegexp = regexp.MustCompile("^[_a-z0-9]{1,32}$")
+// cmdRegexp matches command names allowed for Telegram command registration.
+var cmdRegexp = regexp.MustCompile("^[_a-z0-9]{1,32}$")
 
 // ErrTooManyCommands is returned when the total number of registered commands
 // exceeds Telegram's limit of 100 bot commands per bot.
@@ -46,7 +46,7 @@ func generateBotCommand[T any](cmd *Command[T]) tgapi.BotCommand {
 }
 
 // Internal helper to validate Telegram command names.
-func checkCmdRegex(cmd string) bool { return CmdRegexp.MatchString(cmd) }
+func checkCmdRegex(cmd string) bool { return cmdRegexp.MatchString(cmd) }
 
 // Internal helper to collect non-skipped, valid commands from one plugin.
 func gatherCommandsForPlugin[T any](pl Plugin[T]) []tgapi.BotCommand {

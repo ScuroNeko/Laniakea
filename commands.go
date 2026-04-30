@@ -2,7 +2,6 @@ package laniakea
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 
 	"git.scuroneko.dev/scuroneko/extypes"
@@ -12,14 +11,14 @@ import (
 type CommandValueType string
 
 const (
-	// CommandValueStringType expects any non-empty string.
-	CommandValueStringType CommandValueType = "string"
-	// CommandValueIntType expects a decimal integer (digits only).
-	CommandValueIntType CommandValueType = "int"
-	// CommandValueBoolType expects a exact "true" or "false".
-	CommandValueBoolType CommandValueType = "bool"
-	// CommandValueAnyType accepts any input without validation.
-	CommandValueAnyType CommandValueType = "any"
+	// CommandValueString expects any non-empty string.
+	CommandValueString CommandValueType = "string"
+	// CommandValueInt expects a decimal integer (digits only).
+	CommandValueInt CommandValueType = "int"
+	// CommandValueBool expects an exact "true" or "false".
+	CommandValueBool CommandValueType = "bool"
+	// CommandValueAny accepts any input without validation.
+	CommandValueAny CommandValueType = "any"
 )
 
 var (
@@ -52,22 +51,23 @@ type CommandArg struct {
 	required  bool             // Whether this argument must be provided
 }
 
-// NewCommandArg creates a new CommandArg with the given text and type.
-// Uses a default regex based on the type (string or int).
-// For CommandValueAnyType, no validation is performed.
+// NewCommandArg creates an optional argument without value validation.
 func NewCommandArg(text string) CommandArg {
-	return CommandArg{CommandValueAnyType, text, CommandRegexString, false}
+	return CommandArg{CommandValueAny, text, nil, false}
 }
 
 // SetValueType sets expected value type and switches built-in validation regexp.
 func (c CommandArg) SetValueType(t CommandValueType) CommandArg {
-	regex := CommandRegexString
+	var regex *regexp.Regexp
 	switch t {
-	case CommandValueIntType:
+	case CommandValueInt:
 		regex = CommandRegexInt
-	case CommandValueBoolType:
+	case CommandValueBool:
 		regex = CommandRegexBool
-	case CommandValueAnyType:
+	case CommandValueString:
+		regex = CommandRegexString
+	case CommandValueAny:
+	default:
 		regex = nil // Skip validation
 	}
 	c.valueType = t
@@ -98,15 +98,15 @@ type Command[T AppData] struct {
 	skipAutoCmd bool                         // If true, this command won't be auto-added to help menus
 }
 
-// NewCommand creates a new Command with the given executor, command string, and arguments.
+// NewCommand creates a new Command with the given command string, executor, and arguments.
 // The command string should not include the leading slash (e.g., "start", not "/start").
-func NewCommand[T any](exec CommandExecutor[T], command string, args ...CommandArg) *Command[T] {
+func NewCommand[T any](command string, exec CommandExecutor[T], args ...CommandArg) *Command[T] {
 	return &Command[T]{command, "", exec, args, make(extypes.Slice[Middleware[T]], 0), false}
 }
 
-// NewPayload creates a new Command with the given executor, command payload string, and arguments.
+// NewPayload creates a new callback payload handler command.
 // The command string can contain any symbols, but it is recommended to use only "_", "-", ".", a-z, A-Z, and 0-9.
-func NewPayload[T any](exec CommandExecutor[T], command string, args ...CommandArg) *Command[T] {
+func NewPayload[T any](command string, exec CommandExecutor[T], args ...CommandArg) *Command[T] {
 	return &Command[T]{command, "", exec, args, make(extypes.Slice[Middleware[T]], 0), false}
 }
 
@@ -145,7 +145,7 @@ func (c *Command[T]) validateArgs(args []string) error {
 		}
 		cmdArg := c.args.Get(i)
 		if cmdArg.regex == nil {
-			continue // Skip validation for CommandValueAnyType
+			continue // Skip validation for CommandValueAny.
 		}
 		if !cmdArg.regex.MatchString(arg) {
 			return ErrCmdArgRegexpMismatch
@@ -167,9 +167,7 @@ func (c *Command[T]) clone() *Command[T] {
 
 // CommandGroup builds a set of commands with a shared name prefix and middleware.
 type CommandGroup[T any] struct {
-	prefix    string
-	separator string
-
+	prefix      string
 	middlewares extypes.Slice[Middleware[T]]
 	commands    extypes.Slice[*Command[T]]
 }
@@ -177,17 +175,11 @@ type CommandGroup[T any] struct {
 // NewCommandGroup creates a command group that prefixes every added command.
 func NewCommandGroup[T any](prefix string) *CommandGroup[T] {
 	return &CommandGroup[T]{
-		prefix: prefix, separator: "",
+		prefix: prefix,
 
 		middlewares: make([]Middleware[T], 0),
 		commands:    make([]*Command[T], 0),
 	}
-}
-
-// SetSeparator sets the text inserted between the group prefix and command name.
-func (g *CommandGroup[T]) SetSeparator(separator string) *CommandGroup[T] {
-	g.separator = separator
-	return g
 }
 
 // Use adds middleware that runs before each command's own middleware.
@@ -202,7 +194,7 @@ func (g *CommandGroup[T]) AddCommand(cmd *Command[T]) *CommandGroup[T] {
 		return g
 	}
 	newCmd := cmd.clone()
-	newCmd.command = fmt.Sprintf("%s%s%s", g.prefix, g.separator, cmd.command)
+	newCmd.command = g.prefix + cmd.command
 	g.commands = g.commands.Push(newCmd)
 	return g
 }

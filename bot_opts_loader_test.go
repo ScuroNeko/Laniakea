@@ -13,21 +13,21 @@ import (
 func TestBotOptsFileJSONCodecRoundTrip(t *testing.T) {
 	codec := BotOptsFileJSONCodec{}
 	want := &BotOpts{
-		Token:             "TOKEN",
-		UpdateTypes:       []tgapi.UpdateType{tgapi.UpdateTypeMessage, tgapi.UpdateTypeCallbackQuery},
-		Debug:             true,
-		ErrorTemplate:     "Error: %s",
-		Prefixes:          []string{"/", "!"},
-		LoggerBasePath:    "/tmp/logs",
-		UseRequestLogger:  true,
-		WriteToFile:       true,
-		UseTestServer:     true,
-		APIURL:            "https://api.example.invalid",
-		RateLimit:         42,
-		DropRLOverflow:    true,
-		StrictPayloadType: true,
-		MaxWorkers:        64,
-		FileConfigVersion: ConfigVersion,
+		Token:                 "TOKEN",
+		UpdateTypes:           []tgapi.UpdateType{tgapi.UpdateTypeMessage, tgapi.UpdateTypeCallbackQuery},
+		Debug:                 true,
+		ErrorTemplate:         "Error: %s",
+		Prefixes:              []string{"/", "!"},
+		LoggerBasePath:        "/tmp/logs",
+		UseRequestLogger:      true,
+		WriteToFile:           true,
+		UseTestServer:         true,
+		APIURL:                "https://api.example.invalid",
+		RateLimit:             42,
+		DropRateLimitOverflow: true,
+		StrictPayloadType:     true,
+		MaxWorkers:            64,
+		FileConfigVersion:     ConfigVersion,
 	}
 
 	data, err := codec.ToBytes(want)

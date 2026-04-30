@@ -54,9 +54,9 @@ type BotOpts struct {
 	// Telegram allows up to 30 req/s for most bots. Defaults to 30.
 	RateLimit int
 
-	// DropRLOverflow drops incoming updates when rate limit is exceeded instead of queuing.
+	// DropRateLimitOverflow drops incoming updates when rate limit is exceeded instead of queuing.
 	// Use this to prioritize responsiveness over reliability.
-	DropRLOverflow bool
+	DropRateLimitOverflow bool
 
 	// StrictPayloadType disables callback payload fallback decoding.
 	// When enabled, the bot accepts only the configured default payload type.
@@ -135,9 +135,9 @@ func LoadOptsFromEnv() *BotOpts {
 		UseTestServer: os.Getenv("USE_TEST_SERVER") == "true",
 		APIURL:        os.Getenv("API_URL"),
 
-		RateLimit:         rateLimit,
-		DropRLOverflow:    os.Getenv("DROP_RL_OVERFLOW") == "true",
-		StrictPayloadType: os.Getenv("STRICT_PAYLOAD_TYPE") == "true",
+		RateLimit:             rateLimit,
+		DropRateLimitOverflow: os.Getenv("DROP_RL_OVERFLOW") == "true",
+		StrictPayloadType:     os.Getenv("STRICT_PAYLOAD_TYPE") == "true",
 
 		MaxWorkers:        maxWorkers,
 		FileConfigVersion: 0,
@@ -223,10 +223,10 @@ func (opts *BotOpts) SetRateLimit(limit int) *BotOpts {
 	return opts
 }
 
-// SetDropRLOverflow drops incoming updates when rate limit is exceeded instead of queuing.
+// SetDropRateLimitOverflow drops incoming updates when rate limit is exceeded instead of queuing.
 // Use this to prioritize responsiveness over reliability. Default is false.
-func (opts *BotOpts) SetDropRLOverflow(drop bool) *BotOpts {
-	opts.DropRLOverflow = drop
+func (opts *BotOpts) SetDropRateLimitOverflow(drop bool) *BotOpts {
+	opts.DropRateLimitOverflow = drop
 	return opts
 }
 

@@ -362,7 +362,7 @@ type MessageEntity struct {
 	Language      string `json:"language,omitempty"`
 	CustomEmojiID string `json:"custom_emoji_id,omitempty"`
 
-	UnixTime       int    `json:"unix_time,omitempty"`
+	UnixTime       int64  `json:"unix_time,omitempty"`
 	DateTimeFormat string `json:"date_time_format,omitempty"`
 }
 

@@ -59,7 +59,7 @@ var (
 	ErrNoPrefixes = errors.New("no prefixes defined")
 	// ErrNoPlugins reports that the bot was started without any registered plugins.
 	ErrNoPlugins = errors.New("no plugins defined")
-	// ErrBotAlreadyRun reports that Run, RunWithContext, or RunWebHookWithContext was called more than once.
+	// ErrBotAlreadyRun reports that Run, RunWithContext, or RunWebhookWithContext was called more than once.
 	ErrBotAlreadyRun = errors.New("bot can only be run once")
 
 	// ErrTokenRequired reports that BotOpts.Token was empty.
@@ -78,8 +78,8 @@ var (
 //   - Localization and draft message support
 //
 // Runtime accessors are safe for concurrent use. Configure the bot before Run,
-// RunWithContext, or RunWebHookWithContext.
-// A Bot is single-use: after Run, RunWithContext, or RunWebHookWithContext returns,
+// RunWithContext, or RunWebhookWithContext.
+// A Bot is single-use: after Run, RunWithContext, or RunWebhookWithContext returns,
 // create a new Bot for the next session.
 type Bot[T AppData] struct {
 	token             string
@@ -95,7 +95,7 @@ type Bot[T AppData] struct {
 	logger        *sneklog.Logger // Main bot logger (JSON stdout + optional file)
 	requestLogger *sneklog.Logger // Optional request-level API logging
 	useReqLogger  bool
-	webHookLogger *sneklog.Logger                // Webhook logger. Available only after Bot.RunWebHookWithContext.
+	webhookLogger *sneklog.Logger                // Webhook logger. Available only after Bot.RunWebhookWithContext.
 	extraLoggers  extypes.Slice[*sneklog.Logger] // API, Uploader, and custom loggers
 
 	plugins     []Plugin[T]     // Command/event handlers
@@ -164,7 +164,7 @@ func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
 		SetAPIURL(opts.APIURL).
 		UseTestServer(opts.UseTestServer).
 		SetLimiter(limiter).
-		SetLimiterDrop(opts.DropRLOverflow).
+		SetDropRateLimitOverflow(opts.DropRateLimitOverflow).
 		SetLogFormat(opts.LogFormat).
 		SetLogFormatter(opts.LogFormatter)
 	api := tgapi.NewAPI(apiOpts)
@@ -256,11 +256,15 @@ func (bot *Bot[T]) SetRequestLogger(l *sneklog.Logger) *Bot[T] {
 	return bot
 }
 
-// SetWebHookLogger replaces the webhook logger.
-func (bot *Bot[T]) SetWebHookLogger(l *sneklog.Logger) *Bot[T] {
-	bot.webHookLogger = l
+// SetWebhookLogger replaces the webhook logger.
+func (bot *Bot[T]) SetWebhookLogger(l *sneklog.Logger) *Bot[T] {
+	bot.webhookLogger = l
 	return bot
 }
+
+func (bot *Bot[T]) GetAPI() *tgapi.API { return bot.api }
+
+func (bot *Bot[T]) GetUploader() *tgapi.Uploader { return bot.uploader }
 
 // Close gracefully shuts down bot-owned resources.
 //
@@ -272,7 +276,7 @@ func (bot *Bot[T]) SetWebHookLogger(l *sneklog.Logger) *Bot[T] {
 //   - RequestLogger (if enabled)
 //   - Main logger
 //
-// RunWithContext and RunWebHookWithContext do not call Close automatically.
+// RunWithContext and RunWebhookWithContext do not call Close automatically.
 // The caller is responsible for invoking Close after runtime returns to release
 // these resources.
 //
@@ -294,11 +298,11 @@ func (bot *Bot[T]) Close() error {
 			e = append(e, err)
 		}
 	}
-	if bot.webHookLogger != nil {
-		if err := bot.webHookLogger.Close(); err != nil {
+	if bot.webhookLogger != nil {
+		if err := bot.webhookLogger.Close(); err != nil {
 			logCloseErr(err)
 		}
-		bot.webHookLogger = nil
+		bot.webhookLogger = nil
 	}
 	if bot.uploader != nil {
 		if err := bot.uploader.Close(); err != nil {
@@ -354,8 +358,8 @@ func (bot *Bot[T]) GetLogger() *sneklog.Logger { return bot.logger }
 // GetRequestLogger returns the request-level logger, if configured.
 func (bot *Bot[T]) GetRequestLogger() *sneklog.Logger { return bot.requestLogger }
 
-// GetWebHookLogger returns the webhook logger, if configured.
-func (bot *Bot[T]) GetWebHookLogger() *sneklog.Logger { return bot.webHookLogger }
+// GetWebhookLogger returns the webhook logger, if configured.
+func (bot *Bot[T]) GetWebhookLogger() *sneklog.Logger { return bot.webhookLogger }
 
 // GetLoggerLevel returns the effective log level derived from the bot's debug
 // flag.
@@ -387,7 +391,7 @@ func (bot *Bot[T]) L10n(lang, key string) string {
 //   - Waits for registered runners to exit
 //
 // If you are switching an existing deployment from webhook delivery to polling,
-// delete the current webhook first with CloseWebHook or tgapi.DeleteWebhook.
+// delete the current webhook first with CloseWebhook or tgapi.DeleteWebhook.
 // Telegram keeps webhook delivery active until the webhook is removed.
 //
 // RunWithContext does not close API, uploader, or logger resources on return.
@@ -414,13 +418,13 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 		}
 		bot.requestLogger = nil
 	}
-	if bot.webHookLogger != nil {
-		bot.logger.Warnln("Bot#webHookLogger present. You shouldn't set this, if ran in Long Polling mode!")
-		err := bot.webHookLogger.Close()
+	if bot.webhookLogger != nil {
+		bot.logger.Warnln("Bot#webhookLogger present. You shouldn't set this, if ran in Long Polling mode!")
+		err := bot.webhookLogger.Close()
 		if err != nil {
 			bot.logger.Errorln(err)
 		}
-		bot.webHookLogger = nil
+		bot.webhookLogger = nil
 	}
 
 	bot.ExecRunners(ctx)

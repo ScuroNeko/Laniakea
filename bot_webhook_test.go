@@ -36,10 +36,10 @@ func TestEnqueueUpdateCopiesValue(t *testing.T) {
 func TestUpdateHandlerEnqueuesUpdate(t *testing.T) {
 	bot := &Bot[NoData]{
 		updateQueue:   make(chan *tgapi.Update, 1),
-		webHookLogger: sneklog.NewLogger(),
+		webhookLogger: sneklog.NewLogger(),
 	}
 	t.Cleanup(func() {
-		_ = bot.webHookLogger.Close()
+		_ = bot.webhookLogger.Close()
 	})
 
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"update_id":7,"message":{"message_id":1,"date":1,"chat":{"id":1,"type":"private"},"text":"/start"}}`))
@@ -94,7 +94,7 @@ func TestRunWebhookRuntimeExecutesRunners(t *testing.T) {
 			NewRunner("runner", func(bot *Bot[NoData]) error {
 				calls.Add(1)
 				return nil
-			}).Onetime(true).Async(false),
+			}).Once(true).Async(false),
 		},
 	}
 	t.Cleanup(func() {
@@ -109,17 +109,40 @@ func TestRunWebhookRuntimeExecutesRunners(t *testing.T) {
 	}
 }
 
+func TestRunWebhookRuntimePreservesConfiguredWebhookLogger(t *testing.T) {
+	webhookLogger := sneklog.NewLogger()
+	bot := &Bot[NoData]{
+		logger:        sneklog.NewLogger(),
+		webhookLogger: webhookLogger,
+		updateQueue:   make(chan *tgapi.Update, 1),
+		maxWorkers:    1,
+	}
+	t.Cleanup(func() {
+		_ = bot.logger.Close()
+		if bot.webhookLogger != nil {
+			_ = bot.webhookLogger.Close()
+		}
+	})
+
+	if err := bot.runWebhookRuntime(context.Background(), func(context.Context) error { return nil }); err != nil {
+		t.Fatalf("runWebhookRuntime returned error: %v", err)
+	}
+	if bot.webhookLogger != webhookLogger {
+		t.Fatal("expected runWebhookRuntime to preserve configured webhook logger")
+	}
+}
+
 func TestRunWebhookRuntimeProcessesEnqueuedUpdate(t *testing.T) {
 	var calls atomic.Int32
 	plugin := NewPlugin[NoData]("demo")
-	plugin.NewCommand(func(ctx *MsgContext, db NoData) error {
+	plugin.Command("start", func(ctx *MsgContext, db NoData) error {
 		calls.Add(1)
 		return nil
-	}, "start")
+	})
 
 	bot := &Bot[NoData]{
 		logger:        sneklog.NewLogger(),
-		webHookLogger: sneklog.NewLogger(),
+		webhookLogger: sneklog.NewLogger(),
 		prefixes:      []string{"/"},
 		plugins:       []Plugin[NoData]{*plugin},
 		updateQueue:   make(chan *tgapi.Update, 1),
@@ -127,7 +150,7 @@ func TestRunWebhookRuntimeProcessesEnqueuedUpdate(t *testing.T) {
 	}
 	t.Cleanup(func() {
 		_ = bot.logger.Close()
-		_ = bot.webHookLogger.Close()
+		_ = bot.webhookLogger.Close()
 	})
 
 	err := bot.runWebhookRuntime(context.Background(), func(ctx context.Context) error {
@@ -162,7 +185,7 @@ func TestWebhookAllowedUpdatesUsesBotUpdateTypesByDefault(t *testing.T) {
 	bot := &Bot[NoData]{
 		updateTypes: []tgapi.UpdateType{tgapi.UpdateTypeMessage, tgapi.UpdateTypeCallbackQuery},
 	}
-	opts := NewBotWebHookOpts()
+	opts := NewBotWebhookOpts()
 
 	got := bot.webhookAllowedUpdates(opts)
 	if len(got) != 2 {
@@ -235,10 +258,10 @@ func TestValidateWebhookTLSFiles(t *testing.T) {
 func TestUpdateHandlerRejectsOversizedBody(t *testing.T) {
 	bot := &Bot[NoData]{
 		updateQueue:   make(chan *tgapi.Update, 1),
-		webHookLogger: sneklog.NewLogger(),
+		webhookLogger: sneklog.NewLogger(),
 	}
 	t.Cleanup(func() {
-		_ = bot.webHookLogger.Close()
+		_ = bot.webhookLogger.Close()
 	})
 
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(strings.Repeat("a", (256<<10)+1)))
@@ -272,13 +295,13 @@ func TestStatusHandlerRequiresMatchingSecret(t *testing.T) {
 
 	bot := &Bot[NoData]{
 		api:           api,
-		webHookLogger: sneklog.NewLogger(),
+		webhookLogger: sneklog.NewLogger(),
 	}
 	t.Cleanup(func() {
-		_ = bot.webHookLogger.Close()
+		_ = bot.webhookLogger.Close()
 	})
 
-	handler := statusHandler(bot, &BotWebHookOpts{SecretToken: "secret"})
+	handler := statusHandler(bot, &BotWebhookOpts{SecretToken: "secret"})
 
 	tests := []struct {
 		name       string
@@ -308,14 +331,14 @@ func TestStatusHandlerRequiresMatchingSecret(t *testing.T) {
 	}
 }
 
-func TestRunWebHookWithContextRejectsInvalidTLSFilesBeforeRemoteSetup(t *testing.T) {
+func TestRunWebhookWithContextRejectsInvalidTLSFilesBeforeRemoteSetup(t *testing.T) {
 	bot := &Bot[NoData]{
 		prefixes: []string{"/"},
 		plugins:  []Plugin[NoData]{{name: "demo"}},
 	}
-	opts := NewBotWebHookOpts().SetURL("https://bot.example.com")
+	opts := NewBotWebhookOpts().SetURL("https://bot.example.com")
 
-	err := bot.RunWebHookWithContext(context.Background(), opts, "cert.pem")
+	err := bot.RunWebhookWithContext(context.Background(), opts, "cert.pem")
 	if err == nil {
 		t.Fatal("expected tls validation error, got nil")
 	}
@@ -324,16 +347,16 @@ func TestRunWebHookWithContextRejectsInvalidTLSFilesBeforeRemoteSetup(t *testing
 	}
 }
 
-func TestRunWebHookWithContextRequiresSecretWhenStatusPathEnabled(t *testing.T) {
+func TestRunWebhookWithContextRequiresSecretWhenStatusPathEnabled(t *testing.T) {
 	bot := &Bot[NoData]{
 		prefixes: []string{"/"},
 		plugins:  []Plugin[NoData]{{name: "demo"}},
 	}
-	opts := NewBotWebHookOpts().
+	opts := NewBotWebhookOpts().
 		SetURL("https://bot.example.com").
 		SetUseStatusPath(true)
 
-	err := bot.RunWebHookWithContext(context.Background(), opts)
+	err := bot.RunWebhookWithContext(context.Background(), opts)
 	if err == nil {
 		t.Fatal("expected status-path secret validation error, got nil")
 	}

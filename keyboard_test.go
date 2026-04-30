@@ -31,7 +31,7 @@ func TestInlineKeyboardWrapsRowsAndEncodesJSONPayloads(t *testing.T) {
 func TestInlineKeyboardBuilderPreservesConfiguredButtonFields(t *testing.T) {
 	kb := NewInlineKeyboardBase64(3).
 		AddButton(
-			NewInlineKbButton("Docs").
+			NewInlineKeyboardButton("Docs").
 				SetStyle(ButtonStylePrimary).
 				SetURL("https://example.test"),
 		)

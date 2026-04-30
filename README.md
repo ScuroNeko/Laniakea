@@ -23,7 +23,7 @@ A lightweight, easy-to-use, and performant Telegram Bot API wrapper for Go. It s
 *   **Built-in Rate Limiting:** Protect your bot from hitting Telegram API limits (supports `retry_after` handling).
 *   **Context-Aware:** Pass custom application data or state contexts to your handlers.
 *   **Configurable API:** Mix `Set...` and `Add...` helpers to configure bots clearly (for example, `bot.SetErrorTemplate(...).AddPlugins(...)`).
-*   **Polling and Webhook Runtime:** Run bots through long polling with `Run()` / `RunWithContext(...)` or through a bot-owned webhook server with `RunWebHookWithContext(...)`.
+*   **Polling and Webhook Runtime:** Run bots through long polling with `Run()` / `RunWithContext(...)` or through a bot-owned webhook server with `RunWebhookWithContext(...)`.
 
 ---
 
@@ -80,15 +80,15 @@ func main() {
 	p := laniakea.NewPlugin[laniakea.NoData]("ping")
 
 	// 4. Add a command to the plugin.
-	//    p.NewCommand(echo, "echo") creates a command that triggers the 'echo' function on the "/echo" command.
-	p.AddCommand(p.NewCommand(echo, "echo"))
+	//    p.Command("echo", echo) creates a command that triggers the 'echo' function on the "/echo" command.
+	p.Command("echo", echo)
 
 	// 5. Add another command using an anonymous function (closure).
 	//    This command simply replies "Pong" when the user sends "/ping".
-	p.AddCommand(p.NewCommand(func(ctx *laniakea.MsgContext, data laniakea.NoData) error {
+	p.Command("ping", func(ctx *laniakea.MsgContext, data laniakea.NoData) error {
 		ctx.Answer("Pong")
 		return nil
-	}, "ping"))
+	})
 
 	// 6. Configure the bot with a custom error template and add the plugin.
 	//    SetErrorTemplate sets a format string for errors (where %s will be replaced by the actual error).
@@ -112,13 +112,13 @@ func main() {
 1. `BotOpts`: Holds configuration like the API token.
 2. `NewBot[T]`: Creates a bot instance. The type parameter T allows you to pass custom shared application data (for example, *sql.DB or a service container) that will be available in all handlers. Use laniakea.NoData if you don't need it.
 3. `NewPlugin`: Creates a logical group for commands and middlewares.
-4. `AddCommand`: Registers a command. The first argument is the handler function (`func(*MsgContext, T) error`), the second is the command name (without the slash).
+4. `Command`: Creates and registers a command. The first argument is the command name without the slash, the second is the handler function (`func(*MsgContext, T) error`).
 5. **Handler Functions**: Receive *MsgContext (message details, methods like Answer) and your custom application data T, and return an error for centralized error handling.
 6. `SetErrorTemplate`: Sets a template for error messages. The %s placeholder is replaced by the actual error.
 7. `AutoGenerateCommands`: Registers plugin-defined commands with Telegram across the supported scopes.
 8. `Run()`: Starts the bot's update polling loop and returns an error if startup or polling fails.
-9. `RunWebHookWithContext(...)`: Starts the bot-owned webhook runtime when Telegram should deliver updates over HTTP instead of long polling.
-10. A `Bot` instance is single-use. After `Run()`, `RunWithContext()`, or `RunWebHookWithContext()` returns, create a new bot instance for the next session.
+9. `RunWebhookWithContext(...)`: Starts the bot-owned webhook runtime when Telegram should deliver updates over HTTP instead of long polling.
+10. A `Bot` instance is single-use. After `Run()`, `RunWithContext()`, or `RunWebhookWithContext()` returns, create a new bot instance for the next session.
 
 ## File-Based Config
 
@@ -151,7 +151,7 @@ See the full guide in the wiki: [Bot Options and Configuration](https://git.scur
 
 ## Webhook Runtime
 
-Laniakea also supports a bot-owned webhook runtime through `RunWebHookWithContext(...)` and `RunWebHook(...)`.
+Laniakea also supports a bot-owned webhook runtime through `RunWebhookWithContext(...)` and `RunWebhook(...)`.
 
 Use it when:
 - Telegram should push updates to your HTTP endpoint instead of your bot polling for them.
@@ -159,11 +159,11 @@ Use it when:
 - You want Laniakea to register the webhook and own the local HTTP server.
 
 Production notes:
-- Set `BotWebHookOpts.SecretToken` for request authentication.
-- `BotWebHookOpts.SecretToken` is required when `BotWebHookOpts.UseStatusPath` is enabled.
-- Keep `BotWebHookOpts.Path` specific instead of serving webhook traffic on `/`.
-- If you switch an existing deployment from webhook mode to long polling, delete the webhook first with `CloseWebHook()` or `tgapi.DeleteWebhook(...)`. Telegram keeps webhook delivery active until it is removed.
-- Use `RunWebHookWithContext(...)` with a cancelable context, then call `Close()` after runtime shutdown.
+- Set `BotWebhookOpts.SecretToken` for request authentication.
+- `BotWebhookOpts.SecretToken` is required when `BotWebhookOpts.UseStatusPath` is enabled.
+- Keep `BotWebhookOpts.Path` specific instead of serving webhook traffic on `/`.
+- If you switch an existing deployment from webhook mode to long polling, delete the webhook first with `CloseWebhook()` or `tgapi.DeleteWebhook(...)`. Telegram keeps webhook delivery active until it is removed.
+- Use `RunWebhookWithContext(...)` with a cancelable context, then call `Close()` after runtime shutdown.
 
 See the full guide in the wiki: [Webhook Runtime](https://git.scuroneko.dev/ScuroNeko/Laniakea/wiki/Webhook-Runtime)
 
@@ -173,7 +173,7 @@ See the full guide in the wiki: [Webhook Runtime](https://git.scuroneko.dev/Scur
 Plugins are the main way to organize code. A plugin can have multiple commands and middlewares.
 ```go
 plugin := laniakea.NewPlugin[*MyDB]("admin")
-plugin.AddCommand(plugin.NewCommand(banUser, "ban"))
+plugin.Command("ban", banUser)
 bot.AddPlugins(plugin)
 ```
 
@@ -238,7 +238,7 @@ Scenes model multi-step conversations inside a plugin. Each active scene is stor
 ```go
 plugin := laniakea.NewPlugin[MyDB]("signup")
 
-plugin.NewScene("signup").
+plugin.Scene("signup").
     SetScope(laniakea.SceneScopeUserChat).
     SetEntry("ask_name").
     OnStep("ask_name", func(ctx *laniakea.SceneContext, db MyDB) (laniakea.SceneResult, error) {
@@ -288,7 +288,7 @@ Use `AddMiddleware` on a plugin to add one or more shared middleware functions. 
 plugin := laniakea.NewPlugin[*MyDB]("admin")
 plugin.AddMiddleware(laniakea.NewMiddleware("logging", loggingMiddleware))
 plugin.AddMiddleware(laniakea.NewMiddleware("admin-only", adminOnlyMiddleware))
-plugin.AddCommand(plugin.NewCommand(banUser, "ban"))
+plugin.Command("ban", banUser)
 ```
 
 ### Example Middlewares
@@ -320,7 +320,7 @@ func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 - **Rate Limiting**: Pass a configured utils.RateLimiter via BotOpts to handle Telegram's rate limits gracefully.
 - **Localization**: `L10n` is safe for concurrent use once attached to the bot.
 - **Custom Update Handlers**: Use `plugin.AddUpdateHandler(...)` for Telegram update types that are not part of the command/payload flow.
-- **Lifecycle**: `RunWithContext(...)` and `RunWebHookWithContext(...)` do not call `Close()` for you. Shut the bot down explicitly, and create a fresh `Bot` for the next run.
+- **Lifecycle**: `RunWithContext(...)` and `RunWebhookWithContext(...)` do not call `Close()` for you. Shut the bot down explicitly, and create a fresh `Bot` for the next run.
 
 ## Telegram Update Handling
 - Commands and payloads are handled through plugins.

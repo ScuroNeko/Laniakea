@@ -57,10 +57,10 @@ func (p *Plugin[T]) AddCommand(command *Command[T]) *Plugin[T] {
 	return p
 }
 
-// NewCommand creates and immediately adds a new command to the plugin.
+// Command creates and immediately adds a new command to the plugin.
 // Returns the created command for further configuration.
-func (p *Plugin[T]) NewCommand(exec CommandExecutor[T], command string, args ...CommandArg) *Command[T] {
-	cmd := NewCommand(exec, command, args...)
+func (p *Plugin[T]) Command(command string, exec CommandExecutor[T], args ...CommandArg) *Command[T] {
+	cmd := NewCommand(command, exec, args...)
 	p.AddCommand(cmd)
 	return cmd
 }
@@ -75,6 +75,33 @@ func (p *Plugin[T]) AddPayload(command *Command[T]) *Plugin[T] {
 		return p
 	}
 	p.payloads[command.command] = command
+	return p
+}
+
+// Payload creates and immediately adds a new payload command to the plugin.
+// Returns the created payload command for further configuration.
+func (p *Plugin[T]) Payload(command string, exec CommandExecutor[T], args ...CommandArg) *Command[T] {
+	cmd := NewPayload(command, exec, args...)
+	p.AddPayload(cmd)
+	return cmd
+}
+
+// Scene creates, registers, and returns a new scene owned by the plugin.
+func (p *Plugin[T]) Scene(name string) *Scene[T] {
+	scene := NewScene[T](name)
+	scene.setPluginName(p.name)
+	p.AddScene(scene)
+	return scene
+}
+
+// AddScene registers a multi-step scene in the plugin.
+func (p *Plugin[T]) AddScene(scene *Scene[T]) *Plugin[T] {
+	if scene == nil {
+		return p
+	}
+	scene.PluginName = p.name
+	scene.setPluginName(p.name)
+	p.scenes[scene.Name] = scene
 	return p
 }
 
@@ -108,33 +135,6 @@ func (p *Plugin[T]) AddCommandGroup(group *CommandGroup[T]) *Plugin[T] {
 	return p
 }
 
-// NewPayload creates and immediately adds a new payload command to the plugin.
-// Returns the created payload command for further configuration.
-func (p *Plugin[T]) NewPayload(exec CommandExecutor[T], command string, args ...CommandArg) *Command[T] {
-	cmd := NewPayload(exec, command, args...)
-	p.AddPayload(cmd)
-	return cmd
-}
-
-// AddScene registers a multi-step scene in the plugin.
-func (p *Plugin[T]) AddScene(scene *Scene[T]) *Plugin[T] {
-	if scene == nil {
-		return p
-	}
-	scene.PluginName = p.name
-	scene.setPluginName(p.name)
-	p.scenes[scene.Name] = scene
-	return p
-}
-
-// NewScene creates, registers, and returns a new scene owned by the plugin.
-func (p *Plugin[T]) NewScene(name string) *Scene[T] {
-	scene := NewScene[T](name)
-	scene.setPluginName(p.name)
-	p.AddScene(scene)
-	return scene
-}
-
 // UsePolicy registers a Policy as plugin middleware for all plugin handlers.
 func (p *Plugin[T]) UsePolicy(name string, policy Policy[T]) *Plugin[T] {
 	mw := RequirePolicy(name, policy)
@@ -148,11 +148,11 @@ func (p *Plugin[T]) AddUpdateHandler(t tgapi.UpdateType, handler CommandExecutor
 	case tgapi.UpdateTypeMessage, tgapi.UpdateTypeChannelPost, tgapi.UpdateTypeCallbackQuery:
 		if p.logger == nil {
 			logger := utils.CreateLogger(p.name, utils.GetLoggerLevel(), utils.LogFormatText, nil)
-			logger.Warnf("%s can't be registred through AddUpdateHandler. Use AddPayload/NewPayload or AddCommand/NewCommand", t)
+			logger.Warnf("%s can't be registered through AddUpdateHandler. Use AddPayload/Payload or AddCommand/Command", t)
 			_ = logger.Close()
 			return p
 		}
-		p.logger.Warnf("%s can't be registred through AddUpdateHandler. Use AddPayload/NewPayload or AddCommand/NewCommand", t)
+		p.logger.Warnf("%s can't be registered through AddUpdateHandler. Use AddPayload/Payload or AddCommand/Command", t)
 		return p
 	}
 	p.handlers[t] = handler

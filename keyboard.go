@@ -16,9 +16,9 @@ const (
 	ButtonStylePrimary tgapi.KeyboardButtonStyle = "primary"
 )
 
-// InlineKbButtonBuilder is a fluent builder for creating a single inline keyboard button.
+// InlineKeyboardButtonBuilder is a fluent builder for creating a single inline keyboard button.
 //
-// Use NewInlineKbButton() to start, then chain methods to configure:
+// Use NewInlineKeyboardButton() to start, then chain methods to configure:
 //   - SetIconCustomEmojiID() — adds a custom emoji icon
 //   - SetStyle() — sets visual style (danger/success/primary)
 //   - SetURL() — makes button open a URL
@@ -26,7 +26,7 @@ const (
 //
 // Call build() to produce the final tgapi.InlineKeyboardButton.
 // Builder methods are immutable — each returns a copy.
-type InlineKbButtonBuilder struct {
+type InlineKeyboardButtonBuilder struct {
 	text              string
 	iconCustomEmojiID string
 	style             tgapi.KeyboardButtonStyle
@@ -34,15 +34,15 @@ type InlineKbButtonBuilder struct {
 	callbackData      string
 }
 
-// NewInlineKbButton creates a new button builder with the given display text.
+// NewInlineKeyboardButton creates a new button builder with the given display text.
 // The button will have no URL, no style, and no callback data by default.
-func NewInlineKbButton(text string) InlineKbButtonBuilder {
-	return InlineKbButtonBuilder{text: text}
+func NewInlineKeyboardButton(text string) InlineKeyboardButtonBuilder {
+	return InlineKeyboardButtonBuilder{text: text}
 }
 
 // SetIconCustomEmojiID sets a custom emoji ID to display as the button's icon.
 // This is a Telegram Bot API feature for custom emoji icons.
-func (b InlineKbButtonBuilder) SetIconCustomEmojiID(id string) InlineKbButtonBuilder {
+func (b InlineKeyboardButtonBuilder) SetIconCustomEmojiID(id string) InlineKeyboardButtonBuilder {
 	b.iconCustomEmojiID = id
 	return b
 }
@@ -50,14 +50,14 @@ func (b InlineKbButtonBuilder) SetIconCustomEmojiID(id string) InlineKbButtonBui
 // SetStyle sets the visual style of the button.
 // Valid values: ButtonStyleDanger, ButtonStyleSuccess, ButtonStylePrimary.
 // If not set, the button uses the default style.
-func (b InlineKbButtonBuilder) SetStyle(style tgapi.KeyboardButtonStyle) InlineKbButtonBuilder {
+func (b InlineKeyboardButtonBuilder) SetStyle(style tgapi.KeyboardButtonStyle) InlineKeyboardButtonBuilder {
 	b.style = style
 	return b
 }
 
 // SetURL sets a URL that will be opened when the button is pressed.
 // If both URL and CallbackData are set, Telegram will prioritize URL.
-func (b InlineKbButtonBuilder) SetURL(url string) InlineKbButtonBuilder {
+func (b InlineKeyboardButtonBuilder) SetURL(url string) InlineKeyboardButtonBuilder {
 	b.url = url
 	return b
 }
@@ -69,7 +69,7 @@ func (b InlineKbButtonBuilder) SetURL(url string) InlineKbButtonBuilder {
 // are safely serialized, but complex structs may not serialize usefully.
 //
 // Example: SetCallbackDataJSON("delete_user", 123, "confirm") → {"cmd":"delete_user","args":["123","confirm"]}.
-func (b InlineKbButtonBuilder) SetCallbackDataJSON(cmd string, args ...any) InlineKbButtonBuilder {
+func (b InlineKeyboardButtonBuilder) SetCallbackDataJSON(cmd string, args ...any) InlineKeyboardButtonBuilder {
 	b.callbackData = NewCallbackData(cmd, args...).ToJSON()
 	return b
 }
@@ -77,13 +77,13 @@ func (b InlineKbButtonBuilder) SetCallbackDataJSON(cmd string, args ...any) Inli
 // SetCallbackDataBase64 sets a structured callback payload encoded as Base64.
 // This can be useful when the JSON payload exceeds Telegram's callback data length limit.
 // Args are converted to strings using fmt.Sprint.
-func (b InlineKbButtonBuilder) SetCallbackDataBase64(cmd string, args ...any) InlineKbButtonBuilder {
+func (b InlineKeyboardButtonBuilder) SetCallbackDataBase64(cmd string, args ...any) InlineKeyboardButtonBuilder {
 	b.callbackData = NewCallbackData(cmd, args...).ToBase64()
 	return b
 }
 
 // Internal helper that converts the builder state into a Telegram button.
-func (b InlineKbButtonBuilder) build() tgapi.InlineKeyboardButton {
+func (b InlineKeyboardButtonBuilder) build() tgapi.InlineKeyboardButton {
 	return tgapi.InlineKeyboardButton{
 		Text:              b.text,
 		URL:               b.url,
@@ -194,9 +194,9 @@ func (in *InlineKeyboard) AddCallbackButtonStyle(text string, style tgapi.Keyboa
 	})
 }
 
-// AddButton adds a button pre-configured via InlineKbButtonBuilder.
+// AddButton adds a button pre-configured via InlineKeyboardButtonBuilder.
 // This is the most flexible way to create buttons with custom emoji, style, URL, and callback.
-func (in *InlineKeyboard) AddButton(b InlineKbButtonBuilder) *InlineKeyboard {
+func (in *InlineKeyboard) AddButton(b InlineKeyboardButtonBuilder) *InlineKeyboard {
 	return in.append(b.build())
 }
 

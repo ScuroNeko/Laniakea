@@ -2,15 +2,27 @@
 
 ## v1.0.0
 
+### Breaking Changes
+- Renamed final public APIs to idiomatic names before the stable release: `RunWebhookWithContext(...)`, `RunWebhook(...)`, `CloseWebhook()`, `BotWebhookOpts`, `NewBotWebhookOpts()`, `SetWebhookLogger(...)`, and `GetWebhookLogger()`.
+- Renamed plugin builder helpers from `NewCommand(...)`, `NewPayload(...)`, and `NewScene(...)` to `Command(...)`, `Payload(...)`, and `Scene(...)`; `NewCommand(...)` and `NewPayload(...)` now take the command string before the executor.
+- Renamed command argument value constants to `CommandValueString`, `CommandValueInt`, `CommandValueBool`, and `CommandValueAny`; `NewCommandArg(...)` now defaults to unvalidated `CommandValueAny`.
+- Renamed runner builders from `Onetime(...)` and `Timeout(...)` to `Once(...)` and `Every(...)`.
+- Renamed remaining public acronym/casing outliers including `AnswerCallback...`, `ParseMarkdownV2`, `ParseMarkdown`, `GetChatMemberCount`, `DropRateLimitOverflow`, `SetDropRateLimitOverflow`, and inline keyboard builder APIs.
+
 ### Added
 - Added `MsgContext.IsCallback()` and `MsgContext.HasPhoto()` helpers for callback-aware handler code.
 - Added `MsgContext.UpsertKeyboard(...)` and `MsgContext.UpsertKeyboardMarkdown(...)` helpers that edit callback messages, replace photo callback messages with a fresh chat message, and send a new chat message outside callback flow.
 - Added `CommandGroup`, `NewCommandGroup(...)`, `Plugin.CommandGroup(...)`, and `Plugin.AddCommandGroup(...)` helpers for registering prefixed command groups with shared middleware.
+- Added the `tgmd` package with Telegram Markdown formatting helpers and a message entity builder.
 
 ### Changed
 - Version metadata now reports the stable `v1.0.0` release instead of `v1.0.0-rc.16`.
 - Bot-level middleware blocks now emit a final `UpdateHandledEvent` with `Handled=false`, keeping observer update lifecycles balanced.
-- `BotOpts`, `tgapi.APIOpts`, and logger utility godoc now document `LOG_FORMAT`, `LogFormat`, and logger formatting options consistently.
+- `BotOpts`, `tgapi.APIOpts`, logger utilities, README, and wiki pages now document the final stable API names and configuration options consistently.
+
+### Fixed
+- Fixed webhook startup so empty-secret warnings are logged only after the webhook logger is initialized.
+- Fixed webhook startup so a logger configured through `SetWebhookLogger(...)` is preserved.
 
 ### Tests
 - Added regression coverage proving bot-level middleware blocks still complete the observer update lifecycle.

@@ -757,10 +757,10 @@ func TestHandleMessageFallbackDoesNotRunWhenCommandMatches(t *testing.T) {
 	commandCalled := false
 	fallbackCalled := false
 	plugin := NewPlugin[NoData]("test")
-	plugin.NewCommand(func(ctx *MsgContext, db NoData) error {
+	plugin.Command("start", func(ctx *MsgContext, db NoData) error {
 		commandCalled = true
 		return nil
-	}, "start")
+	})
 	plugin.SetMessageFallback(func(ctx *MsgContext, db NoData) error {
 		fallbackCalled = true
 		return nil
@@ -794,7 +794,7 @@ func TestHandleMessageFallbackDoesNotRunWhenCommandMatches(t *testing.T) {
 func TestHandleChannelPostCommandWithSenderChat(t *testing.T) {
 	called := false
 	plugin := NewPlugin[NoData]("test")
-	plugin.NewCommand(func(ctx *MsgContext, db NoData) error {
+	plugin.Command("ping", func(ctx *MsgContext, db NoData) error {
 		called = true
 		if ctx.Msg == nil {
 			t.Fatal("expected message context")
@@ -809,7 +809,7 @@ func TestHandleChannelPostCommandWithSenderChat(t *testing.T) {
 			t.Fatalf("expected zero FromID for sender_chat updates, got %d", ctx.FromID)
 		}
 		return nil
-	}, "ping")
+	})
 
 	bot := &Bot[NoData]{
 		logger:   sneklog.NewLogger(),
@@ -841,10 +841,10 @@ func TestCommandHandlerBindArgsEndToEnd(t *testing.T) {
 
 	var got banInput
 	plugin := NewPlugin[NoData]("test")
-	plugin.NewCommand(func(ctx *MsgContext, db NoData) error {
+	plugin.Command("ban", func(ctx *MsgContext, db NoData) error {
 		return ctx.BindArgs(&got)
-	}, "ban",
-		NewCommandArg("user_id").SetValueType(CommandValueIntType).SetRequired(),
+	},
+		NewCommandArg("user_id").SetValueType(CommandValueInt).SetRequired(),
 		NewCommandArg("reason").SetRequired(),
 	)
 
@@ -878,10 +878,10 @@ func TestPayloadHandlerBindArgsEndToEnd(t *testing.T) {
 
 	var got payloadInput
 	plugin := NewPlugin[NoData]("test")
-	plugin.NewPayload(func(ctx *MsgContext, db NoData) error {
+	plugin.Payload("approve", func(ctx *MsgContext, db NoData) error {
 		return ctx.BindArgs(&got)
-	}, "approve",
-		NewCommandArg("id").SetValueType(CommandValueIntType).SetRequired(),
+	},
+		NewCommandArg("id").SetValueType(CommandValueInt).SetRequired(),
 		NewCommandArg("note").SetRequired(),
 	)
 
@@ -920,10 +920,10 @@ func TestHandleEditedMessageStaysOutOfCommandFlow(t *testing.T) {
 	updateCalled := false
 
 	plugin := NewPlugin[NoData]("test")
-	plugin.NewCommand(func(ctx *MsgContext, db NoData) error {
+	plugin.Command("ping", func(ctx *MsgContext, db NoData) error {
 		commandCalled = true
 		return nil
-	}, "ping")
+	})
 	plugin.AddUpdateHandler(tgapi.UpdateTypeEditedMessage, func(ctx *MsgContext, db NoData) error {
 		updateCalled = true
 		if ctx.Msg == nil {
@@ -968,10 +968,10 @@ func TestHandleEditedChannelPostStaysOutOfCommandFlow(t *testing.T) {
 	updateCalled := false
 
 	plugin := NewPlugin[NoData]("test")
-	plugin.NewCommand(func(ctx *MsgContext, db NoData) error {
+	plugin.Command("ping", func(ctx *MsgContext, db NoData) error {
 		commandCalled = true
 		return nil
-	}, "ping")
+	})
 	plugin.AddUpdateHandler(tgapi.UpdateTypeEditedChannelPost, func(ctx *MsgContext, db NoData) error {
 		updateCalled = true
 		if ctx.Msg == nil {
@@ -1007,7 +1007,7 @@ func TestHandleEditedChannelPostStaysOutOfCommandFlow(t *testing.T) {
 func TestHandleCallbackPopulatesMessageTargets(t *testing.T) {
 	called := false
 	plugin := NewPlugin[NoData]("test")
-	plugin.NewPayload(func(ctx *MsgContext, db NoData) error {
+	plugin.Payload("approve", func(ctx *MsgContext, db NoData) error {
 		called = true
 		if ctx.CallbackQueryID != "cb-msg" {
 			t.Fatalf("unexpected CallbackQueryID: %q", ctx.CallbackQueryID)
@@ -1031,7 +1031,7 @@ func TestHandleCallbackPopulatesMessageTargets(t *testing.T) {
 			t.Fatalf("unexpected callback args: got %v want %v", got, want)
 		}
 		return nil
-	}, "approve")
+	})
 
 	bot := &Bot[NoData]{
 		logger:      sneklog.NewLogger(),
@@ -1066,7 +1066,7 @@ func TestHandleCallbackPopulatesMessageTargets(t *testing.T) {
 func TestHandleCallbackPopulatesInlineTargets(t *testing.T) {
 	called := false
 	plugin := NewPlugin[NoData]("test")
-	plugin.NewPayload(func(ctx *MsgContext, db NoData) error {
+	plugin.Payload("inline.approve", func(ctx *MsgContext, db NoData) error {
 		called = true
 		if ctx.CallbackQueryID != "cb-inline" {
 			t.Fatalf("unexpected CallbackQueryID: %q", ctx.CallbackQueryID)
@@ -1090,7 +1090,7 @@ func TestHandleCallbackPopulatesInlineTargets(t *testing.T) {
 			t.Fatalf("unexpected callback args: got %v want %v", got, want)
 		}
 		return nil
-	}, "inline.approve")
+	})
 
 	bot := &Bot[NoData]{
 		logger:      sneklog.NewLogger(),
@@ -1122,9 +1122,9 @@ func TestHandleCallbackPopulatesInlineTargets(t *testing.T) {
 func TestHandleCallbackObserverEmitsPayloadEvents(t *testing.T) {
 	observer := &recordingObserver{}
 	plugin := NewPlugin[NoData]("test")
-	plugin.NewPayload(func(ctx *MsgContext, db NoData) error {
+	plugin.Payload("approve", func(ctx *MsgContext, db NoData) error {
 		return nil
-	}, "approve")
+	})
 
 	bot := &Bot[NoData]{
 		logger:      sneklog.NewLogger(),
@@ -1173,9 +1173,9 @@ func TestHandleCallbackObserverEmitsPayloadErrors(t *testing.T) {
 	observer := &recordingObserver{}
 	plugin := NewPlugin[NoData]("test")
 	wantErr := AsInternalError(errors.New("boom"))
-	plugin.NewPayload(func(ctx *MsgContext, db NoData) error {
+	plugin.Payload("approve", func(ctx *MsgContext, db NoData) error {
 		return wantErr
-	}, "approve")
+	})
 
 	bot := &Bot[NoData]{
 		logger:      sneklog.NewLogger(),

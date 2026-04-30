@@ -95,7 +95,7 @@ func (bot *Bot[T]) UsePolicy(name string, policy Policy[T]) *Bot[T] {
 //   - Scheduled tasks (e.g., daily announcements)
 //
 // Runners start from the bot runtime entry points, immediately after
-// RunWithContext or RunWebHookWithContext begins.
+// RunWithContext or RunWebhookWithContext begins.
 //
 // Example:
 //

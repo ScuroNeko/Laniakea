@@ -63,13 +63,13 @@ func TestAddPluginsSnapshotsConfiguration(t *testing.T) {
 	bot := &Bot[NoData]{logger: sneklog.NewLogger()}
 	plugin := NewPlugin[NoData]("demo")
 
-	cmd := plugin.NewCommand(func(ctx *MsgContext, db NoData) error { return nil }, "start")
+	cmd := plugin.Command("start", func(ctx *MsgContext, db NoData) error { return nil })
 	plugin.AddMiddleware(NewMiddleware("base", func(ctx *MsgContext, db NoData) bool { return true }))
 
 	bot.AddPlugins(plugin)
 
 	cmd.SetDescription("mutated after registration")
-	plugin.NewCommand(func(ctx *MsgContext, db NoData) error { return nil }, "late")
+	plugin.Command("late", func(ctx *MsgContext, db NoData) error { return nil })
 	plugin.AddMiddleware(NewMiddleware("late", func(ctx *MsgContext, db NoData) bool { return true }))
 
 	registered := bot.plugins[0]
@@ -446,7 +446,7 @@ func TestCloseDoesNotDeleteWebhook(t *testing.T) {
 
 	bot := &Bot[NoData]{
 		logger:        sneklog.NewLogger(),
-		webHookLogger: sneklog.NewLogger(),
+		webhookLogger: sneklog.NewLogger(),
 		api:           api,
 		uploader:      uploader,
 	}

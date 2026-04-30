@@ -46,7 +46,7 @@ func TestAutoGenerateCommandsChecksLimitBeforeDelete(t *testing.T) {
 	plugin := NewPlugin[NoData]("overflow")
 	exec := func(ctx *MsgContext, db NoData) error { return nil }
 	for i := 0; i < 101; i++ {
-		plugin.AddCommand(NewCommand(exec, "cmd"+strconv.Itoa(i)))
+		plugin.Command("cmd"+strconv.Itoa(i), exec)
 	}
 
 	bot := &Bot[NoData]{
@@ -68,9 +68,9 @@ func TestGatherCommandsForPluginReturnsSortedCommands(t *testing.T) {
 	plugin := NewPlugin[NoData]("sorted")
 	exec := func(ctx *MsgContext, db NoData) error { return nil }
 
-	plugin.AddCommand(NewCommand(exec, "zeta"))
-	plugin.AddCommand(NewCommand(exec, "alpha"))
-	plugin.AddCommand(NewCommand(exec, "mid"))
+	plugin.Command("zeta", exec)
+	plugin.Command("alpha", exec)
+	plugin.Command("mid", exec)
 
 	commands := gatherCommandsForPlugin(*plugin)
 	got := make([]string, 0, len(commands))

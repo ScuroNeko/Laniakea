@@ -14,7 +14,7 @@ type runnerObserver struct {
 	recordingObserver
 }
 
-func TestExecRunnersRunsOnetimeSyncRunner(t *testing.T) {
+func TestExecRunnersRunsOnceSyncRunner(t *testing.T) {
 	var calls atomic.Int32
 	bot := &Bot[NoData]{
 		logger: sneklog.NewLogger(),
@@ -22,7 +22,7 @@ func TestExecRunnersRunsOnetimeSyncRunner(t *testing.T) {
 			NewRunner("sync-once", func(*Bot[NoData]) error {
 				calls.Add(1)
 				return nil
-			}).Onetime(true).Async(false),
+			}).Once(true).Async(false),
 		},
 	}
 
@@ -46,7 +46,7 @@ func TestExecRunnersStopsBackgroundRunnerOnCancel(t *testing.T) {
 					triggered <- struct{}{}
 				}
 				return nil
-			}).Timeout(5 * time.Millisecond),
+			}).Every(5 * time.Millisecond),
 		},
 	}
 
@@ -76,7 +76,7 @@ func TestExecRunnersEmitObserverEvents(t *testing.T) {
 		runners: []Runner[NoData]{
 			NewRunner("sync-once", func(*Bot[NoData]) error {
 				return wantErr
-			}).Onetime(true).Async(false),
+			}).Once(true).Async(false),
 		},
 	}
 

@@ -70,10 +70,10 @@ func (codec BotOptsFileJSONCodec) FromBytes(data []byte) (*BotOpts, error) {
 		WriteToFile:      fileOpts.Logger.WriteToFile,
 		LogFormat:        fileOpts.Logger.LogFormat,
 
-		UseTestServer:  fileOpts.API.UseTestServer,
-		APIURL:         fileOpts.API.APIURL,
-		RateLimit:      fileOpts.API.RateLimit,
-		DropRLOverflow: fileOpts.API.DropRLOverflow,
+		UseTestServer:         fileOpts.API.UseTestServer,
+		APIURL:                fileOpts.API.APIURL,
+		RateLimit:             fileOpts.API.RateLimit,
+		DropRateLimitOverflow: fileOpts.API.DropRLOverflow,
 
 		StrictPayloadType: fileOpts.StrictPayloadType,
 		MaxWorkers:        fileOpts.MaxWorkers,
@@ -102,7 +102,7 @@ func (codec BotOptsFileJSONCodec) ToBytes(opts *BotOpts) ([]byte, error) {
 			UseTestServer:  opts.UseTestServer,
 			APIURL:         opts.APIURL,
 			RateLimit:      opts.RateLimit,
-			DropRLOverflow: opts.DropRLOverflow,
+			DropRLOverflow: opts.DropRateLimitOverflow,
 		},
 		StrictPayloadType: opts.StrictPayloadType,
 		MaxWorkers:        opts.MaxWorkers,
@@ -114,9 +114,12 @@ func (codec BotOptsFileJSONCodec) ToBytes(opts *BotOpts) ([]byte, error) {
 	return data, nil
 }
 
+// Load reads BotOpts from a JSON config file.
 func (codec BotOptsFileJSONCodec) Load(filename string) (*BotOpts, error) {
 	return LoadBotOptsFile(codec, filename)
 }
+
+// Save writes BotOpts to a JSON config file.
 func (codec BotOptsFileJSONCodec) Save(filename string, opts *BotOpts) error {
 	return SaveBotOptsFile(codec, filename, opts)
 }

@@ -45,7 +45,7 @@ func TestBotAddPluginsPreservesScenesAndHandlesThem(t *testing.T) {
 	called := false
 
 	plugin := NewPlugin[NoData]("wizard")
-	plugin.NewScene("signup").
+	plugin.Scene("signup").
 		SetEntry("start").
 		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			called = true
@@ -146,7 +146,7 @@ func TestBuildSceneKeyRejectsMissingContextFields(t *testing.T) {
 func TestEnterSceneRejectsMissingEntryConfiguration(t *testing.T) {
 	t.Run("empty entry", func(t *testing.T) {
 		plugin := NewPlugin[NoData]("wizard")
-		plugin.NewScene("signup")
+		plugin.Scene("signup")
 
 		bot := &Bot[NoData]{
 			logger:             sneklog.NewLogger(),
@@ -169,7 +169,7 @@ func TestEnterSceneRejectsMissingEntryConfiguration(t *testing.T) {
 
 	t.Run("missing entry step", func(t *testing.T) {
 		plugin := NewPlugin[NoData]("wizard")
-		plugin.NewScene("signup").SetEntry("start")
+		plugin.Scene("signup").SetEntry("start")
 
 		bot := &Bot[NoData]{
 			logger:             sneklog.NewLogger(),
@@ -210,7 +210,7 @@ func TestSceneCommandHandlerRunsBeforeStep(t *testing.T) {
 	stepCalled := false
 
 	plugin := NewPlugin[NoData]("wizard")
-	plugin.NewScene("signup").
+	plugin.Scene("signup").
 		SetEntry("start").
 		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			stepCalled = true
@@ -269,7 +269,7 @@ func TestSceneCommandHandlerRunsBeforeStep(t *testing.T) {
 func TestSceneCommandObserverEmitsLifecycleEvents(t *testing.T) {
 	observer := &recordingObserver{}
 	plugin := NewPlugin[NoData]("wizard")
-	plugin.NewScene("signup").
+	plugin.Scene("signup").
 		SetEntry("start").
 		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			return ctx.Stay(), nil
@@ -324,7 +324,7 @@ func TestSceneCommandObserverEmitsLifecycleEvents(t *testing.T) {
 func TestSceneStepObserverEmitsLifecycleEvents(t *testing.T) {
 	observer := &recordingObserver{}
 	plugin := NewPlugin[NoData]("wizard")
-	plugin.NewScene("signup").
+	plugin.Scene("signup").
 		SetEntry("start").
 		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			return ctx.Stay(), nil
@@ -376,7 +376,7 @@ func TestSceneStepObserverEmitsLifecycleEvents(t *testing.T) {
 func TestSceneMessageObserverEmitsLifecycleEvents(t *testing.T) {
 	observer := &recordingObserver{}
 	plugin := NewPlugin[NoData]("wizard")
-	scene := plugin.NewScene("signup").
+	scene := plugin.Scene("signup").
 		SetEntry("start").
 		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			return ctx.Stay(), nil
@@ -435,7 +435,7 @@ func TestScenePayloadHandlerRunsBeforeStep(t *testing.T) {
 	stepCalled := false
 
 	plugin := NewPlugin[NoData]("wizard")
-	plugin.NewScene("signup").
+	plugin.Scene("signup").
 		SetEntry("start").
 		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			stepCalled = true
@@ -499,7 +499,7 @@ func TestScenePayloadHandlerRunsBeforeStep(t *testing.T) {
 func TestScenePayloadObserverEmitsLifecycleEvents(t *testing.T) {
 	observer := &recordingObserver{}
 	plugin := NewPlugin[NoData]("wizard")
-	plugin.NewScene("signup").
+	plugin.Scene("signup").
 		SetEntry("start").
 		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			return ctx.Stay(), nil
@@ -563,8 +563,8 @@ func TestSceneUnmatchedPayloadFallsThroughWithoutRunningStep(t *testing.T) {
 	stepCalled := false
 
 	plugin := NewPlugin[NoData]("wizard")
-	plugin.NewPayload(func(ctx *MsgContext, db NoData) error { return nil }, "ping")
-	plugin.NewScene("signup").
+	plugin.Payload("ping", func(ctx *MsgContext, db NoData) error { return nil })
+	plugin.Scene("signup").
 		SetEntry("start").
 		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			stepCalled = true
@@ -632,11 +632,11 @@ func TestScenePassDoesNotPersistSessionData(t *testing.T) {
 	commandCalled := false
 
 	plugin := NewPlugin[NoData]("wizard")
-	plugin.NewCommand(func(ctx *MsgContext, db NoData) error {
+	plugin.Command("ping", func(ctx *MsgContext, db NoData) error {
 		commandCalled = true
 		return nil
-	}, "ping")
-	plugin.NewScene("signup").
+	})
+	plugin.Scene("signup").
 		SetEntry("start").
 		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			if err := ctx.SaveData(struct {
@@ -712,16 +712,16 @@ func TestSceneUnmatchedCommandFallsThroughWithoutRunningStep(t *testing.T) {
 	stepCalled := false
 
 	plugin := NewPlugin[NoData]("wizard")
-	plugin.NewScene("signup").
+	plugin.Scene("signup").
 		SetEntry("start").
 		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			stepCalled = true
 			return ctx.Stay(), nil
 		})
-	plugin.NewCommand(func(ctx *MsgContext, db NoData) error {
+	plugin.Command("ping", func(ctx *MsgContext, db NoData) error {
 		commandCalled = true
 		return nil
-	}, "ping")
+	})
 
 	bot := &Bot[NoData]{
 		logger:             sneklog.NewLogger(),
@@ -779,7 +779,7 @@ func TestSceneMessageFallbackRunsWhenNoCommandOrStepMatch(t *testing.T) {
 	fallbackCalled := false
 
 	plugin := NewPlugin[NoData]("wizard")
-	plugin.NewScene("signup").
+	plugin.Scene("signup").
 		SetEntry("start").
 		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
 			return ctx.Stay(), nil

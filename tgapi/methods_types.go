@@ -4,12 +4,12 @@ package tgapi
 type ParseMode string
 
 const (
-	// ParseMDV2 enables MarkdownV2 style parsing.
-	ParseMDV2 ParseMode = "MarkdownV2"
+	// ParseMarkdownV2 enables MarkdownV2 style parsing.
+	ParseMarkdownV2 ParseMode = "MarkdownV2"
 	// ParseHTML enables HTML style parsing.
 	ParseHTML ParseMode = "HTML"
-	// ParseMD enables legacy Markdown style parsing.
-	ParseMD ParseMode = "Markdown"
+	// ParseMarkdown enables legacy Markdown style parsing.
+	ParseMarkdown ParseMode = "Markdown"
 	// ParseNone disables parse_mode and leaves plain-text requests unannotated.
 	ParseNone ParseMode = ""
 )
