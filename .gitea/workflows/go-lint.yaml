@@ -8,5 +8,12 @@ jobs:
     steps:
       - name: Checkout repository code
         uses: actions/checkout@v6
+
+      - name: Verify formatting
+        run: test -z "$(gofmt -l .)"
+
+      - name: Run go test
+        run: go test ./...
+
       - name: Run golangci-lint
         run: golangci-lint run
