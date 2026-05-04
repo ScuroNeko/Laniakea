@@ -14,6 +14,7 @@
 - Added `MsgContext.UpsertKeyboard(...)` and `MsgContext.UpsertKeyboardMarkdown(...)` helpers that edit callback messages, replace photo callback messages with a fresh chat message, and send a new chat message outside callback flow.
 - Added `CommandGroup`, `NewCommandGroup(...)`, `Plugin.CommandGroup(...)`, and `Plugin.AddCommandGroup(...)` helpers for registering prefixed command groups with shared middleware.
 - Added the `tgfmt` package with typed MarkdownV2, HTML, legacy Markdown formatting helpers, and a message entity builder.
+- Added `InlineKeyboardButtonBuilder.SetPayloadType(...)`, `InlineKeyboardButtonBuilder.SetCallbackData(...)`, and `MsgContext.NewInlineKeyboardButton(...)` helpers for payload-aware button building.
 
 ### Changed
 - Version metadata now reports the stable `v1.0.0` release instead of `v1.0.0-rc.16`.
@@ -31,6 +32,7 @@
 - Added regression coverage for inline callback keyboard upserts and callback target detection.
 - Added regression coverage for command group prefixing, middleware order, clone behavior, and plugin registration.
 - Added formatting coverage for escaping, composition, link destinations, HTML attributes, and legacy Markdown code blocks.
+- Added regression coverage for context-aware inline keyboard button payload encoding.
 
 ## v1.0.0-rc.16
 

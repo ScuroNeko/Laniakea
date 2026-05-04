@@ -91,6 +91,23 @@ func TestBindArgsBindsScalarFields(t *testing.T) {
 	}
 }
 
+func TestNewInlineKeyboardButtonUsesContextPayloadType(t *testing.T) {
+	ctx := &MsgContext{payloadType: BotPayloadBase64}
+
+	kb := NewInlineKeyboardJSON(1).
+		AddButton(ctx.NewInlineKeyboardButton("A").SetCallbackData("cmd", 1, "two"))
+
+	got, _, err := decodePayload(BotPayloadJSON, kb.Get().InlineKeyboard[0][0].CallbackData, false)
+	if err != nil {
+		t.Fatalf("decodePayload returned error: %v", err)
+	}
+
+	want := CallbackData{Command: "cmd", Args: []string{"1", "two"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected payload: got %#v want %#v", got, want)
+	}
+}
+
 func TestBindArgsLeavesTrailingFieldsZeroWhenArgsRunOut(t *testing.T) {
 	type input struct {
 		ID     int

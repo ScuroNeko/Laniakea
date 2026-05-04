@@ -594,6 +594,11 @@ func (ctx *MsgContext) NewInlineKeyboard(maxRow int) *InlineKeyboard {
 	return NewInlineKeyboard(ctx.payloadType, maxRow)
 }
 
+// NewInlineKeyboardButton creates a button builder using the context payload encoding.
+func (ctx *MsgContext) NewInlineKeyboardButton(text string) InlineKeyboardButtonBuilder {
+	return NewInlineKeyboardButton(text).SetPayloadType(ctx.payloadType)
+}
+
 func bindPositional(args []string, dst any) error {
 	v := reflect.ValueOf(dst)
 	if v.Kind() != reflect.Pointer || v.IsNil() {

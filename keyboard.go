@@ -27,11 +27,14 @@ const (
 // Call build() to produce the final tgapi.InlineKeyboardButton.
 // Builder methods are immutable — each returns a copy.
 type InlineKeyboardButtonBuilder struct {
-	text              string
-	iconCustomEmojiID string
-	style             tgapi.KeyboardButtonStyle
-	url               string
-	callbackData      string
+	text    string
+	emojiID string
+	style   tgapi.KeyboardButtonStyle
+
+	url  string
+	data string
+
+	payloadType BotPayloadType
 }
 
 // NewInlineKeyboardButton creates a new button builder with the given display text.
@@ -43,7 +46,7 @@ func NewInlineKeyboardButton(text string) InlineKeyboardButtonBuilder {
 // SetIconCustomEmojiID sets a custom emoji ID to display as the button's icon.
 // This is a Telegram Bot API feature for custom emoji icons.
 func (b InlineKeyboardButtonBuilder) SetIconCustomEmojiID(id string) InlineKeyboardButtonBuilder {
-	b.iconCustomEmojiID = id
+	b.emojiID = id
 	return b
 }
 
@@ -62,6 +65,12 @@ func (b InlineKeyboardButtonBuilder) SetURL(url string) InlineKeyboardButtonBuil
 	return b
 }
 
+// SetPayloadType sets the encoding used by SetCallbackData.
+func (b InlineKeyboardButtonBuilder) SetPayloadType(t BotPayloadType) InlineKeyboardButtonBuilder {
+	b.payloadType = t
+	return b
+}
+
 // SetCallbackDataJSON sets a structured callback payload that will be sent to the bot
 // when the button is pressed. The command and arguments are serialized as JSON.
 //
@@ -70,7 +79,7 @@ func (b InlineKeyboardButtonBuilder) SetURL(url string) InlineKeyboardButtonBuil
 //
 // Example: SetCallbackDataJSON("delete_user", 123, "confirm") → {"cmd":"delete_user","args":["123","confirm"]}.
 func (b InlineKeyboardButtonBuilder) SetCallbackDataJSON(cmd string, args ...any) InlineKeyboardButtonBuilder {
-	b.callbackData = NewCallbackData(cmd, args...).ToJSON()
+	b.data = NewCallbackData(cmd, args...).ToJSON()
 	return b
 }
 
@@ -78,7 +87,18 @@ func (b InlineKeyboardButtonBuilder) SetCallbackDataJSON(cmd string, args ...any
 // This can be useful when the JSON payload exceeds Telegram's callback data length limit.
 // Args are converted to strings using fmt.Sprint.
 func (b InlineKeyboardButtonBuilder) SetCallbackDataBase64(cmd string, args ...any) InlineKeyboardButtonBuilder {
-	b.callbackData = NewCallbackData(cmd, args...).ToBase64()
+	b.data = NewCallbackData(cmd, args...).ToBase64()
+	return b
+}
+
+// SetCallbackData sets a structured callback payload using the configured payload type.
+// The default payload type is JSON.
+func (b InlineKeyboardButtonBuilder) SetCallbackData(cmd string, args ...any) InlineKeyboardButtonBuilder {
+	if b.payloadType == BotPayloadBase64 {
+		b.data = NewCallbackData(cmd, args...).ToBase64()
+	} else {
+		b.data = NewCallbackData(cmd, args...).ToJSON()
+	}
 	return b
 }
 
@@ -88,8 +108,8 @@ func (b InlineKeyboardButtonBuilder) build() tgapi.InlineKeyboardButton {
 		Text:              b.text,
 		URL:               b.url,
 		Style:             b.style,
-		IconCustomEmojiID: b.iconCustomEmojiID,
-		CallbackData:      b.callbackData,
+		IconCustomEmojiID: b.emojiID,
+		CallbackData:      b.data,
 	}
 }
 
@@ -177,7 +197,7 @@ func (in *InlineKeyboard) AddURLButtonStyle(text string, style tgapi.KeyboardBut
 
 // AddCallbackButton adds a button that sends a structured callback payload to the bot.
 // The command and args are serialized according to the current payloadType.
-func (in *InlineKeyboard) AddCallbackButton(text string, cmd string, args ...any) *InlineKeyboard {
+func (in *InlineKeyboard) AddCallbackButton(text, cmd string, args ...any) *InlineKeyboard {
 	return in.append(tgapi.InlineKeyboardButton{
 		Text:         text,
 		CallbackData: NewCallbackData(cmd, args...).Encode(in.payloadType),

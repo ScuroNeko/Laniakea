@@ -45,6 +45,34 @@ func TestInlineKeyboardBuilderPreservesConfiguredButtonFields(t *testing.T) {
 	}
 }
 
+func TestInlineKeyboardButtonBuilderSetCallbackDataDefaultsToJSON(t *testing.T) {
+	kb := NewInlineKeyboardBase64(1).
+		AddButton(NewInlineKeyboardButton("A").SetCallbackData("cmd", 1, "two"))
+
+	button := kb.Get().InlineKeyboard[0][0]
+	if !strings.Contains(button.CallbackData, `"cmd":"cmd"`) {
+		t.Fatalf("expected JSON callback payload, got %q", button.CallbackData)
+	}
+}
+
+func TestInlineKeyboardButtonBuilderSetCallbackDataUsesConfiguredPayloadType(t *testing.T) {
+	kb := NewInlineKeyboardJSON(1).
+		AddButton(NewInlineKeyboardButton("A").
+			SetPayloadType(BotPayloadBase64).
+			SetCallbackData("cmd", 1, "two"),
+		)
+
+	got, _, err := decodePayload(BotPayloadJSON, kb.Get().InlineKeyboard[0][0].CallbackData, false)
+	if err != nil {
+		t.Fatalf("decodePayload returned error: %v", err)
+	}
+
+	want := CallbackData{Command: "cmd", Args: []string{"1", "two"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected payload: got %#v want %#v", got, want)
+	}
+}
+
 func TestInlineKeyboardGetPayloadTypeReturnsLocalOverride(t *testing.T) {
 	kb := NewInlineKeyboardJSON(2)
 	if got := kb.GetPayloadType(); got != BotPayloadJSON {
