@@ -1,4 +1,4 @@
-package tgmd
+package tgfmt
 
 import (
 	"strings"
@@ -7,8 +7,6 @@ import (
 	"git.scuroneko.dev/scuroneko/extypes"
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
-
-//TODO GoDoc, tests. Maybe escape Markdown v2
 
 // MessageBuilder builds Telegram message text with explicit message entities.
 // MessageBuilder is not safe for concurrent use.
@@ -46,6 +44,7 @@ func (b *MessageBuilder) Entities() []tgapi.MessageEntity {
 	return append([]tgapi.MessageEntity(nil), b.entities...)
 }
 
+// Build returns the built message text and a copy of its entities.
 func (b *MessageBuilder) Build() (string, []tgapi.MessageEntity) {
 	if b.isDirty {
 		b.update()
@@ -53,6 +52,7 @@ func (b *MessageBuilder) Build() (string, []tgapi.MessageEntity) {
 	return b.str, append([]tgapi.MessageEntity(nil), b.entities...)
 }
 
+// Reset clears the builder and keeps it ready for reuse.
 func (b *MessageBuilder) Reset() {
 	b.str = ""
 	b.offset = 0
@@ -67,7 +67,7 @@ func (b *MessageBuilder) update() *MessageBuilder {
 	var textLen int
 	var entitiesLen int
 	for _, e := range b.entries {
-		textLen += len(e.text) // bytes, для Grow нормально
+		textLen += len(e.text)
 		entitiesLen += len(e.entities)
 	}
 
@@ -91,10 +91,12 @@ func (b *MessageBuilder) update() *MessageBuilder {
 	b.isDirty = false
 	return b
 }
+
 func (b *MessageBuilder) markDirty() {
 	b.isDirty = true
 }
 
+// MessageBuilderEntry represents text appended to a MessageBuilder.
 type MessageBuilderEntry struct {
 	text   string
 	length int
@@ -118,6 +120,7 @@ func (b *MessageBuilder) Add(text string) *MessageBuilderEntry {
 	return e
 }
 
+// Mention marks the entry as a Telegram mention.
 func (e *MessageBuilderEntry) Mention() *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityMention,
@@ -126,6 +129,7 @@ func (e *MessageBuilderEntry) Mention() *MessageBuilderEntry {
 	return e
 }
 
+// Hashtag marks the entry as a Telegram hashtag.
 func (e *MessageBuilderEntry) Hashtag() *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityHashtag,
@@ -134,6 +138,7 @@ func (e *MessageBuilderEntry) Hashtag() *MessageBuilderEntry {
 	return e
 }
 
+// Cashtag marks the entry as a Telegram cashtag.
 func (e *MessageBuilderEntry) Cashtag() *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityCashtag,
@@ -142,6 +147,7 @@ func (e *MessageBuilderEntry) Cashtag() *MessageBuilderEntry {
 	return e
 }
 
+// BotCommand marks the entry as a Telegram bot command.
 func (e *MessageBuilderEntry) BotCommand() *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityBotCommand,
@@ -150,6 +156,7 @@ func (e *MessageBuilderEntry) BotCommand() *MessageBuilderEntry {
 	return e
 }
 
+// Email marks the entry as an email address.
 func (e *MessageBuilderEntry) Email() *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityEmail,
@@ -158,6 +165,7 @@ func (e *MessageBuilderEntry) Email() *MessageBuilderEntry {
 	return e
 }
 
+// Phone marks the entry as a phone number.
 func (e *MessageBuilderEntry) Phone() *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityPhoneNumber,
@@ -165,6 +173,8 @@ func (e *MessageBuilderEntry) Phone() *MessageBuilderEntry {
 	})
 	return e
 }
+
+// Bold marks the entry as bold text.
 func (e *MessageBuilderEntry) Bold() *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityBold,
@@ -172,6 +182,8 @@ func (e *MessageBuilderEntry) Bold() *MessageBuilderEntry {
 	})
 	return e
 }
+
+// Italic marks the entry as italic text.
 func (e *MessageBuilderEntry) Italic() *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityItalic,
@@ -179,6 +191,8 @@ func (e *MessageBuilderEntry) Italic() *MessageBuilderEntry {
 	})
 	return e
 }
+
+// Underline marks the entry as underlined text.
 func (e *MessageBuilderEntry) Underline() *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityUnderline,
@@ -186,6 +200,8 @@ func (e *MessageBuilderEntry) Underline() *MessageBuilderEntry {
 	})
 	return e
 }
+
+// Strikethrough marks the entry as strikethrough text.
 func (e *MessageBuilderEntry) Strikethrough() *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityStrike,
@@ -193,6 +209,8 @@ func (e *MessageBuilderEntry) Strikethrough() *MessageBuilderEntry {
 	})
 	return e
 }
+
+// Spoiler marks the entry as spoiler text.
 func (e *MessageBuilderEntry) Spoiler() *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntitySpoiler,
@@ -200,6 +218,8 @@ func (e *MessageBuilderEntry) Spoiler() *MessageBuilderEntry {
 	})
 	return e
 }
+
+// Quote marks the entry as a blockquote.
 func (e *MessageBuilderEntry) Quote() *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityBlockquote,
@@ -207,6 +227,8 @@ func (e *MessageBuilderEntry) Quote() *MessageBuilderEntry {
 	})
 	return e
 }
+
+// ExpandableQuote marks the entry as an expandable blockquote.
 func (e *MessageBuilderEntry) ExpandableQuote() *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityExpandableBlockquote,
@@ -214,6 +236,8 @@ func (e *MessageBuilderEntry) ExpandableQuote() *MessageBuilderEntry {
 	})
 	return e
 }
+
+// InlineCode marks the entry as inline code.
 func (e *MessageBuilderEntry) InlineCode() *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityCode,
@@ -221,6 +245,8 @@ func (e *MessageBuilderEntry) InlineCode() *MessageBuilderEntry {
 	})
 	return e
 }
+
+// CodeBlock marks the entry as a preformatted code block.
 func (e *MessageBuilderEntry) CodeBlock() *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityPre,
@@ -228,6 +254,8 @@ func (e *MessageBuilderEntry) CodeBlock() *MessageBuilderEntry {
 	})
 	return e
 }
+
+// CodeBlockWithLanguage marks the entry as a preformatted code block with language.
 func (e *MessageBuilderEntry) CodeBlockWithLanguage(lang string) *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityPre,
@@ -235,6 +263,8 @@ func (e *MessageBuilderEntry) CodeBlockWithLanguage(lang string) *MessageBuilder
 	})
 	return e
 }
+
+// Link marks the entry as a text link.
 func (e *MessageBuilderEntry) Link(url string) *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityTextLink,
@@ -242,6 +272,8 @@ func (e *MessageBuilderEntry) Link(url string) *MessageBuilderEntry {
 	})
 	return e
 }
+
+// TextMention marks the entry as a mention of user.
 func (e *MessageBuilderEntry) TextMention(user *tgapi.User) *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityTextMention,
@@ -249,6 +281,8 @@ func (e *MessageBuilderEntry) TextMention(user *tgapi.User) *MessageBuilderEntry
 	})
 	return e
 }
+
+// CustomEmoji marks the entry as a custom emoji.
 func (e *MessageBuilderEntry) CustomEmoji(emojiID string) *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityCustomEmoji,
@@ -256,6 +290,8 @@ func (e *MessageBuilderEntry) CustomEmoji(emojiID string) *MessageBuilderEntry {
 	})
 	return e
 }
+
+// DateTime marks the entry as a localized timestamp.
 func (e *MessageBuilderEntry) DateTime(time time.Time) *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityDateTime,
@@ -263,6 +299,8 @@ func (e *MessageBuilderEntry) DateTime(time time.Time) *MessageBuilderEntry {
 	})
 	return e
 }
+
+// DateTimeFormat marks the entry as a localized timestamp with format.
 func (e *MessageBuilderEntry) DateTimeFormat(time time.Time, format string) *MessageBuilderEntry {
 	e.addEntity(tgapi.MessageEntity{
 		Type:   tgapi.MessageEntityDateTime,

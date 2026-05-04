@@ -13,12 +13,13 @@
 - Added `MsgContext.IsCallback()` and `MsgContext.HasPhoto()` helpers for callback-aware handler code.
 - Added `MsgContext.UpsertKeyboard(...)` and `MsgContext.UpsertKeyboardMarkdown(...)` helpers that edit callback messages, replace photo callback messages with a fresh chat message, and send a new chat message outside callback flow.
 - Added `CommandGroup`, `NewCommandGroup(...)`, `Plugin.CommandGroup(...)`, and `Plugin.AddCommandGroup(...)` helpers for registering prefixed command groups with shared middleware.
-- Added the `tgmd` package with Telegram Markdown formatting helpers and a message entity builder.
+- Added the `tgfmt` package with typed MarkdownV2, HTML, legacy Markdown formatting helpers, and a message entity builder.
 
 ### Changed
 - Version metadata now reports the stable `v1.0.0` release instead of `v1.0.0-rc.16`.
 - Bot-level middleware blocks now emit a final `UpdateHandledEvent` with `Handled=false`, keeping observer update lifecycles balanced.
 - `BotOpts`, `tgapi.APIOpts`, logger utilities, README, and wiki pages now document the final stable API names and configuration options consistently.
+- CI now checks formatting, tests, vet, and lint on both pushes and pull requests.
 
 ### Fixed
 - Fixed webhook startup so empty-secret warnings are logged only after the webhook logger is initialized.
@@ -29,6 +30,7 @@
 - Added webhook runtime regression coverage for request enqueue through worker execution of a command handler.
 - Added regression coverage for inline callback keyboard upserts and callback target detection.
 - Added regression coverage for command group prefixing, middleware order, clone behavior, and plugin registration.
+- Added formatting coverage for escaping, composition, link destinations, HTML attributes, and legacy Markdown code blocks.
 
 ## v1.0.0-rc.16
 

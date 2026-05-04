@@ -139,7 +139,7 @@ func (m *AnswerMessage) Edit(text string) *AnswerMessage {
 
 // EditMarkdown replaces the text of the message using MarkdownV2 formatting.
 //
-// ⚠️ WARNING: User input must be escaped with laniakea.EscapeMarkdownV2() before passing here.
+// ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
 // Unescaped input may cause Telegram API errors or broken formatting.
 func (m *AnswerMessage) EditMarkdown(text string) *AnswerMessage {
 	return m.ctx.edit(m.MessageID, text, nil, tgapi.ParseMarkdownV2)
@@ -161,7 +161,7 @@ func (ctx *MsgContext) EditCallback(text string, keyboard *InlineKeyboard) *Answ
 
 // EditCallbackMarkdown edits the callback message using MarkdownV2.
 //
-// ⚠️ WARNING: User input must be escaped with laniakea.EscapeMarkdownV2() before passing here.
+// ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
 func (ctx *MsgContext) EditCallbackMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage {
 	return ctx.editCallback(text, keyboard, tgapi.ParseMarkdownV2)
 }
@@ -173,7 +173,7 @@ func (ctx *MsgContext) EditCallbackf(format string, keyboard *InlineKeyboard, ar
 
 // EditCallbackfMarkdown formats a string using fmt.Sprintf and edits the callback message with MarkdownV2.
 //
-// ⚠️ WARNING: User input must be escaped with laniakea.EscapeMarkdownV2() before passing here.
+// ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
 func (ctx *MsgContext) EditCallbackfMarkdown(format string, keyboard *InlineKeyboard, args ...any) *AnswerMessage {
 	return ctx.editCallback(fmt.Sprintf(format, args...), keyboard, tgapi.ParseMarkdownV2)
 }
@@ -223,7 +223,7 @@ func (m *AnswerMessage) EditCaption(text string) *AnswerMessage {
 
 // EditCaptionMarkdown edits the caption of a media message using MarkdownV2.
 //
-// ⚠️ WARNING: User input must be escaped with laniakea.EscapeMarkdownV2() before passing here.
+// ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
 func (m *AnswerMessage) EditCaptionMarkdown(text string) *AnswerMessage {
 	return m.ctx.editPhotoText(m.MessageID, text, nil, tgapi.ParseMarkdownV2)
 }
@@ -235,7 +235,7 @@ func (m *AnswerMessage) EditCaptionKeyboard(text string, kb *InlineKeyboard) *An
 
 // EditCaptionKeyboardMarkdown edits the caption of a media message with a new inline keyboard using MarkdownV2.
 //
-// ⚠️ WARNING: User input must be escaped with laniakea.EscapeMarkdownV2() before passing here.
+// ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
 func (m *AnswerMessage) EditCaptionKeyboardMarkdown(text string, kb *InlineKeyboard) *AnswerMessage {
 	return m.ctx.editPhotoText(m.MessageID, text, kb, tgapi.ParseMarkdownV2)
 }
@@ -290,7 +290,7 @@ func (ctx *MsgContext) AnswerLong(text string) []*AnswerMessage {
 
 // AnswerMarkdown sends a message using MarkdownV2 formatting.
 //
-// ⚠️ WARNING: User input must be escaped with laniakea.EscapeMarkdownV2() before passing here.
+// ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
 func (ctx *MsgContext) AnswerMarkdown(text string) *AnswerMessage {
 	return ctx.answer(text, nil, tgapi.ParseMarkdownV2)
 }
@@ -307,7 +307,7 @@ func (ctx *MsgContext) AnswerLongf(template string, args ...any) []*AnswerMessag
 
 // AnswerfMarkdown formats a string using fmt.Sprintf and sends it using MarkdownV2.
 //
-// ⚠️ WARNING: User input must be escaped with laniakea.EscapeMarkdownV2() before passing here.
+// ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
 func (ctx *MsgContext) AnswerfMarkdown(template string, args ...any) *AnswerMessage {
 	return ctx.answer(fmt.Sprintf(template, args...), nil, tgapi.ParseMarkdownV2)
 }
@@ -326,7 +326,7 @@ func (ctx *MsgContext) KeyboardLong(text string, kb *InlineKeyboard) []*AnswerMe
 
 // KeyboardMarkdown sends a message with an inline keyboard using MarkdownV2.
 //
-// ⚠️ WARNING: User input must be escaped with laniakea.EscapeMarkdownV2() before passing here.
+// ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
 func (ctx *MsgContext) KeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage {
 	return ctx.answer(text, keyboard, tgapi.ParseMarkdownV2)
 }
@@ -413,7 +413,7 @@ func (ctx *MsgContext) AnswerPhoto(photoID, text string) *AnswerMessage {
 
 // AnswerPhotoMarkdown sends a photo with MarkdownV2 caption.
 //
-// ⚠️ WARNING: User input must be escaped with laniakea.EscapeMarkdownV2() before passing here.
+// ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
 func (ctx *MsgContext) AnswerPhotoMarkdown(photoID, text string) *AnswerMessage {
 	return ctx.answerPhoto(photoID, text, nil, tgapi.ParseMarkdownV2)
 }
@@ -425,7 +425,7 @@ func (ctx *MsgContext) AnswerPhotoKeyboard(photoID, text string, kb *InlineKeybo
 
 // AnswerPhotoKeyboardMarkdown sends a photo with caption and inline keyboard using MarkdownV2.
 //
-// ⚠️ WARNING: User input must be escaped with laniakea.EscapeMarkdownV2() before passing here.
+// ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
 func (ctx *MsgContext) AnswerPhotoKeyboardMarkdown(photoID, text string, kb *InlineKeyboard) *AnswerMessage {
 	return ctx.answerPhoto(photoID, text, kb, tgapi.ParseMarkdownV2)
 }
@@ -437,7 +437,7 @@ func (ctx *MsgContext) AnswerPhotof(photoID, template string, args ...any) *Answ
 
 // AnswerPhotofMarkdown formats a string and sends it as a photo caption using MarkdownV2.
 //
-// ⚠️ WARNING: User input must be escaped with laniakea.EscapeMarkdownV2() before passing here.
+// ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
 func (ctx *MsgContext) AnswerPhotofMarkdown(photoID, template string, args ...any) *AnswerMessage {
 	return ctx.answerPhoto(photoID, fmt.Sprintf(template, args...), nil, tgapi.ParseMarkdownV2)
 }

@@ -1,4 +1,4 @@
-package tgmd
+package tgfmt
 
 import (
 	"reflect"
