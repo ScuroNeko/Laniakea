@@ -255,6 +255,12 @@ func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, erro
 		}
 
 		if !response.Ok {
+			responseErr := &ResponseError{
+				Code:        response.ErrorCode,
+				Description: response.Description,
+				Parameters:  response.Parameters,
+			}
+
 			// Handle rate limiting (429)
 			if response.ErrorCode == 429 && response.Parameters != nil && response.Parameters.RetryAfter != nil {
 				after := *response.Parameters.RetryAfter
@@ -269,6 +275,10 @@ func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, erro
 					}
 				}
 
+				if r.method == "getUpdates" {
+					return zero, responseErr
+				}
+
 				// Wait and retry
 				select {
 				case <-ctx.Done():
@@ -279,7 +289,7 @@ func (r TelegramRequest[R, P]) doRequest(ctx context.Context, api *API) (R, erro
 			}
 
 			// Other API errors
-			return zero, fmt.Errorf("[%d] %s", response.ErrorCode, response.Description)
+			return zero, responseErr
 		}
 
 		return response.Result, nil

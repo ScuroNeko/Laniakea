@@ -15,6 +15,7 @@
 - Added `CommandGroup`, `NewCommandGroup(...)`, `Plugin.CommandGroup(...)`, and `Plugin.AddCommandGroup(...)` helpers for registering prefixed command groups with shared middleware.
 - Added the `tgfmt` package with typed MarkdownV2, HTML, legacy Markdown formatting helpers, and a message entity builder.
 - Added `InlineKeyboardButtonBuilder.SetPayloadType(...)`, `InlineKeyboardButtonBuilder.SetCallbackData(...)`, and `MsgContext.NewInlineKeyboardButton(...)` helpers for payload-aware button building.
+- Added `tgapi.ResponseError` so Telegram API error codes, descriptions, and response parameters remain inspectable through returned errors.
 
 ### Changed
 - Version metadata now reports the stable `v1.0.0` release instead of `v1.0.0-rc.16`.
@@ -25,6 +26,7 @@
 ### Fixed
 - Fixed webhook startup so empty-secret warnings are logged only after the webhook logger is initialized.
 - Fixed webhook startup so a logger configured through `SetWebhookLogger(...)` is preserved.
+- Fixed long-polling 429 handling so `getUpdates` retries use Telegram `retry_after` directly and do not inflate later transient-error backoff.
 
 ### Tests
 - Added regression coverage proving bot-level middleware blocks still complete the observer update lifecycle.
@@ -33,6 +35,7 @@
 - Added regression coverage for command group prefixing, middleware order, clone behavior, and plugin registration.
 - Added formatting coverage for escaping, composition, link destinations, HTML attributes, and legacy Markdown code blocks.
 - Added regression coverage for context-aware inline keyboard button payload encoding.
+- Added regression coverage for long-polling `retry_after` handling on Telegram 429 responses.
 
 ## v1.0.0-rc.16
 

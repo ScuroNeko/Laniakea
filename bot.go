@@ -437,7 +437,7 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 			}
 			close(bot.updateQueue)
 		}()
-		retryDelay := time.Duration(0)
+		backoffDelay := time.Duration(0)
 		retryCount := 0
 		for {
 			select {
@@ -449,8 +449,15 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 					if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 						return
 					}
-					bot.logger.Errorln("failed to fetch updates:", err)
-					retryDelay = nextPollRetryDelay(retryDelay)
+					retryDelay, ok := pollRetryAfterDelay(err)
+					if ok {
+						bot.logger.Warnln("getUpdates rate limited; retrying after", retryDelay)
+						backoffDelay = 0
+					} else {
+						bot.logger.Errorln("failed to fetch updates:", err)
+						backoffDelay = nextPollRetryDelay(backoffDelay)
+						retryDelay = backoffDelay
+					}
 					retryCount++
 					bot.safeEmitEvent(ctx, PollingRetryEvent{
 						Attempt: retryCount,
@@ -475,7 +482,7 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 					}
 					continue
 				}
-				retryDelay = 0
+				backoffDelay = 0
 				retryCount = 0
 
 				for _, update := range updates {

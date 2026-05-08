@@ -2,6 +2,7 @@ package laniakea
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"reflect"
@@ -133,6 +134,18 @@ func nextPollRetryDelay(prev time.Duration) time.Duration {
 		return 30 * time.Second
 	}
 	return next
+}
+
+func pollRetryAfterDelay(err error) (time.Duration, bool) {
+	var responseErr *tgapi.ResponseError
+	if !errors.As(err, &responseErr) || responseErr.Code != 429 || responseErr.Parameters == nil || responseErr.Parameters.RetryAfter == nil {
+		return 0, false
+	}
+	after := *responseErr.Parameters.RetryAfter
+	if after <= 0 {
+		return 0, false
+	}
+	return time.Duration(after) * time.Second, true
 }
 
 func isNilValue[T any](v T) bool {

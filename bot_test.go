@@ -560,6 +560,59 @@ func TestRunWithContextPreservesPollingRetryBackoff(t *testing.T) {
 	}
 }
 
+func TestRunWithContextUsesTelegramRetryAfterForPollingRateLimit(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	observer := &pollingRetryObserver{cancel: cancel}
+
+	client := &http.Client{
+		Transport: pollingRoundTripFunc(func(r *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(strings.NewReader(`{"ok":false,"error_code":429,"description":"Too Many Requests: retry after 5","parameters":{"retry_after":5}}`)),
+			}, nil
+		}),
+	}
+
+	api := tgapi.NewAPI(
+		tgapi.NewAPIOpts("token").
+			SetAPIURL("http://example.invalid").
+			SetHTTPClient(client),
+	)
+	defer func() {
+		_ = api.Close()
+	}()
+
+	bot := &Bot[NoData]{
+		logger:      sneklog.NewLogger(),
+		api:         api,
+		prefixes:    []string{"/"},
+		plugins:     []Plugin[NoData]{{name: "demo"}},
+		updateQueue: make(chan *tgapi.Update, 1),
+		maxWorkers:  1,
+		observer:    observer,
+	}
+
+	if err := bot.RunWithContext(ctx); err != nil {
+		t.Fatalf("RunWithContext returned error: %v", err)
+	}
+
+	if len(observer.retries) != 1 {
+		t.Fatalf("expected one polling retry event, got %d", len(observer.retries))
+	}
+	if got := observer.retries[0]; got.Attempt != 1 || got.Delay != 5*time.Second {
+		t.Fatalf("unexpected polling retry event: %#v", got)
+	}
+	var responseErr *tgapi.ResponseError
+	if !errors.As(observer.retries[0].Err, &responseErr) {
+		t.Fatalf("expected ResponseError, got %T", observer.retries[0].Err)
+	}
+	if responseErr.Code != 429 || responseErr.Parameters == nil || responseErr.Parameters.RetryAfter == nil || *responseErr.Parameters.RetryAfter != 5 {
+		t.Fatalf("unexpected response error: %#v", responseErr)
+	}
+}
+
 func TestBotConfigurationFreezesAfterRunStarts(t *testing.T) {
 	type testDB struct{ Name string }
 
