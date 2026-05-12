@@ -52,6 +52,10 @@ var (
 	BotPayloadBase64 BotPayloadType = "base64"
 	// BotPayloadJSON encodes callback data as a JSON string.
 	BotPayloadJSON BotPayloadType = "json"
+	// BotPayloadCompact encodes callback data as a compact delimited string.
+	BotPayloadCompact BotPayloadType = "compact"
+	// BotPayloadCompactBase64 encodes compact callback data as a Base64 string.
+	BotPayloadCompactBase64 BotPayloadType = "compact-base64"
 )
 
 var (

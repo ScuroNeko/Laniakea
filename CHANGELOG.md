@@ -15,6 +15,7 @@
 - Added `CommandGroup`, `NewCommandGroup(...)`, `Plugin.CommandGroup(...)`, and `Plugin.AddCommandGroup(...)` helpers for registering prefixed command groups with shared middleware.
 - Added the `tgfmt` package with typed MarkdownV2, HTML, legacy Markdown formatting helpers, and a message entity builder.
 - Added `InlineKeyboardButtonBuilder.SetPayloadType(...)`, `InlineKeyboardButtonBuilder.SetCallbackData(...)`, and `MsgContext.NewInlineKeyboardButton(...)` helpers for payload-aware button building.
+- Added compact callback payload encoding through `BotPayloadCompact`, `BotPayloadCompactBase64`, compact inline keyboard builders, and matching `CallbackData` helpers.
 - Added `tgapi.ResponseError` so Telegram API error codes, descriptions, and response parameters remain inspectable through returned errors.
 
 ### Changed
@@ -35,6 +36,7 @@
 - Added regression coverage for command group prefixing, middleware order, clone behavior, and plugin registration.
 - Added formatting coverage for escaping, composition, link destinations, HTML attributes, and legacy Markdown code blocks.
 - Added regression coverage for context-aware inline keyboard button payload encoding.
+- Added regression coverage for compact and Base64-encoded compact callback payload decoding.
 - Added regression coverage for long-polling `retry_after` handling on Telegram 429 responses.
 
 ## v1.0.0-rc.16

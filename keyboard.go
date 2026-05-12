@@ -91,12 +91,31 @@ func (b InlineKeyboardButtonBuilder) SetCallbackDataBase64(cmd string, args ...a
 	return b
 }
 
+// SetCallbackDataCompact sets a structured callback payload encoded as compact text.
+func (b InlineKeyboardButtonBuilder) SetCallbackDataCompact(cmd string, args ...any) InlineKeyboardButtonBuilder {
+	b.data = NewCallbackData(cmd, args...).ToCompact()
+	return b
+}
+
+// SetCallbackDataCompactBase64 sets a compact callback payload encoded as Base64.
+func (b InlineKeyboardButtonBuilder) SetCallbackDataCompactBase64(cmd string, args ...any) InlineKeyboardButtonBuilder {
+	b.data = NewCallbackData(cmd, args...).ToCompactBase64()
+	return b
+}
+
 // SetCallbackData sets a structured callback payload using the configured payload type.
 // The default payload type is JSON.
 func (b InlineKeyboardButtonBuilder) SetCallbackData(cmd string, args ...any) InlineKeyboardButtonBuilder {
-	if b.payloadType == BotPayloadBase64 {
+	switch b.payloadType {
+	case BotPayloadJSON:
+		b.data = NewCallbackData(cmd, args...).ToJSON()
+	case BotPayloadBase64:
 		b.data = NewCallbackData(cmd, args...).ToBase64()
-	} else {
+	case BotPayloadCompact:
+		b.data = NewCallbackData(cmd, args...).ToCompact()
+	case BotPayloadCompactBase64:
+		b.data = NewCallbackData(cmd, args...).ToCompactBase64()
+	default:
 		b.data = NewCallbackData(cmd, args...).ToJSON()
 	}
 	return b
@@ -141,6 +160,16 @@ func NewInlineKeyboardJSON(maxRow int) *InlineKeyboard {
 // Example: NewInlineKeyboardBase64(3) creates a keyboard with at most 3 buttons per line.
 func NewInlineKeyboardBase64(maxRow int) *InlineKeyboard {
 	return NewInlineKeyboard(BotPayloadBase64, maxRow)
+}
+
+// NewInlineKeyboardCompact creates a keyboard builder using compact callback payloads.
+func NewInlineKeyboardCompact(maxRow int) *InlineKeyboard {
+	return NewInlineKeyboard(BotPayloadCompact, maxRow)
+}
+
+// NewInlineKeyboardCompactBase64 creates a keyboard builder using Base64-encoded compact payloads.
+func NewInlineKeyboardCompactBase64(maxRow int) *InlineKeyboard {
+	return NewInlineKeyboard(BotPayloadCompactBase64, maxRow)
 }
 
 // NewInlineKeyboard creates a new keyboard builder with the specified payload encoding
@@ -292,15 +321,33 @@ func (d CallbackData) ToJSON() string {
 // ToBase64 serializes the CallbackData to a JSON string and then encodes it as Base64.
 // Returns an empty string if serialization or encoding fails.
 func (d CallbackData) ToBase64() string {
-	s, err := encodeBase64Payload(d)
+	data, err := encodeBase64Payload(d)
 	if err != nil {
 		return ``
 	}
-	return s
+	return data
+}
+
+// ToCompact serializes the CallbackData to a compact delimited string.
+func (d CallbackData) ToCompact() string {
+	data, err := encodeCompactPayload(d)
+	if err != nil {
+		return ``
+	}
+	return data
+}
+
+// ToCompactBase64 serializes the CallbackData to compact text and then encodes it as Base64.
+func (d CallbackData) ToCompactBase64() string {
+	data, err := encodeCompactBase64Payload(d)
+	if err != nil {
+		return ``
+	}
+	return data
 }
 
 // Encode serializes the CallbackData according to the specified payload type.
-// Supported types: BotPayloadJSON and BotPayloadBase64.
+// Supported types: BotPayloadJSON, BotPayloadBase64, BotPayloadCompact, and BotPayloadCompactBase64.
 // For unknown types, returns an empty string.
 func (d CallbackData) Encode(t BotPayloadType) string {
 	switch t {
@@ -308,6 +355,10 @@ func (d CallbackData) Encode(t BotPayloadType) string {
 		return d.ToBase64()
 	case BotPayloadJSON:
 		return d.ToJSON()
+	case BotPayloadCompact:
+		return d.ToCompact()
+	case BotPayloadCompactBase64:
+		return d.ToCompactBase64()
 	}
 	return ""
 }

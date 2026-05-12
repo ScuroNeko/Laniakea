@@ -114,6 +114,52 @@ func TestDecodePayloadAcceptsJSONKeyboardPayloadWhenBotPrefersBase64(t *testing.
 	}
 }
 
+func TestDecodePayloadAcceptsCompactKeyboardPayloadWhenBotPrefersJSON(t *testing.T) {
+	kb := NewInlineKeyboardCompact(1).
+		AddCallbackButton("A", "cmd", 1, "two")
+
+	got, decodedType, err := decodePayload(BotPayloadJSON, kb.Get().InlineKeyboard[0][0].CallbackData, false)
+	if err != nil {
+		t.Fatalf("decodePayload returned error: %v", err)
+	}
+	if decodedType != BotPayloadCompact {
+		t.Fatalf("unexpected decoded payload type: got %q want %q", decodedType, BotPayloadCompact)
+	}
+
+	want := CallbackData{Command: "cmd", Args: []string{"1", "two"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected payload: got %#v want %#v", got, want)
+	}
+}
+
+func TestDecodePayloadAcceptsCompactBase64KeyboardPayloadWhenBotPrefersJSON(t *testing.T) {
+	kb := NewInlineKeyboardCompactBase64(1).
+		AddCallbackButton("A", "cmd", 1, "two")
+
+	got, decodedType, err := decodePayload(BotPayloadJSON, kb.Get().InlineKeyboard[0][0].CallbackData, false)
+	if err != nil {
+		t.Fatalf("decodePayload returned error: %v", err)
+	}
+	if decodedType != BotPayloadCompactBase64 {
+		t.Fatalf("unexpected decoded payload type: got %q want %q", decodedType, BotPayloadCompactBase64)
+	}
+
+	want := CallbackData{Command: "cmd", Args: []string{"1", "two"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected payload: got %#v want %#v", got, want)
+	}
+}
+
+func TestDecodePayloadStrictRejectsCompactMismatchedType(t *testing.T) {
+	kb := NewInlineKeyboardCompact(1).
+		AddCallbackButton("A", "cmd", 1)
+
+	_, _, err := decodePayload(BotPayloadJSON, kb.Get().InlineKeyboard[0][0].CallbackData, true)
+	if !errors.Is(err, ErrPayloadTypeMismatch) {
+		t.Fatalf("expected ErrPayloadTypeMismatch, got %v", err)
+	}
+}
+
 func TestDecodePayloadStrictRejectsMismatchedType(t *testing.T) {
 	kb := NewInlineKeyboardBase64(1).
 		AddCallbackButton("A", "cmd", 1)

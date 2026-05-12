@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
@@ -153,36 +154,77 @@ func decodeBase64Payload(s string) (CallbackData, error) {
 	return decodeJSONPayload(string(b))
 }
 
-func decodePayload(payloadType BotPayloadType, s string, strict bool) (CallbackData, BotPayloadType, error) {
+func encodeCompactPayload(d CallbackData) (string, error) {
+	args := strings.Join(d.Args, ",")
+	return d.Command + "|" + args, nil
+}
+func decodeCompactPayload(s string) (CallbackData, error) {
+	values := strings.SplitN(s, "|", 2)
+	if len(values) != 2 {
+		return CallbackData{}, errors.New("invalid payload")
+	}
+	cmd, argsRaw := values[0], values[1]
+	var args []string
+	if argsRaw != "" {
+		args = strings.Split(argsRaw, ",")
+	}
+	return CallbackData{Command: cmd, Args: args}, nil
+}
+func encodeCompactBase64Payload(d CallbackData) (string, error) {
+	payload, _ := encodeCompactPayload(d)
+	return base64.RawURLEncoding.EncodeToString([]byte(payload)), nil
+}
+func decodeCompactBase64Payload(s string) (CallbackData, error) {
+	b, err := base64.RawURLEncoding.DecodeString(s)
+	if err != nil {
+		return CallbackData{}, err
+	}
+	return decodeCompactPayload(string(b))
+}
+
+func decodePayloadAs(payloadType BotPayloadType, s string) (CallbackData, error) {
 	switch payloadType {
 	case BotPayloadBase64:
-		data, err := decodeBase64Payload(s)
-		if err == nil {
-			return data, BotPayloadBase64, nil
-		}
-		if strict {
-			return CallbackData{}, "", fmt.Errorf("%w: expected %s", ErrPayloadTypeMismatch, BotPayloadBase64)
-		}
-		data, err = decodeJSONPayload(s)
-		if err != nil {
-			return CallbackData{}, "", err
-		}
-		return data, BotPayloadJSON, nil
+		return decodeBase64Payload(s)
 	case BotPayloadJSON:
-		data, err := decodeJSONPayload(s)
-		if err == nil {
-			return data, BotPayloadJSON, nil
-		}
-		if strict {
-			return CallbackData{}, "", fmt.Errorf("%w: expected %s", ErrPayloadTypeMismatch, BotPayloadJSON)
-		}
-		data, err = decodeBase64Payload(s)
-		if err != nil {
-			return CallbackData{}, "", err
-		}
-		return data, BotPayloadBase64, nil
+		return decodeJSONPayload(s)
+	case BotPayloadCompact:
+		return decodeCompactPayload(s)
+	case BotPayloadCompactBase64:
+		return decodeCompactBase64Payload(s)
 	}
-	return CallbackData{}, "", ErrInvalidPayloadType
+	return CallbackData{}, ErrInvalidPayloadType
+}
+
+func decodePayload(payloadType BotPayloadType, s string, strict bool) (CallbackData, BotPayloadType, error) {
+	knownTypes := []BotPayloadType{
+		BotPayloadBase64,
+		BotPayloadJSON,
+		BotPayloadCompact,
+		BotPayloadCompactBase64,
+	}
+	if _, err := decodePayloadAs(payloadType, ""); errors.Is(err, ErrInvalidPayloadType) {
+		return CallbackData{}, "", ErrInvalidPayloadType
+	}
+
+	data, err := decodePayloadAs(payloadType, s)
+	if err == nil {
+		return data, payloadType, nil
+	}
+	if strict {
+		return CallbackData{}, "", fmt.Errorf("%w: expected %s", ErrPayloadTypeMismatch, payloadType)
+	}
+
+	for _, candidate := range knownTypes {
+		if candidate == payloadType {
+			continue
+		}
+		data, err = decodePayloadAs(candidate, s)
+		if err == nil {
+			return data, candidate, nil
+		}
+	}
+	return CallbackData{}, "", err
 }
 
 func (bot *Bot[T]) decodePayload(s string) (CallbackData, error) {
