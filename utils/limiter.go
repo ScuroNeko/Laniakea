@@ -16,6 +16,10 @@ var ErrDropOverflow = errors.New("drop overflow limit")
 // It supports two modes:
 //   - "drop" mode: immediately reject if limits are exceeded.
 //   - "wait" mode: block until capacity is available.
+//
+// Per-chat limiters are created lazily and accumulate indefinitely. Call Cleanup
+// periodically (e.g. from a background runner) to evict idle entries and prevent
+// unbounded memory growth in bots that serve many distinct chats.
 type RateLimiter struct {
 	globalLockUntil time.Time     // global cooldown timestamp (set by API errors)
 	globalLimiter   *rate.Limiter // global token bucket (30 req/sec)
@@ -23,7 +27,8 @@ type RateLimiter struct {
 
 	chatLocks    map[int64]time.Time     // per-chat cooldown timestamps
 	chatLimiters map[int64]*rate.Limiter // per-chat token buckets (1 req/sec)
-	chatMu       sync.RWMutex            // protects chatLocks and chatLimiters
+	chatLastSeen map[int64]time.Time     // last access timestamp per chat, for Cleanup eviction
+	chatMu       sync.RWMutex            // protects chatLocks, chatLimiters, and chatLastSeen
 }
 
 // NewRateLimiter creates a new RateLimiter with default limits.
@@ -34,6 +39,32 @@ func NewRateLimiter() *RateLimiter {
 		globalLimiter: rate.NewLimiter(30, 30),
 		chatLimiters:  make(map[int64]*rate.Limiter),
 		chatLocks:     make(map[int64]time.Time),
+		chatLastSeen:  make(map[int64]time.Time),
+	}
+}
+
+// Cleanup removes per-chat limiter state that has not been touched within
+// idleThreshold and chat cooldowns whose expiry has already passed.
+//
+// Safe to call concurrently with Wait/Allow. Intended for periodic invocation
+// from a background runner (e.g. once a minute) to bound memory in long-running
+// bots that serve many distinct chats.
+func (rl *RateLimiter) Cleanup(idleThreshold time.Duration) {
+	now := time.Now()
+	rl.chatMu.Lock()
+	defer rl.chatMu.Unlock()
+
+	for chatID, lastSeen := range rl.chatLastSeen {
+		if now.Sub(lastSeen) <= idleThreshold {
+			continue
+		}
+		delete(rl.chatLimiters, chatID)
+		delete(rl.chatLastSeen, chatID)
+	}
+	for chatID, until := range rl.chatLocks {
+		if !until.After(now) {
+			delete(rl.chatLocks, chatID)
+		}
 	}
 }
 
@@ -228,14 +259,28 @@ func (rl *RateLimiter) waitForChatUnlock(ctx context.Context, chatID int64) erro
 }
 
 // Internal helper that returns or creates a per-chat limiter.
+// Updates chatLastSeen so Cleanup can evict idle entries.
 func (rl *RateLimiter) getChatLimiter(chatID int64) *rate.Limiter {
-	rl.chatMu.Lock()
-	defer rl.chatMu.Unlock()
+	now := time.Now()
 
-	if lim, ok := rl.chatLimiters[chatID]; ok {
+	rl.chatMu.RLock()
+	lim, ok := rl.chatLimiters[chatID]
+	rl.chatMu.RUnlock()
+	if ok {
+		rl.chatMu.Lock()
+		rl.chatLastSeen[chatID] = now
+		rl.chatMu.Unlock()
 		return lim
 	}
-	lim := rate.NewLimiter(1, 1)
+
+	rl.chatMu.Lock()
+	defer rl.chatMu.Unlock()
+	if lim, ok := rl.chatLimiters[chatID]; ok {
+		rl.chatLastSeen[chatID] = now
+		return lim
+	}
+	lim = rate.NewLimiter(1, 1)
 	rl.chatLimiters[chatID] = lim
+	rl.chatLastSeen[chatID] = now
 	return lim
 }

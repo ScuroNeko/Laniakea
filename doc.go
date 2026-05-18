@@ -5,7 +5,7 @@ Core concepts:
 
   - Bot manages Telegram API access, update processing, logging, rate limiting, and dependency injection.
   - Plugins group commands, payloads, and non-command update handlers behind shared middleware.
-  - MsgContext provides access to the current update and reply/edit/delete helpers.
+  - MessageContext provides access to the current update and reply/edit/delete helpers.
   - InlineKeyboard builds callback-driven keyboards and structured payloads.
   - DraftProvider accumulates multi-step replies before sending them.
   - L10n stores key-based translations with fallback behavior.

@@ -60,7 +60,7 @@ func (bot *Bot[T]) SetSessionStore(store SessionStore) *Bot[T] {
 		return bot
 	}
 	if store == nil {
-		bot.logger.Warn("SetSessionStore called with nil store; using default MemorySessionStore")
+		bot.logger.Warn("SetSessionStore called with nil store; nothing changed")
 		return bot
 	}
 	bot.sessionStore = store
@@ -216,7 +216,7 @@ func (bot *Bot[T]) SetL10n(l *L10n) *Bot[T] {
 		return bot
 	}
 	if l == nil {
-		bot.logger.Warn("SetL10n called with nil L10n; localization will be disabled")
+		bot.logger.Warn("SetL10n called with nil L10n; localization will not change")
 		return bot
 	}
 	bot.l10n = l

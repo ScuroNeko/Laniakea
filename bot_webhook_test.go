@@ -135,7 +135,7 @@ func TestRunWebhookRuntimePreservesConfiguredWebhookLogger(t *testing.T) {
 func TestRunWebhookRuntimeProcessesEnqueuedUpdate(t *testing.T) {
 	var calls atomic.Int32
 	plugin := NewPlugin[NoData]("demo")
-	plugin.Command("start", func(ctx *MsgContext, db NoData) error {
+	plugin.Command("start", func(ctx *MessageContext, db NoData) error {
 		calls.Add(1)
 		return nil
 	})

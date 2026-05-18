@@ -23,6 +23,7 @@ type Plugin[T AppData] struct {
 	middlewares extypes.Slice[Middleware[T]] // Shared middlewares for all commands/payloads
 	skipAutoCmd bool                         // If true, all commands in this plugin are excluded from auto-help
 	logger      *sneklog.Logger
+	loggerOwned bool // true when the logger was created by the bot during registration; only owned loggers are closed by Close
 
 	messageFallback CommandExecutor[T]
 	handlers        map[tgapi.UpdateType]CommandExecutor[T]
@@ -53,6 +54,9 @@ func (p *Plugin[T]) AddCommand(command *Command[T]) *Plugin[T] {
 		}
 		return p
 	}
+	if _, exists := p.commands[command.command]; exists && p.logger != nil {
+		p.logger.Warnf("command '%s' is already registered in plugin '%s'; overwriting", command.command, p.name)
+	}
 	p.commands[command.command] = command
 	return p
 }
@@ -74,6 +78,9 @@ func (p *Plugin[T]) AddPayload(command *Command[T]) *Plugin[T] {
 		}
 		return p
 	}
+	if _, exists := p.payloads[command.command]; exists && p.logger != nil {
+		p.logger.Warnf("payload '%s' is already registered in plugin '%s'; overwriting", command.command, p.name)
+	}
 	p.payloads[command.command] = command
 	return p
 }
@@ -81,7 +88,7 @@ func (p *Plugin[T]) AddPayload(command *Command[T]) *Plugin[T] {
 // Payload creates and immediately adds a new payload command to the plugin.
 // Returns the created payload command for further configuration.
 func (p *Plugin[T]) Payload(command string, exec CommandExecutor[T], args ...CommandArg) *Command[T] {
-	cmd := NewPayload(command, exec, args...)
+	cmd := NewCommand(command, exec, args...)
 	p.AddPayload(cmd)
 	return cmd
 }
@@ -101,6 +108,9 @@ func (p *Plugin[T]) AddScene(scene *Scene[T]) *Plugin[T] {
 	}
 	scene.PluginName = p.name
 	scene.setPluginName(p.name)
+	if _, exists := p.scenes[scene.Name]; exists && p.logger != nil {
+		p.logger.Warnf("scene '%s' is already registered in plugin '%s'; overwriting", scene.Name, p.name)
+	}
 	p.scenes[scene.Name] = scene
 	return p
 }
@@ -209,9 +219,13 @@ func (p *Plugin[T]) SetMessageFallback(handler CommandExecutor[T]) *Plugin[T] {
 
 // Close releases plugin-owned resources such as its logger and optional
 // OnClose callback.
+//
+// Only loggers created by the bot during registration are closed. A logger
+// supplied via SetLogger remains the caller's responsibility — the framework
+// never closes a logger it does not own.
 func (p *Plugin[T]) Close() error {
 	var e []error
-	if p.logger != nil {
+	if p.logger != nil && p.loggerOwned {
 		if err := p.logger.Close(); err != nil {
 			e = append(e, err)
 		}
@@ -225,7 +239,7 @@ func (p *Plugin[T]) Close() error {
 }
 
 // Internal helper that validates and executes a command handler.
-func (p *Plugin[T]) executeCmd(cmd string, ctx *MsgContext, db T) error {
+func (p *Plugin[T]) executeCmd(cmd string, ctx *MessageContext, db T) error {
 	command, exists := p.commands[cmd]
 	if !exists {
 		return AsInternalError(errCommandNotFound)
@@ -247,7 +261,7 @@ func (p *Plugin[T]) executeCmd(cmd string, ctx *MsgContext, db T) error {
 }
 
 // Internal helper that validates and executes a payload handler.
-func (p *Plugin[T]) executePayload(payload string, ctx *MsgContext, db T) error {
+func (p *Plugin[T]) executePayload(payload string, ctx *MessageContext, db T) error {
 	command, exists := p.payloads[payload]
 	if !exists {
 		return AsInternalError(errPayloadNotFound)
@@ -269,7 +283,7 @@ func (p *Plugin[T]) executePayload(payload string, ctx *MsgContext, db T) error 
 }
 
 // Internal helper that runs plugin middlewares in order.
-func (p *Plugin[T]) executeMiddlewares(ctx *MsgContext, db T) bool {
+func (p *Plugin[T]) executeMiddlewares(ctx *MessageContext, db T) bool {
 	for _, m := range p.middlewares {
 		if !m.Execute(ctx, db) {
 			return false
@@ -281,14 +295,14 @@ func (p *Plugin[T]) executeMiddlewares(ctx *MsgContext, db T) bool {
 // MiddlewareExecutor is the function type for middleware logic.
 // Returns true to continue execution, false to block it.
 // If async, return value is ignored.
-type MiddlewareExecutor[T AppData] func(ctx *MsgContext, db T) bool
+type MiddlewareExecutor[T AppData] func(ctx *MessageContext, db T) bool
 
 // Middleware represents a reusable execution interceptor.
 // Can be synchronous (blocking) or asynchronous (non-blocking).
 type Middleware[T AppData] struct {
 	name     string                // Human-readable name for logging/debugging
 	executor MiddlewareExecutor[T] // Function to execute
-	order    int                   // Optional sort order (not used yet)
+	order    int                   // Sort order for bot-level middleware ordering
 	async    bool                  // If true, runs in goroutine and doesn't block
 }
 
@@ -313,12 +327,19 @@ func (m Middleware[T]) SetAsync(async bool) Middleware[T] {
 // Execute runs the middleware.
 // If async, runs in a goroutine and returns true immediately.
 // Otherwise, returns the result of the executor.
-func (m Middleware[T]) Execute(ctx *MsgContext, db T) bool {
+//
+// Async note: the goroutine receives a shallow copy of MessageContext, so
+// scalar fields (FromID, ChatID, CallbackQueryID, ...) remain a stable
+// snapshot. Pointer and slice fields (Msg, From, Chat, API, Logger, Args)
+// continue to share storage with the synchronous flow. Async middleware
+// must treat those fields as read-only — mutating them races the sync chain
+// that mutates the same context concurrently.
+func (m Middleware[T]) Execute(ctx *MessageContext, db T) bool {
 	if m.async {
-		ctx := *ctx // copy context to avoid race condition
-		go func(ctx MsgContext) {
+		ctxCopy := *ctx
+		go func(ctx MessageContext) {
 			m.executor(&ctx, db)
-		}(ctx)
+		}(ctxCopy)
 		return true
 	}
 	return m.executor(ctx, db)

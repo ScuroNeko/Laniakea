@@ -7,7 +7,7 @@ import (
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
 
-func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) bool {
+func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MessageContext) bool {
 	text, ok := messageText(update)
 	if !ok {
 		return false
@@ -22,7 +22,7 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) bool {
 	if strings.Contains(cmd, "@") {
 		botUsername := bot.username
 		if botUsername != "" && strings.HasSuffix(cmd, "@"+botUsername) {
-			cmd = cmd[:len(cmd)-len("@"+botUsername)] // убираем @botname
+			cmd = cmd[:len(cmd)-len("@"+botUsername)] // remove @botname
 		}
 	}
 	// Ищем команду по точному совпадению
@@ -30,7 +30,7 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) bool {
 		if _, exists := plugin.commands[cmd]; exists {
 
 			ctx.Text = args
-			ctx.Args = strings.Fields(args) // Убирает лишние пробелы
+			ctx.Args = strings.Fields(args)
 
 			if plugin.logger != nil {
 				ctx.Logger = plugin.logger
@@ -90,7 +90,7 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MsgContext) bool {
 	return bot.handleFallback(update, ctx)
 }
 
-func (bot *Bot[T]) handleFallback(update *tgapi.Update, ctx *MsgContext) bool {
+func (bot *Bot[T]) handleFallback(update *tgapi.Update, ctx *MessageContext) bool {
 	text, ok := messageText(update)
 	if !ok {
 		return false
@@ -180,7 +180,7 @@ func messageText(update *tgapi.Update) (string, bool) {
 	return text, true
 }
 
-func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MsgContext) bool {
+func (bot *Bot[T]) handleCallback(update *tgapi.Update, ctx *MessageContext) bool {
 	data, err := bot.decodePayload(update.CallbackQuery.Data)
 	if err != nil {
 		bot.logger.Errorln(err)

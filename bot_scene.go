@@ -33,7 +33,7 @@ func (bot *Bot[T]) findScene(name string) (*sceneMeta, bool) {
 	return nil, false
 }
 
-func (bot *Bot[T]) findSceneSession(ctx *MsgContext) (string, SceneSession, error) {
+func (bot *Bot[T]) findSceneSession(ctx *MessageContext) (string, SceneSession, error) {
 	var zero SceneSession
 
 	for _, scope := range bot.sceneScopePriority {
@@ -52,8 +52,4 @@ func (bot *Bot[T]) findSceneSession(ctx *MsgContext) (string, SceneSession, erro
 	}
 
 	return "", zero, ErrCantFindSession
-}
-
-func (bot *Bot[T]) buildSceneKey(scope SceneScope, ctx *MsgContext) (string, bool) {
-	return buildSceneKey(scope, ctx)
 }

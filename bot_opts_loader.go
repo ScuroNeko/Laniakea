@@ -155,7 +155,7 @@ func SaveBotOptsFile(codec BotOptsFileCodec, filename string, opts *BotOpts) err
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(filename, data, 0644)
+	err = os.WriteFile(filename, data, 0600)
 	if err != nil {
 		return err
 	}

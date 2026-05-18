@@ -203,6 +203,8 @@ func (in *InlineKeyboard) SetMaxRow(maxRow int) *InlineKeyboard {
 	return in
 }
 
+func (in *InlineKeyboard) GetMaxRow() int { return in.maxRow }
+
 // Internal helper that appends a button and auto-flushes a full row.
 func (in *InlineKeyboard) append(button tgapi.InlineKeyboardButton) *InlineKeyboard {
 	if in.CurrentLine.Len() == in.maxRow {
@@ -302,18 +304,18 @@ func NewCallbackData(command string, args ...any) CallbackData {
 	}
 }
 
+// All To* encoders return an empty string when serialization fails. Telegram
+// rejects empty callback_data, so an empty result surfaces a real bug rather
+// than masking it with a stub payload that silently routes to no handler.
+// Build CallbackData from primitives (string, []string) only — the encoders
+// have no failure modes for that input.
+
 // ToJSON serializes the CallbackData to a JSON string.
-//
-// If serialization fails (e.g., due to unmarshalable fields), returns a fallback
-// JSON object: {"cmd":""} to prevent breaking Telegram's API.
-//
-// This fallback ensures the bot receives a valid JSON payload even if internal
-// errors occur — avoiding "invalid callback_data" errors from Telegram.
+// Returns an empty string if serialization fails.
 func (d CallbackData) ToJSON() string {
 	data, err := encodeJSONPayload(d)
 	if err != nil {
-		// Fallback: return minimal valid JSON to avoid Telegram API rejection
-		return `{"cmd":""}`
+		return ""
 	}
 	return data
 }
@@ -323,25 +325,31 @@ func (d CallbackData) ToJSON() string {
 func (d CallbackData) ToBase64() string {
 	data, err := encodeBase64Payload(d)
 	if err != nil {
-		return ``
+		return ""
 	}
 	return data
 }
 
 // ToCompact serializes the CallbackData to a compact delimited string.
+// Returns an empty string if serialization fails.
+//
+// The compact format coalesces "no args" with "single empty arg" — both
+// produce "cmd|" and decode back to nil args. Use ToJSON or ToBase64 when
+// that distinction must be preserved.
 func (d CallbackData) ToCompact() string {
 	data, err := encodeCompactPayload(d)
 	if err != nil {
-		return ``
+		return ""
 	}
 	return data
 }
 
 // ToCompactBase64 serializes the CallbackData to compact text and then encodes it as Base64.
+// Returns an empty string if serialization or encoding fails.
 func (d CallbackData) ToCompactBase64() string {
 	data, err := encodeCompactBase64Payload(d)
 	if err != nil {
-		return ``
+		return ""
 	}
 	return data
 }

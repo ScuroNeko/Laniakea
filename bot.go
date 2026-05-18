@@ -36,7 +36,7 @@ type AppData any
 // data.
 //
 // Use Bot[NoData] to indicate no shared dependency injection is required.
-type NoData struct{ AppData }
+type NoData struct{}
 
 // AppDataLogger builds a sneklog.LoggerWriter from injected application data.
 //
@@ -89,10 +89,12 @@ type Bot[T AppData] struct {
 	token             string
 	debug             bool
 	errorTemplate     string
+	userID            int64
 	username          string
 	payloadType       BotPayloadType
 	strictPayloadType bool
 	maxWorkers        int
+	pollTimeout       int // Long-polling timeout in seconds for getUpdates
 
 	logFormat     utils.LogFormat
 	logFormatter  *sneklog.Formatter
@@ -184,12 +186,18 @@ func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
 		workers = opts.MaxWorkers
 	}
 
+	pollTimeout := 30
+	if opts.PollTimeout > 0 {
+		pollTimeout = opts.PollTimeout
+	}
+
 	bot := &Bot[T]{
 		updateOffset:      0,
 		errorTemplate:     "%s",
 		payloadType:       BotPayloadBase64,
 		strictPayloadType: opts.StrictPayloadType,
 		maxWorkers:        workers,
+		pollTimeout:       pollTimeout,
 		updateQueue:       updateQueue,
 		api:               api,
 		uploader:          uploader,
@@ -239,6 +247,7 @@ func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
 		return nil, err
 	}
 	bot.username = Val(u.Username, "")
+	bot.userID = u.ID
 	if bot.username == "" {
 		bot.logger.Warn("Can't get bot username. Named command handlers won't work!")
 	}

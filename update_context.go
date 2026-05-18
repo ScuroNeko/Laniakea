@@ -6,7 +6,7 @@ import (
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
 
-func (bot *Bot[T]) handleUpdate(u *tgapi.Update, ctx *MsgContext) bool {
+func (bot *Bot[T]) handleUpdate(u *tgapi.Update, ctx *MessageContext) bool {
 	handled := false
 	for _, plugin := range bot.plugins {
 		handler, ok := plugin.handlers[u.Type]
@@ -66,7 +66,7 @@ func (bot *Bot[T]) handleUpdate(u *tgapi.Update, ctx *MsgContext) bool {
 	return handled
 }
 
-func (bot *Bot[T]) prepareUpdateCtx(u *tgapi.Update, ctx *MsgContext) {
+func (bot *Bot[T]) prepareUpdateCtx(u *tgapi.Update, ctx *MessageContext) {
 	var from *tgapi.User
 	var chat *tgapi.Chat
 	switch u.Type {

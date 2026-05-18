@@ -15,7 +15,7 @@ type Scene[T any] struct {
 	Name string
 	// Scope controls how active scene sessions are keyed and shared.
 	Scope SceneScope
-	// Entry names the first step used by MsgContext.EnterScene.
+	// Entry names the first step used by MessageContext.EnterScene.
 	Entry string
 	// PluginName stores the owning plugin name for scene resolution.
 	PluginName string
@@ -45,7 +45,7 @@ func (s *Scene[T]) SetScope(scope SceneScope) *Scene[T] {
 	return s
 }
 
-// SetEntry sets the initial step entered by MsgContext.EnterScene.
+// SetEntry sets the initial step entered by MessageContext.EnterScene.
 func (s *Scene[T]) SetEntry(step string) *Scene[T] {
 	s.Entry = step
 	return s
@@ -260,8 +260,7 @@ type sceneRuntime interface {
 	getSession(key string) (SceneSession, error)
 	setSession(key string, session SceneSession) error
 	deleteSession(key string) error
-	buildSceneKey(scope SceneScope, ctx *MsgContext) (string, bool)
-	findSceneSession(ctx *MsgContext) (string, SceneSession, error)
+	findSceneSession(ctx *MessageContext) (string, SceneSession, error)
 }
 
 type sceneMeta struct {

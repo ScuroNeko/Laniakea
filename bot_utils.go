@@ -68,7 +68,7 @@ func (bot *Bot[T]) startUpdateWorkers(ctx context.Context) {
 			bot.handle(ctx, u)
 		})
 	}
-	pool.Stop() // Wait for all tasks to complete and stop the pool
+	pool.StopAndWait() // Wait for all tasks to complete and stop the pool
 }
 
 func (bot *Bot[T]) initLoggers(opts *BotOpts) {
@@ -183,6 +183,7 @@ func clonePlugin[T AppData](p *Plugin[T]) Plugin[T] {
 		middlewares:     append(extypes.Slice[Middleware[T]](nil), p.middlewares...),
 		skipAutoCmd:     p.skipAutoCmd,
 		logger:          p.logger,
+		loggerOwned:     false, // user-supplied loggers stay caller-owned; bot may take ownership during registration
 		messageFallback: p.messageFallback,
 		handlers:        make(map[tgapi.UpdateType]CommandExecutor[T]),
 		onClose:         p.onClose,

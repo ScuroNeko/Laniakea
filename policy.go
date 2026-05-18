@@ -8,11 +8,11 @@ import (
 )
 
 // Policy defines a reusable authorization rule for the current update context.
-type Policy[T AppData] func(ctx *MsgContext, data T) error
+type Policy[T AppData] func(ctx *MessageContext, data T) error
 
 // RequirePolicy adapts a Policy into a blocking middleware.
 func RequirePolicy[T AppData](name string, p Policy[T]) Middleware[T] {
-	return NewMiddleware(name, func(ctx *MsgContext, data T) bool {
+	return NewMiddleware(name, func(ctx *MessageContext, data T) bool {
 		if err := p(ctx, data); err != nil {
 			ctx.emitPolicyChecked(PolicyCheckedEvent{
 				Name:     name,
@@ -37,7 +37,7 @@ func RequirePolicy[T AppData](name string, p Policy[T]) Middleware[T] {
 
 // AllPolicies composes policies that all must succeed.
 func AllPolicies[T AppData](policies ...Policy[T]) Policy[T] {
-	return func(ctx *MsgContext, data T) error {
+	return func(ctx *MessageContext, data T) error {
 		for _, p := range policies {
 			if err := p(ctx, data); err != nil {
 				return err
@@ -49,7 +49,7 @@ func AllPolicies[T AppData](policies ...Policy[T]) Policy[T] {
 
 // AnyPolicy composes policies where at least one must succeed.
 func AnyPolicy[T AppData](policies ...Policy[T]) Policy[T] {
-	return func(ctx *MsgContext, data T) error {
+	return func(ctx *MessageContext, data T) error {
 		var firstDeny error
 		var internalErr error
 		for _, p := range policies {
@@ -79,7 +79,7 @@ func AnyPolicy[T AppData](policies ...Policy[T]) Policy[T] {
 
 // NotPolicy inverts a policy deny result while preserving internal failures.
 func NotPolicy[T AppData](policy Policy[T]) Policy[T] {
-	return func(ctx *MsgContext, data T) error {
+	return func(ctx *MessageContext, data T) error {
 		var err error
 		if err = policy(ctx, data); err == nil {
 			return AsUserError(errors.New("the action is not allowed due to policy violation"))
@@ -93,7 +93,7 @@ func NotPolicy[T AppData](policy Policy[T]) Policy[T] {
 
 // RequirePrivateChat allows execution only in private chats.
 func RequirePrivateChat[T AppData]() Policy[T] {
-	return func(ctx *MsgContext, data T) error {
+	return func(ctx *MessageContext, data T) error {
 		if ctx.Msg == nil || ctx.Msg.Chat == nil {
 			return AsInternalError(errors.New("private-chat policy requires message chat context"))
 		}
@@ -108,7 +108,7 @@ func RequirePrivateChat[T AppData]() Policy[T] {
 
 // RequireGroupChat allows execution only in group or supergroup chats.
 func RequireGroupChat[T AppData]() Policy[T] {
-	return func(ctx *MsgContext, data T) error {
+	return func(ctx *MessageContext, data T) error {
 		if ctx.Msg == nil || ctx.Msg.Chat == nil {
 			return AsInternalError(errors.New("group-chat policy requires message chat context"))
 		}
@@ -123,7 +123,7 @@ func RequireGroupChat[T AppData]() Policy[T] {
 
 // RequireSupergroupChat allows execution only in supergroup chats.
 func RequireSupergroupChat[T AppData]() Policy[T] {
-	return func(ctx *MsgContext, data T) error {
+	return func(ctx *MessageContext, data T) error {
 		if ctx.Msg == nil || ctx.Msg.Chat == nil {
 			return AsInternalError(errors.New("supergroup-chat policy requires message chat context"))
 		}
@@ -138,7 +138,7 @@ func RequireSupergroupChat[T AppData]() Policy[T] {
 
 // RequireChatAdmin allows execution only for chat administrators or owners.
 func RequireChatAdmin[T AppData]() Policy[T] {
-	return func(ctx *MsgContext, data T) error {
+	return func(ctx *MessageContext, data T) error {
 		if ctx.FromID == 0 || ctx.ChatID == 0 {
 			return AsInternalError(errors.New("chat-admin policy requires message chat context"))
 		}
@@ -161,7 +161,7 @@ func RequireChatAdmin[T AppData]() Policy[T] {
 
 // RequireChatCreator allows execution only for the chat owner.
 func RequireChatCreator[T AppData]() Policy[T] {
-	return func(ctx *MsgContext, data T) error {
+	return func(ctx *MessageContext, data T) error {
 		if ctx.FromID == 0 || ctx.ChatID == 0 {
 			return AsInternalError(errors.New("chat-creator policy requires message chat context"))
 		}
@@ -184,19 +184,16 @@ func RequireChatCreator[T AppData]() Policy[T] {
 
 // RequireBotAdmin allows execution only when the bot is an admin in the chat.
 func RequireBotAdmin[T AppData]() Policy[T] {
-	return func(ctx *MsgContext, data T) error {
+	return func(ctx *MessageContext, data T) error {
 		if ctx.ChatID == 0 {
 			return AsInternalError(errors.New("bot-admin policy requires message chat context"))
 		}
-
-		bot, err := ctx.API.GetMe()
-		if err != nil {
-			return AsInternalError(fmt.Errorf("failed to fetch bot info: %w", err))
+		if ctx.botID == 0 {
+			return AsInternalError(errors.New("bot ID is not set in context"))
 		}
 
 		member, err := ctx.API.GetChatMember(tgapi.GetChatMember{
-			ChatID: ctx.ChatID,
-			UserID: bot.ID,
+			ChatID: ctx.ChatID, UserID: ctx.botID,
 		})
 		if err != nil {
 			return AsInternalError(fmt.Errorf("failed to fetch bot member status: %w", err))
@@ -212,7 +209,7 @@ func RequireBotAdmin[T AppData]() Policy[T] {
 
 // RequireCallbackFromUser allows execution only for callback queries sent by non-bot users.
 func RequireCallbackFromUser[T AppData]() Policy[T] {
-	return func(ctx *MsgContext, data T) error {
+	return func(ctx *MessageContext, data T) error {
 		if ctx.Update.CallbackQuery == nil {
 			return AsInternalError(errors.New("callback-user policy requires callback query context"))
 		}

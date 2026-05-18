@@ -1,8 +1,8 @@
 package laniakea
 
-// SceneContext wraps MsgContext with scene session state for scene handlers.
+// SceneContext wraps MessageContext with scene session state for scene handlers.
 type SceneContext struct {
-	*MsgContext
+	*MessageContext
 	sess SceneSession
 	key  string
 }

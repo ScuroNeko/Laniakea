@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Purpose
-This repository uses Codex for full-project Go code review, not diff-only review.
+This repository uses AI coding agents for full-project Go code review, not diff-only review.
 
 When asked to review code, inspect the entire repository and use repository-wide context. Do not limit analysis to the latest commit, pull request diff, or recently changed files.
 

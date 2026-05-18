@@ -46,14 +46,14 @@ func TestRequirePolicyStopsExecutionOnDeniedPolicy(t *testing.T) {
 		}
 	}()
 
-	ctx := &MsgContext{
+	ctx := &MessageContext{
 		API:           api,
 		Msg:           &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
 		Logger:        sneklog.NewLogger(),
 		errorTemplate: "Error: %s",
 	}
 
-	mw := RequirePolicy("deny", func(ctx *MsgContext, data NoData) error {
+	mw := RequirePolicy("deny", func(ctx *MessageContext, data NoData) error {
 		return AsUserError(errors.New("blocked"))
 	})
 
@@ -69,7 +69,7 @@ func TestRequirePolicyStopsExecutionOnDeniedPolicy(t *testing.T) {
 }
 
 func TestRequirePrivateChatAllowsPrivateChat(t *testing.T) {
-	ctx := &MsgContext{
+	ctx := &MessageContext{
 		Msg: &tgapi.Message{
 			Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate},
 		},
@@ -82,7 +82,7 @@ func TestRequirePrivateChatAllowsPrivateChat(t *testing.T) {
 }
 
 func TestRequirePrivateChatDeniesNonPrivateChat(t *testing.T) {
-	ctx := &MsgContext{
+	ctx := &MessageContext{
 		Msg: &tgapi.Message{
 			Chat: &tgapi.Chat{ID: -100, Type: tgapi.ChatTypeSupergroup},
 		},
@@ -136,7 +136,7 @@ func TestRequireChatAdminUsesNormalizedIDs(t *testing.T) {
 		}
 	}()
 
-	ctx := &MsgContext{
+	ctx := &MessageContext{
 		API:    api,
 		ChatID: -2001,
 		FromID: 55,
@@ -160,15 +160,15 @@ func TestRequireChatAdminUsesNormalizedIDs(t *testing.T) {
 func TestAllPoliciesReturnsFirstError(t *testing.T) {
 	want := AsUserError(errors.New("blocked"))
 	policy := AllPolicies(
-		func(ctx *MsgContext, data NoData) error { return nil },
-		func(ctx *MsgContext, data NoData) error { return want },
-		func(ctx *MsgContext, data NoData) error {
+		func(ctx *MessageContext, data NoData) error { return nil },
+		func(ctx *MessageContext, data NoData) error { return want },
+		func(ctx *MessageContext, data NoData) error {
 			t.Fatal("unexpected evaluation after first failure")
 			return nil
 		},
 	)
 
-	err := policy(&MsgContext{Logger: sneklog.NewLogger()}, NoData{})
+	err := policy(&MessageContext{Logger: sneklog.NewLogger()}, NoData{})
 	if !errors.Is(err, want) {
 		t.Fatalf("expected first policy error, got %v", err)
 	}
@@ -176,11 +176,11 @@ func TestAllPoliciesReturnsFirstError(t *testing.T) {
 
 func TestAnyPolicyAllowsLaterSuccessAfterInternalError(t *testing.T) {
 	policy := AnyPolicy(
-		func(ctx *MsgContext, data NoData) error { return AsInternalError(errors.New("temporary")) },
-		func(ctx *MsgContext, data NoData) error { return nil },
+		func(ctx *MessageContext, data NoData) error { return AsInternalError(errors.New("temporary")) },
+		func(ctx *MessageContext, data NoData) error { return nil },
 	)
 
-	if err := policy(&MsgContext{Logger: sneklog.NewLogger()}, NoData{}); err != nil {
+	if err := policy(&MessageContext{Logger: sneklog.NewLogger()}, NoData{}); err != nil {
 		t.Fatalf("expected later success to allow access, got %v", err)
 	}
 }
@@ -188,11 +188,11 @@ func TestAnyPolicyAllowsLaterSuccessAfterInternalError(t *testing.T) {
 func TestAnyPolicyReturnsInternalErrorWhenNonePass(t *testing.T) {
 	internal := AsInternalError(errors.New("temporary"))
 	policy := AnyPolicy(
-		func(ctx *MsgContext, data NoData) error { return AsUserError(errors.New("denied")) },
-		func(ctx *MsgContext, data NoData) error { return internal },
+		func(ctx *MessageContext, data NoData) error { return AsUserError(errors.New("denied")) },
+		func(ctx *MessageContext, data NoData) error { return internal },
 	)
 
-	err := policy(&MsgContext{Logger: sneklog.NewLogger()}, NoData{})
+	err := policy(&MessageContext{Logger: sneklog.NewLogger()}, NoData{})
 	if !errors.Is(err, internal) {
 		t.Fatalf("expected internal error, got %v", err)
 	}
@@ -201,29 +201,29 @@ func TestAnyPolicyReturnsInternalErrorWhenNonePass(t *testing.T) {
 func TestAnyPolicyReturnsFirstDenyWhenNoPolicyPasses(t *testing.T) {
 	first := AsUserError(errors.New("first deny"))
 	policy := AnyPolicy(
-		func(ctx *MsgContext, data NoData) error { return first },
-		func(ctx *MsgContext, data NoData) error { return AsUserError(errors.New("second deny")) },
+		func(ctx *MessageContext, data NoData) error { return first },
+		func(ctx *MessageContext, data NoData) error { return AsUserError(errors.New("second deny")) },
 	)
 
-	err := policy(&MsgContext{Logger: sneklog.NewLogger()}, NoData{})
+	err := policy(&MessageContext{Logger: sneklog.NewLogger()}, NoData{})
 	if !errors.Is(err, first) {
 		t.Fatalf("expected first deny error, got %v", err)
 	}
 }
 
 func TestNotPolicyInvertsUserDenyButPreservesInternalErrors(t *testing.T) {
-	inverted := NotPolicy(func(ctx *MsgContext, data NoData) error {
+	inverted := NotPolicy(func(ctx *MessageContext, data NoData) error {
 		return AsUserError(errors.New("denied"))
 	})
-	if err := inverted(&MsgContext{Logger: sneklog.NewLogger()}, NoData{}); err != nil {
+	if err := inverted(&MessageContext{Logger: sneklog.NewLogger()}, NoData{}); err != nil {
 		t.Fatalf("expected inverted deny to succeed, got %v", err)
 	}
 
 	internal := AsInternalError(errors.New("temporary"))
-	preserve := NotPolicy(func(ctx *MsgContext, data NoData) error {
+	preserve := NotPolicy(func(ctx *MessageContext, data NoData) error {
 		return internal
 	})
-	err := preserve(&MsgContext{Logger: sneklog.NewLogger()}, NoData{})
+	err := preserve(&MessageContext{Logger: sneklog.NewLogger()}, NoData{})
 	if !errors.Is(err, internal) {
 		t.Fatalf("expected internal error to be preserved, got %v", err)
 	}
@@ -232,7 +232,7 @@ func TestNotPolicyInvertsUserDenyButPreservesInternalErrors(t *testing.T) {
 func TestRequirePolicyEmitsObserverEvents(t *testing.T) {
 	t.Run("allow", func(t *testing.T) {
 		observer := &recordingObserver{}
-		ctx := &MsgContext{
+		ctx := &MessageContext{
 			Logger:   sneklog.NewLogger(),
 			ctx:      context.Background(),
 			observer: observer,
@@ -240,7 +240,7 @@ func TestRequirePolicyEmitsObserverEvents(t *testing.T) {
 			ChatID:   20,
 		}
 
-		mw := RequirePolicy("allow", func(ctx *MsgContext, data NoData) error {
+		mw := RequirePolicy("allow", func(ctx *MessageContext, data NoData) error {
 			return nil
 		})
 
@@ -257,14 +257,14 @@ func TestRequirePolicyEmitsObserverEvents(t *testing.T) {
 
 	t.Run("deny", func(t *testing.T) {
 		observer := &recordingObserver{}
-		ctx := &MsgContext{
+		ctx := &MessageContext{
 			Logger:        sneklog.NewLogger(),
 			ctx:           context.Background(),
 			observer:      observer,
 			errorTemplate: "%s",
 		}
 
-		mw := RequirePolicy("deny", func(ctx *MsgContext, data NoData) error {
+		mw := RequirePolicy("deny", func(ctx *MessageContext, data NoData) error {
 			return AsInternalError(errors.New("blocked"))
 		})
 

@@ -14,10 +14,10 @@ import (
 	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
-// MsgContext holds the normalized per-update context passed to command, payload,
+// MessageContext holds the normalized per-update context passed to command, payload,
 // scene, middleware, and generic update handlers.
 //
-// MsgContext is populated from the current Telegram update before handler routing.
+// MessageContext is populated from the current Telegram update before handler routing.
 // Not every field is guaranteed for every update kind. In particular:
 //   - Update is always present.
 //   - Msg is populated only for update kinds that carry a Telegram message object.
@@ -27,10 +27,10 @@ import (
 //   - CallbackQueryID, CallbackMsgID, and InlineMsgID are populated only for
 //     callback query handling when the corresponding callback targets exist.
 //
-// Helper methods on MsgContext may require a message-backed context. For example,
+// Helper methods on MessageContext may require a message-backed context. For example,
 // reply helpers need Msg, while inline callback edit helpers can work through
 // InlineMsgID when there is no chat message.
-type MsgContext struct {
+type MessageContext struct {
 	API    *tgapi.API
 	Update tgapi.Update
 
@@ -81,21 +81,22 @@ type MsgContext struct {
 	payloadType   BotPayloadType
 	sceneRuntime  sceneRuntime
 	observer      Observer
+	botID         int64
 
 	ctx context.Context
 }
 
-// AnswerMessage represents a message sent or edited via MsgContext.
+// AnswerMessage represents a message sent or edited via MessageContext.
 // It holds metadata to allow further editing or deletion.
 type AnswerMessage struct {
 	MessageID int
 	Text      string
 	IsMedia   bool
-	ctx       *MsgContext // internal back-reference
+	ctx       *MessageContext // internal back-reference
 }
 
 // Internal helper for text edits with optional keyboard and parse mode.
-func (ctx *MsgContext) edit(messageID int, text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
+func (ctx *MessageContext) edit(messageID int, text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if err := validateMessageText(text); err != nil {
 		ctx.Logger.Errorln(err)
 		return nil
@@ -146,7 +147,7 @@ func (m *AnswerMessage) EditMarkdown(text string) *AnswerMessage {
 }
 
 // Internal helper for editing callback-linked messages.
-func (ctx *MsgContext) editCallback(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
+func (ctx *MessageContext) editCallback(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if ctx.CallbackMsgID == 0 && ctx.InlineMsgID == "" {
 		ctx.Logger.Errorln(ErrCallbackMessageMissing)
 		return nil
@@ -155,31 +156,31 @@ func (ctx *MsgContext) editCallback(text string, keyboard *InlineKeyboard, parse
 }
 
 // EditCallback edits the callback message using plain text (ParseNone).
-func (ctx *MsgContext) EditCallback(text string, keyboard *InlineKeyboard) *AnswerMessage {
+func (ctx *MessageContext) EditCallback(text string, keyboard *InlineKeyboard) *AnswerMessage {
 	return ctx.editCallback(text, keyboard, tgapi.ParseNone)
 }
 
 // EditCallbackMarkdown edits the callback message using MarkdownV2.
 //
 // ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
-func (ctx *MsgContext) EditCallbackMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage {
+func (ctx *MessageContext) EditCallbackMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage {
 	return ctx.editCallback(text, keyboard, tgapi.ParseMarkdownV2)
 }
 
 // EditCallbackf formats a string using fmt.Sprintf and edits the callback message with plain text.
-func (ctx *MsgContext) EditCallbackf(format string, keyboard *InlineKeyboard, args ...any) *AnswerMessage {
+func (ctx *MessageContext) EditCallbackf(format string, keyboard *InlineKeyboard, args ...any) *AnswerMessage {
 	return ctx.editCallback(fmt.Sprintf(format, args...), keyboard, tgapi.ParseNone)
 }
 
 // EditCallbackfMarkdown formats a string using fmt.Sprintf and edits the callback message with MarkdownV2.
 //
 // ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
-func (ctx *MsgContext) EditCallbackfMarkdown(format string, keyboard *InlineKeyboard, args ...any) *AnswerMessage {
+func (ctx *MessageContext) EditCallbackfMarkdown(format string, keyboard *InlineKeyboard, args ...any) *AnswerMessage {
 	return ctx.editCallback(fmt.Sprintf(format, args...), keyboard, tgapi.ParseMarkdownV2)
 }
 
 // Internal helper for media-caption edits.
-func (ctx *MsgContext) editPhotoText(messageID int, text string, kb *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
+func (ctx *MessageContext) editPhotoText(messageID int, text string, kb *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if err := validateCaptionText(text); err != nil {
 		ctx.Logger.Errorln(err)
 		return nil
@@ -241,7 +242,7 @@ func (m *AnswerMessage) EditCaptionKeyboardMarkdown(text string, kb *InlineKeybo
 }
 
 // Internal helper for message replies with optional keyboard and parse mode.
-func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
+func (ctx *MessageContext) answer(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if ctx.Msg == nil {
 		ctx.Logger.Errorln(ErrMessageContextNil)
 		return nil
@@ -276,7 +277,7 @@ func (ctx *MsgContext) answer(text string, keyboard *InlineKeyboard, parseMode t
 }
 
 // Answer sends a plain text message (ParseNone).
-func (ctx *MsgContext) Answer(text string) *AnswerMessage {
+func (ctx *MessageContext) Answer(text string) *AnswerMessage {
 	return ctx.answer(text, nil, tgapi.ParseNone)
 }
 
@@ -284,54 +285,54 @@ func (ctx *MsgContext) Answer(text string) *AnswerMessage {
 //
 // The text is split into Telegram-safe chunks. Returned messages preserve send
 // order. If a chunk fails to send, already-sent messages are returned.
-func (ctx *MsgContext) AnswerLong(text string) []*AnswerMessage {
+func (ctx *MessageContext) AnswerLong(text string) []*AnswerMessage {
 	return ctx.answerLong(text, nil, tgapi.ParseNone)
 }
 
 // AnswerMarkdown sends a message using MarkdownV2 formatting.
 //
 // ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
-func (ctx *MsgContext) AnswerMarkdown(text string) *AnswerMessage {
+func (ctx *MessageContext) AnswerMarkdown(text string) *AnswerMessage {
 	return ctx.answer(text, nil, tgapi.ParseMarkdownV2)
 }
 
 // Answerf formats a string using fmt.Sprintf and sends it as a plain text message.
-func (ctx *MsgContext) Answerf(template string, args ...any) *AnswerMessage {
+func (ctx *MessageContext) Answerf(template string, args ...any) *AnswerMessage {
 	return ctx.answer(fmt.Sprintf(template, args...), nil, tgapi.ParseNone)
 }
 
 // AnswerLongf formats a string using fmt.Sprintf and sends it as one or more plain-text messages.
-func (ctx *MsgContext) AnswerLongf(template string, args ...any) []*AnswerMessage {
+func (ctx *MessageContext) AnswerLongf(template string, args ...any) []*AnswerMessage {
 	return ctx.answerLong(fmt.Sprintf(template, args...), nil, tgapi.ParseNone)
 }
 
 // AnswerfMarkdown formats a string using fmt.Sprintf and sends it using MarkdownV2.
 //
 // ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
-func (ctx *MsgContext) AnswerfMarkdown(template string, args ...any) *AnswerMessage {
+func (ctx *MessageContext) AnswerfMarkdown(template string, args ...any) *AnswerMessage {
 	return ctx.answer(fmt.Sprintf(template, args...), nil, tgapi.ParseMarkdownV2)
 }
 
 // Keyboard sends a message with an inline keyboard (plain text).
-func (ctx *MsgContext) Keyboard(text string, kb *InlineKeyboard) *AnswerMessage {
+func (ctx *MessageContext) Keyboard(text string, kb *InlineKeyboard) *AnswerMessage {
 	return ctx.answer(text, kb, tgapi.ParseNone)
 }
 
 // KeyboardLong sends long plain text split across multiple messages.
 //
 // The inline keyboard is attached only to the final chunk.
-func (ctx *MsgContext) KeyboardLong(text string, kb *InlineKeyboard) []*AnswerMessage {
+func (ctx *MessageContext) KeyboardLong(text string, kb *InlineKeyboard) []*AnswerMessage {
 	return ctx.answerLong(text, kb, tgapi.ParseNone)
 }
 
 // KeyboardMarkdown sends a message with an inline keyboard using MarkdownV2.
 //
 // ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
-func (ctx *MsgContext) KeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage {
+func (ctx *MessageContext) KeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage {
 	return ctx.answer(text, keyboard, tgapi.ParseMarkdownV2)
 }
 
-func (ctx *MsgContext) answerLong(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) []*AnswerMessage {
+func (ctx *MessageContext) answerLong(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) []*AnswerMessage {
 	if parseMode != tgapi.ParseNone {
 		ctx.Logger.Errorln(ErrMessageSplitImpossible)
 		return nil
@@ -371,7 +372,7 @@ func (ctx *MsgContext) answerLong(text string, keyboard *InlineKeyboard, parseMo
 }
 
 // Internal helper for photo replies with optional caption and keyboard.
-func (ctx *MsgContext) answerPhoto(photoID, text string, kb *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
+func (ctx *MessageContext) answerPhoto(photoID, text string, kb *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if ctx.Msg == nil {
 		ctx.Logger.Errorln(ErrMessageContextNil)
 		return nil
@@ -407,43 +408,43 @@ func (ctx *MsgContext) answerPhoto(photoID, text string, kb *InlineKeyboard, par
 }
 
 // AnswerPhoto sends a photo with plain text caption.
-func (ctx *MsgContext) AnswerPhoto(photoID, text string) *AnswerMessage {
+func (ctx *MessageContext) AnswerPhoto(photoID, text string) *AnswerMessage {
 	return ctx.answerPhoto(photoID, text, nil, tgapi.ParseNone)
 }
 
 // AnswerPhotoMarkdown sends a photo with MarkdownV2 caption.
 //
 // ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
-func (ctx *MsgContext) AnswerPhotoMarkdown(photoID, text string) *AnswerMessage {
+func (ctx *MessageContext) AnswerPhotoMarkdown(photoID, text string) *AnswerMessage {
 	return ctx.answerPhoto(photoID, text, nil, tgapi.ParseMarkdownV2)
 }
 
 // AnswerPhotoKeyboard sends a photo with caption and inline keyboard (plain text).
-func (ctx *MsgContext) AnswerPhotoKeyboard(photoID, text string, kb *InlineKeyboard) *AnswerMessage {
+func (ctx *MessageContext) AnswerPhotoKeyboard(photoID, text string, kb *InlineKeyboard) *AnswerMessage {
 	return ctx.answerPhoto(photoID, text, kb, tgapi.ParseNone)
 }
 
 // AnswerPhotoKeyboardMarkdown sends a photo with caption and inline keyboard using MarkdownV2.
 //
 // ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
-func (ctx *MsgContext) AnswerPhotoKeyboardMarkdown(photoID, text string, kb *InlineKeyboard) *AnswerMessage {
+func (ctx *MessageContext) AnswerPhotoKeyboardMarkdown(photoID, text string, kb *InlineKeyboard) *AnswerMessage {
 	return ctx.answerPhoto(photoID, text, kb, tgapi.ParseMarkdownV2)
 }
 
 // AnswerPhotof formats a string and sends it as a photo caption (plain text).
-func (ctx *MsgContext) AnswerPhotof(photoID, template string, args ...any) *AnswerMessage {
+func (ctx *MessageContext) AnswerPhotof(photoID, template string, args ...any) *AnswerMessage {
 	return ctx.answerPhoto(photoID, fmt.Sprintf(template, args...), nil, tgapi.ParseNone)
 }
 
 // AnswerPhotofMarkdown formats a string and sends it as a photo caption using MarkdownV2.
 //
 // ⚠️ WARNING: User input must be escaped with tgfmt.EscapeMarkdownV2() before passing here.
-func (ctx *MsgContext) AnswerPhotofMarkdown(photoID, template string, args ...any) *AnswerMessage {
+func (ctx *MessageContext) AnswerPhotofMarkdown(photoID, template string, args ...any) *AnswerMessage {
 	return ctx.answerPhoto(photoID, fmt.Sprintf(template, args...), nil, tgapi.ParseMarkdownV2)
 }
 
 // Internal helper that deletes a message by ID.
-func (ctx *MsgContext) delete(messageID int) {
+func (ctx *MessageContext) delete(messageID int) {
 	if messageID == 0 {
 		ctx.Logger.Errorln(ErrMessageIDZero)
 		return
@@ -465,7 +466,7 @@ func (ctx *MsgContext) delete(messageID int) {
 func (m *AnswerMessage) Delete() { m.ctx.delete(m.MessageID) }
 
 // CallbackDelete deletes the message that triggered the callback query.
-func (ctx *MsgContext) CallbackDelete() {
+func (ctx *MessageContext) CallbackDelete() {
 	if ctx.CallbackMsgID == 0 {
 		ctx.Logger.Errorln(ErrCallbackMessageMissing)
 		return
@@ -474,7 +475,7 @@ func (ctx *MsgContext) CallbackDelete() {
 }
 
 // Internal helper that answers a callback query with optional text, alert, or URL.
-func (ctx *MsgContext) answerCallbackQuery(url, text string, showAlert bool) {
+func (ctx *MessageContext) answerCallbackQuery(url, text string, showAlert bool) {
 	if len(ctx.CallbackQueryID) == 0 {
 		return
 	}
@@ -488,19 +489,19 @@ func (ctx *MsgContext) answerCallbackQuery(url, text string, showAlert bool) {
 }
 
 // AnswerCallback answers the callback query with no text or alert.
-func (ctx *MsgContext) AnswerCallback() { ctx.answerCallbackQuery("", "", false) }
+func (ctx *MessageContext) AnswerCallback() { ctx.answerCallbackQuery("", "", false) }
 
 // AnswerCallbackText answers the callback query with a text notification.
-func (ctx *MsgContext) AnswerCallbackText(text string) { ctx.answerCallbackQuery("", text, false) }
+func (ctx *MessageContext) AnswerCallbackText(text string) { ctx.answerCallbackQuery("", text, false) }
 
 // AnswerCallbackAlert answers the callback query with a user-visible alert.
-func (ctx *MsgContext) AnswerCallbackAlert(text string) { ctx.answerCallbackQuery("", text, true) }
+func (ctx *MessageContext) AnswerCallbackAlert(text string) { ctx.answerCallbackQuery("", text, true) }
 
 // AnswerCallbackURL answers the callback query with a URL redirect.
-func (ctx *MsgContext) AnswerCallbackURL(u string) { ctx.answerCallbackQuery(u, "", false) }
+func (ctx *MessageContext) AnswerCallbackURL(u string) { ctx.answerCallbackQuery(u, "", false) }
 
 // SendAction sends a chat action (typing, uploading_photo, etc.) to indicate bot activity.
-func (ctx *MsgContext) SendAction(action tgapi.ChatActionType) {
+func (ctx *MessageContext) SendAction(action tgapi.ChatActionType) {
 	if ctx.Msg == nil {
 		ctx.Logger.Errorln("Can't send action without chat message context")
 		return
@@ -518,12 +519,12 @@ func (ctx *MsgContext) SendAction(action tgapi.ChatActionType) {
 }
 
 // Internal helper that formats, sends, and logs an error.
-func (ctx *MsgContext) error(err error) {
+func (ctx *MessageContext) error(err error) {
 	if err == nil {
 		return
 	}
 	ctx.Logger.Errorln(err)
-	if IsInternalError(err) {
+	if !IsUserError(err) {
 		return
 	}
 	text := fmt.Sprintf(ctx.errorTemplate, err.Error())
@@ -536,9 +537,9 @@ func (ctx *MsgContext) error(err error) {
 }
 
 // Error is an alias for error().
-func (ctx *MsgContext) Error(err error) { ctx.error(err) }
+func (ctx *MessageContext) Error(err error) { ctx.error(err) }
 
-func (ctx *MsgContext) newDraft(parseMode tgapi.ParseMode) *Draft {
+func (ctx *MessageContext) newDraft(parseMode tgapi.ParseMode) *Draft {
 	if ctx.Msg == nil {
 		ctx.Logger.Errorln(ErrMessageContextNil)
 		return nil
@@ -567,20 +568,20 @@ func (ctx *MsgContext) newDraft(parseMode tgapi.ParseMode) *Draft {
 
 // NewDraft creates a new message draft associated with the current chat.
 // Uses the API limiter to avoid rate limiting.
-func (ctx *MsgContext) NewDraft() *Draft {
+func (ctx *MessageContext) NewDraft() *Draft {
 	return ctx.newDraft(tgapi.ParseNone)
 }
 
 // NewDraftMarkdown creates a new message draft associated with the current chat,
 // with Markdown V2 parse mode enabled.
 // Uses the API limiter to avoid rate limiting.
-func (ctx *MsgContext) NewDraftMarkdown() *Draft {
+func (ctx *MessageContext) NewDraftMarkdown() *Draft {
 	return ctx.newDraft(tgapi.ParseMarkdownV2)
 }
 
 // Translate looks up a key in the current user's language.
 // Falls back to the bot's default language if user's language is unknown or unsupported.
-func (ctx *MsgContext) Translate(key string) string {
+func (ctx *MessageContext) Translate(key string) string {
 	if ctx.From == nil {
 		return key
 	}
@@ -590,12 +591,12 @@ func (ctx *MsgContext) Translate(key string) string {
 
 // NewInlineKeyboard creates a new keyboard builder with the context's payload
 // encoding type and the specified maximum number of buttons per row.
-func (ctx *MsgContext) NewInlineKeyboard(maxRow int) *InlineKeyboard {
+func (ctx *MessageContext) NewInlineKeyboard(maxRow int) *InlineKeyboard {
 	return NewInlineKeyboard(ctx.payloadType, maxRow)
 }
 
 // NewInlineKeyboardButton creates a button builder using the context payload encoding.
-func (ctx *MsgContext) NewInlineKeyboardButton(text string) InlineKeyboardButtonBuilder {
+func (ctx *MessageContext) NewInlineKeyboardButton(text string) InlineKeyboardButtonBuilder {
 	return NewInlineKeyboardButton(text).SetPayloadType(ctx.payloadType)
 }
 
@@ -684,19 +685,19 @@ func bindPositional(args []string, dst any) error {
 // are provided than fields, the remaining fields keep their zero values. If the
 // final bindable field is a string, it receives the remaining arguments joined
 // with spaces.
-func (ctx *MsgContext) BindArgs(dst any) error {
+func (ctx *MessageContext) BindArgs(dst any) error {
 	return bindPositional(ctx.Args, dst)
 }
 
 // Context returns the request-scoped context associated with the current update.
-func (ctx *MsgContext) Context() context.Context {
+func (ctx *MessageContext) Context() context.Context {
 	if ctx.ctx == nil {
 		return context.Background()
 	}
 	return ctx.ctx
 }
 
-func (ctx *MsgContext) emitPolicyChecked(event PolicyCheckedEvent) {
+func (ctx *MessageContext) emitPolicyChecked(event PolicyCheckedEvent) {
 	if ctx == nil || ctx.observer == nil {
 		return
 	}
@@ -713,7 +714,7 @@ func (ctx *MsgContext) emitPolicyChecked(event PolicyCheckedEvent) {
 }
 
 // EnterScene enters the named scene at its configured entry step.
-func (ctx *MsgContext) EnterScene(name string) error {
+func (ctx *MessageContext) EnterScene(name string) error {
 	if ctx.sceneRuntime == nil {
 		return ErrSceneRuntimeNil
 	}
@@ -723,7 +724,7 @@ func (ctx *MsgContext) EnterScene(name string) error {
 		return ErrSceneNotFound
 	}
 
-	key, ok := ctx.sceneRuntime.buildSceneKey(scene.Scope, ctx)
+	key, ok := buildSceneKey(scene.Scope, ctx)
 	if !ok {
 		return ErrCantFindSession
 	}
@@ -743,7 +744,7 @@ func (ctx *MsgContext) EnterScene(name string) error {
 }
 
 // EnterSceneStep enters the named scene at a specific step.
-func (ctx *MsgContext) EnterSceneStep(name, step string) error {
+func (ctx *MessageContext) EnterSceneStep(name, step string) error {
 	if ctx.sceneRuntime == nil {
 		return ErrSceneRuntimeNil
 	}
@@ -756,7 +757,7 @@ func (ctx *MsgContext) EnterSceneStep(name, step string) error {
 		return ErrSceneStepNotFound
 	}
 
-	key, ok := ctx.sceneRuntime.buildSceneKey(scene.Scope, ctx)
+	key, ok := buildSceneKey(scene.Scope, ctx)
 	if !ok {
 		return ErrCantFindSession
 	}
@@ -767,7 +768,7 @@ func (ctx *MsgContext) EnterSceneStep(name, step string) error {
 }
 
 // ExitScene leaves the currently active scene for this context.
-func (ctx *MsgContext) ExitScene() error {
+func (ctx *MessageContext) ExitScene() error {
 	if ctx.sceneRuntime == nil {
 		return ErrSceneRuntimeNil
 	}
@@ -785,7 +786,7 @@ func (ctx *MsgContext) ExitScene() error {
 		return ErrSceneNotFound
 	}
 
-	key, ok := ctx.sceneRuntime.buildSceneKey(scene.Scope, ctx)
+	key, ok := buildSceneKey(scene.Scope, ctx)
 	if !ok {
 		return ErrCantFindSession
 	}
@@ -794,16 +795,16 @@ func (ctx *MsgContext) ExitScene() error {
 }
 
 // IsCallback reports whether the context belongs to a callback query.
-func (ctx *MsgContext) IsCallback() bool {
+func (ctx *MessageContext) IsCallback() bool {
 	return ctx.CallbackQueryID != "" || ctx.CallbackMsgID > 0 || ctx.InlineMsgID != ""
 }
 
 // HasPhoto reports whether the current message contains a photo payload.
-func (ctx *MsgContext) HasPhoto() bool {
+func (ctx *MessageContext) HasPhoto() bool {
 	return ctx.Msg != nil && ctx.Msg.Photo.Len() > 0
 }
 
-func (ctx *MsgContext) upsertKeyboard(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
+func (ctx *MessageContext) upsertKeyboard(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if ctx.IsCallback() {
 		if ctx.HasPhoto() {
 			ctx.CallbackDelete()
@@ -815,11 +816,11 @@ func (ctx *MsgContext) upsertKeyboard(text string, keyboard *InlineKeyboard, par
 }
 
 // UpsertKeyboard edits a callback message or sends a new plain-text message with a keyboard.
-func (ctx *MsgContext) UpsertKeyboard(text string, keyboard *InlineKeyboard) *AnswerMessage {
+func (ctx *MessageContext) UpsertKeyboard(text string, keyboard *InlineKeyboard) *AnswerMessage {
 	return ctx.upsertKeyboard(text, keyboard, tgapi.ParseNone)
 }
 
 // UpsertKeyboardMarkdown edits a callback message or sends a new MarkdownV2 message with a keyboard.
-func (ctx *MsgContext) UpsertKeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage {
+func (ctx *MessageContext) UpsertKeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage {
 	return ctx.upsertKeyboard(text, keyboard, tgapi.ParseMarkdownV2)
 }

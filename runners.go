@@ -161,23 +161,30 @@ func (bot *Bot[T]) ExecRunners(ctx context.Context) {
 					case <-ctx.Done():
 						return
 					case <-ticker.C:
-						startedAt := time.Now()
-						err := r.fn(bot)
-						bot.safeEmitEvent(ctx, RunnerFinishedEvent{
-							Name:     r.name,
-							Duration: time.Since(startedAt),
-							Err:      err,
+					}
+					// When both ctx.Done() and ticker.C are ready at the same
+					// time, Go's select picks one at random. Re-check ctx so a
+					// late tick after cancellation does not fire one extra
+					// invocation past shutdown.
+					if ctx.Err() != nil {
+						return
+					}
+					startedAt := time.Now()
+					err := r.fn(bot)
+					bot.safeEmitEvent(ctx, RunnerFinishedEvent{
+						Name:     r.name,
+						Duration: time.Since(startedAt),
+						Err:      err,
+					})
+					if err != nil {
+						bot.safeEmitEvent(ctx, ErrorEvent{
+							Plugin:      "bot",
+							HandlerKind: HandlerRunnerKind,
+							HandlerName: r.name,
+							Err:         err,
+							UserFacing:  false,
 						})
-						if err != nil {
-							bot.safeEmitEvent(ctx, ErrorEvent{
-								Plugin:      "bot",
-								HandlerKind: HandlerRunnerKind,
-								HandlerName: r.name,
-								Err:         err,
-								UserFacing:  false,
-							})
-							bot.logger.Warnf("Runner %s failed: %s\n", r.name, err)
-						}
+						bot.logger.Warnf("Runner %s failed: %s\n", r.name, err)
 					}
 				}
 			}(runner)

@@ -370,21 +370,14 @@ func (bot *Bot[T]) newWebhookMux(ctx context.Context, opts *BotWebhookOpts) *htt
 	r.HandleFunc(opts.Path, updateHandler(ctx, bot, opts.SecretToken))
 	return r
 }
-func (bot *Bot[T]) runWebhook(ctx context.Context, opts *BotWebhookOpts) error {
+func (bot *Bot[T]) baseRunWebhook(ctx context.Context, opts *BotWebhookOpts, runFunc func(*http.Server, chan error)) error {
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", opts.LocalPort),
 		Handler: bot.newWebhookMux(ctx, opts),
 	}
 	errCh := make(chan error, 1)
 
-	go func() {
-		err := srv.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			errCh <- err
-			return
-		}
-		errCh <- nil
-	}()
+	go runFunc(srv, errCh)
 
 	bot.webhookLogger.Infoln(fmt.Sprintf("Bot Webhook started at %s; waiting for updates at %s", srv.Addr, opts.URL))
 
@@ -403,38 +396,26 @@ func (bot *Bot[T]) runWebhook(ctx context.Context, opts *BotWebhookOpts) error {
 		return err
 	}
 }
-func (bot *Bot[T]) runWebhookTLS(ctx context.Context, opts *BotWebhookOpts, key, cert string) error {
-	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", opts.LocalPort),
-		Handler: bot.newWebhookMux(ctx, opts),
-	}
-	errCh := make(chan error, 1)
+func (bot *Bot[T]) runWebhook(ctx context.Context, opts *BotWebhookOpts) error {
+	return bot.baseRunWebhook(ctx, opts, func(srv *http.Server, errCh chan error) {
+		err := srv.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			errCh <- err
+			return
+		}
+		errCh <- nil
+	})
 
-	go func() {
+}
+func (bot *Bot[T]) runWebhookTLS(ctx context.Context, opts *BotWebhookOpts, key, cert string) error {
+	return bot.baseRunWebhook(ctx, opts, func(srv *http.Server, errCh chan error) {
 		err := srv.ListenAndServeTLS(cert, key)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 			return
 		}
 		errCh <- nil
-	}()
-
-	bot.webhookLogger.Infoln(fmt.Sprintf("Bot webhook started with TLS(%s, %s) at %s; waiting for updates at %s", key, cert, srv.Addr, opts.URL))
-
-	select {
-	case <-ctx.Done():
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		if err := srv.Shutdown(shutdownCtx); err != nil {
-			return err
-		}
-
-		return <-errCh
-
-	case err := <-errCh:
-		return err
-	}
+	})
 }
 func validateWebhookPath(path string, useStatusPath bool) error {
 	if path == "" {

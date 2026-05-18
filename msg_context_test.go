@@ -44,7 +44,7 @@ func TestAnswerPhotoIncludesDirectMessagesTopicID(t *testing.T) {
 		}
 	}()
 
-	ctx := &MsgContext{
+	ctx := &MessageContext{
 		API: api,
 		Msg: &tgapi.Message{
 			Chat:               &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate},
@@ -56,6 +56,7 @@ func TestAnswerPhotoIncludesDirectMessagesTopicID(t *testing.T) {
 	answer := ctx.AnswerPhoto("photo-id", "caption")
 	if answer == nil {
 		t.Fatal("expected answer message")
+		return
 	}
 	if answer.MessageID != 9 {
 		t.Fatalf("unexpected message id: %d", answer.MessageID)
@@ -73,7 +74,7 @@ func TestBindArgsBindsScalarFields(t *testing.T) {
 		Name   string
 	}
 
-	ctx := &MsgContext{Args: []string{"42", "true", "3.5", "Ada", "Lovelace"}}
+	ctx := &MessageContext{Args: []string{"42", "true", "3.5", "Ada", "Lovelace"}}
 	var got input
 
 	if err := ctx.BindArgs(&got); err != nil {
@@ -92,7 +93,7 @@ func TestBindArgsBindsScalarFields(t *testing.T) {
 }
 
 func TestNewInlineKeyboardButtonUsesContextPayloadType(t *testing.T) {
-	ctx := &MsgContext{payloadType: BotPayloadBase64}
+	ctx := &MessageContext{payloadType: BotPayloadBase64}
 
 	kb := NewInlineKeyboardJSON(1).
 		AddButton(ctx.NewInlineKeyboardButton("A").SetCallbackData("cmd", 1, "two"))
@@ -115,7 +116,7 @@ func TestBindArgsLeavesTrailingFieldsZeroWhenArgsRunOut(t *testing.T) {
 		Admin  bool
 	}
 
-	ctx := &MsgContext{Args: []string{"7"}}
+	ctx := &MessageContext{Args: []string{"7"}}
 	var got input
 
 	if err := ctx.BindArgs(&got); err != nil {
@@ -134,7 +135,7 @@ func TestBindArgsLeavesTrailingFieldsZeroWhenArgsRunOut(t *testing.T) {
 }
 
 func TestBindArgsRejectsInvalidTargets(t *testing.T) {
-	ctx := &MsgContext{Args: []string{"1"}}
+	ctx := &MessageContext{Args: []string{"1"}}
 
 	if err := ctx.BindArgs(nil); !errors.Is(err, ErrBindArgsTargetNotPointer) {
 		t.Fatalf("expected ErrBindArgsTargetNotPointer for nil target, got %v", err)
@@ -151,7 +152,7 @@ func TestBindArgsReportsConversionFailures(t *testing.T) {
 		ID int
 	}
 
-	ctx := &MsgContext{Args: []string{"oops"}}
+	ctx := &MessageContext{Args: []string{"oops"}}
 	var got input
 
 	err := ctx.BindArgs(&got)
@@ -171,7 +172,7 @@ func TestBindArgsRejectsUnsupportedFieldTypes(t *testing.T) {
 		Tags []string
 	}
 
-	ctx := &MsgContext{Args: []string{"tag"}}
+	ctx := &MessageContext{Args: []string{"tag"}}
 	var got input
 
 	err := ctx.BindArgs(&got)
@@ -183,7 +184,37 @@ func TestBindArgsRejectsUnsupportedFieldTypes(t *testing.T) {
 	}
 }
 
-func TestErrorDefaultRemainsUserVisibleForMessageFlow(t *testing.T) {
+func TestErrorDefaultStaysInternalForMessageFlow(t *testing.T) {
+	client := &http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			t.Fatal("unexpected HTTP request for unclassified error")
+			return nil, nil
+		}),
+	}
+
+	api := tgapi.NewAPI(
+		tgapi.NewAPIOpts("token").
+			SetAPIURL("https://example.test").
+			SetHTTPClient(client),
+	)
+	defer func() {
+		if err := api.Close(); err != nil {
+			t.Fatalf("Close returned error: %v", err)
+		}
+	}()
+
+	ctx := &MessageContext{
+		API:           api,
+		Msg:           &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
+		Logger:        sneklog.NewLogger(),
+		errorTemplate: "Error: %s",
+	}
+
+	// Unclassified errors must not leak to the user. Only AsUserError replies.
+	ctx.error(errors.New("boom"))
+}
+
+func TestErrorUserVisibleAnswersForMessageFlow(t *testing.T) {
 	var requests int
 	var gotBody map[string]any
 
@@ -216,14 +247,14 @@ func TestErrorDefaultRemainsUserVisibleForMessageFlow(t *testing.T) {
 		}
 	}()
 
-	ctx := &MsgContext{
+	ctx := &MessageContext{
 		API:           api,
 		Msg:           &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
 		Logger:        sneklog.NewLogger(),
 		errorTemplate: "Error: %s",
 	}
 
-	ctx.error(errors.New("boom"))
+	ctx.error(AsUserError(errors.New("boom")))
 
 	if requests != 1 {
 		t.Fatalf("expected one user-facing error reply, got %d requests", requests)
@@ -252,7 +283,7 @@ func TestErrorInternalSkipsUserReplyForMessageFlow(t *testing.T) {
 		}
 	}()
 
-	ctx := &MsgContext{
+	ctx := &MessageContext{
 		API:           api,
 		Msg:           &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
 		Logger:        sneklog.NewLogger(),
@@ -281,7 +312,7 @@ func TestErrorInternalSkipsCallbackAnswer(t *testing.T) {
 		}
 	}()
 
-	ctx := &MsgContext{
+	ctx := &MessageContext{
 		API:             api,
 		Logger:          sneklog.NewLogger(),
 		errorTemplate:   "%s",
@@ -324,7 +355,7 @@ func TestErrorUserVisibleAnswersCallback(t *testing.T) {
 		}
 	}()
 
-	ctx := &MsgContext{
+	ctx := &MessageContext{
 		API:             api,
 		Logger:          sneklog.NewLogger(),
 		errorTemplate:   "Oops: %s",
@@ -344,13 +375,13 @@ func TestErrorUserVisibleAnswersCallback(t *testing.T) {
 func TestIsCallbackIncludesInlineCallbackTargets(t *testing.T) {
 	tests := []struct {
 		name string
-		ctx  MsgContext
+		ctx  MessageContext
 		want bool
 	}{
-		{name: "callback query id", ctx: MsgContext{CallbackQueryID: "cb-1"}, want: true},
-		{name: "callback message id", ctx: MsgContext{CallbackMsgID: 12}, want: true},
-		{name: "inline message id", ctx: MsgContext{InlineMsgID: "inline-1"}, want: true},
-		{name: "not callback", ctx: MsgContext{}, want: false},
+		{name: "callback query id", ctx: MessageContext{CallbackQueryID: "cb-1"}, want: true},
+		{name: "callback message id", ctx: MessageContext{CallbackMsgID: 12}, want: true},
+		{name: "inline message id", ctx: MessageContext{InlineMsgID: "inline-1"}, want: true},
+		{name: "not callback", ctx: MessageContext{}, want: false},
 	}
 
 	for _, tt := range tests {
@@ -397,7 +428,7 @@ func TestUpsertKeyboardEditsInlineCallback(t *testing.T) {
 		}
 	}()
 
-	ctx := &MsgContext{
+	ctx := &MessageContext{
 		API:         api,
 		InlineMsgID: "inline-1",
 		Logger:      sneklog.NewLogger(),
@@ -426,7 +457,7 @@ func TestUpsertKeyboardEditsInlineCallback(t *testing.T) {
 }
 
 func TestAnswerRejectsEmptyMessage(t *testing.T) {
-	ctx := &MsgContext{
+	ctx := &MessageContext{
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
 		Logger: sneklog.NewLogger(),
 	}
@@ -455,7 +486,7 @@ func TestAnswerRejectsLongMessageWithoutSendingRequest(t *testing.T) {
 		}
 	}()
 
-	ctx := &MsgContext{
+	ctx := &MessageContext{
 		API:    api,
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
 		Logger: sneklog.NewLogger(),
@@ -539,7 +570,7 @@ func TestAnswerLongSplitsRequestsAndAttachesKeyboardToLastChunk(t *testing.T) {
 		}
 	}()
 
-	ctx := &MsgContext{
+	ctx := &MessageContext{
 		API:    api,
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate}},
 		Logger: sneklog.NewLogger(),

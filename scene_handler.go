@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-func (bot *Bot[T]) tryHandleScene(ctx *MsgContext) (bool, error) {
+func (bot *Bot[T]) tryHandleScene(ctx *MessageContext) (bool, error) {
 	key, session, err := bot.findSceneSession(ctx)
 	if err != nil {
-		if errors.Is(err, ErrCantFindSession) || errors.Is(err, ErrMessageNil) {
+		if errors.Is(err, ErrCantFindSession) {
 			return false, nil
 		}
 		return false, err
@@ -31,9 +31,9 @@ func (bot *Bot[T]) tryHandleScene(ctx *MsgContext) (bool, error) {
 			return false, nil
 		}
 		sceneCtx := &SceneContext{
-			MsgContext: ctx,
-			sess:       session,
-			key:        key,
+			MessageContext: ctx,
+			sess:           session,
+			key:            key,
 		}
 
 		return bot.executeScene(sceneCtx, scene)
@@ -42,7 +42,7 @@ func (bot *Bot[T]) tryHandleScene(ctx *MsgContext) (bool, error) {
 }
 
 func (bot *Bot[T]) executeScene(ctx *SceneContext, scene *Scene[T]) (bool, error) {
-	if ctx.MsgContext == nil || ctx.sess.Scene == "" {
+	if ctx.MessageContext == nil || ctx.sess.Scene == "" {
 		return false, nil
 	}
 
@@ -269,7 +269,7 @@ func (bot *Bot[T]) applySceneResult(scene *Scene[T], ctx *SceneContext, result S
 		return false, nil
 	}
 }
-func buildSceneKey(scope SceneScope, ctx *MsgContext) (string, bool) {
+func buildSceneKey(scope SceneScope, ctx *MessageContext) (string, bool) {
 	if ctx == nil {
 		return "", false
 	}

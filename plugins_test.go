@@ -6,7 +6,7 @@ import (
 )
 
 func TestValidateArgsRequiresFullMatch(t *testing.T) {
-	intCmd := NewCommand("int", func(ctx *MsgContext, db NoData) error { return nil }, NewCommandArg("n").SetValueType(CommandValueInt).SetRequired())
+	intCmd := NewCommand("int", func(ctx *MessageContext, db NoData) error { return nil }, NewCommandArg("n").SetValueType(CommandValueInt).SetRequired())
 	if err := intCmd.validateArgs([]string{"123"}); err != nil {
 		t.Fatalf("expected valid integer argument, got %v", err)
 	}
@@ -14,7 +14,7 @@ func TestValidateArgsRequiresFullMatch(t *testing.T) {
 		t.Fatalf("expected ErrCmdArgRegexpMismatch for partial int match, got %v", err)
 	}
 
-	boolCmd := NewCommand("bool", func(ctx *MsgContext, db NoData) error { return nil }, NewCommandArg("flag").SetValueType(CommandValueBool).SetRequired())
+	boolCmd := NewCommand("bool", func(ctx *MessageContext, db NoData) error { return nil }, NewCommandArg("flag").SetValueType(CommandValueBool).SetRequired())
 	if err := boolCmd.validateArgs([]string{"false"}); err != nil {
 		t.Fatalf("expected valid bool argument, got %v", err)
 	}
@@ -26,7 +26,7 @@ func TestValidateArgsRequiresFullMatch(t *testing.T) {
 func TestValidateArgsEnforcesRequiredArgIndex(t *testing.T) {
 	cmd := NewCommand(
 		"mixed",
-		func(ctx *MsgContext, db NoData) error { return nil },
+		func(ctx *MessageContext, db NoData) error { return nil },
 		NewCommandArg("optional"),
 		NewCommandArg("required").SetRequired(),
 	)
@@ -40,9 +40,9 @@ func TestValidateArgsEnforcesRequiredArgIndex(t *testing.T) {
 }
 
 func TestCommandGroupBuildsPrefixedCommandsWithoutMutatingOriginal(t *testing.T) {
-	groupMiddleware := NewMiddleware("group", func(ctx *MsgContext, db NoData) bool { return true })
-	commandMiddleware := NewMiddleware("command", func(ctx *MsgContext, db NoData) bool { return true })
-	cmd := NewCommand("ban", func(ctx *MsgContext, db NoData) error { return nil }).
+	groupMiddleware := NewMiddleware("group", func(ctx *MessageContext, db NoData) bool { return true })
+	commandMiddleware := NewMiddleware("command", func(ctx *MessageContext, db NoData) bool { return true })
+	cmd := NewCommand("ban", func(ctx *MessageContext, db NoData) error { return nil }).
 		SetDescription("Ban user").
 		Use(commandMiddleware)
 
@@ -78,9 +78,9 @@ func TestCommandGroupBuildsPrefixedCommandsWithoutMutatingOriginal(t *testing.T)
 
 func TestCommandGroupBuildIsRepeatable(t *testing.T) {
 	group := NewCommandGroup[NoData]("admin").
-		Use(NewMiddleware("group", func(ctx *MsgContext, db NoData) bool { return true })).
-		AddCommand(NewCommand("ban", func(ctx *MsgContext, db NoData) error { return nil }).
-			Use(NewMiddleware("command", func(ctx *MsgContext, db NoData) bool { return true })))
+		Use(NewMiddleware("group", func(ctx *MessageContext, db NoData) bool { return true })).
+		AddCommand(NewCommand("ban", func(ctx *MessageContext, db NoData) error { return nil }).
+			Use(NewMiddleware("command", func(ctx *MessageContext, db NoData) bool { return true })))
 
 	first := group.Build()
 	second := group.Build()
@@ -103,7 +103,7 @@ func TestPluginCommandGroupRegistersBuiltCommands(t *testing.T) {
 	plugin := NewPlugin[NoData]("admin")
 
 	plugin.CommandGroup("admin_", func(group *CommandGroup[NoData]) {
-		group.AddCommand(NewCommand("ban", func(ctx *MsgContext, db NoData) error { return nil }))
+		group.AddCommand(NewCommand("ban", func(ctx *MessageContext, db NoData) error { return nil }))
 	})
 
 	if _, ok := plugin.commands["admin_ban"]; !ok {

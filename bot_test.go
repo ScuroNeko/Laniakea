@@ -63,14 +63,14 @@ func TestAddPluginsSnapshotsConfiguration(t *testing.T) {
 	bot := &Bot[NoData]{logger: sneklog.NewLogger()}
 	plugin := NewPlugin[NoData]("demo")
 
-	cmd := plugin.Command("start", func(ctx *MsgContext, db NoData) error { return nil })
-	plugin.AddMiddleware(NewMiddleware("base", func(ctx *MsgContext, db NoData) bool { return true }))
+	cmd := plugin.Command("start", func(ctx *MessageContext, db NoData) error { return nil })
+	plugin.AddMiddleware(NewMiddleware("base", func(ctx *MessageContext, db NoData) bool { return true }))
 
 	bot.AddPlugins(plugin)
 
 	cmd.SetDescription("mutated after registration")
-	plugin.Command("late", func(ctx *MsgContext, db NoData) error { return nil })
-	plugin.AddMiddleware(NewMiddleware("late", func(ctx *MsgContext, db NoData) bool { return true }))
+	plugin.Command("late", func(ctx *MessageContext, db NoData) error { return nil })
+	plugin.AddMiddleware(NewMiddleware("late", func(ctx *MessageContext, db NoData) bool { return true }))
 
 	registered := bot.plugins[0]
 	if _, exists := registered.commands["late"]; exists {
@@ -812,7 +812,7 @@ func TestAddPluginsAndRuntimeRegistrationsNoOpAfterRunStarts(t *testing.T) {
 	bot := &Bot[NoData]{
 		logger:      sneklog.NewLogger(),
 		prefixes:    []string{"/"},
-		middlewares: []Middleware[NoData]{NewMiddleware("base", func(ctx *MsgContext, db NoData) bool { return true })},
+		middlewares: []Middleware[NoData]{NewMiddleware("base", func(ctx *MessageContext, db NoData) bool { return true })},
 		runners:     []Runner[NoData]{NewRunner("base", func(bot *Bot[NoData]) error { return nil })},
 	}
 	plugin := NewPlugin[NoData]("late")
@@ -823,7 +823,7 @@ func TestAddPluginsAndRuntimeRegistrationsNoOpAfterRunStarts(t *testing.T) {
 	defer bot.finishRun()
 
 	bot.AddPlugins(plugin)
-	bot.AddMiddleware(NewMiddleware("late", func(ctx *MsgContext, db NoData) bool { return true }))
+	bot.AddMiddleware(NewMiddleware("late", func(ctx *MessageContext, db NoData) bool { return true }))
 	bot.AddRunner(NewRunner("late", func(bot *Bot[NoData]) error { return nil }))
 
 	if len(bot.plugins) != 0 {

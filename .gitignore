@@ -4,3 +4,5 @@
 test/
 .codex/
 .codex
+.agents/
+.claude/

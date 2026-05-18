@@ -26,7 +26,7 @@ func (bot *Bot[T]) handle(parentCtx context.Context, u *tgapi.Update) {
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
 
-	msgCtx := &MsgContext{
+	msgCtx := &MessageContext{
 		Update: *u, API: bot.api,
 		Logger:        bot.logger,
 		errorTemplate: bot.errorTemplate,
@@ -35,6 +35,7 @@ func (bot *Bot[T]) handle(parentCtx context.Context, u *tgapi.Update) {
 		sceneRuntime:  bot,
 		observer:      bot.observer,
 		payloadType:   bot.payloadType,
+		botID:         bot.userID,
 		ctx:           ctx,
 	}
 	bot.prepareUpdateCtx(u, msgCtx)
@@ -114,7 +115,7 @@ func (bot *Bot[T]) handle(parentCtx context.Context, u *tgapi.Update) {
 	})
 }
 
-func cloneMsgContext(src *MsgContext) *MsgContext {
+func cloneMsgContext(src *MessageContext) *MessageContext {
 	cloned := *src
 	if src.Args != nil {
 		cloned.Args = append([]string(nil), src.Args...)
@@ -154,20 +155,92 @@ func decodeBase64Payload(s string) (CallbackData, error) {
 	return decodeJSONPayload(string(b))
 }
 
-func encodeCompactPayload(d CallbackData) (string, error) {
-	args := strings.Join(d.Args, ",")
-	return d.Command + "|" + args, nil
+// Compact payload format: cmd|arg1,arg2,...
+// Bytes \, |, and , inside a part are escaped with a leading backslash so the
+// payload round-trips without ambiguity. Encoding/decoding operate byte-wise
+// because all separators are single-byte ASCII; multi-byte UTF-8 code points
+// pass through unchanged.
+
+func encodeCompactPart(s string) string {
+	if !strings.ContainsAny(s, `\|,`) {
+		return s
+	}
+	var b strings.Builder
+	b.Grow(len(s) + 2)
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '\\', '|', ',':
+			b.WriteByte('\\')
+		}
+		b.WriteByte(s[i])
+	}
+	return b.String()
 }
+
+func decodeCompactPart(s string) string {
+	if !strings.Contains(s, `\`) {
+		return s
+	}
+	var b strings.Builder
+	b.Grow(len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' && i+1 < len(s) {
+			b.WriteByte(s[i+1])
+			i++
+			continue
+		}
+		b.WriteByte(s[i])
+	}
+	return b.String()
+}
+
+func encodeCompactPayload(d CallbackData) (string, error) {
+	var b strings.Builder
+	b.WriteString(encodeCompactPart(d.Command))
+	b.WriteByte('|')
+	for i, a := range d.Args {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		b.WriteString(encodeCompactPart(a))
+	}
+	return b.String(), nil
+}
+
 func decodeCompactPayload(s string) (CallbackData, error) {
-	values := strings.SplitN(s, "|", 2)
-	if len(values) != 2 {
+	sepIdx := -1
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' && i+1 < len(s) {
+			i++
+			continue
+		}
+		if s[i] == '|' {
+			sepIdx = i
+			break
+		}
+	}
+	if sepIdx == -1 {
 		return CallbackData{}, errors.New("invalid payload")
 	}
-	cmd, argsRaw := values[0], values[1]
-	var args []string
-	if argsRaw != "" {
-		args = strings.Split(argsRaw, ",")
+	cmd := decodeCompactPart(s[:sepIdx])
+	argsRaw := s[sepIdx+1:]
+	if argsRaw == "" {
+		return CallbackData{Command: cmd}, nil
 	}
+
+	var args []string
+	start := 0
+	for i := 0; i < len(argsRaw); i++ {
+		if argsRaw[i] == '\\' && i+1 < len(argsRaw) {
+			i++
+			continue
+		}
+		if argsRaw[i] == ',' {
+			args = append(args, decodeCompactPart(argsRaw[start:i]))
+			start = i + 1
+		}
+	}
+	args = append(args, decodeCompactPart(argsRaw[start:]))
 	return CallbackData{Command: cmd, Args: args}, nil
 }
 func encodeCompactBase64Payload(d CallbackData) (string, error) {

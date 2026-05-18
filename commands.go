@@ -85,7 +85,7 @@ func (c CommandArg) SetRequired() CommandArg {
 // CommandExecutor is the function type that executes a command.
 // It receives the message context and injected application data.
 // Returning a non-nil error routes it through the bot's error handler.
-type CommandExecutor[T AppData] func(ctx *MsgContext, dbContext T) error
+type CommandExecutor[T AppData] func(ctx *MessageContext, dbContext T) error
 
 // Command represents a bot command with arguments, description, and executor.
 // Can be registered in a Plugin and optionally skipped from auto-generation.
@@ -98,15 +98,19 @@ type Command[T AppData] struct {
 	skipAutoCmd bool                         // If true, this command won't be auto-added to help menus
 }
 
-// NewCommand creates a new Command with the given command string, executor, and arguments.
-// The command string should not include the leading slash (e.g., "start", not "/start").
+// NewCommand creates a new Command with the given identifier, executor, and arguments.
+//
+// The identifier is used as the routing key for both /-prefixed commands and
+// callback payloads — the difference is registration: pass the result to
+// Plugin.AddCommand/Plugin.Command for message routing, or to
+// Plugin.AddPayload/Plugin.Payload for callback_data routing.
+//
+// For /-commands the identifier must not include the leading slash
+// (e.g. "start", not "/start") and should match [_a-z0-9]{1,32} to satisfy
+// Telegram's BotCommand validation. Payload identifiers may use any bytes
+// that fit Telegram's callback_data limit, though the configured payload
+// encoding may impose its own restrictions.
 func NewCommand[T any](command string, exec CommandExecutor[T], args ...CommandArg) *Command[T] {
-	return &Command[T]{command, "", exec, args, make(extypes.Slice[Middleware[T]], 0), false}
-}
-
-// NewPayload creates a new callback payload handler command.
-// The command string can contain any symbols, but it is recommended to use only "_", "-", ".", a-z, A-Z, and 0-9.
-func NewPayload[T any](command string, exec CommandExecutor[T], args ...CommandArg) *Command[T] {
 	return &Command[T]{command, "", exec, args, make(extypes.Slice[Middleware[T]], 0), false}
 }
 

@@ -65,6 +65,11 @@ type BotOpts struct {
 	// MaxWorkers is the maximum number of update handlers that may run concurrently.
 	MaxWorkers int
 
+	// PollTimeout is the long-polling timeout in seconds for getUpdates.
+	// Defaults to 30. Telegram allows 0..50; values outside that range are accepted
+	// by the bot but rejected by Telegram at runtime.
+	PollTimeout int
+
 	// FileConfigVersion stores the version declared by the config file used to
 	// load these options.
 	//
@@ -94,6 +99,7 @@ type BotOpts struct {
 //   - DROP_RL_OVERFLOW: "true" to drop updates on rate limit overflow
 //   - STRICT_PAYLOAD_TYPE: "true" to reject callback payloads encoded in a different format
 //   - MAX_WORKERS: maximum number of concurrent update handlers (default: 32)
+//   - POLL_TIMEOUT: long-polling timeout in seconds for getUpdates (default: 30)
 //   - LOG_FORMAT: logger output format, "text" or "json" (default: "text")
 //
 // Returns a populated BotOpts.
@@ -101,6 +107,7 @@ type BotOpts struct {
 func LoadOptsFromEnv() *BotOpts {
 	rateLimit := 30
 	maxWorkers := 32
+	pollTimeout := 30
 
 	stringUpdateTypes := splitEnvList(os.Getenv("UPDATE_TYPES"))
 	updateTypes := make([]tgapi.UpdateType, 0, len(stringUpdateTypes))
@@ -115,8 +122,14 @@ func LoadOptsFromEnv() *BotOpts {
 	}
 
 	if mw := os.Getenv("MAX_WORKERS"); mw != "" {
-		if n, err := strconv.Atoi(os.Getenv("MAX_WORKERS")); err == nil {
+		if n, err := strconv.Atoi(mw); err == nil {
 			maxWorkers = n
+		}
+	}
+
+	if pt := os.Getenv("POLL_TIMEOUT"); pt != "" {
+		if n, err := strconv.Atoi(pt); err == nil {
+			pollTimeout = n
 		}
 	}
 
@@ -140,6 +153,7 @@ func LoadOptsFromEnv() *BotOpts {
 		StrictPayloadType:     os.Getenv("STRICT_PAYLOAD_TYPE") == "true",
 
 		MaxWorkers:        maxWorkers,
+		PollTimeout:       pollTimeout,
 		FileConfigVersion: 0,
 		LogFormat:         utils.LogFormat(os.Getenv("LOG_FORMAT")),
 	}
@@ -253,6 +267,13 @@ func (opts *BotOpts) SetStrictPayloadType(strict bool) *BotOpts {
 // The default is 32. Monitor queue length and processing latency to fine-tune.
 func (opts *BotOpts) SetMaxWorkers(workers int) *BotOpts {
 	opts.MaxWorkers = workers
+	return opts
+}
+
+// SetPollTimeout sets the long-polling timeout in seconds for getUpdates.
+// Defaults to 30. Telegram accepts 0..50.
+func (opts *BotOpts) SetPollTimeout(seconds int) *BotOpts {
+	opts.PollTimeout = seconds
 	return opts
 }
 

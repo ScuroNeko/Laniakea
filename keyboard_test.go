@@ -150,6 +150,60 @@ func TestDecodePayloadAcceptsCompactBase64KeyboardPayloadWhenBotPrefersJSON(t *t
 	}
 }
 
+// TestCompactPayloadRoundTripsWithSeparatorChars guards the compact-encoding
+// escape fix. Args containing the , | or \ separator bytes previously corrupted
+// on decode; now they must round-trip exactly.
+//
+// Note: the compact format coalesces "no args" with "single empty arg" — both
+// emit "cmd|" and decode to nil args. Use other encodings if that distinction
+// matters.
+func TestCompactPayloadRoundTripsWithSeparatorChars(t *testing.T) {
+	tests := []struct {
+		name string
+		data CallbackData
+	}{
+		{name: "plain", data: CallbackData{Command: "cmd", Args: []string{"one", "two"}}},
+		{name: "no args", data: CallbackData{Command: "cmd"}},
+		{name: "comma in arg", data: CallbackData{Command: "cmd", Args: []string{"a,b", "c"}}},
+		{name: "pipe in arg", data: CallbackData{Command: "cmd", Args: []string{"a|b", "c"}}},
+		{name: "backslash in arg", data: CallbackData{Command: "cmd", Args: []string{`a\b`, "c"}}},
+		{name: "all specials in arg", data: CallbackData{Command: "cmd", Args: []string{`a,b|c\d`}}},
+		{name: "specials in command", data: CallbackData{Command: "a|b,c", Args: []string{"x"}}},
+		{name: "two empty args", data: CallbackData{Command: "cmd", Args: []string{"", ""}}},
+		{name: "utf8 args", data: CallbackData{Command: "cmd", Args: []string{"привет", "мир"}}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			encoded, err := encodeCompactPayload(tt.data)
+			if err != nil {
+				t.Fatalf("encodeCompactPayload returned error: %v", err)
+			}
+			got, err := decodeCompactPayload(encoded)
+			if err != nil {
+				t.Fatalf("decodeCompactPayload returned error: %v", err)
+			}
+			if got.Command != tt.data.Command {
+				t.Fatalf("command mismatch: got %q want %q (encoded=%q)", got.Command, tt.data.Command, encoded)
+			}
+			if len(got.Args) != len(tt.data.Args) {
+				t.Fatalf("args length mismatch: got %v want %v (encoded=%q)", got.Args, tt.data.Args, encoded)
+			}
+			for i := range tt.data.Args {
+				if got.Args[i] != tt.data.Args[i] {
+					t.Fatalf("arg %d mismatch: got %q want %q (encoded=%q)", i, got.Args[i], tt.data.Args[i], encoded)
+				}
+			}
+		})
+	}
+}
+
+func TestCompactPayloadDecodeRejectsMissingSeparator(t *testing.T) {
+	if _, err := decodeCompactPayload("noseparator"); err == nil {
+		t.Fatal("expected error decoding payload without separator")
+	}
+}
+
 func TestDecodePayloadStrictRejectsCompactMismatchedType(t *testing.T) {
 	kb := NewInlineKeyboardCompact(1).
 		AddCallbackButton("A", "cmd", 1)

@@ -64,7 +64,7 @@ func TestBotMiddlewareReceivesLogger(t *testing.T) {
 	bot := &Bot[NoData]{
 		logger: logger,
 		middlewares: []Middleware[NoData]{
-			NewMiddleware("logger-check", func(ctx *MsgContext, db NoData) bool {
+			NewMiddleware("logger-check", func(ctx *MessageContext, db NoData) bool {
 				called = true
 				if ctx.Logger != logger {
 					t.Fatalf("expected bot logger in middleware context, got %#v", ctx.Logger)
@@ -90,7 +90,7 @@ func TestBotMiddlewareReceivesLogger(t *testing.T) {
 
 func TestAddUpdateHandlerRejectsReservedUpdateTypes(t *testing.T) {
 	plugin := NewPlugin[NoData]("test")
-	handler := func(ctx *MsgContext, db NoData) error { return nil }
+	handler := func(ctx *MessageContext, db NoData) error { return nil }
 
 	for _, updateType := range []tgapi.UpdateType{
 		tgapi.UpdateTypeMessage,
@@ -376,7 +376,7 @@ func TestPrepareUpdateCtxContract(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			bot := &Bot[NoData]{}
-			ctx := &MsgContext{}
+			ctx := &MessageContext{}
 			bot.prepareUpdateCtx(tt.update, ctx)
 
 			if got := ctx.Msg != nil; got != tt.wantMsg {
@@ -450,7 +450,7 @@ func TestHandleUpdateHandlersPopulateFromContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			called := false
-			plugin := NewPlugin[NoData]("test").AddUpdateHandler(tt.update.Type, func(ctx *MsgContext, db NoData) error {
+			plugin := NewPlugin[NoData]("test").AddUpdateHandler(tt.update.Type, func(ctx *MessageContext, db NoData) error {
 				called = true
 				if ctx.Update.UpdateID != tt.update.UpdateID {
 					t.Fatalf("unexpected update in context: got %d want %d", ctx.Update.UpdateID, tt.update.UpdateID)
@@ -488,7 +488,7 @@ func TestHandleUpdateHandlersReceiveIsolatedContexts(t *testing.T) {
 	firstCalled := false
 	secondCalled := false
 
-	first := NewPlugin[NoData]("first").AddUpdateHandler(tgapi.UpdateTypeInlineQuery, func(ctx *MsgContext, db NoData) error {
+	first := NewPlugin[NoData]("first").AddUpdateHandler(tgapi.UpdateTypeInlineQuery, func(ctx *MessageContext, db NoData) error {
 		firstCalled = true
 		if ctx.FromID != 41 {
 			t.Fatalf("unexpected FromID in first handler: got %d want 41", ctx.FromID)
@@ -499,7 +499,7 @@ func TestHandleUpdateHandlersReceiveIsolatedContexts(t *testing.T) {
 		ctx.Args = []string{"mutated"}
 		return nil
 	})
-	second := NewPlugin[NoData]("second").AddUpdateHandler(tgapi.UpdateTypeInlineQuery, func(ctx *MsgContext, db NoData) error {
+	second := NewPlugin[NoData]("second").AddUpdateHandler(tgapi.UpdateTypeInlineQuery, func(ctx *MessageContext, db NoData) error {
 		secondCalled = true
 		if ctx.From == nil {
 			t.Fatal("expected ctx.From to remain populated for second handler")
@@ -541,7 +541,7 @@ func TestHandleUpdateHandlersReceiveIsolatedContexts(t *testing.T) {
 
 func TestHandleUpdateObserverEmitsUpdateErrors(t *testing.T) {
 	observer := &recordingObserver{}
-	plugin := NewPlugin[NoData]("test").AddUpdateHandler(tgapi.UpdateTypeInlineQuery, func(ctx *MsgContext, db NoData) error {
+	plugin := NewPlugin[NoData]("test").AddUpdateHandler(tgapi.UpdateTypeInlineQuery, func(ctx *MessageContext, db NoData) error {
 		return AsUserError(errors.New("update failed"))
 	})
 
@@ -596,7 +596,7 @@ func TestHandleObserverCompletesUpdateWhenBotMiddlewareBlocks(t *testing.T) {
 		logger:   sneklog.NewLogger(),
 		observer: observer,
 		middlewares: []Middleware[NoData]{
-			NewMiddleware("block", func(ctx *MsgContext, db NoData) bool {
+			NewMiddleware("block", func(ctx *MessageContext, db NoData) bool {
 				return false
 			}),
 		},
@@ -632,7 +632,7 @@ func TestHandleMessageFallbackRunsAfterCommandMiss(t *testing.T) {
 	observer := &recordingObserver{}
 	called := false
 	plugin := NewPlugin[NoData]("test")
-	plugin.SetMessageFallback(func(ctx *MsgContext, db NoData) error {
+	plugin.SetMessageFallback(func(ctx *MessageContext, db NoData) error {
 		called = true
 		if ctx.Text != "/missing hello world" {
 			t.Fatalf("unexpected fallback text: got %q", ctx.Text)
@@ -687,7 +687,7 @@ func TestHandleMessageFallbackRunsAfterCommandMiss(t *testing.T) {
 
 func TestHandleMessageFallbackRunsForPlainText(t *testing.T) {
 	called := false
-	plugin := NewPlugin[NoData]("test").SetMessageFallback(func(ctx *MsgContext, db NoData) error {
+	plugin := NewPlugin[NoData]("test").SetMessageFallback(func(ctx *MessageContext, db NoData) error {
 		called = true
 		if ctx.Text != "hello fallback" {
 			t.Fatalf("unexpected fallback text: got %q", ctx.Text)
@@ -723,10 +723,10 @@ func TestHandleMessageFallbackRunsForPlainText(t *testing.T) {
 func TestHandleMessageFallbackRespectsMiddleware(t *testing.T) {
 	called := false
 	plugin := NewPlugin[NoData]("test")
-	plugin.AddMiddleware(NewMiddleware("block", func(ctx *MsgContext, db NoData) bool {
+	plugin.AddMiddleware(NewMiddleware("block", func(ctx *MessageContext, db NoData) bool {
 		return false
 	}))
-	plugin.SetMessageFallback(func(ctx *MsgContext, db NoData) error {
+	plugin.SetMessageFallback(func(ctx *MessageContext, db NoData) error {
 		called = true
 		return nil
 	})
@@ -757,11 +757,11 @@ func TestHandleMessageFallbackDoesNotRunWhenCommandMatches(t *testing.T) {
 	commandCalled := false
 	fallbackCalled := false
 	plugin := NewPlugin[NoData]("test")
-	plugin.Command("start", func(ctx *MsgContext, db NoData) error {
+	plugin.Command("start", func(ctx *MessageContext, db NoData) error {
 		commandCalled = true
 		return nil
 	})
-	plugin.SetMessageFallback(func(ctx *MsgContext, db NoData) error {
+	plugin.SetMessageFallback(func(ctx *MessageContext, db NoData) error {
 		fallbackCalled = true
 		return nil
 	})
@@ -794,7 +794,7 @@ func TestHandleMessageFallbackDoesNotRunWhenCommandMatches(t *testing.T) {
 func TestHandleChannelPostCommandWithSenderChat(t *testing.T) {
 	called := false
 	plugin := NewPlugin[NoData]("test")
-	plugin.Command("ping", func(ctx *MsgContext, db NoData) error {
+	plugin.Command("ping", func(ctx *MessageContext, db NoData) error {
 		called = true
 		if ctx.Msg == nil {
 			t.Fatal("expected message context")
@@ -841,7 +841,7 @@ func TestCommandHandlerBindArgsEndToEnd(t *testing.T) {
 
 	var got banInput
 	plugin := NewPlugin[NoData]("test")
-	plugin.Command("ban", func(ctx *MsgContext, db NoData) error {
+	plugin.Command("ban", func(ctx *MessageContext, db NoData) error {
 		return ctx.BindArgs(&got)
 	},
 		NewCommandArg("user_id").SetValueType(CommandValueInt).SetRequired(),
@@ -878,7 +878,7 @@ func TestPayloadHandlerBindArgsEndToEnd(t *testing.T) {
 
 	var got payloadInput
 	plugin := NewPlugin[NoData]("test")
-	plugin.Payload("approve", func(ctx *MsgContext, db NoData) error {
+	plugin.Payload("approve", func(ctx *MessageContext, db NoData) error {
 		return ctx.BindArgs(&got)
 	},
 		NewCommandArg("id").SetValueType(CommandValueInt).SetRequired(),
@@ -920,11 +920,11 @@ func TestHandleEditedMessageStaysOutOfCommandFlow(t *testing.T) {
 	updateCalled := false
 
 	plugin := NewPlugin[NoData]("test")
-	plugin.Command("ping", func(ctx *MsgContext, db NoData) error {
+	plugin.Command("ping", func(ctx *MessageContext, db NoData) error {
 		commandCalled = true
 		return nil
 	})
-	plugin.AddUpdateHandler(tgapi.UpdateTypeEditedMessage, func(ctx *MsgContext, db NoData) error {
+	plugin.AddUpdateHandler(tgapi.UpdateTypeEditedMessage, func(ctx *MessageContext, db NoData) error {
 		updateCalled = true
 		if ctx.Msg == nil {
 			t.Fatal("expected ctx.Msg in edited message handler")
@@ -968,11 +968,11 @@ func TestHandleEditedChannelPostStaysOutOfCommandFlow(t *testing.T) {
 	updateCalled := false
 
 	plugin := NewPlugin[NoData]("test")
-	plugin.Command("ping", func(ctx *MsgContext, db NoData) error {
+	plugin.Command("ping", func(ctx *MessageContext, db NoData) error {
 		commandCalled = true
 		return nil
 	})
-	plugin.AddUpdateHandler(tgapi.UpdateTypeEditedChannelPost, func(ctx *MsgContext, db NoData) error {
+	plugin.AddUpdateHandler(tgapi.UpdateTypeEditedChannelPost, func(ctx *MessageContext, db NoData) error {
 		updateCalled = true
 		if ctx.Msg == nil {
 			t.Fatal("expected ctx.Msg in edited channel post handler")
@@ -1007,7 +1007,7 @@ func TestHandleEditedChannelPostStaysOutOfCommandFlow(t *testing.T) {
 func TestHandleCallbackPopulatesMessageTargets(t *testing.T) {
 	called := false
 	plugin := NewPlugin[NoData]("test")
-	plugin.Payload("approve", func(ctx *MsgContext, db NoData) error {
+	plugin.Payload("approve", func(ctx *MessageContext, db NoData) error {
 		called = true
 		if ctx.CallbackQueryID != "cb-msg" {
 			t.Fatalf("unexpected CallbackQueryID: %q", ctx.CallbackQueryID)
@@ -1066,7 +1066,7 @@ func TestHandleCallbackPopulatesMessageTargets(t *testing.T) {
 func TestHandleCallbackPopulatesInlineTargets(t *testing.T) {
 	called := false
 	plugin := NewPlugin[NoData]("test")
-	plugin.Payload("inline.approve", func(ctx *MsgContext, db NoData) error {
+	plugin.Payload("inline.approve", func(ctx *MessageContext, db NoData) error {
 		called = true
 		if ctx.CallbackQueryID != "cb-inline" {
 			t.Fatalf("unexpected CallbackQueryID: %q", ctx.CallbackQueryID)
@@ -1122,7 +1122,7 @@ func TestHandleCallbackPopulatesInlineTargets(t *testing.T) {
 func TestHandleCallbackObserverEmitsPayloadEvents(t *testing.T) {
 	observer := &recordingObserver{}
 	plugin := NewPlugin[NoData]("test")
-	plugin.Payload("approve", func(ctx *MsgContext, db NoData) error {
+	plugin.Payload("approve", func(ctx *MessageContext, db NoData) error {
 		return nil
 	})
 
@@ -1173,7 +1173,7 @@ func TestHandleCallbackObserverEmitsPayloadErrors(t *testing.T) {
 	observer := &recordingObserver{}
 	plugin := NewPlugin[NoData]("test")
 	wantErr := AsInternalError(errors.New("boom"))
-	plugin.Payload("approve", func(ctx *MsgContext, db NoData) error {
+	plugin.Payload("approve", func(ctx *MessageContext, db NoData) error {
 		return wantErr
 	})
 
@@ -1236,7 +1236,7 @@ func TestHandleCallbackObserverEmitsDecodeErrors(t *testing.T) {
 			Data: "{not-json",
 			From: tgapi.User{ID: 7},
 		},
-	}, &MsgContext{
+	}, &MessageContext{
 		Update: tgapi.Update{
 			UpdateID: 34,
 			Type:     tgapi.UpdateTypeCallbackQuery,

@@ -3,28 +3,47 @@
 ## v1.0.0
 
 ### Breaking Changes
+- Renamed `MsgContext` to `MessageContext` across the public API, including handler signatures (`CommandExecutor`, `MiddlewareExecutor`, scene handler types), all reply/edit/scene helpers, embedded fields on `SceneContext`, and documentation.
+- Removed the `NewPayload(...)` constructor. `NewCommand(...)` builds the underlying `Command[T]` for both `/-`commands and callback payloads; registration via `Plugin.AddPayload`/`Plugin.Payload` decides routing.
+- `MessageContext.Error(...)` no longer sends unclassified errors to the user. Only errors marked with `AsUserError(...)` are surfaced through the centralized reply path; everything else stays internal-only and is logged.
+- `Plugin.Close()` no longer closes a logger supplied through `Plugin.SetLogger(...)`. Only loggers created by the bot during `AddPlugins` registration are owned and closed; caller-supplied loggers remain the caller's responsibility.
 - Renamed final public APIs to idiomatic names before the stable release: `RunWebhookWithContext(...)`, `RunWebhook(...)`, `CloseWebhook()`, `BotWebhookOpts`, `NewBotWebhookOpts()`, `SetWebhookLogger(...)`, and `GetWebhookLogger()`.
-- Renamed plugin builder helpers from `NewCommand(...)`, `NewPayload(...)`, and `NewScene(...)` to `Command(...)`, `Payload(...)`, and `Scene(...)`; `NewCommand(...)` and `NewPayload(...)` now take the command string before the executor.
+- Renamed plugin builder helpers from `NewCommand(...)` and `NewScene(...)` to `Command(...)` and `Scene(...)`; the surviving `NewCommand(...)` takes the command string before the executor.
 - Renamed command argument value constants to `CommandValueString`, `CommandValueInt`, `CommandValueBool`, and `CommandValueAny`; `NewCommandArg(...)` now defaults to unvalidated `CommandValueAny`.
 - Renamed runner builders from `Onetime(...)` and `Timeout(...)` to `Once(...)` and `Every(...)`.
 - Renamed remaining public acronym/casing outliers including `AnswerCallback...`, `ParseMarkdownV2`, `ParseMarkdown`, `GetChatMemberCount`, `DropRateLimitOverflow`, `SetDropRateLimitOverflow`, and inline keyboard builder APIs.
 
 ### Added
-- Added `MsgContext.IsCallback()` and `MsgContext.HasPhoto()` helpers for callback-aware handler code.
-- Added `MsgContext.UpsertKeyboard(...)` and `MsgContext.UpsertKeyboardMarkdown(...)` helpers that edit callback messages, replace photo callback messages with a fresh chat message, and send a new chat message outside callback flow.
+- Added `MessageContext.IsCallback()` and `MessageContext.HasPhoto()` helpers for callback-aware handler code.
+- Added `MessageContext.UpsertKeyboard(...)` and `MessageContext.UpsertKeyboardMarkdown(...)` helpers that edit callback messages, replace photo callback messages with a fresh chat message, and send a new chat message outside callback flow.
 - Added `CommandGroup`, `NewCommandGroup(...)`, `Plugin.CommandGroup(...)`, and `Plugin.AddCommandGroup(...)` helpers for registering prefixed command groups with shared middleware.
 - Added the `tgfmt` package with typed MarkdownV2, HTML, legacy Markdown formatting helpers, and a message entity builder.
-- Added `InlineKeyboardButtonBuilder.SetPayloadType(...)`, `InlineKeyboardButtonBuilder.SetCallbackData(...)`, and `MsgContext.NewInlineKeyboardButton(...)` helpers for payload-aware button building.
+- Added `InlineKeyboardButtonBuilder.SetPayloadType(...)`, `InlineKeyboardButtonBuilder.SetCallbackData(...)`, and `MessageContext.NewInlineKeyboardButton(...)` helpers for payload-aware button building.
 - Added compact callback payload encoding through `BotPayloadCompact`, `BotPayloadCompactBase64`, compact inline keyboard builders, and matching `CallbackData` helpers.
+- Added `BotOpts.PollTimeout`, `BotOpts.SetPollTimeout(...)`, and the `POLL_TIMEOUT` environment variable to configure the long-polling `getUpdates` timeout (default 30 seconds).
+- Added `RateLimiter.Cleanup(idleThreshold)` to evict per-chat limiter state and expired chat cooldowns; the limiter now tracks per-chat last-seen time so long-running bots can bound memory through a periodic runner.
+- Added cached bot identity (`Bot.userID`) populated at `NewBot` so chat-admin policies and similar lookups reuse it instead of issuing a fresh `GetMe` request.
 - Added `tgapi.ResponseError` so Telegram API error codes, descriptions, and response parameters remain inspectable through returned errors.
 
 ### Changed
 - Version metadata now reports the stable `v1.0.0` release instead of `v1.0.0-rc.16`.
+- Compact callback payload encoding now escapes `,`, `|`, and `\` in command and arg bytes so payloads containing those bytes round-trip without ambiguity. Note: the format coalesces "no args" with "single empty arg" — both encode as `cmd|` and decode to nil args.
+- `CallbackData.ToJSON()`, `ToBase64()`, `ToCompact()`, and `ToCompactBase64()` now all return an empty string on serialization failure; the previous `ToJSON()` fallback `{"cmd":""}` has been removed so encoder bugs surface visibly instead of routing to no handler.
 - Bot-level middleware blocks now emit a final `UpdateHandledEvent` with `Handled=false`, keeping observer update lifecycles balanced.
+- Plugin registration now warns when `AddCommand`, `AddPayload`, or `AddScene` overwrites an existing entry with the same name instead of silently replacing it.
 - `BotOpts`, `tgapi.APIOpts`, logger utilities, README, and wiki pages now document the final stable API names and configuration options consistently.
 - CI now checks formatting, tests, vet, and lint on both pushes and pull requests.
 
 ### Fixed
+- Fixed the update worker pool returning before in-flight handlers completed. `startUpdateWorkers` now calls `pool.StopAndWait()` so the bot waits for already-submitted tasks before runtime exit.
+- Fixed `RateLimiter.getChatLimiter` upgrading a held read lock to a write lock, which could deadlock under contention. The lookup now releases the read lock before acquiring the write lock and re-checks the map.
+- Fixed `RateLimiter` per-chat limiter and lock maps growing unbounded for the lifetime of long-running bots that serve many distinct chats.
+- Fixed `Draft.Push` mutating `Message` before validating the candidate length, leaving the draft in a half-mutated state when the candidate would exceed Telegram's limit. The candidate is now validated first; on failure the draft remains unchanged.
+- Fixed background runners running one extra iteration after context cancellation when both `ctx.Done()` and the ticker were ready in the same `select`.
+- Fixed `Plugin.Close()` double-closing a logger supplied by the caller through `SetLogger(...)`.
+- Fixed compact callback payload corruption for arguments containing `,` or `|` bytes.
+- Fixed `LoadOptsFromEnv` calling `os.Getenv("MAX_WORKERS")` twice when parsing the worker count.
+- Fixed `sceneRuntime` interface carrying a delegating `buildSceneKey` method that just forwarded to a package-level helper; `MessageContext` scene helpers now call the helper directly.
 - Fixed webhook startup so empty-secret warnings are logged only after the webhook logger is initialized.
 - Fixed webhook startup so a logger configured through `SetWebhookLogger(...)` is preserved.
 - Fixed long-polling 429 handling so `getUpdates` retries use Telegram `retry_after` directly and do not inflate later transient-error backoff.
@@ -38,6 +57,10 @@
 - Added regression coverage for context-aware inline keyboard button payload encoding.
 - Added regression coverage for compact and Base64-encoded compact callback payload decoding.
 - Added regression coverage for long-polling `retry_after` handling on Telegram 429 responses.
+- Added regression coverage for compact callback payload round-tripping through `,`, `|`, and `\` separator bytes and a missing-separator decode error.
+- Added regression coverage for `Draft.Push` preserving the existing message when validation rejects the candidate.
+- Added regression coverage for `RateLimiter.Cleanup` evicting idle chat limiters and expired chat locks while leaving active state in place.
+- Updated `MessageContext.Error` tests so unclassified errors stay internal-only and only `AsUserError` reaches the user.
 
 ## v1.0.0-rc.16
 

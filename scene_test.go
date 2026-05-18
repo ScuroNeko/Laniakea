@@ -71,7 +71,7 @@ func TestBotAddPluginsPreservesScenesAndHandlesThem(t *testing.T) {
 		t.Fatalf("unexpected scene entry: got %q want %q", sceneMeta.Entry, "start")
 	}
 
-	enterCtx := &MsgContext{
+	enterCtx := &MessageContext{
 		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID:       42,
 		sceneRuntime: bot,
@@ -95,7 +95,7 @@ func TestBotAddPluginsPreservesScenesAndHandlesThem(t *testing.T) {
 		t.Fatal("expected scene step handler to be called")
 	}
 
-	lookupCtx := &MsgContext{
+	lookupCtx := &MessageContext{
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID: 42,
 	}
@@ -108,7 +108,7 @@ func TestBuildSceneKeyRejectsMissingContextFields(t *testing.T) {
 	tests := []struct {
 		name  string
 		scope SceneScope
-		ctx   *MsgContext
+		ctx   *MessageContext
 	}{
 		{
 			name:  "nil context",
@@ -118,17 +118,17 @@ func TestBuildSceneKeyRejectsMissingContextFields(t *testing.T) {
 		{
 			name:  "missing message for chat scope",
 			scope: SceneScopeChat,
-			ctx:   &MsgContext{},
+			ctx:   &MessageContext{},
 		},
 		{
 			name:  "missing from id for user scope",
 			scope: SceneScopeUser,
-			ctx:   &MsgContext{},
+			ctx:   &MessageContext{},
 		},
 		{
 			name:  "missing from id for user chat scope",
 			scope: SceneScopeUserChat,
-			ctx: &MsgContext{
+			ctx: &MessageContext{
 				Msg: &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 			},
 		},
@@ -155,7 +155,7 @@ func TestEnterSceneRejectsMissingEntryConfiguration(t *testing.T) {
 		}
 		bot.AddPlugins(plugin)
 
-		ctx := &MsgContext{
+		ctx := &MessageContext{
 			Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 			FromID:       42,
 			sceneRuntime: bot,
@@ -178,7 +178,7 @@ func TestEnterSceneRejectsMissingEntryConfiguration(t *testing.T) {
 		}
 		bot.AddPlugins(plugin)
 
-		ctx := &MsgContext{
+		ctx := &MessageContext{
 			Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 			FromID:       42,
 			sceneRuntime: bot,
@@ -192,7 +192,7 @@ func TestEnterSceneRejectsMissingEntryConfiguration(t *testing.T) {
 }
 
 func TestSceneContextMethodsRequireRuntime(t *testing.T) {
-	ctx := &MsgContext{}
+	ctx := &MessageContext{}
 
 	if err := ctx.EnterScene("signup"); !errors.Is(err, ErrSceneRuntimeNil) {
 		t.Fatalf("expected ErrSceneRuntimeNil from EnterScene, got %v", err)
@@ -238,7 +238,7 @@ func TestSceneCommandHandlerRunsBeforeStep(t *testing.T) {
 	}
 	bot.AddPlugins(plugin)
 
-	enterCtx := &MsgContext{
+	enterCtx := &MessageContext{
 		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID:       42,
 		sceneRuntime: bot,
@@ -287,7 +287,7 @@ func TestSceneCommandObserverEmitsLifecycleEvents(t *testing.T) {
 	}
 	bot.AddPlugins(plugin)
 
-	enterCtx := &MsgContext{
+	enterCtx := &MessageContext{
 		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID:       42,
 		sceneRuntime: bot,
@@ -339,7 +339,7 @@ func TestSceneStepObserverEmitsLifecycleEvents(t *testing.T) {
 	}
 	bot.AddPlugins(plugin)
 
-	enterCtx := &MsgContext{
+	enterCtx := &MessageContext{
 		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID:       42,
 		sceneRuntime: bot,
@@ -394,7 +394,7 @@ func TestSceneMessageObserverEmitsLifecycleEvents(t *testing.T) {
 	}
 	bot.AddPlugins(plugin)
 
-	key, ok := buildSceneKey(SceneScopeUserChat, &MsgContext{
+	key, ok := buildSceneKey(SceneScopeUserChat, &MessageContext{
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID: 42,
 	})
@@ -460,7 +460,7 @@ func TestScenePayloadHandlerRunsBeforeStep(t *testing.T) {
 	}
 	bot.AddPlugins(plugin)
 
-	enterCtx := &MsgContext{
+	enterCtx := &MessageContext{
 		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID:       42,
 		sceneRuntime: bot,
@@ -517,7 +517,7 @@ func TestScenePayloadObserverEmitsLifecycleEvents(t *testing.T) {
 	}
 	bot.AddPlugins(plugin)
 
-	enterCtx := &MsgContext{
+	enterCtx := &MessageContext{
 		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID:       42,
 		sceneRuntime: bot,
@@ -563,7 +563,7 @@ func TestSceneUnmatchedPayloadFallsThroughWithoutRunningStep(t *testing.T) {
 	stepCalled := false
 
 	plugin := NewPlugin[NoData]("wizard")
-	plugin.Payload("ping", func(ctx *MsgContext, db NoData) error { return nil })
+	plugin.Payload("ping", func(ctx *MessageContext, db NoData) error { return nil })
 	plugin.Scene("signup").
 		SetEntry("start").
 		OnStep("start", func(ctx *SceneContext, db NoData) (SceneResult, error) {
@@ -579,7 +579,7 @@ func TestSceneUnmatchedPayloadFallsThroughWithoutRunningStep(t *testing.T) {
 	}
 	bot.AddPlugins(plugin)
 
-	enterCtx := &MsgContext{
+	enterCtx := &MessageContext{
 		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID:       42,
 		sceneRuntime: bot,
@@ -588,7 +588,7 @@ func TestSceneUnmatchedPayloadFallsThroughWithoutRunningStep(t *testing.T) {
 		t.Fatalf("EnterScene returned error: %v", err)
 	}
 
-	key, ok := buildSceneKey(SceneScopeUserChat, &MsgContext{
+	key, ok := buildSceneKey(SceneScopeUserChat, &MessageContext{
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID: 42,
 	})
@@ -632,7 +632,7 @@ func TestScenePassDoesNotPersistSessionData(t *testing.T) {
 	commandCalled := false
 
 	plugin := NewPlugin[NoData]("wizard")
-	plugin.Command("ping", func(ctx *MsgContext, db NoData) error {
+	plugin.Command("ping", func(ctx *MessageContext, db NoData) error {
 		commandCalled = true
 		return nil
 	})
@@ -655,7 +655,7 @@ func TestScenePassDoesNotPersistSessionData(t *testing.T) {
 	}
 	bot.AddPlugins(plugin)
 
-	enterCtx := &MsgContext{
+	enterCtx := &MessageContext{
 		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID:       42,
 		sceneRuntime: bot,
@@ -664,7 +664,7 @@ func TestScenePassDoesNotPersistSessionData(t *testing.T) {
 		t.Fatalf("EnterScene returned error: %v", err)
 	}
 
-	key, ok := buildSceneKey(SceneScopeUserChat, &MsgContext{
+	key, ok := buildSceneKey(SceneScopeUserChat, &MessageContext{
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID: 42,
 	})
@@ -718,7 +718,7 @@ func TestSceneUnmatchedCommandFallsThroughWithoutRunningStep(t *testing.T) {
 			stepCalled = true
 			return ctx.Stay(), nil
 		})
-	plugin.Command("ping", func(ctx *MsgContext, db NoData) error {
+	plugin.Command("ping", func(ctx *MessageContext, db NoData) error {
 		commandCalled = true
 		return nil
 	})
@@ -731,7 +731,7 @@ func TestSceneUnmatchedCommandFallsThroughWithoutRunningStep(t *testing.T) {
 	}
 	bot.AddPlugins(plugin)
 
-	enterCtx := &MsgContext{
+	enterCtx := &MessageContext{
 		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID:       42,
 		sceneRuntime: bot,
@@ -740,7 +740,7 @@ func TestSceneUnmatchedCommandFallsThroughWithoutRunningStep(t *testing.T) {
 		t.Fatalf("EnterScene returned error: %v", err)
 	}
 
-	key, ok := buildSceneKey(SceneScopeUserChat, &MsgContext{
+	key, ok := buildSceneKey(SceneScopeUserChat, &MessageContext{
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID: 42,
 	})
@@ -800,7 +800,7 @@ func TestSceneMessageFallbackRunsWhenNoCommandOrStepMatch(t *testing.T) {
 	}
 	bot.AddPlugins(plugin)
 
-	enterCtx := &MsgContext{
+	enterCtx := &MessageContext{
 		Msg:          &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID:       42,
 		sceneRuntime: bot,
@@ -809,7 +809,7 @@ func TestSceneMessageFallbackRunsWhenNoCommandOrStepMatch(t *testing.T) {
 		t.Fatalf("EnterScene returned error: %v", err)
 	}
 
-	key, ok := buildSceneKey(SceneScopeUserChat, &MsgContext{
+	key, ok := buildSceneKey(SceneScopeUserChat, &MessageContext{
 		Msg:    &tgapi.Message{Chat: &tgapi.Chat{ID: 100, Type: tgapi.ChatTypePrivate}},
 		FromID: 42,
 	})
@@ -847,7 +847,7 @@ func TestFindSceneSessionSupportsUserScopeWithoutMessage(t *testing.T) {
 		t.Fatalf("Set returned error: %v", err)
 	}
 
-	key, session, err := bot.findSceneSession(&MsgContext{FromID: 42})
+	key, session, err := bot.findSceneSession(&MessageContext{FromID: 42})
 	if err != nil {
 		t.Fatalf("findSceneSession returned error: %v", err)
 	}
@@ -870,7 +870,7 @@ func TestSceneStoreErrorsPropagate(t *testing.T) {
 			sceneScopePriority: []SceneScope{SceneScopeUser},
 		}
 
-		_, _, err := bot.findSceneSession(&MsgContext{FromID: 42})
+		_, _, err := bot.findSceneSession(&MessageContext{FromID: 42})
 		if !errors.Is(err, getErr) {
 			t.Fatalf("expected getErr, got %v", err)
 		}
@@ -887,9 +887,9 @@ func TestSceneStoreErrorsPropagate(t *testing.T) {
 		}
 
 		_, err := bot.applySceneResult(scene, &SceneContext{
-			MsgContext: &MsgContext{},
-			sess:       SceneSession{Scene: "signup", Step: "start"},
-			key:        "user_id:42:chat_id:100",
+			MessageContext: &MessageContext{},
+			sess:           SceneSession{Scene: "signup", Step: "start"},
+			key:            "user_id:42:chat_id:100",
 		}, SceneResult{Action: SceneActionStay})
 		if !errors.Is(err, setErr) {
 			t.Fatalf("expected setErr, got %v", err)

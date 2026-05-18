@@ -14,8 +14,11 @@ type draftIDGenerator interface {
 	Next() uint64
 }
 
-// RandomDraftIDGenerator generates draft IDs using cryptographically secure random numbers.
-// Suitable for distributed systems or when ID predictability is undesirable.
+// RandomDraftIDGenerator generates draft IDs using math/rand/v2.
+//
+// Suitable for general use thanks to the wide 64-bit value space. Not suitable
+// for security-sensitive purposes — use crypto/rand if unpredictability against
+// an adversary matters.
 type RandomDraftIDGenerator struct{}
 
 // Next returns a random 64-bit unsigned integer.
@@ -29,7 +32,7 @@ type LinearDraftIDGenerator struct {
 	lastID atomic.Uint64
 }
 
-// Next returns the next linear ID, atomically incremented.о
+// Next returns the next linear ID, atomically incremented.
 func (g *LinearDraftIDGenerator) Next() uint64 {
 	return g.lastID.Add(1)
 }
@@ -239,14 +242,21 @@ func (d *Draft) Flush() error {
 }
 
 // Internal helper for Push that updates the server-side draft.
+//
+// The candidate Message (current content + new text) is validated before any
+// mutation, so a validation failure leaves the draft unchanged. After the
+// validation passes, Message is committed locally regardless of whether the
+// API call succeeds (per the Push docs: local state reflects the user's
+// intent, network failures can be retried).
 func (d *Draft) push(text string) error {
 	if d.chatID == 0 {
 		return ErrDraftChatIDZero
 	}
-	d.Message += text
-	if err := validateMessageText(d.Message); err != nil {
+	candidate := d.Message + text
+	if err := validateMessageText(candidate); err != nil {
 		return err
 	}
+	d.Message = candidate
 	params := tgapi.SendMessageDraft{
 		ChatID:    d.chatID,
 		DraftID:   d.ID,

@@ -29,6 +29,7 @@ func (bot *Bot[T]) AddPlugins(plugin ...*Plugin[T]) *Bot[T] {
 		cloned := clonePlugin(p)
 		if cloned.logger == nil {
 			cloned.logger = utils.CreateLogger(cloned.name, level, bot.logFormat, bot.logFormatter)
+			cloned.loggerOwned = true
 		}
 		bot.addTokenReplacer(cloned.logger)
 		bot.plugins = append(bot.plugins, cloned)
