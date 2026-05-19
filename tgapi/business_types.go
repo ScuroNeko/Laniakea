@@ -1,6 +1,7 @@
 package tgapi
 
 // BusinessIntro contains information about the business intro.
+// Since: Bot API 7.2
 // See https://core.telegram.org/bots/api#businessintro
 type BusinessIntro struct {
 	Title   string   `json:"title,omitempty"`
@@ -9,6 +10,7 @@ type BusinessIntro struct {
 }
 
 // BusinessLocation contains information about the business location.
+// Since: Bot API 7.2
 // See https://core.telegram.org/bots/api#businesslocation
 type BusinessLocation struct {
 	Address  string    `json:"address"`
@@ -16,6 +18,7 @@ type BusinessLocation struct {
 }
 
 // BusinessOpeningHoursInterval represents an interval of opening hours.
+// Since: Bot API 7.2
 // See https://core.telegram.org/bots/api#businessopeninghoursinterval
 type BusinessOpeningHoursInterval struct {
 	OpeningMinute int `json:"opening_minute"`
@@ -23,6 +26,7 @@ type BusinessOpeningHoursInterval struct {
 }
 
 // BusinessOpeningHours represents the opening hours of a business.
+// Since: Bot API 7.2
 // See https://core.telegram.org/bots/api#businessopeninghours
 type BusinessOpeningHours struct {
 	TimeZoneName string                         `json:"time_zone_name"`
@@ -31,6 +35,7 @@ type BusinessOpeningHours struct {
 
 // BusinessBotRights represents the rights of a business bot.
 // All fields are optional booleans that, when present, are always true.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#businessbotrights
 type BusinessBotRights struct {
 	CanReply                   *bool `json:"can_reply,omitempty"`
@@ -50,6 +55,7 @@ type BusinessBotRights struct {
 }
 
 // BusinessConnection contains information about a business connection.
+// Since: Bot API 7.2
 // See https://core.telegram.org/bots/api#businessconnection
 type BusinessConnection struct {
 	ID         string             `json:"id"`
@@ -61,6 +67,7 @@ type BusinessConnection struct {
 }
 
 // BusinessMessagesDeleted is received when messages are deleted from a connected business account.
+// Since: Bot API 7.2
 // See https://core.telegram.org/bots/api#businessmessagesdeleted
 type BusinessMessagesDeleted struct {
 	BusinessConnectionID string `json:"business_connection_id"`
@@ -79,6 +86,7 @@ const (
 )
 
 // InputStoryContent represents the content of a story to be posted.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#inputstorycontent
 type InputStoryContent struct {
 	Type InputStoryContentType `json:"type"`
@@ -94,6 +102,7 @@ type InputStoryContent struct {
 }
 
 // StoryAreaPosition describes the position of a clickable area on a story.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#storyareaposition
 type StoryAreaPosition struct {
 	XPercentage            float64 `json:"x_percentage"`
@@ -121,7 +130,7 @@ const (
 )
 
 // StoryAreaType describes the type of a clickable area on a story.
-// Fields should be set according to the Type.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#storyareatype
 type StoryAreaType struct {
 	Type StoryAreaTypeType `json:"type"`
@@ -149,6 +158,7 @@ type StoryAreaType struct {
 }
 
 // StoryArea represents a clickable area on a story.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#storyarea
 type StoryArea struct {
 	Position StoryAreaPosition `json:"position"`

@@ -3,6 +3,7 @@ package tgapi
 import "context"
 
 // AnswerInlineQuery holds parameters for the answerInlineQuery method.
+// Since: Bot API 1.7
 // See https://core.telegram.org/bots/api#answerinlinequery
 type AnswerInlineQuery struct {
 	InlineQueryID string                    `json:"inline_query_id"`
@@ -14,6 +15,7 @@ type AnswerInlineQuery struct {
 }
 
 // AnswerInlineQuery sends answers to an inline query.
+// Since: Bot API 1.7
 // Returns true on success.
 // See https://core.telegram.org/bots/api#answerinlinequery
 func (api *API) AnswerInlineQuery(params AnswerInlineQuery) (bool, error) {
@@ -22,6 +24,7 @@ func (api *API) AnswerInlineQuery(params AnswerInlineQuery) (bool, error) {
 }
 
 // AnswerInlineQueryWithContext is the context-aware variant of AnswerInlineQuery.
+// Since: Bot API 1.7
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#answerinlinequery
 func (api *API) AnswerInlineQueryWithContext(ctx context.Context, params AnswerInlineQuery) (bool, error) {
@@ -30,6 +33,7 @@ func (api *API) AnswerInlineQueryWithContext(ctx context.Context, params AnswerI
 }
 
 // AnswerWebAppQuery holds parameters for the answerWebAppQuery method.
+// Since: Bot API 8.0
 // See https://core.telegram.org/bots/api#answerwebappquery
 type AnswerWebAppQuery struct {
 	WebAppQueryID string            `json:"web_app_query_id"`
@@ -37,6 +41,7 @@ type AnswerWebAppQuery struct {
 }
 
 // AnswerWebAppQuery sets the result of a Web App interaction.
+// Since: Bot API 8.0
 // See https://core.telegram.org/bots/api#answerwebappquery
 func (api *API) AnswerWebAppQuery(params AnswerWebAppQuery) (SentWebAppMessage, error) {
 	req := NewRequest[SentWebAppMessage]("answerWebAppQuery", params)
@@ -44,6 +49,7 @@ func (api *API) AnswerWebAppQuery(params AnswerWebAppQuery) (SentWebAppMessage, 
 }
 
 // AnswerWebAppQueryWithContext is the context-aware variant of AnswerWebAppQuery.
+// Since: Bot API 8.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#answerwebappquery
 func (api *API) AnswerWebAppQueryWithContext(ctx context.Context, params AnswerWebAppQuery) (SentWebAppMessage, error) {
@@ -52,6 +58,7 @@ func (api *API) AnswerWebAppQueryWithContext(ctx context.Context, params AnswerW
 }
 
 // SavePreparedInlineMessage holds parameters for the savePreparedInlineMessage method.
+// Since: Bot API 8.0
 // See https://core.telegram.org/bots/api#savepreparedinlinemessage
 type SavePreparedInlineMessage struct {
 	UserID            int64             `json:"user_id"`
@@ -63,6 +70,7 @@ type SavePreparedInlineMessage struct {
 }
 
 // SavePreparedInlineMessage stores a prepared message for Mini App users.
+// Since: Bot API 8.0
 // See https://core.telegram.org/bots/api#savepreparedinlinemessage
 func (api *API) SavePreparedInlineMessage(params SavePreparedInlineMessage) (PreparedInlineMessage, error) {
 	req := NewRequest[PreparedInlineMessage]("savePreparedInlineMessage", params)
@@ -70,6 +78,7 @@ func (api *API) SavePreparedInlineMessage(params SavePreparedInlineMessage) (Pre
 }
 
 // SavePreparedInlineMessageWithContext is the context-aware variant of SavePreparedInlineMessage.
+// Since: Bot API 8.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#savepreparedinlinemessage
 func (api *API) SavePreparedInlineMessageWithContext(ctx context.Context, params SavePreparedInlineMessage) (PreparedInlineMessage, error) {
@@ -78,6 +87,7 @@ func (api *API) SavePreparedInlineMessageWithContext(ctx context.Context, params
 }
 
 // SavePreparedKeyboardButton holds parameters for the savePreparedKeyboardButton method.
+// Since: Bot API 8.0
 // See https://core.telegram.org/bots/api#savepreparedkeyboardbutton
 type SavePreparedKeyboardButton struct {
 	UserID int64          `json:"user_id"`
@@ -85,6 +95,7 @@ type SavePreparedKeyboardButton struct {
 }
 
 // SavePreparedKeyboardButton stores a prepared keyboard button for Mini App users.
+// Since: Bot API 8.0
 // See https://core.telegram.org/bots/api#savepreparedkeyboardbutton
 func (api *API) SavePreparedKeyboardButton(params SavePreparedKeyboardButton) (PreparedKeyboardButton, error) {
 	req := NewRequest[PreparedKeyboardButton]("savePreparedKeyboardButton", params)
@@ -92,6 +103,7 @@ func (api *API) SavePreparedKeyboardButton(params SavePreparedKeyboardButton) (P
 }
 
 // SavePreparedKeyboardButtonWithContext is the context-aware variant of SavePreparedKeyboardButton.
+// Since: Bot API 8.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#savepreparedkeyboardbutton
 func (api *API) SavePreparedKeyboardButtonWithContext(ctx context.Context, params SavePreparedKeyboardButton) (PreparedKeyboardButton, error) {

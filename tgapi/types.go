@@ -59,9 +59,13 @@ const (
 	UpdateTypeRemovedChatBoost UpdateType = "removed_chat_boost"
 
 	UpdateTypeManagedBot UpdateType = "managed_bot"
+
+	// UpdateTypeGuestMessage is a guest message update.
+	UpdateTypeGuestMessage UpdateType = "guest_message"
 )
 
 // Update represents an incoming update from Telegram.
+// Since: Bot API 1.0
 // See https://core.telegram.org/bots/api#update
 type Update struct {
 	Type UpdateType `json:"-"`
@@ -69,32 +73,33 @@ type Update struct {
 	UpdateID          int      `json:"update_id"`
 	Message           *Message `json:"message,omitempty"`
 	EditedMessage     *Message `json:"edited_message,omitempty"`
-	ChannelPost       *Message `json:"channel_post,omitempty"`
-	EditedChannelPost *Message `json:"edited_channel_post,omitempty"`
+	ChannelPost       *Message `json:"channel_post,omitempty"`        // Since: Bot API 2.3
+	EditedChannelPost *Message `json:"edited_channel_post,omitempty"` // Since: Bot API 2.3
 
-	BusinessConnection      *BusinessConnection          `json:"business_connection,omitempty"`
-	BusinessMessage         *Message                     `json:"business_message,omitempty"`
-	EditedBusinessMessage   *Message                     `json:"edited_business_message,omitempty"`
-	DeletedBusinessMessages *BusinessMessagesDeleted     `json:"deleted_business_messages,omitempty"`
-	MessageReaction         *MessageReactionUpdated      `json:"message_reaction,omitempty"`
-	MessageReactionCount    *MessageReactionCountUpdated `json:"message_reaction_count,omitempty"`
+	BusinessConnection      *BusinessConnection          `json:"business_connection,omitempty"`       // Since: Bot API 7.2
+	BusinessMessage         *Message                     `json:"business_message,omitempty"`          // Since: Bot API 7.2
+	EditedBusinessMessage   *Message                     `json:"edited_business_message,omitempty"`   // Since: Bot API 7.2
+	DeletedBusinessMessages *BusinessMessagesDeleted     `json:"deleted_business_messages,omitempty"` // Since: Bot API 7.2
+	GuestMessage            *Message                     `json:"guest_message,omitempty"`             // Since: Bot API 10.0
+	MessageReaction         *MessageReactionUpdated      `json:"message_reaction,omitempty"`          // Since: Bot API 7.0
+	MessageReactionCount    *MessageReactionCountUpdated `json:"message_reaction_count,omitempty"`    // Since: Bot API 7.0
 
-	InlineQuery        *InlineQuery        `json:"inline_query,omitempty"`
-	ChosenInlineResult *ChosenInlineResult `json:"chosen_inline_result,omitempty"`
-	CallbackQuery      *CallbackQuery      `json:"callback_query,omitempty"`
-	ShippingQuery      *ShippingQuery      `json:"shipping_query,omitempty"`
-	PreCheckoutQuery   *PreCheckoutQuery   `json:"pre_checkout_query,omitempty"`
-	PurchasedPaidMedia *PaidMediaPurchased `json:"purchased_paid_media,omitempty"`
+	InlineQuery        *InlineQuery        `json:"inline_query,omitempty"`         // Since: Bot API 1.7
+	ChosenInlineResult *ChosenInlineResult `json:"chosen_inline_result,omitempty"` // Since: Bot API 1.8
+	CallbackQuery      *CallbackQuery      `json:"callback_query,omitempty"`       // Since: Bot API 2.0
+	ShippingQuery      *ShippingQuery      `json:"shipping_query,omitempty"`       // Since: Bot API 3.0
+	PreCheckoutQuery   *PreCheckoutQuery   `json:"pre_checkout_query,omitempty"`   // Since: Bot API 3.0
+	PurchasedPaidMedia *PaidMediaPurchased `json:"purchased_paid_media,omitempty"` // Since: Bot API 7.10
 
-	Poll             *Poll              `json:"poll,omitempty"`
-	PollAnswer       *PollAnswer        `json:"poll_answer,omitempty"`
-	MyChatMember     *ChatMemberUpdated `json:"my_chat_member,omitempty"`
-	ChatMember       *ChatMemberUpdated `json:"chat_member,omitempty"`
-	ChatJoinRequest  *ChatJoinRequest   `json:"chat_join_request,omitempty"`
-	ChatBoost        *ChatBoostUpdated  `json:"chat_boost,omitempty"`
-	RemovedChatBoost *ChatBoostRemoved  `json:"removed_chat_boost,omitempty"`
+	Poll             *Poll              `json:"poll,omitempty"`               // Since: Bot API 4.2
+	PollAnswer       *PollAnswer        `json:"poll_answer,omitempty"`        // Since: Bot API 4.6
+	MyChatMember     *ChatMemberUpdated `json:"my_chat_member,omitempty"`     // Since: Bot API 5.1
+	ChatMember       *ChatMemberUpdated `json:"chat_member,omitempty"`        // Since: Bot API 5.1
+	ChatJoinRequest  *ChatJoinRequest   `json:"chat_join_request,omitempty"`  // Since: Bot API 5.4
+	ChatBoost        *ChatBoostUpdated  `json:"chat_boost,omitempty"`         // Since: Bot API 7.0
+	RemovedChatBoost *ChatBoostRemoved  `json:"removed_chat_boost,omitempty"` // Since: Bot API 7.0
 
-	ManagedBot *ManagedBotUpdated `json:"managed_bot,omitempty"`
+	ManagedBot *ManagedBotUpdated `json:"managed_bot,omitempty"` // Since: Bot API 9.6
 }
 
 // UnmarshalJSON decodes an update and derives its Type from the populated payload field.
@@ -126,6 +131,8 @@ func (u *Update) UnmarshalJSON(data []byte) error {
 		u.Type = UpdateTypeEditedBusinessMessage
 	case u.DeletedBusinessMessages != nil:
 		u.Type = UpdateTypeDeletedBusinessMessages
+	case u.GuestMessage != nil:
+		u.Type = UpdateTypeGuestMessage
 	case u.MessageReaction != nil:
 		u.Type = UpdateTypeMessageReaction
 	case u.MessageReactionCount != nil:
@@ -168,6 +175,7 @@ func (u *Update) UnmarshalJSON(data []byte) error {
 }
 
 // WebhookInfo describes the current webhook status.
+// Since: Bot API 2.2
 // See https://core.telegram.org/bots/api#webhookinfo
 type WebhookInfo struct {
 	URL                          string   `json:"url"`
@@ -181,6 +189,8 @@ type WebhookInfo struct {
 	AllowedUpdates               []string `json:"allowed_updates,omitempty"`
 }
 
+// ProximityAlertTriggered represents the content of a service message sent when a user triggers a proximity alert.
+// Since: Bot API 5.0
 type ProximityAlertTriggered struct {
 	Traveler User `json:"traveler"`
 	Watcher  User `json:"watcher"`
@@ -188,6 +198,7 @@ type ProximityAlertTriggered struct {
 }
 
 // InlineQuery represents an incoming inline query.
+// Since: Bot API 1.7
 // See https://core.telegram.org/bots/api#inlinequery
 type InlineQuery struct {
 	ID       string    `json:"id"`
@@ -199,6 +210,7 @@ type InlineQuery struct {
 }
 
 // ChosenInlineResult represents a result of an inline query that was chosen by the user.
+// Since: Bot API 1.8
 // See https://core.telegram.org/bots/api#choseninlineresult
 type ChosenInlineResult struct {
 	ResultID        string    `json:"result_id"`
@@ -209,6 +221,7 @@ type ChosenInlineResult struct {
 }
 
 // File represents a file ready to be downloaded.
+// Since: Bot API 1.0
 // See https://core.telegram.org/bots/api#file
 type File struct {
 	FileID       string `json:"file_id"`
@@ -218,6 +231,7 @@ type File struct {
 }
 
 // ChatMemberUpdated represents changes in the status of a chat member.
+// Since: Bot API 5.1
 // See https://core.telegram.org/bots/api#chatmemberupdated
 type ChatMemberUpdated struct {
 	Chat                    Chat            `json:"chat"`
@@ -231,6 +245,7 @@ type ChatMemberUpdated struct {
 }
 
 // ChatJoinRequest represents a join request sent to a chat.
+// Since: Bot API 5.4
 // See https://core.telegram.org/bots/api#chatjoinrequest
 type ChatJoinRequest struct {
 	Chat       Chat            `json:"chat"`
@@ -242,6 +257,7 @@ type ChatJoinRequest struct {
 }
 
 // Location represents a point on the map.
+// Since: Bot API 1.0
 // See https://core.telegram.org/bots/api#location
 type Location struct {
 	Latitude             float64 `json:"latitude"`
@@ -253,6 +269,7 @@ type Location struct {
 }
 
 // LocationAddress represents a human-readable address of a location.
+// Since: Bot API 8.0
 type LocationAddress struct {
 	CountryCode string  `json:"country_code"`
 	State       *string `json:"state,omitempty"`
@@ -261,6 +278,7 @@ type LocationAddress struct {
 }
 
 // Venue represents a venue.
+// Since: Bot API 2.0
 // See https://core.telegram.org/bots/api#venue
 type Venue struct {
 	Location        Location `json:"location"`
@@ -273,23 +291,28 @@ type Venue struct {
 }
 
 // WebAppInfo contains information about a Web App.
+// Since: Bot API 6.0
 // See https://core.telegram.org/bots/api#webappinfo
 type WebAppInfo struct {
 	URL string `json:"url"`
 }
 
+// WebAppData represents data sent from a Web App to the bot.
+// Since: Bot API 6.0
 type WebAppData struct {
 	Data       string `json:"data"`
 	ButtonText string `json:"button_text"`
 }
 
 // StarAmount represents an amount of Telegram Stars.
+// Since: Bot API 7.5
 type StarAmount struct {
 	Amount         int `json:"amount"`
 	NanostarAmount int `json:"nanostar_amount"`
 }
 
 // AcceptedGiftTypes represents the types of gifts accepted by a user or chat.
+// Since: Bot API 9.0
 type AcceptedGiftTypes struct {
 	UnlimitedGifts      bool `json:"unlimited_gifts"`
 	LimitedGifts        bool `json:"limited_gifts"`
@@ -299,6 +322,7 @@ type AcceptedGiftTypes struct {
 }
 
 // GiftBackground represents the background of a gift.
+// Since: Bot API 9.0
 type GiftBackground struct {
 	CenterColor int `json:"center_color"`
 	EdgeColor   int `json:"edge_color"`
@@ -306,6 +330,7 @@ type GiftBackground struct {
 }
 
 // Gift represents a gift that can be sent.
+// Since: Bot API 9.0
 type Gift struct {
 	ID                     string          `json:"id"`
 	Sticker                Sticker         `json:"sticker"`
@@ -323,27 +348,39 @@ type Gift struct {
 }
 
 // Gifts represents a list of gifts.
+// Since: Bot API 9.0
 type Gifts struct {
 	Gifts []Gift `json:"gifts"`
 }
 
+// UniqueGiftModel describes the model component of a unique gift.
+// Since: Bot API 9.0
 type UniqueGiftModel struct {
 	Name           string  `json:"name"`
 	Sticker        Sticker `json:"sticker"`
 	RarityPerMille int     `json:"rarity_per_mille"`
 	Rarity         string  `json:"rarity,omitempty"`
 }
+
+// UniqueGiftSymbol describes the symbol component of a unique gift.
+// Since: Bot API 9.0
 type UniqueGiftSymbol struct {
 	Name           string  `json:"name"`
 	Sticker        Sticker `json:"sticker"`
 	RarityPerMille int     `json:"rarity_per_mille"`
 }
+
+// UniqueGiftBackdropColors describes the colors of a unique gift backdrop.
+// Since: Bot API 9.0
 type UniqueGiftBackdropColors struct {
 	CenterColor int `json:"center_color"`
 	EdgeColor   int `json:"edge_color"`
 	SymbolColor int `json:"symbol_color"`
 	TextColor   int `json:"text_color"`
 }
+
+// UniqueGiftBackdrop describes the backdrop of a unique gift.
+// Since: Bot API 9.0
 type UniqueGiftBackdrop struct {
 	Name           string                   `json:"name"`
 	Colors         UniqueGiftBackdropColors `json:"colors"`
@@ -351,6 +388,7 @@ type UniqueGiftBackdrop struct {
 }
 
 // UniqueGiftColors represents color information for a unique gift.
+// Since: Bot API 9.3
 type UniqueGiftColors struct {
 	ModelCustomEmojiID    string `json:"model_custom_emoji_id"`
 	SymbolCustomEmojiID   string `json:"symbol_custom_emoji_id"`
@@ -360,6 +398,8 @@ type UniqueGiftColors struct {
 	DarkThemeOtherColors  []int  `json:"dark_theme_other_colors"`
 }
 
+// UniqueGift represents a unique gift.
+// Since: Bot API 9.0
 type UniqueGift struct {
 	GiftID   string             `json:"gift_id"`
 	BaseName string             `json:"base_name"`
@@ -376,6 +416,8 @@ type UniqueGift struct {
 	PublisherChat    *Chat             `json:"publisher_chat,omitempty"`
 }
 
+// GiftInfo contains information about a received gift.
+// Since: Bot API 9.0
 type GiftInfo struct {
 	Gift Gift `json:"gift"`
 
@@ -389,6 +431,9 @@ type GiftInfo struct {
 	IsPrivate               bool            `json:"is_private,omitempty"`
 	UniqueGiftNumber        int             `json:"unique_gift_number,omitempty"`
 }
+
+// UniqueGiftInfo contains information about a received unique gift.
+// Since: Bot API 9.0
 type UniqueGiftInfo struct {
 	Gift               UniqueGift `json:"gift"`
 	Origin             string     `json:"origin"`
@@ -400,6 +445,7 @@ type UniqueGiftInfo struct {
 }
 
 // OwnedGiftType represents the type of an owned gift.
+// Since: Bot API 9.0
 type OwnedGiftType string
 
 const (
@@ -410,6 +456,7 @@ const (
 )
 
 // OwnedGift represents a gift owned by a user or chat.
+// Since: Bot API 9.0
 type OwnedGift struct {
 	Type        OwnedGiftType `json:"type"`
 	OwnedGiftID string        `json:"ownen_gift_id,omitempty"`
@@ -436,16 +483,21 @@ type OwnedGift struct {
 }
 
 // OwnedGifts represents a list of owned gifts with pagination.
+// Since: Bot API 9.0
 type OwnedGifts struct {
 	TotalCount int         `json:"total_count"`
 	Gifts      []OwnedGift `json:"gifts"`
 	NextOffset string      `json:"next_offset"`
 }
 
+// GiveawayCreated represents a service message about a giveaway being created.
+// Since: Bot API 7.0
 type GiveawayCreated struct {
 	PrizeStarCount int `json:"prize_star_count,omitempty"`
 }
 
+// Giveaway represents a message about a scheduled giveaway.
+// Since: Bot API 7.0
 type Giveaway struct {
 	Chats                []Chat `json:"chats"`
 	WinnersSelectionDate int    `json:"winners_selection_date"`
@@ -459,6 +511,8 @@ type Giveaway struct {
 	PremiumSubscriptionMonthCount int      `json:"premium_subscription_month_count,omitempty"`
 }
 
+// GiveawayWinners represents a message about the completion of a giveaway with public winners.
+// Since: Bot API 7.0
 type GiveawayWinners struct {
 	Chat                 Chat   `json:"chat"`
 	GiveawayMessageID    int    `json:"giveaway_message_id"`
@@ -475,6 +529,8 @@ type GiveawayWinners struct {
 	PrizeDescription              string `json:"prize_description,omitempty"`
 }
 
+// GiveawayCompleted represents a service message about the completion of a giveaway without public winners.
+// Since: Bot API 7.0
 type GiveawayCompleted struct {
 	WinnerCount         int      `json:"winner_count"`
 	UnclaimedPrizeCount int      `json:"unclaimed_prize_count,omitempty"`
@@ -482,12 +538,16 @@ type GiveawayCompleted struct {
 	IsStarGiveaway      bool     `json:"is_star_giveaway,omitempty"`
 }
 
+// WriteAccessAllowed represents a service message about a user allowing a bot to write messages.
+// Since: Bot API 6.4
 type WriteAccessAllowed struct {
 	FromRequest        bool   `json:"from_request,omitempty"`
 	WebAppName         string `json:"web_app_name,omitempty"`
 	FromAttachmentMenu bool   `json:"from_attachment_menu,omitempty"`
 }
 
+// BackgroundFillType represents the type of a background fill.
+// Since: Bot API 7.5
 type BackgroundFillType string
 
 const (
@@ -496,6 +556,8 @@ const (
 	BackgroundFillFreeformGradientType BackgroundFillType = "freeform_gradient"
 )
 
+// BackgroundFill describes the way a background is filled.
+// Since: Bot API 7.5
 type BackgroundFill struct {
 	Type BackgroundFillType `json:"type"`
 
@@ -508,6 +570,8 @@ type BackgroundFill struct {
 	Colors []int `json:"colors,omitempty"`
 }
 
+// BackgroundTypeType represents the type of a chat background.
+// Since: Bot API 7.5
 type BackgroundTypeType string
 
 const (
@@ -517,6 +581,8 @@ const (
 	BackgroundTypeChatThemeType BackgroundTypeType = "chat_theme"
 )
 
+// BackgroundType describes the type of a background.
+// Since: Bot API 7.5
 type BackgroundType struct {
 	Type BackgroundTypeType `json:"type"`
 

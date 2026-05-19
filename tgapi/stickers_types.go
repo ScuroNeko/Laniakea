@@ -15,6 +15,7 @@ const (
 )
 
 // MaskPosition describes the position on faces where a mask should be placed by default.
+// Since: Bot API 3.2
 // See https://core.telegram.org/bots/api#maskposition
 type MaskPosition struct {
 	Point  MaskPositionPoint `json:"point"`
@@ -36,26 +37,28 @@ const (
 )
 
 // Sticker represents a sticker.
+// Since: Bot API 1.0
 // See https://core.telegram.org/bots/api#sticker
 type Sticker struct {
-	FileID       string      `json:"file_id"`
-	FileUniqueID string      `json:"file_unique_id"`
-	Type         StickerType `json:"type"`
-	Width        int         `json:"width"`
-	Height       int         `json:"height"`
-	IsAnimated   bool        `json:"is_animated"`
-	IsVideo      bool        `json:"is_video"`
+	FileID       string `json:"file_id"`
+	FileUniqueID string `json:"file_unique_id"`
+	Width        int    `json:"width"`
+	Height       int    `json:"height"`
 
-	Thumbnail      *PhotoSize    `json:"thumbnail,omitempty"`
+	Type           StickerType   `json:"type"`                // Since: Bot API 6.2
+	IsAnimated     bool          `json:"is_animated"`         // Since: Bot API 4.4
+	IsVideo        bool          `json:"is_video"`            // Since: Bot API 5.7
+	Thumbnail      *PhotoSize    `json:"thumbnail,omitempty"` // Since: Bot API 6.6
 	Emoji          *string       `json:"emoji,omitempty"`
-	SetName        *string       `json:"set_name,omitempty"`
-	MaskPosition   *MaskPosition `json:"mask_position,omitempty"`
-	CustomEmojiID  *string       `json:"custom_emoji_id,omitempty"`
-	NeedRepainting *bool         `json:"need_repainting,omitempty"`
+	SetName        *string       `json:"set_name,omitempty"`        // Since: Bot API 3.2
+	MaskPosition   *MaskPosition `json:"mask_position,omitempty"`   // Since: Bot API 3.2
+	CustomEmojiID  *string       `json:"custom_emoji_id,omitempty"` // Since: Bot API 6.2
+	NeedRepainting *bool         `json:"need_repainting,omitempty"` // Since: Bot API 6.6
 	FileSize       *int64        `json:"file_size,omitempty"`
 }
 
 // StickerSet represents a sticker set.
+// Since: Bot API 3.2
 // See https://core.telegram.org/bots/api#stickerset
 type StickerSet struct {
 	Name        string      `json:"name"`
@@ -78,6 +81,7 @@ const (
 )
 
 // InputSticker describes a sticker to be added to a sticker set.
+// Since: Bot API 6.6
 // See https://core.telegram.org/bots/api#inputsticker
 type InputSticker struct {
 	Sticker      string             `json:"sticker"`

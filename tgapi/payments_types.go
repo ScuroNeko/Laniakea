@@ -1,12 +1,15 @@
 package tgapi
 
 // LabeledPrice represents a price portion.
+// Since: Bot API 3.0
 // See https://core.telegram.org/bots/api#labeledprice
 type LabeledPrice struct {
 	Label  string `json:"label"`
 	Amount int    `json:"amount"`
 }
 
+// Invoice contains basic information about an invoice.
+// Since: Bot API 3.0
 type Invoice struct {
 	Title          string `json:"title"`
 	Description    string `json:"description"`
@@ -16,6 +19,7 @@ type Invoice struct {
 }
 
 // ShippingQuery represents an incoming shipping query.
+// Since: Bot API 3.0
 // See https://core.telegram.org/bots/api#shippingquery
 type ShippingQuery struct {
 	ID              string          `json:"id"`
@@ -25,6 +29,7 @@ type ShippingQuery struct {
 }
 
 // ShippingAddress represents a shipping address.
+// Since: Bot API 3.0
 // See https://core.telegram.org/bots/api#shippingaddress
 type ShippingAddress struct {
 	CountryCode string `json:"country_code"`
@@ -36,6 +41,7 @@ type ShippingAddress struct {
 }
 
 // OrderInfo represents information about an order.
+// Since: Bot API 3.0
 // See https://core.telegram.org/bots/api#orderinfo
 type OrderInfo struct {
 	Name            string          `json:"name"`
@@ -45,6 +51,7 @@ type OrderInfo struct {
 }
 
 // PreCheckoutQuery represents an incoming pre-checkout query.
+// Since: Bot API 3.0
 // See https://core.telegram.org/bots/api#precheckoutquery
 type PreCheckoutQuery struct {
 	ID               string     `json:"id"`
@@ -57,6 +64,7 @@ type PreCheckoutQuery struct {
 }
 
 // PaidMediaPurchased represents a purchased paid media.
+// Since: Bot API 7.10
 // See https://core.telegram.org/bots/api#paidmediapurchased
 type PaidMediaPurchased struct {
 	From             User   `json:"from"`
@@ -64,6 +72,7 @@ type PaidMediaPurchased struct {
 }
 
 // ShippingOption represents one shipping option.
+// Since: Bot API 3.0
 // See https://core.telegram.org/bots/api#shippingoption
 type ShippingOption struct {
 	ID     string         `json:"id"`
@@ -71,14 +80,16 @@ type ShippingOption struct {
 	Prices []LabeledPrice `json:"prices"`
 }
 
+// SuccessfulPayment contains basic information about a successful payment.
+// Since: Bot API 3.0
 type SuccessfulPayment struct {
 	Currency       string `json:"currency"`
 	TotalAmount    int    `json:"total_amount"`
 	InvoicePayload string `json:"invoice_payload"`
 
-	SubscriptionExpirationDate int        `json:"subscription_expiration_date,omitempty"`
-	IsRecurring                bool       `json:"is_recurring,omitempty"`
-	IsFirstRecurring           bool       `json:"is_first_recurring,omitempty"`
+	SubscriptionExpirationDate int        `json:"subscription_expiration_date,omitempty"` // Since: Bot API 8.0
+	IsRecurring                bool       `json:"is_recurring,omitempty"`                 // Since: Bot API 8.0
+	IsFirstRecurring           bool       `json:"is_first_recurring,omitempty"`           // Since: Bot API 8.0
 	ShippingOptionID           string     `json:"shipping_option_id,omitempty"`
 	OrderInfo                  *OrderInfo `json:"order_info,omitempty"`
 
@@ -86,6 +97,8 @@ type SuccessfulPayment struct {
 	ProviderPaymentChargeID string `json:"proviced_payment_charge_id"`
 }
 
+// RefundedPayment contains basic information about a refunded payment.
+// Since: Bot API 7.7
 type RefundedPayment struct {
 	Currency       string `json:"currency"`
 	TotalAmount    int    `json:"total_amount"`

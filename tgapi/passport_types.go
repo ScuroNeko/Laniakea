@@ -1,15 +1,22 @@
 package tgapi
 
+// PassportData contains information about Telegram Passport data shared with the bot.
+// Since: Bot API 4.0
 type PassportData struct {
 	Data        []EncryptedPassportElement `json:"data"`
 	Credentials EncryptedCredentials       `json:"credentials"`
 }
+
+// PassportFile represents a file uploaded to Telegram Passport.
+// Since: Bot API 4.0
 type PassportFile struct {
 	FileID       string `json:"file_id"`
 	FileUniqueID string `json:"file_unique_id"`
 	FileSize     int64  `json:"file_size"`
 	FileDate     int64  `json:"file_date"`
 }
+
+// PassportElementType represents the type of a Telegram Passport element.
 type PassportElementType string
 
 const (
@@ -28,6 +35,8 @@ const (
 	PassportEmailType                 PassportElementType = "email"
 )
 
+// EncryptedPassportElement contains information about documents or other Telegram Passport elements.
+// Since: Bot API 4.0
 type EncryptedPassportElement struct {
 	Type        PassportElementType `json:"type"`
 	Data        string              `json:"data,omitempty"`
@@ -40,6 +49,9 @@ type EncryptedPassportElement struct {
 	Translation *PassportFile       `json:"translation,omitempty"`
 	Hash        string              `json:"hash,omitempty"`
 }
+
+// EncryptedCredentials contains data required for decrypting and authenticating EncryptedPassportElement.
+// Since: Bot API 4.0
 type EncryptedCredentials struct {
 	Data   string `json:"data"`
 	Hash   string `json:"hash"`
@@ -47,6 +59,7 @@ type EncryptedCredentials struct {
 }
 
 // PassportElementError is a JSON-serializable passport element error object.
+// Since: Bot API 4.0
 // See https://core.telegram.org/bots/api#passportelementerror
 type PassportElementError struct {
 	Source string              `json:"source"`

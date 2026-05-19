@@ -1,6 +1,7 @@
 package tgapi
 
 // Chat represents a chat (private, group, supergroup, channel).
+// Since: Bot API 1.0
 // See https://core.telegram.org/bots/api#chat
 type Chat struct {
 	ID               int64    `json:"id"`
@@ -9,8 +10,8 @@ type Chat struct {
 	Username         *string  `json:"username,omitempty"`
 	FirstName        *string  `json:"first_name,omitempty"`
 	LastName         *string  `json:"last_name,omitempty"`
-	IsForum          *bool    `json:"is_forum,omitempty"`
-	IsDirectMessages *bool    `json:"is_direct_messages,omitempty"`
+	IsForum          *bool    `json:"is_forum,omitempty"`           // Since: Bot API 6.3
+	IsDirectMessages *bool    `json:"is_direct_messages,omitempty"` // Since: Bot API 9.2
 }
 
 // ChatType represents the type of a chat.
@@ -28,6 +29,7 @@ const (
 )
 
 // ChatFullInfo contains full information about a chat.
+// Since: Bot API 7.5
 // See https://core.telegram.org/bots/api#chatfullinfo
 type ChatFullInfo struct {
 	ID               int64      `json:"id"`
@@ -49,7 +51,7 @@ type ChatFullInfo struct {
 	BusinessOpeningHours *BusinessOpeningHours `json:"business_opening_hours,omitempty"`
 
 	PersonalChat *Chat `json:"personal_chat,omitempty"`
-	ParentChat   *Chat `json:"parent_chat,omitempty"`
+	ParentChat   *Chat `json:"parent_chat,omitempty"` // Since: Bot API 9.2
 
 	AvailableReaction []ReactionType `json:"available_reaction,omitempty"`
 
@@ -86,12 +88,13 @@ type ChatFullInfo struct {
 
 	Location             *ChatLocation     `json:"location,omitempty"`
 	Rating               *UserRating       `json:"rating,omitempty"`
-	FirstProfileAudio    *Audio            `json:"first_profile_audio,omitempty"`
-	UniqueGiftColors     *UniqueGiftColors `json:"unique_gift_colors,omitempty"`
-	PaidMessageStarCount *int              `json:"paid_message_star_count,omitempty"`
+	FirstProfileAudio    *Audio            `json:"first_profile_audio,omitempty"`     // Since: Bot API 9.4
+	UniqueGiftColors     *UniqueGiftColors `json:"unique_gift_colors,omitempty"`      // Since: Bot API 9.3
+	PaidMessageStarCount *int              `json:"paid_message_star_count,omitempty"` // Since: Bot API 9.3
 }
 
 // ChatPhoto represents a chat photo.
+// Since: Bot API 3.1
 // See https://core.telegram.org/bots/api#chatphoto
 type ChatPhoto struct {
 	SmallFileID       string `json:"small_file_id"`
@@ -101,26 +104,29 @@ type ChatPhoto struct {
 }
 
 // ChatPermissions describes actions that a non‑administrator user is allowed to take in a chat.
+// Since: Bot API 4.4
 // See https://core.telegram.org/bots/api#chatpermissions
 type ChatPermissions struct {
 	CanSendMessages      bool `json:"can_send_messages"`
-	CanSendAudios        bool `json:"can_send_audios"`
-	CanSendDocuments     bool `json:"can_send_documents"`
-	CanSendPhotos        bool `json:"can_send_photos"`
-	CanSendVideos        bool `json:"can_send_videos"`
-	CanSendVideoNotes    bool `json:"can_send_video_notes"`
-	CanSendVoiceNotes    bool `json:"can_send_voice_notes"`
+	CanSendAudios        bool `json:"can_send_audios"`      // Since: Bot API 6.5
+	CanSendDocuments     bool `json:"can_send_documents"`   // Since: Bot API 6.5
+	CanSendPhotos        bool `json:"can_send_photos"`      // Since: Bot API 6.5
+	CanSendVideos        bool `json:"can_send_videos"`      // Since: Bot API 6.5
+	CanSendVideoNotes    bool `json:"can_send_video_notes"` // Since: Bot API 6.5
+	CanSendVoiceNotes    bool `json:"can_send_voice_notes"` // Since: Bot API 6.5
 	CanSendPolls         bool `json:"can_send_polls"`
 	CanSendOtherMessages bool `json:"can_send_other_messages"`
 	CanAddWebPagePreview bool `json:"can_add_web_page_previews"`
-	CanEditTag           bool `json:"can_edit_tag"`
+	CanReactToMessages   bool `json:"can_react_to_messages"` // Since: Bot API 10.0
+	CanEditTag           bool `json:"can_edit_tag"`          // Since: Bot API 9.5
 	CanChangeInfo        bool `json:"can_change_info"`
 	CanInviteUsers       bool `json:"can_invite_users"`
 	CanPinMessages       bool `json:"can_pin_messages"`
-	CanManageTopics      bool `json:"can_manage_topics"`
+	CanManageTopics      bool `json:"can_manage_topics"` // Since: Bot API 6.3
 }
 
 // ChatLocation represents a location to which a chat is connected.
+// Since: Bot API 5.0
 // See https://core.telegram.org/bots/api#chatlocation
 type ChatLocation struct {
 	Location Location `json:"location"`
@@ -128,6 +134,7 @@ type ChatLocation struct {
 }
 
 // ChatInviteLink represents an invite link for a chat.
+// Since: Bot API 5.1
 // See https://core.telegram.org/bots/api#chatinvitelink
 type ChatInviteLink struct {
 	InviteLink        string `json:"invite_link"`
@@ -163,11 +170,12 @@ const (
 )
 
 // ChatMember contains information about one member of a chat.
+// Since: Bot API 3.1
 // See https://core.telegram.org/bots/api#chatmember
 type ChatMember struct {
 	Status ChatMemberStatusType `json:"status"`
 	User   User                 `json:"user"`
-	Tag    string               `json:"tag,omitempty"`
+	Tag    string               `json:"tag,omitempty"` // Since: Bot API 9.5
 
 	// Owner
 	IsAnonymous *bool   `json:"is_anonymous"`
@@ -182,16 +190,16 @@ type ChatMember struct {
 	CanPromoteMembers   *bool `json:"can_promote_members,omitempty"`
 	CanChangeInfo       *bool `json:"can_change_info,omitempty"`
 	CanInviteUsers      *bool `json:"can_invite_users,omitempty"`
-	CanPostStories      *bool `json:"can_post_stories,omitempty"`
-	CanEditStories      *bool `json:"can_edit_stories,omitempty"`
-	CanDeleteStories    *bool `json:"can_delete_stories,omitempty"`
+	CanPostStories      *bool `json:"can_post_stories,omitempty"`   // Since: Bot API 6.9
+	CanEditStories      *bool `json:"can_edit_stories,omitempty"`   // Since: Bot API 6.9
+	CanDeleteStories    *bool `json:"can_delete_stories,omitempty"` // Since: Bot API 6.9
 
 	CanPostMessages         *bool `json:"can_post_messages,omitempty"`
 	CanEditMessages         *bool `json:"can_edit_messages,omitempty"`
 	CanPinMessages          *bool `json:"can_pin_messages,omitempty"`
-	CanManageTopics         *bool `json:"can_manage_topics,omitempty"`
-	CanManageDirectMessages *bool `json:"can_manage_direct_messages,omitempty"`
-	CanManageTags           *bool `json:"can_manage_tags,omitempty"`
+	CanManageTopics         *bool `json:"can_manage_topics,omitempty"`          // Since: Bot API 6.3
+	CanManageDirectMessages *bool `json:"can_manage_direct_messages,omitempty"` // Since: Bot API 9.1
+	CanManageTags           *bool `json:"can_manage_tags,omitempty"`            // Since: Bot API 9.5
 
 	// Member
 	UntilDate *int `json:"until_date,omitempty"`
@@ -199,19 +207,21 @@ type ChatMember struct {
 	// Restricted
 	IsMember             *bool `json:"is_member,omitempty"`
 	CanSendMessages      *bool `json:"can_send_messages,omitempty"`
-	CanSendAudios        *bool `json:"can_send_audios,omitempty"`
-	CanSendDocuments     *bool `json:"can_send_documents,omitempty"`
-	CanSendPhotos        *bool `json:"can_send_photos,omitempty"`
-	CanSendVideos        *bool `json:"can_send_videos,omitempty"`
-	CanSendVideoNotes    *bool `json:"can_send_video_notes,omitempty"`
-	CanSendVoiceNotes    *bool `json:"can_send_voice_notes,omitempty"`
+	CanSendAudios        *bool `json:"can_send_audios,omitempty"`      // Since: Bot API 6.5
+	CanSendDocuments     *bool `json:"can_send_documents,omitempty"`   // Since: Bot API 6.5
+	CanSendPhotos        *bool `json:"can_send_photos,omitempty"`      // Since: Bot API 6.5
+	CanSendVideos        *bool `json:"can_send_videos,omitempty"`      // Since: Bot API 6.5
+	CanSendVideoNotes    *bool `json:"can_send_video_notes,omitempty"` // Since: Bot API 6.5
+	CanSendVoiceNotes    *bool `json:"can_send_voice_notes,omitempty"` // Since: Bot API 6.5
 	CanSendPolls         *bool `json:"can_send_polls,omitempty"`
 	CanSendOtherMessages *bool `json:"can_send_other_messages,omitempty"`
 	CanAddWebPagePreview *bool `json:"can_add_web_page_previews,omitempty"`
-	CanEditTag           *bool `json:"can_edit_tag,omitempty"`
+	CanReactToMessages   *bool `json:"can_react_to_messages,omitempty"` // Since: Bot API 10.0
+	CanEditTag           *bool `json:"can_edit_tag,omitempty"`          // Since: Bot API 9.5
 }
 
 // ChatBoostSource describes the source of a chat boost.
+// Since: Bot API 7.0
 // See https://core.telegram.org/bots/api#chatboostsource
 type ChatBoostSource struct {
 	Source string `json:"source"`
@@ -224,6 +234,7 @@ type ChatBoostSource struct {
 }
 
 // ChatBoost represents a boost added to a chat.
+// Since: Bot API 7.0
 // See https://core.telegram.org/bots/api#chatboost
 type ChatBoost struct {
 	BoostID        string          `json:"boost_id"`
@@ -233,31 +244,40 @@ type ChatBoost struct {
 }
 
 // UserChatBoosts represents a list of boosts a user has given to a chat.
+// Since: Bot API 7.0
 // See https://core.telegram.org/bots/api#userchatboosts
 type UserChatBoosts struct {
 	Boosts []ChatBoost `json:"boosts"`
 }
+
+// ChatBoostAdded describes a service message about a user boosting a chat.
+// Since: Bot API 7.1
 type ChatBoostAdded struct {
 	BoostCount int `json:"boost_count"`
 }
 
+// ChatBackground represents a chat background.
+// Since: Bot API 7.5
 type ChatBackground struct {
 	Type BackgroundType `json:"type"`
 }
 
 // ChatOwnerLeft describes a service message about a chat owner leaving.
+// Since: Bot API 9.4
 // See https://core.telegram.org/bots/api#chatownerleft
 type ChatOwnerLeft struct {
 	NewOwner *User `json:"new_owner,omitempty"`
 }
 
 // ChatOwnerChanged describes a service message about a chat owner change.
+// Since: Bot API 9.4
 // See https://core.telegram.org/bots/api#chatownerchanged
 type ChatOwnerChanged struct {
 	NewOwner User `json:"new_owner"`
 }
 
 // ChatAdministratorRights represents the rights of an administrator in a chat.
+// Since: Bot API 6.0
 // See https://core.telegram.org/bots/api#chatadministratorrights
 type ChatAdministratorRights struct {
 	IsAnonymous         bool `json:"is_anonymous"`
@@ -281,6 +301,7 @@ type ChatAdministratorRights struct {
 }
 
 // ChatBoostUpdated represents a boost added to a chat or changed.
+// Since: Bot API 7.0
 // See https://core.telegram.org/bots/api#chatboostupdated
 type ChatBoostUpdated struct {
 	Chat  Chat      `json:"chat"`
@@ -288,6 +309,7 @@ type ChatBoostUpdated struct {
 }
 
 // ChatBoostRemoved represents a boost removed from a chat.
+// Since: Bot API 7.0
 // See https://core.telegram.org/bots/api#chatboostremoved
 type ChatBoostRemoved struct {
 	Chat       Chat            `json:"chat"`

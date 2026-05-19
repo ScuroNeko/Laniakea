@@ -1,6 +1,7 @@
 package tgapi
 
 // StarTransaction describes a Telegram Star transaction.
+// Since: Bot API 7.5
 // See https://core.telegram.org/bots/api#startransaction
 type StarTransaction struct {
 	ID             string         `json:"id"`
@@ -12,6 +13,7 @@ type StarTransaction struct {
 }
 
 // StarTransactions contains a list of Telegram Star transactions.
+// Since: Bot API 7.5
 // See https://core.telegram.org/bots/api#startransactions
 type StarTransactions struct {
 	Transactions []StarTransaction `json:"transactions"`

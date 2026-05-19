@@ -3,6 +3,7 @@ package tgapi
 import "context"
 
 // VerifyUser holds parameters for the verifyUser method.
+// Since: Bot API 8.0
 // See https://core.telegram.org/bots/api#verifyuser
 type VerifyUser struct {
 	UserID            int64  `json:"user_id"`
@@ -10,6 +11,7 @@ type VerifyUser struct {
 }
 
 // VerifyUser verifies a user.
+// Since: Bot API 8.0
 // Returns true on success.
 // See https://core.telegram.org/bots/api#verifyuser
 func (api *API) VerifyUser(params VerifyUser) (bool, error) {
@@ -18,6 +20,7 @@ func (api *API) VerifyUser(params VerifyUser) (bool, error) {
 }
 
 // VerifyUserWithContext is the context-aware variant of VerifyUser.
+// Since: Bot API 8.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#verifyuser
 func (api *API) VerifyUserWithContext(ctx context.Context, params VerifyUser) (bool, error) {
@@ -26,6 +29,7 @@ func (api *API) VerifyUserWithContext(ctx context.Context, params VerifyUser) (b
 }
 
 // VerifyChat holds parameters for the verifyChat method.
+// Since: Bot API 8.0
 // See https://core.telegram.org/bots/api#verifychat
 type VerifyChat struct {
 	ChatID            int64  `json:"chat_id"`
@@ -33,6 +37,7 @@ type VerifyChat struct {
 }
 
 // VerifyChat verifies a chat.
+// Since: Bot API 8.0
 // Returns true on success.
 // See https://core.telegram.org/bots/api#verifychat
 func (api *API) VerifyChat(params VerifyChat) (bool, error) {
@@ -41,6 +46,7 @@ func (api *API) VerifyChat(params VerifyChat) (bool, error) {
 }
 
 // VerifyChatWithContext is the context-aware variant of VerifyChat.
+// Since: Bot API 8.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#verifychat
 func (api *API) VerifyChatWithContext(ctx context.Context, params VerifyChat) (bool, error) {
@@ -49,12 +55,14 @@ func (api *API) VerifyChatWithContext(ctx context.Context, params VerifyChat) (b
 }
 
 // RemoveUserVerification holds parameters for the removeUserVerification method.
+// Since: Bot API 8.0
 // See https://core.telegram.org/bots/api#removeuserverification
 type RemoveUserVerification struct {
 	UserID int64 `json:"user_id"`
 }
 
 // RemoveUserVerification removes a user's verification.
+// Since: Bot API 8.0
 // Returns true on success.
 // See https://core.telegram.org/bots/api#removeuserverification
 func (api *API) RemoveUserVerification(params RemoveUserVerification) (bool, error) {
@@ -63,6 +71,7 @@ func (api *API) RemoveUserVerification(params RemoveUserVerification) (bool, err
 }
 
 // RemoveUserVerificationWithContext is the context-aware variant of RemoveUserVerification.
+// Since: Bot API 8.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#removeuserverification
 func (api *API) RemoveUserVerificationWithContext(ctx context.Context, params RemoveUserVerification) (bool, error) {
@@ -71,12 +80,14 @@ func (api *API) RemoveUserVerificationWithContext(ctx context.Context, params Re
 }
 
 // RemoveChatVerification holds parameters for the removeChatVerification method.
+// Since: Bot API 8.0
 // See https://core.telegram.org/bots/api#removechatverification
 type RemoveChatVerification struct {
 	ChatID int64 `json:"chat_id"`
 }
 
 // RemoveChatVerification removes a chat's verification.
+// Since: Bot API 8.0
 // Returns true on success.
 // See https://core.telegram.org/bots/api#removechatverification
 func (api *API) RemoveChatVerification(params RemoveChatVerification) (bool, error) {
@@ -85,6 +96,7 @@ func (api *API) RemoveChatVerification(params RemoveChatVerification) (bool, err
 }
 
 // RemoveChatVerificationWithContext is the context-aware variant of RemoveChatVerification.
+// Since: Bot API 8.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#removechatverification
 func (api *API) RemoveChatVerificationWithContext(ctx context.Context, params RemoveChatVerification) (bool, error) {
@@ -93,6 +105,7 @@ func (api *API) RemoveChatVerificationWithContext(ctx context.Context, params Re
 }
 
 // ReadBusinessMessage holds parameters for the readBusinessMessage method.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#readbusinessmessage
 type ReadBusinessMessage struct {
 	BusinessConnectionID string `json:"business_connection_id"`
@@ -101,6 +114,7 @@ type ReadBusinessMessage struct {
 }
 
 // ReadBusinessMessage marks a business message as read.
+// Since: Bot API 9.0
 // Returns true on success.
 // See https://core.telegram.org/bots/api#readbusinessmessage
 func (api *API) ReadBusinessMessage(params ReadBusinessMessage) (bool, error) {
@@ -109,6 +123,7 @@ func (api *API) ReadBusinessMessage(params ReadBusinessMessage) (bool, error) {
 }
 
 // ReadBusinessMessageWithContext is the context-aware variant of ReadBusinessMessage.
+// Since: Bot API 9.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#readbusinessmessage
 func (api *API) ReadBusinessMessageWithContext(ctx context.Context, params ReadBusinessMessage) (bool, error) {
@@ -117,12 +132,14 @@ func (api *API) ReadBusinessMessageWithContext(ctx context.Context, params ReadB
 }
 
 // GetBusinessConnection holds parameters for the getBusinessConnection method.
+// Since: Bot API 7.2
 // See https://core.telegram.org/bots/api#getbusinessconnection
 type GetBusinessConnection struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 }
 
 // GetBusinessConnection returns information about a business connection.
+// Since: Bot API 7.2
 // See https://core.telegram.org/bots/api#getbusinessconnection
 func (api *API) GetBusinessConnection(params GetBusinessConnection) (BusinessConnection, error) {
 	req := NewRequest[BusinessConnection]("getBusinessConnection", params)
@@ -130,6 +147,7 @@ func (api *API) GetBusinessConnection(params GetBusinessConnection) (BusinessCon
 }
 
 // GetBusinessConnectionWithContext is the context-aware variant of GetBusinessConnection.
+// Since: Bot API 7.2
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#getbusinessconnection
 func (api *API) GetBusinessConnectionWithContext(ctx context.Context, params GetBusinessConnection) (BusinessConnection, error) {
@@ -138,6 +156,7 @@ func (api *API) GetBusinessConnectionWithContext(ctx context.Context, params Get
 }
 
 // DeleteBusinessMessages holds parameters for the deleteBusinessMessages method.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#deletebusinessmessages
 type DeleteBusinessMessages struct {
 	BusinessConnectionID string `json:"business_connection_id"`
@@ -145,6 +164,7 @@ type DeleteBusinessMessages struct {
 }
 
 // DeleteBusinessMessages deletes business messages.
+// Since: Bot API 9.0
 // Returns true on success.
 // See https://core.telegram.org/bots/api#deletebusinessmessages
 func (api *API) DeleteBusinessMessages(params DeleteBusinessMessages) (bool, error) {
@@ -153,6 +173,7 @@ func (api *API) DeleteBusinessMessages(params DeleteBusinessMessages) (bool, err
 }
 
 // DeleteBusinessMessagesWithContext is the context-aware variant of DeleteBusinessMessages.
+// Since: Bot API 9.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#deletebusinessmessages
 func (api *API) DeleteBusinessMessagesWithContext(ctx context.Context, params DeleteBusinessMessages) (bool, error) {
@@ -161,6 +182,7 @@ func (api *API) DeleteBusinessMessagesWithContext(ctx context.Context, params De
 }
 
 // SetBusinessAccountName holds parameters for the setBusinessAccountName method.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#setbusinessaccountname
 type SetBusinessAccountName struct {
 	BusinessConnectionID string `json:"business_connection_id"`
@@ -169,6 +191,7 @@ type SetBusinessAccountName struct {
 }
 
 // SetBusinessAccountName sets the first and last name of a business account.
+// Since: Bot API 9.0
 // Returns true on success.
 // See https://core.telegram.org/bots/api#setbusinessaccountname
 func (api *API) SetBusinessAccountName(params SetBusinessAccountName) (bool, error) {
@@ -177,6 +200,7 @@ func (api *API) SetBusinessAccountName(params SetBusinessAccountName) (bool, err
 }
 
 // SetBusinessAccountNameWithContext is the context-aware variant of SetBusinessAccountName.
+// Since: Bot API 9.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#setbusinessaccountname
 func (api *API) SetBusinessAccountNameWithContext(ctx context.Context, params SetBusinessAccountName) (bool, error) {
@@ -185,6 +209,7 @@ func (api *API) SetBusinessAccountNameWithContext(ctx context.Context, params Se
 }
 
 // SetBusinessAccountUsername holds parameters for the setBusinessAccountUsername method.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#setbusinessaccountusername
 type SetBusinessAccountUsername struct {
 	BusinessConnectionID string `json:"business_connection_id"`
@@ -192,6 +217,7 @@ type SetBusinessAccountUsername struct {
 }
 
 // SetBusinessAccountUsername sets the username of a business account.
+// Since: Bot API 9.0
 // Returns true on success.
 // See https://core.telegram.org/bots/api#setbusinessaccountusername
 func (api *API) SetBusinessAccountUsername(params SetBusinessAccountUsername) (bool, error) {
@@ -200,6 +226,7 @@ func (api *API) SetBusinessAccountUsername(params SetBusinessAccountUsername) (b
 }
 
 // SetBusinessAccountUsernameWithContext is the context-aware variant of SetBusinessAccountUsername.
+// Since: Bot API 9.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#setbusinessaccountusername
 func (api *API) SetBusinessAccountUsernameWithContext(ctx context.Context, params SetBusinessAccountUsername) (bool, error) {
@@ -208,6 +235,7 @@ func (api *API) SetBusinessAccountUsernameWithContext(ctx context.Context, param
 }
 
 // SetBusinessAccountBio holds parameters for the setBusinessAccountBio method.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#setbusinessaccountbio
 type SetBusinessAccountBio struct {
 	BusinessConnectionID string `json:"business_connection_id"`
@@ -215,6 +243,7 @@ type SetBusinessAccountBio struct {
 }
 
 // SetBusinessAccountBio sets the bio of a business account.
+// Since: Bot API 9.0
 // Returns true on success.
 // See https://core.telegram.org/bots/api#setbusinessaccountbio
 func (api *API) SetBusinessAccountBio(params SetBusinessAccountBio) (bool, error) {
@@ -223,6 +252,7 @@ func (api *API) SetBusinessAccountBio(params SetBusinessAccountBio) (bool, error
 }
 
 // SetBusinessAccountBioWithContext is the context-aware variant of SetBusinessAccountBio.
+// Since: Bot API 9.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#setbusinessaccountbio
 func (api *API) SetBusinessAccountBioWithContext(ctx context.Context, params SetBusinessAccountBio) (bool, error) {
@@ -231,6 +261,7 @@ func (api *API) SetBusinessAccountBioWithContext(ctx context.Context, params Set
 }
 
 // SetBusinessAccountProfilePhoto holds parameters for the setBusinessAccountProfilePhoto method.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#setbusinessaccountprofilephoto
 type SetBusinessAccountProfilePhoto struct {
 	BusinessConnectionID string            `json:"business_connection_id"`
@@ -239,6 +270,7 @@ type SetBusinessAccountProfilePhoto struct {
 }
 
 // SetBusinessAccountProfilePhoto sets the profile photo of a business account.
+// Since: Bot API 9.0
 // Returns true on success.
 // See https://core.telegram.org/bots/api#setbusinessaccountprofilephoto
 func (api *API) SetBusinessAccountProfilePhoto(params SetBusinessAccountProfilePhoto) (bool, error) {
@@ -247,6 +279,7 @@ func (api *API) SetBusinessAccountProfilePhoto(params SetBusinessAccountProfileP
 }
 
 // SetBusinessAccountProfilePhotoWithContext is the context-aware variant of SetBusinessAccountProfilePhoto.
+// Since: Bot API 9.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#setbusinessaccountprofilephoto
 func (api *API) SetBusinessAccountProfilePhotoWithContext(ctx context.Context, params SetBusinessAccountProfilePhoto) (bool, error) {
@@ -255,6 +288,7 @@ func (api *API) SetBusinessAccountProfilePhotoWithContext(ctx context.Context, p
 }
 
 // RemoveBusinessAccountProfilePhoto holds parameters for the removeBusinessAccountProfilePhoto method.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#removebusinessaccountprofilephoto
 type RemoveBusinessAccountProfilePhoto struct {
 	BusinessConnectionID string `json:"business_connection_id"`
@@ -262,6 +296,7 @@ type RemoveBusinessAccountProfilePhoto struct {
 }
 
 // RemoveBusinessAccountProfilePhoto removes the profile photo of a business account.
+// Since: Bot API 9.0
 // Returns true on success.
 // See https://core.telegram.org/bots/api#removebusinessaccountprofilephoto
 func (api *API) RemoveBusinessAccountProfilePhoto(params RemoveBusinessAccountProfilePhoto) (bool, error) {
@@ -270,6 +305,7 @@ func (api *API) RemoveBusinessAccountProfilePhoto(params RemoveBusinessAccountPr
 }
 
 // RemoveBusinessAccountProfilePhotoWithContext is the context-aware variant of RemoveBusinessAccountProfilePhoto.
+// Since: Bot API 9.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#removebusinessaccountprofilephoto
 func (api *API) RemoveBusinessAccountProfilePhotoWithContext(ctx context.Context, params RemoveBusinessAccountProfilePhoto) (bool, error) {
@@ -278,6 +314,7 @@ func (api *API) RemoveBusinessAccountProfilePhotoWithContext(ctx context.Context
 }
 
 // SetBusinessAccountGiftSettings holds parameters for the setBusinessAccountGiftSettings method.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#setbusinessaccountgiftsettings
 type SetBusinessAccountGiftSettings struct {
 	BusinessConnectionID string            `json:"business_connection_id"`
@@ -286,6 +323,7 @@ type SetBusinessAccountGiftSettings struct {
 }
 
 // SetBusinessAccountGiftSettings sets gift settings for a business account.
+// Since: Bot API 9.0
 // Returns true on success.
 // See https://core.telegram.org/bots/api#setbusinessaccountgiftsettings
 func (api *API) SetBusinessAccountGiftSettings(params SetBusinessAccountGiftSettings) (bool, error) {
@@ -294,6 +332,7 @@ func (api *API) SetBusinessAccountGiftSettings(params SetBusinessAccountGiftSett
 }
 
 // SetBusinessAccountGiftSettingsWithContext is the context-aware variant of SetBusinessAccountGiftSettings.
+// Since: Bot API 9.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#setbusinessaccountgiftsettings
 func (api *API) SetBusinessAccountGiftSettingsWithContext(ctx context.Context, params SetBusinessAccountGiftSettings) (bool, error) {
@@ -302,12 +341,14 @@ func (api *API) SetBusinessAccountGiftSettingsWithContext(ctx context.Context, p
 }
 
 // GetBusinessAccountStarBalance holds parameters for the getBusinessAccountStarBalance method.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#getbusinessaccountstarbalance
 type GetBusinessAccountStarBalance struct {
 	BusinessConnectionID string `json:"business_connection_id"`
 }
 
 // GetBusinessAccountStarBalance returns the star balance of a business account.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#getbusinessaccountstarbalance
 func (api *API) GetBusinessAccountStarBalance(params GetBusinessAccountStarBalance) (StarAmount, error) {
 	req := NewRequest[StarAmount]("getBusinessAccountStarBalance", params)
@@ -315,6 +356,7 @@ func (api *API) GetBusinessAccountStarBalance(params GetBusinessAccountStarBalan
 }
 
 // GetBusinessAccountStarBalanceWithContext is the context-aware variant of GetBusinessAccountStarBalance.
+// Since: Bot API 9.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#getbusinessaccountstarbalance
 func (api *API) GetBusinessAccountStarBalanceWithContext(ctx context.Context, params GetBusinessAccountStarBalance) (StarAmount, error) {
@@ -323,6 +365,7 @@ func (api *API) GetBusinessAccountStarBalanceWithContext(ctx context.Context, pa
 }
 
 // TransferBusinessAccountStars holds parameters for the transferBusinessAccountStars method.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#transferbusinessaccountstars
 type TransferBusinessAccountStars struct {
 	BusinessConnectionID string `json:"business_connection_id"`
@@ -330,6 +373,7 @@ type TransferBusinessAccountStars struct {
 }
 
 // TransferBusinessAccountStars transfers stars from a business account.
+// Since: Bot API 9.0
 // Returns true on success.
 // See https://core.telegram.org/bots/api#transferbusinessaccountstars
 func (api *API) TransferBusinessAccountStars(params TransferBusinessAccountStars) (bool, error) {
@@ -338,6 +382,7 @@ func (api *API) TransferBusinessAccountStars(params TransferBusinessAccountStars
 }
 
 // TransferBusinessAccountStarsWithContext is the context-aware variant of TransferBusinessAccountStars.
+// Since: Bot API 9.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#transferbusinessaccountstars
 func (api *API) TransferBusinessAccountStarsWithContext(ctx context.Context, params TransferBusinessAccountStars) (bool, error) {
@@ -346,6 +391,7 @@ func (api *API) TransferBusinessAccountStarsWithContext(ctx context.Context, par
 }
 
 // GetBusinessAccountGifts holds parameters for the getBusinessAccountGifts method.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#getbusinessaccountgifts
 type GetBusinessAccountGifts struct {
 	BusinessConnectionID        string `json:"business_connection_id"`
@@ -362,6 +408,7 @@ type GetBusinessAccountGifts struct {
 }
 
 // GetBusinessAccountGifts returns gifts owned by a business account.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#getbusinessaccountgifts
 func (api *API) GetBusinessAccountGifts(params GetBusinessAccountGifts) (OwnedGifts, error) {
 	req := NewRequest[OwnedGifts]("getBusinessAccountGifts", params)
@@ -369,6 +416,7 @@ func (api *API) GetBusinessAccountGifts(params GetBusinessAccountGifts) (OwnedGi
 }
 
 // GetBusinessAccountGiftsWithContext is the context-aware variant of GetBusinessAccountGifts.
+// Since: Bot API 9.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#getbusinessaccountgifts
 func (api *API) GetBusinessAccountGiftsWithContext(ctx context.Context, params GetBusinessAccountGifts) (OwnedGifts, error) {
@@ -377,6 +425,7 @@ func (api *API) GetBusinessAccountGiftsWithContext(ctx context.Context, params G
 }
 
 // ConvertGiftToStars holds parameters for the convertGiftToStars method.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#convertgifttostars
 type ConvertGiftToStars struct {
 	BusinessConnectionID string `json:"business_connection_id"`
@@ -384,6 +433,7 @@ type ConvertGiftToStars struct {
 }
 
 // ConvertGiftToStars converts a gift to Telegram Stars.
+// Since: Bot API 9.0
 // Returns true on success.
 // See https://core.telegram.org/bots/api#convertgifttostars
 func (api *API) ConvertGiftToStars(params ConvertGiftToStars) (bool, error) {
@@ -392,6 +442,7 @@ func (api *API) ConvertGiftToStars(params ConvertGiftToStars) (bool, error) {
 }
 
 // ConvertGiftToStarsWithContext is the context-aware variant of ConvertGiftToStars.
+// Since: Bot API 9.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#convertgifttostars
 func (api *API) ConvertGiftToStarsWithContext(ctx context.Context, params ConvertGiftToStars) (bool, error) {
@@ -400,6 +451,7 @@ func (api *API) ConvertGiftToStarsWithContext(ctx context.Context, params Conver
 }
 
 // UpgradeGift holds parameters for the upgradeGift method.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#upgradegift
 type UpgradeGift struct {
 	BusinessConnectionID string `json:"business_connection_id"`
@@ -409,6 +461,7 @@ type UpgradeGift struct {
 }
 
 // UpgradeGift upgrades a gift.
+// Since: Bot API 9.0
 // Returns true on success.
 // See https://core.telegram.org/bots/api#upgradegift
 func (api *API) UpgradeGift(params UpgradeGift) (bool, error) {
@@ -417,6 +470,7 @@ func (api *API) UpgradeGift(params UpgradeGift) (bool, error) {
 }
 
 // UpgradeGiftWithContext is the context-aware variant of UpgradeGift.
+// Since: Bot API 9.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#upgradegift
 func (api *API) UpgradeGiftWithContext(ctx context.Context, params UpgradeGift) (bool, error) {
@@ -425,6 +479,7 @@ func (api *API) UpgradeGiftWithContext(ctx context.Context, params UpgradeGift) 
 }
 
 // TransferGift holds parameters for the transferGift method.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#transfergift
 type TransferGift struct {
 	BusinessConnectionID string `json:"business_connection_id"`
@@ -434,6 +489,7 @@ type TransferGift struct {
 }
 
 // TransferGift transfers a gift to another chat.
+// Since: Bot API 9.0
 // Returns true on success.
 // See https://core.telegram.org/bots/api#transfergift
 func (api *API) TransferGift(params TransferGift) (bool, error) {
@@ -442,6 +498,7 @@ func (api *API) TransferGift(params TransferGift) (bool, error) {
 }
 
 // TransferGiftWithContext is the context-aware variant of TransferGift.
+// Since: Bot API 9.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#transfergift
 func (api *API) TransferGiftWithContext(ctx context.Context, params TransferGift) (bool, error) {
@@ -450,6 +507,7 @@ func (api *API) TransferGiftWithContext(ctx context.Context, params TransferGift
 }
 
 // PostStory holds parameters for the postStory method.
+// Since: Bot API 7.2
 // See https://core.telegram.org/bots/api#poststory
 type PostStory struct {
 	BusinessConnectionID string            `json:"business_connection_id"`
@@ -466,13 +524,15 @@ type PostStory struct {
 }
 
 // PostStory posts a story with a photo.
+// Since: Bot API 7.2
 // See https://core.telegram.org/bots/api#poststory
 func (api *API) PostStory(params PostStory) (Story, error) {
 	req := NewRequest[Story]("postStory", params)
 	return req.Do(api)
 }
 
-// PostStoryWithContext is the context-aware variant of PostStoryPhoto.
+// PostStoryWithContext is the context-aware variant of PostStory.
+// Since: Bot API 7.2
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#poststory
 func (api *API) PostStoryWithContext(ctx context.Context, params PostStory) (Story, error) {
@@ -481,6 +541,7 @@ func (api *API) PostStoryWithContext(ctx context.Context, params PostStory) (Sto
 }
 
 // RepostStory holds parameters for the repostStory method.
+// Since: Bot API 7.2
 // See https://core.telegram.org/bots/api#repoststory
 type RepostStory struct {
 	BusinessConnectionID string `json:"business_connection_id"`
@@ -492,6 +553,7 @@ type RepostStory struct {
 }
 
 // RepostStory reposts a story from another chat.
+// Since: Bot API 7.2
 // Returns the reposted story.
 // See https://core.telegram.org/bots/api#repoststory
 func (api *API) RepostStory(params RepostStory) (Story, error) {
@@ -500,6 +562,7 @@ func (api *API) RepostStory(params RepostStory) (Story, error) {
 }
 
 // RepostStoryWithContext is the context-aware variant of RepostStory.
+// Since: Bot API 7.2
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#repoststory
 func (api *API) RepostStoryWithContext(ctx context.Context, params RepostStory) (Story, error) {
@@ -508,6 +571,7 @@ func (api *API) RepostStoryWithContext(ctx context.Context, params RepostStory) 
 }
 
 // EditStory holds parameters for the editStory method.
+// Since: Bot API 7.2
 // See https://core.telegram.org/bots/api#editstory
 type EditStory struct {
 	BusinessConnectionID string            `json:"business_connection_id"`
@@ -521,6 +585,7 @@ type EditStory struct {
 }
 
 // EditStory edits an existing story.
+// Since: Bot API 7.2
 // Returns the updated story.
 // See https://core.telegram.org/bots/api#editstory
 func (api *API) EditStory(params EditStory) (Story, error) {
@@ -529,6 +594,7 @@ func (api *API) EditStory(params EditStory) (Story, error) {
 }
 
 // EditStoryWithContext is the context-aware variant of EditStory.
+// Since: Bot API 7.2
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#editstory
 func (api *API) EditStoryWithContext(ctx context.Context, params EditStory) (Story, error) {
@@ -537,6 +603,7 @@ func (api *API) EditStoryWithContext(ctx context.Context, params EditStory) (Sto
 }
 
 // DeleteStory holds parameters for the deleteStory method.
+// Since: Bot API 7.2
 // See https://core.telegram.org/bots/api#deletestory
 type DeleteStory struct {
 	BusinessConnectionID string `json:"business_connection_id"`
@@ -544,6 +611,7 @@ type DeleteStory struct {
 }
 
 // DeleteStory deletes a story.
+// Since: Bot API 7.2
 // Returns true on success.
 // See https://core.telegram.org/bots/api#deletestory
 func (api *API) DeleteStory(params DeleteStory) (bool, error) {
@@ -552,6 +620,7 @@ func (api *API) DeleteStory(params DeleteStory) (bool, error) {
 }
 
 // DeleteStoryWithContext is the context-aware variant of DeleteStory.
+// Since: Bot API 7.2
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#deletestory
 func (api *API) DeleteStoryWithContext(ctx context.Context, params DeleteStory) (bool, error) {

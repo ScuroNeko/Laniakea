@@ -1,6 +1,7 @@
 package tgapi
 
 // BotCommand represents a bot command.
+// Since: Bot API 4.7
 // See https://core.telegram.org/bots/api#botcommand
 type BotCommand struct {
 	Command     string `json:"command"`
@@ -28,6 +29,7 @@ const (
 )
 
 // BotCommandScope represents the scope to which bot commands are applied.
+// Since: Bot API 5.3
 // See https://core.telegram.org/bots/api#botcommandscope
 type BotCommandScope struct {
 	Type   BotCommandScopeType `json:"type"`
@@ -36,16 +38,19 @@ type BotCommandScope struct {
 }
 
 // BotName represents the bot's name.
+// Since: Bot API 6.7
 type BotName struct {
 	Name string `json:"name"`
 }
 
 // BotDescription represents the bot's description.
+// Since: Bot API 6.6
 type BotDescription struct {
 	Description string `json:"description"`
 }
 
 // BotShortDescription represents the bot's short description.
+// Since: Bot API 6.6
 type BotShortDescription struct {
 	ShortDescription string `json:"short_description"`
 }
@@ -61,6 +66,7 @@ const (
 )
 
 // InputProfilePhoto describes a profile photo to set.
+// Since: Bot API 9.0
 // See https://core.telegram.org/bots/api#inputprofilephoto
 type InputProfilePhoto struct {
 	Type InputProfilePhotoType `json:"type"`
@@ -86,6 +92,7 @@ const (
 )
 
 // MenuButton represents a menu button.
+// Since: Bot API 6.0
 // See https://core.telegram.org/bots/api#menubutton
 type MenuButton struct {
 	Type MenuButtonType `json:"type"`
@@ -93,4 +100,11 @@ type MenuButton struct {
 	// WebApp fields (for web_app button)
 	Text   *string     `json:"text"`
 	WebApp *WebAppInfo `json:"web_app"`
+}
+
+// BotAccessSettings describes access settings of a managed bot.
+// Since: Bot API 10.0
+// See https://core.telegram.org/bots/api#botaccesssettings
+type BotAccessSettings struct {
+	AllowAllPrivateChats bool `json:"allow_all_private_chats"`
 }

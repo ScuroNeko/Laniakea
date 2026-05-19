@@ -3,6 +3,7 @@ package tgapi
 import "context"
 
 // SendMessage holds parameters for the sendMessage method.
+// Since: Bot API 1.0
 // See https://core.telegram.org/bots/api#sendmessage
 type SendMessage struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
@@ -25,6 +26,7 @@ type SendMessage struct {
 }
 
 // SendMessage sends a text message.
+// Since: Bot API 1.0
 // See https://core.telegram.org/bots/api#sendmessage
 func (api *API) SendMessage(params SendMessage) (Message, error) {
 	req := NewRequestWithChatID[Message, SendMessage]("sendMessage", params, params.ChatID)
@@ -32,6 +34,7 @@ func (api *API) SendMessage(params SendMessage) (Message, error) {
 }
 
 // SendMessageWithContext is the context-aware variant of SendMessage.
+// Since: Bot API 1.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendmessage
 func (api *API) SendMessageWithContext(ctx context.Context, params SendMessage) (Message, error) {
@@ -40,6 +43,7 @@ func (api *API) SendMessageWithContext(ctx context.Context, params SendMessage) 
 }
 
 // ForwardMessage holds parameters for the forwardMessage method.
+// Since: Bot API 1.0
 // See https://core.telegram.org/bots/api#forwardmessage
 type ForwardMessage struct {
 	ChatID                int64 `json:"chat_id"`
@@ -57,6 +61,7 @@ type ForwardMessage struct {
 }
 
 // ForwardMessage forwards a message.
+// Since: Bot API 1.0
 // See https://core.telegram.org/bots/api#forwardmessage
 func (api *API) ForwardMessage(params ForwardMessage) (Message, error) {
 	req := NewRequestWithChatID[Message]("forwardMessage", params, params.ChatID)
@@ -64,6 +69,7 @@ func (api *API) ForwardMessage(params ForwardMessage) (Message, error) {
 }
 
 // ForwardMessageWithContext is the context-aware variant of ForwardMessage.
+// Since: Bot API 1.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#forwardmessage
 func (api *API) ForwardMessageWithContext(ctx context.Context, params ForwardMessage) (Message, error) {
@@ -72,6 +78,7 @@ func (api *API) ForwardMessageWithContext(ctx context.Context, params ForwardMes
 }
 
 // ForwardMessages holds parameters for the forwardMessages method.
+// Since: Bot API 7.0
 // See https://core.telegram.org/bots/api#forwardmessages
 type ForwardMessages struct {
 	ChatID                int64 `json:"chat_id"`
@@ -85,6 +92,7 @@ type ForwardMessages struct {
 }
 
 // ForwardMessages forwards multiple messages.
+// Since: Bot API 7.0
 // Returns an array of message IDs of the sent messages.
 // See https://core.telegram.org/bots/api#forwardmessages
 func (api *API) ForwardMessages(params ForwardMessages) ([]MessageID, error) {
@@ -93,6 +101,7 @@ func (api *API) ForwardMessages(params ForwardMessages) ([]MessageID, error) {
 }
 
 // ForwardMessagesWithContext is the context-aware variant of ForwardMessages.
+// Since: Bot API 7.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#forwardmessages
 func (api *API) ForwardMessagesWithContext(ctx context.Context, params ForwardMessages) ([]MessageID, error) {
@@ -101,6 +110,7 @@ func (api *API) ForwardMessagesWithContext(ctx context.Context, params ForwardMe
 }
 
 // CopyMessage holds parameters for the copyMessage method.
+// Since: Bot API 5.0
 // See https://core.telegram.org/bots/api#copymessage
 type CopyMessage struct {
 	ChatID                int64 `json:"chat_id"`
@@ -126,6 +136,7 @@ type CopyMessage struct {
 }
 
 // CopyMessage copies a message.
+// Since: Bot API 5.0
 // Returns the MessageID of the sent copy.
 // See https://core.telegram.org/bots/api#copymessage
 func (api *API) CopyMessage(params CopyMessage) (int, error) {
@@ -137,6 +148,7 @@ func (api *API) CopyMessage(params CopyMessage) (int, error) {
 }
 
 // CopyMessageWithContext is the context-aware variant of CopyMessage.
+// Since: Bot API 5.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#copymessage
 func (api *API) CopyMessageWithContext(ctx context.Context, params CopyMessage) (int, error) {
@@ -148,6 +160,7 @@ func (api *API) CopyMessageWithContext(ctx context.Context, params CopyMessage) 
 }
 
 // CopyMessages holds parameters for the copyMessages method.
+// Since: Bot API 7.0
 // See https://core.telegram.org/bots/api#copymessages
 type CopyMessages struct {
 	ChatID                int64 `json:"chat_id"`
@@ -162,6 +175,7 @@ type CopyMessages struct {
 }
 
 // CopyMessages copies multiple messages.
+// Since: Bot API 7.0
 // Returns an array of message IDs of the sent copies.
 // See https://core.telegram.org/bots/api#copymessages
 func (api *API) CopyMessages(params CopyMessages) ([]MessageID, error) {
@@ -170,6 +184,7 @@ func (api *API) CopyMessages(params CopyMessages) ([]MessageID, error) {
 }
 
 // CopyMessagesWithContext is the context-aware variant of CopyMessages.
+// Since: Bot API 7.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#copymessages
 func (api *API) CopyMessagesWithContext(ctx context.Context, params CopyMessages) ([]MessageID, error) {
@@ -178,6 +193,7 @@ func (api *API) CopyMessagesWithContext(ctx context.Context, params CopyMessages
 }
 
 // SendLocation holds parameters for the sendLocation method.
+// Since: Bot API 1.0
 // See https://core.telegram.org/bots/api#sendlocation
 type SendLocation struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
@@ -203,6 +219,7 @@ type SendLocation struct {
 }
 
 // SendLocation sends a point on the map.
+// Since: Bot API 1.0
 // See https://core.telegram.org/bots/api#sendlocation
 func (api *API) SendLocation(params SendLocation) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendLocation", params, params.ChatID)
@@ -210,6 +227,7 @@ func (api *API) SendLocation(params SendLocation) (Message, error) {
 }
 
 // SendLocationWithContext is the context-aware variant of SendLocation.
+// Since: Bot API 1.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendlocation
 func (api *API) SendLocationWithContext(ctx context.Context, params SendLocation) (Message, error) {
@@ -218,6 +236,7 @@ func (api *API) SendLocationWithContext(ctx context.Context, params SendLocation
 }
 
 // SendVenue holds parameters for the sendVenue method.
+// Since: Bot API 2.0
 // See https://core.telegram.org/bots/api#sendvenue
 type SendVenue struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
@@ -245,6 +264,7 @@ type SendVenue struct {
 }
 
 // SendVenue sends information about a venue.
+// Since: Bot API 2.0
 // See https://core.telegram.org/bots/api#sendvenue
 func (api *API) SendVenue(params SendVenue) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendVenue", params, params.ChatID)
@@ -252,6 +272,7 @@ func (api *API) SendVenue(params SendVenue) (Message, error) {
 }
 
 // SendVenueWithContext is the context-aware variant of SendVenue.
+// Since: Bot API 2.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendvenue
 func (api *API) SendVenueWithContext(ctx context.Context, params SendVenue) (Message, error) {
@@ -260,6 +281,7 @@ func (api *API) SendVenueWithContext(ctx context.Context, params SendVenue) (Mes
 }
 
 // SendContact holds parameters for the sendContact method.
+// Since: Bot API 2.0
 // See https://core.telegram.org/bots/api#sendcontact
 type SendContact struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
@@ -283,6 +305,7 @@ type SendContact struct {
 }
 
 // SendContact sends a phone contact.
+// Since: Bot API 2.0
 // See https://core.telegram.org/bots/api#sendcontact
 func (api *API) SendContact(params SendContact) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendContact", params, params.ChatID)
@@ -290,6 +313,7 @@ func (api *API) SendContact(params SendContact) (Message, error) {
 }
 
 // SendContactWithContext is the context-aware variant of SendContact.
+// Since: Bot API 2.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendcontact
 func (api *API) SendContactWithContext(ctx context.Context, params SendContact) (Message, error) {
@@ -298,6 +322,7 @@ func (api *API) SendContactWithContext(ctx context.Context, params SendContact) 
 }
 
 // SendPoll holds parameters for the sendPoll method.
+// Since: Bot API 4.2
 // See https://core.telegram.org/bots/api#sendpoll
 type SendPoll struct {
 	BusinessConnectionID string `json:"business_connection_id,omitempty"`
@@ -315,10 +340,14 @@ type SendPoll struct {
 	ShuffleOptions         bool              `json:"shuffle_options,omitempty"`
 	AllowAddingOptions     bool              `json:"allow_adding_options,omitempty"`
 	HideResultsUntilCloses bool              `json:"hide_results_until_closes,omitempty"`
+	MembersOnly            bool              `json:"members_only,omitempty"`  // Since: Bot API 10.0
+	CountryCodes           []string          `json:"country_codes,omitempty"` // Since: Bot API 10.0
 	CorrectOptionIDs       []int             `json:"correct_option_ids,omitempty"`
 	Explanation            string            `json:"explanation,omitempty"`
 	ExplanationParseMode   ParseMode         `json:"explanation_parse_mode,omitempty"`
 	ExplanationEntities    []MessageEntity   `json:"explanation_entities,omitempty"`
+	ExplanationMedia       *InputPollMedia   `json:"explanation_media,omitempty"`
+	Media                  *InputPollMedia   `json:"media,omitempty"`
 	OpenPeriod             int               `json:"open_period,omitempty"`
 	CloseDate              int               `json:"close_date"`
 	IsClosed               bool              `json:"is_closed,omitempty"`
@@ -337,6 +366,7 @@ type SendPoll struct {
 }
 
 // SendPoll sends a native poll.
+// Since: Bot API 4.2
 // See https://core.telegram.org/bots/api#sendpoll
 func (api *API) SendPoll(params SendPoll) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendPoll", params, params.ChatID)
@@ -344,6 +374,7 @@ func (api *API) SendPoll(params SendPoll) (Message, error) {
 }
 
 // SendPollWithContext is the context-aware variant of SendPoll.
+// Since: Bot API 4.2
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendpoll
 func (api *API) SendPollWithContext(ctx context.Context, params SendPoll) (Message, error) {
@@ -352,6 +383,7 @@ func (api *API) SendPollWithContext(ctx context.Context, params SendPoll) (Messa
 }
 
 // SendChecklist holds parameters for the sendChecklist method.
+// Since: Bot API 9.1
 // See https://core.telegram.org/bots/api#sendchecklist
 type SendChecklist struct {
 	BusinessConnectionID string         `json:"business_connection_id"`
@@ -367,6 +399,7 @@ type SendChecklist struct {
 }
 
 // SendChecklist sends a checklist.
+// Since: Bot API 9.1
 // See https://core.telegram.org/bots/api#sendchecklist
 func (api *API) SendChecklist(params SendChecklist) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendChecklist", params, params.ChatID)
@@ -374,6 +407,7 @@ func (api *API) SendChecklist(params SendChecklist) (Message, error) {
 }
 
 // SendChecklistWithContext is the context-aware variant of SendChecklist.
+// Since: Bot API 9.1
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendchecklist
 func (api *API) SendChecklistWithContext(ctx context.Context, params SendChecklist) (Message, error) {
@@ -382,6 +416,7 @@ func (api *API) SendChecklistWithContext(ctx context.Context, params SendCheckli
 }
 
 // SendDice holds parameters for the sendDice method.
+// Since: Bot API 4.7
 // See https://core.telegram.org/bots/api#senddice
 type SendDice struct {
 	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
@@ -402,6 +437,7 @@ type SendDice struct {
 }
 
 // SendDice sends a dice, which will have a random value.
+// Since: Bot API 4.7
 // See https://core.telegram.org/bots/api#senddice
 func (api *API) SendDice(params SendDice) (Message, error) {
 	req := NewRequestWithChatID[Message]("sendDice", params, params.ChatID)
@@ -409,6 +445,7 @@ func (api *API) SendDice(params SendDice) (Message, error) {
 }
 
 // SendDiceWithContext is the context-aware variant of SendDice.
+// Since: Bot API 4.7
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#senddice
 func (api *API) SendDiceWithContext(ctx context.Context, params SendDice) (Message, error) {
@@ -417,6 +454,7 @@ func (api *API) SendDiceWithContext(ctx context.Context, params SendDice) (Messa
 }
 
 // SendMessageDraft holds parameters for the sendMessageDraft method.
+// Since: Bot API 9.1
 // See https://core.telegram.org/bots/api#sendmessagedraft
 type SendMessageDraft struct {
 	ChatID          int64           `json:"chat_id"`
@@ -428,6 +466,7 @@ type SendMessageDraft struct {
 }
 
 // SendMessageDraft sends or updates a draft message in the target chat.
+// Since: Bot API 9.1
 // Returns True on success.
 // See https://core.telegram.org/bots/api#sendmessagedraft
 func (api *API) SendMessageDraft(params SendMessageDraft) (bool, error) {
@@ -436,6 +475,7 @@ func (api *API) SendMessageDraft(params SendMessageDraft) (bool, error) {
 }
 
 // SendMessageDraftWithContext is the context-aware variant of SendMessageDraft.
+// Since: Bot API 9.1
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendmessagedraft
 func (api *API) SendMessageDraftWithContext(ctx context.Context, params SendMessageDraft) (bool, error) {
@@ -444,6 +484,7 @@ func (api *API) SendMessageDraftWithContext(ctx context.Context, params SendMess
 }
 
 // SendChatAction holds parameters for the sendChatAction method.
+// Since: Bot API 1.0
 // See https://core.telegram.org/bots/api#sendchataction
 type SendChatAction struct {
 	BusinessConnectionID string         `json:"business_connection_id,omitempty"`
@@ -453,6 +494,7 @@ type SendChatAction struct {
 }
 
 // SendChatAction sends a chat action (typing, uploading photo, etc.).
+// Since: Bot API 1.0
 // Returns True on success.
 // See https://core.telegram.org/bots/api#sendchataction
 func (api *API) SendChatAction(params SendChatAction) (bool, error) {
@@ -461,6 +503,7 @@ func (api *API) SendChatAction(params SendChatAction) (bool, error) {
 }
 
 // SendChatActionWithContext is the context-aware variant of SendChatAction.
+// Since: Bot API 1.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#sendchataction
 func (api *API) SendChatActionWithContext(ctx context.Context, params SendChatAction) (bool, error) {
@@ -469,6 +512,7 @@ func (api *API) SendChatActionWithContext(ctx context.Context, params SendChatAc
 }
 
 // SetMessageReaction holds parameters for the setMessageReaction method.
+// Since: Bot API 7.0
 // See https://core.telegram.org/bots/api#setmessagereaction
 type SetMessageReaction struct {
 	ChatID    int64          `json:"chat_id"`
@@ -478,6 +522,7 @@ type SetMessageReaction struct {
 }
 
 // SetMessageReaction changes the chosen reaction on a message.
+// Since: Bot API 7.0
 // Returns True on success.
 // See https://core.telegram.org/bots/api#setmessagereaction
 func (api *API) SetMessageReaction(params SetMessageReaction) (bool, error) {
@@ -486,6 +531,7 @@ func (api *API) SetMessageReaction(params SetMessageReaction) (bool, error) {
 }
 
 // SetMessageReactionWithContext is the context-aware variant of SetMessageReaction.
+// Since: Bot API 7.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#setmessagereaction
 func (api *API) SetMessageReactionWithContext(ctx context.Context, params SetMessageReaction) (bool, error) {
@@ -494,6 +540,7 @@ func (api *API) SetMessageReactionWithContext(ctx context.Context, params SetMes
 }
 
 // EditMessageText holds parameters for the editMessageText method.
+// Since: Bot API 2.0
 // See https://core.telegram.org/bots/api#editmessagetext
 type EditMessageText struct {
 	BusinessConnectionID string              `json:"business_connection_id,omitempty"`
@@ -508,6 +555,7 @@ type EditMessageText struct {
 }
 
 // EditMessageText edits text messages.
+// Since: Bot API 2.0
 // If inline_message_id is provided, returns a boolean success flag;
 // otherwise returns the edited Message.
 // See https://core.telegram.org/bots/api#editmessagetext
@@ -524,6 +572,7 @@ func (api *API) EditMessageText(params EditMessageText) (Message, bool, error) {
 }
 
 // EditMessageTextWithContext is the context-aware variant of EditMessageText.
+// Since: Bot API 2.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#editmessagetext
 func (api *API) EditMessageTextWithContext(ctx context.Context, params EditMessageText) (Message, bool, error) {
@@ -539,6 +588,7 @@ func (api *API) EditMessageTextWithContext(ctx context.Context, params EditMessa
 }
 
 // EditMessageCaption holds parameters for the editMessageCaption method.
+// Since: Bot API 2.0
 // See https://core.telegram.org/bots/api#editmessagecaption
 type EditMessageCaption struct {
 	BusinessConnectionID  string          `json:"business_connection_id,omitempty"`
@@ -553,6 +603,7 @@ type EditMessageCaption struct {
 }
 
 // EditMessageCaption edits captions of messages.
+// Since: Bot API 2.0
 // If inline_message_id is provided, returns a boolean success flag;
 // otherwise returns the edited Message.
 // See https://core.telegram.org/bots/api#editmessagecaption
@@ -569,6 +620,7 @@ func (api *API) EditMessageCaption(params EditMessageCaption) (Message, bool, er
 }
 
 // EditMessageCaptionWithContext is the context-aware variant of EditMessageCaption.
+// Since: Bot API 2.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#editmessagecaption
 func (api *API) EditMessageCaptionWithContext(ctx context.Context, params EditMessageCaption) (Message, bool, error) {
@@ -584,6 +636,7 @@ func (api *API) EditMessageCaptionWithContext(ctx context.Context, params EditMe
 }
 
 // EditMessageMedia holds parameters for the editMessageMedia method.
+// Since: Bot API 4.0
 // See https://core.telegram.org/bots/api#editmessagemedia
 type EditMessageMedia struct {
 	BusinessConnectionID string                `json:"business_connection_id,omitempty"`
@@ -595,6 +648,7 @@ type EditMessageMedia struct {
 }
 
 // EditMessageMedia edits media messages.
+// Since: Bot API 4.0
 // If inline_message_id is provided, returns a boolean success flag;
 // otherwise returns the edited Message.
 // See https://core.telegram.org/bots/api#editmessagemedia
@@ -611,6 +665,7 @@ func (api *API) EditMessageMedia(params EditMessageMedia) (Message, bool, error)
 }
 
 // EditMessageMediaWithContext is the context-aware variant of EditMessageMedia.
+// Since: Bot API 4.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#editmessagemedia
 func (api *API) EditMessageMediaWithContext(ctx context.Context, params EditMessageMedia) (Message, bool, error) {
@@ -626,6 +681,7 @@ func (api *API) EditMessageMediaWithContext(ctx context.Context, params EditMess
 }
 
 // EditMessageLiveLocation holds parameters for the editMessageLiveLocation method.
+// Since: Bot API 3.4
 // See https://core.telegram.org/bots/api#editmessagelivelocation
 type EditMessageLiveLocation struct {
 	BusinessConnectionID string `json:"business_connection_id,omitempty"`
@@ -643,6 +699,7 @@ type EditMessageLiveLocation struct {
 }
 
 // EditMessageLiveLocation edits live location messages.
+// Since: Bot API 3.4
 // If inline_message_id is provided, returns a boolean success flag;
 // otherwise returns the edited Message.
 // See https://core.telegram.org/bots/api#editmessagelivelocation
@@ -659,6 +716,7 @@ func (api *API) EditMessageLiveLocation(params EditMessageLiveLocation) (Message
 }
 
 // EditMessageLiveLocationWithContext is the context-aware variant of EditMessageLiveLocation.
+// Since: Bot API 3.4
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#editmessagelivelocation
 func (api *API) EditMessageLiveLocationWithContext(ctx context.Context, params EditMessageLiveLocation) (Message, bool, error) {
@@ -674,6 +732,7 @@ func (api *API) EditMessageLiveLocationWithContext(ctx context.Context, params E
 }
 
 // StopMessageLiveLocation holds parameters for the stopMessageLiveLocation method.
+// Since: Bot API 3.4
 // See https://core.telegram.org/bots/api#stopmessagelivelocation
 type StopMessageLiveLocation struct {
 	BusinessConnectionID string                `json:"business_connection_id,omitempty"`
@@ -684,6 +743,7 @@ type StopMessageLiveLocation struct {
 }
 
 // StopMessageLiveLocation stops a live location message.
+// Since: Bot API 3.4
 // If inline_message_id is provided, returns a boolean success flag;
 // otherwise returns the edited Message.
 // See https://core.telegram.org/bots/api#stopmessagelivelocation
@@ -700,6 +760,7 @@ func (api *API) StopMessageLiveLocation(params StopMessageLiveLocation) (Message
 }
 
 // StopMessageLiveLocationWithContext is the context-aware variant of StopMessageLiveLocation.
+// Since: Bot API 3.4
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#stopmessagelivelocation
 func (api *API) StopMessageLiveLocationWithContext(ctx context.Context, params StopMessageLiveLocation) (Message, bool, error) {
@@ -715,6 +776,8 @@ func (api *API) StopMessageLiveLocationWithContext(ctx context.Context, params S
 }
 
 // EditMessageChecklist holds parameters for the editMessageChecklist method.
+// Since: Bot API 9.1
+// See https://core.telegram.org/bots/api#editmessagechecklist
 type EditMessageChecklist struct {
 	BusinessConnectionID string                `json:"business_connection_id"`
 	ChatID               int64                 `json:"chat_id"`
@@ -724,6 +787,7 @@ type EditMessageChecklist struct {
 }
 
 // EditMessageChecklist edits a checklist message.
+// Since: Bot API 9.1
 // See https://core.telegram.org/bots/api#editmessagechecklist
 func (api *API) EditMessageChecklist(params EditMessageChecklist) (Message, error) {
 	req := NewRequestWithChatID[Message]("editMessageChecklist", params, params.ChatID)
@@ -731,6 +795,7 @@ func (api *API) EditMessageChecklist(params EditMessageChecklist) (Message, erro
 }
 
 // EditMessageChecklistWithContext is the context-aware variant of EditMessageChecklist.
+// Since: Bot API 9.1
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#editmessagechecklist
 func (api *API) EditMessageChecklistWithContext(ctx context.Context, params EditMessageChecklist) (Message, error) {
@@ -739,6 +804,7 @@ func (api *API) EditMessageChecklistWithContext(ctx context.Context, params Edit
 }
 
 // EditMessageReplyMarkup holds parameters for the editMessageReplyMarkup method.
+// Since: Bot API 2.0
 // See https://core.telegram.org/bots/api#editmessagereplymarkup
 type EditMessageReplyMarkup struct {
 	BusinessConnectionID string                `json:"business_connection_id,omitempty"`
@@ -749,6 +815,7 @@ type EditMessageReplyMarkup struct {
 }
 
 // EditMessageReplyMarkup edits only the reply markup of messages.
+// Since: Bot API 2.0
 // If inline_message_id is provided, returns a boolean success flag;
 // otherwise returns the edited Message.
 // See https://core.telegram.org/bots/api#editmessagereplymarkup
@@ -765,6 +832,7 @@ func (api *API) EditMessageReplyMarkup(params EditMessageReplyMarkup) (Message, 
 }
 
 // EditMessageReplyMarkupWithContext is the context-aware variant of EditMessageReplyMarkup.
+// Since: Bot API 2.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#editmessagereplymarkup
 func (api *API) EditMessageReplyMarkupWithContext(ctx context.Context, params EditMessageReplyMarkup) (Message, bool, error) {
@@ -780,6 +848,7 @@ func (api *API) EditMessageReplyMarkupWithContext(ctx context.Context, params Ed
 }
 
 // StopPoll holds parameters for the stopPoll method.
+// Since: Bot API 4.2
 // See https://core.telegram.org/bots/api#stoppoll
 type StopPoll struct {
 	BusinessConnectionID string                `json:"business_connection_id,omitempty"`
@@ -789,6 +858,7 @@ type StopPoll struct {
 }
 
 // StopPoll stops a poll that was sent by the bot.
+// Since: Bot API 4.2
 // Returns the stopped Poll.
 // See https://core.telegram.org/bots/api#stoppoll
 func (api *API) StopPoll(params StopPoll) (Poll, error) {
@@ -797,6 +867,7 @@ func (api *API) StopPoll(params StopPoll) (Poll, error) {
 }
 
 // StopPollWithContext is the context-aware variant of StopPoll.
+// Since: Bot API 4.2
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#stoppoll
 func (api *API) StopPollWithContext(ctx context.Context, params StopPoll) (Poll, error) {
@@ -805,6 +876,7 @@ func (api *API) StopPollWithContext(ctx context.Context, params StopPoll) (Poll,
 }
 
 // ApproveSuggestedPost holds parameters for the approveSuggestedPost method.
+// Since: Bot API 9.2
 // See https://core.telegram.org/bots/api#approvesuggestedpost
 type ApproveSuggestedPost struct {
 	ChatID    int64 `json:"chat_id"`
@@ -813,6 +885,7 @@ type ApproveSuggestedPost struct {
 }
 
 // ApproveSuggestedPost approves a suggested channel post.
+// Since: Bot API 9.2
 // Returns True on success.
 // See https://core.telegram.org/bots/api#approvesuggestedpost
 func (api *API) ApproveSuggestedPost(params ApproveSuggestedPost) (bool, error) {
@@ -821,6 +894,7 @@ func (api *API) ApproveSuggestedPost(params ApproveSuggestedPost) (bool, error) 
 }
 
 // ApproveSuggestedPostWithContext is the context-aware variant of ApproveSuggestedPost.
+// Since: Bot API 9.2
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#approvesuggestedpost
 func (api *API) ApproveSuggestedPostWithContext(ctx context.Context, params ApproveSuggestedPost) (bool, error) {
@@ -829,6 +903,7 @@ func (api *API) ApproveSuggestedPostWithContext(ctx context.Context, params Appr
 }
 
 // DeclineSuggestedPost holds parameters for the declineSuggestedPost method.
+// Since: Bot API 9.2
 // See https://core.telegram.org/bots/api#declinesuggestedpost
 type DeclineSuggestedPost struct {
 	ChatID    int64  `json:"chat_id"`
@@ -837,6 +912,7 @@ type DeclineSuggestedPost struct {
 }
 
 // DeclineSuggestedPost declines a suggested channel post.
+// Since: Bot API 9.2
 // Returns True on success.
 // See https://core.telegram.org/bots/api#declinesuggestedpost
 func (api *API) DeclineSuggestedPost(params DeclineSuggestedPost) (bool, error) {
@@ -845,6 +921,7 @@ func (api *API) DeclineSuggestedPost(params DeclineSuggestedPost) (bool, error) 
 }
 
 // DeclineSuggestedPostWithContext is the context-aware variant of DeclineSuggestedPost.
+// Since: Bot API 9.2
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#declinesuggestedpost
 func (api *API) DeclineSuggestedPostWithContext(ctx context.Context, params DeclineSuggestedPost) (bool, error) {
@@ -853,6 +930,7 @@ func (api *API) DeclineSuggestedPostWithContext(ctx context.Context, params Decl
 }
 
 // DeleteMessage holds parameters for the deleteMessage method.
+// Since: Bot API 3.0
 // See https://core.telegram.org/bots/api#deletemessage
 type DeleteMessage struct {
 	ChatID    int64 `json:"chat_id"`
@@ -860,6 +938,7 @@ type DeleteMessage struct {
 }
 
 // DeleteMessage deletes a message.
+// Since: Bot API 3.0
 // Returns True on success.
 // See https://core.telegram.org/bots/api#deletemessage
 func (api *API) DeleteMessage(params DeleteMessage) (bool, error) {
@@ -868,6 +947,7 @@ func (api *API) DeleteMessage(params DeleteMessage) (bool, error) {
 }
 
 // DeleteMessageWithContext is the context-aware variant of DeleteMessage.
+// Since: Bot API 3.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#deletemessage
 func (api *API) DeleteMessageWithContext(ctx context.Context, params DeleteMessage) (bool, error) {
@@ -876,6 +956,7 @@ func (api *API) DeleteMessageWithContext(ctx context.Context, params DeleteMessa
 }
 
 // DeleteMessages holds parameters for the deleteMessages method.
+// Since: Bot API 7.0
 // See https://core.telegram.org/bots/api#deletemessages
 type DeleteMessages struct {
 	ChatID     int64 `json:"chat_id"`
@@ -883,6 +964,7 @@ type DeleteMessages struct {
 }
 
 // DeleteMessages deletes multiple messages at once.
+// Since: Bot API 7.0
 // Returns True on success.
 // See https://core.telegram.org/bots/api#deletemessages
 func (api *API) DeleteMessages(params DeleteMessages) (bool, error) {
@@ -891,6 +973,7 @@ func (api *API) DeleteMessages(params DeleteMessages) (bool, error) {
 }
 
 // DeleteMessagesWithContext is the context-aware variant of DeleteMessages.
+// Since: Bot API 7.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#deletemessages
 func (api *API) DeleteMessagesWithContext(ctx context.Context, params DeleteMessages) (bool, error) {
@@ -899,6 +982,7 @@ func (api *API) DeleteMessagesWithContext(ctx context.Context, params DeleteMess
 }
 
 // AnswerCallbackQuery holds parameters for the answerCallbackQuery method.
+// Since: Bot API 2.0
 // See https://core.telegram.org/bots/api#answercallbackquery
 type AnswerCallbackQuery struct {
 	CallbackQueryID string `json:"callback_query_id"`
@@ -909,6 +993,7 @@ type AnswerCallbackQuery struct {
 }
 
 // AnswerCallbackQuery sends answers to callback queries sent from inline keyboards.
+// Since: Bot API 2.0
 // Returns True on success.
 // See https://core.telegram.org/bots/api#answercallbackquery
 func (api *API) AnswerCallbackQuery(params AnswerCallbackQuery) (bool, error) {
@@ -917,9 +1002,90 @@ func (api *API) AnswerCallbackQuery(params AnswerCallbackQuery) (bool, error) {
 }
 
 // AnswerCallbackQueryWithContext is the context-aware variant of AnswerCallbackQuery.
+// Since: Bot API 2.0
 // It executes the same request but uses ctx for cancellation and deadlines.
 // See https://core.telegram.org/bots/api#answercallbackquery
 func (api *API) AnswerCallbackQueryWithContext(ctx context.Context, params AnswerCallbackQuery) (bool, error) {
 	req := NewRequest[bool]("answerCallbackQuery", params)
+	return req.DoWithContext(ctx, api)
+}
+
+// AnswerGuestQuery holds parameters for the answerGuestQuery method.
+// Since: Bot API 10.0
+// See https://core.telegram.org/bots/api#answerguestquery
+type AnswerGuestQuery struct {
+	GuestQueryID string            `json:"guest_query_id"`
+	Result       InlineQueryResult `json:"result"`
+}
+
+// AnswerGuestQuery answers a guest query.
+// Since: Bot API 10.0
+// See https://core.telegram.org/bots/api#answerguestquery
+func (api *API) AnswerGuestQuery(params AnswerGuestQuery) (SentGuestMessage, error) {
+	req := NewRequest[SentGuestMessage]("answerGuestQuery", params)
+	return req.Do(api)
+}
+
+// AnswerGuestQueryWithContext is the context-aware variant of AnswerGuestQuery.
+// Since: Bot API 10.0
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#answerguestquery
+func (api *API) AnswerGuestQueryWithContext(ctx context.Context, params AnswerGuestQuery) (SentGuestMessage, error) {
+	req := NewRequest[SentGuestMessage]("answerGuestQuery", params)
+	return req.DoWithContext(ctx, api)
+}
+
+// DeleteAllMessageReactions holds parameters for the deleteAllMessageReactions method.
+// Since: Bot API 10.0
+// See https://core.telegram.org/bots/api#deleteallmessagereactions
+type DeleteAllMessageReactions struct {
+	ChatID      int64 `json:"chat_id"`
+	UserID      int64 `json:"user_id,omitempty"`
+	ActorChatID int64 `json:"actor_chat_id,omitempty"`
+}
+
+// DeleteAllMessageReactions deletes all reactions on a message.
+// Since: Bot API 10.0
+// Returns True on success.
+// See https://core.telegram.org/bots/api#deleteallmessagereactions
+func (api *API) DeleteAllMessageReactions(params DeleteAllMessageReactions) (bool, error) {
+	req := NewRequest[bool]("deleteAllMessageReactions", params)
+	return req.Do(api)
+}
+
+// DeleteAllMessageReactionWithContext is the context-aware variant of DeleteAllMessageReactions.
+// Since: Bot API 10.0
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#deleteallmessagereactions
+func (api *API) DeleteAllMessageReactionWithContext(ctx context.Context, params DeleteAllMessageReactions) (bool, error) {
+	req := NewRequest[bool]("deleteAllMessageReactions", params)
+	return req.DoWithContext(ctx, api)
+}
+
+// DeleteMessageReaction holds parameters for the deleteMessageReaction method.
+// Since: Bot API 10.0
+// See https://core.telegram.org/bots/api#deletemessagereaction
+type DeleteMessageReaction struct {
+	ChatID      int64 `json:"chat_id"`
+	MessageID   int   `json:"message_id"`
+	UserID      int64 `json:"user_id,omitempty"`
+	ActorChatID int64 `json:"actor_chat_id,omitempty"`
+}
+
+// DeleteMessageReaction deletes a reaction on a message.
+// Since: Bot API 10.0
+// Returns True on success.
+// See https://core.telegram.org/bots/api#deletemessagereaction
+func (api *API) DeleteMessageReaction(params DeleteMessageReaction) (bool, error) {
+	req := NewRequest[bool]("deleteMessageReaction", params)
+	return req.Do(api)
+}
+
+// DeleteMessageReactionWithContext is the context-aware variant of DeleteMessageReaction.
+// Since: Bot API 10.0
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#deletemessagereaction
+func (api *API) DeleteMessageReactionWithContext(ctx context.Context, params DeleteMessageReaction) (bool, error) {
+	req := NewRequest[bool]("deleteMessageReaction", params)
 	return req.DoWithContext(ctx, api)
 }
