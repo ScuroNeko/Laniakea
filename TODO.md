@@ -41,11 +41,11 @@ Findings from the full-repo review against `AGENTS.md` priorities. Build, vet, t
 
 ### Tests to add after the fixes
 
-- `BotOptsFileJSON` round-trip for `PollTimeout` (after M4).
-- Uploader 4xx/429 surfaces `*tgapi.ResponseError` (after M3).
-- `Bot.handle` panic → observer receives `ErrorEvent` (after panic-recovery fix).
-- Webhook `/status` with wrong `SecretToken` returns 403 / `403`-equivalent (after M11), incl. a constant-time-compare smoke.
-- Table-driven `parseCommand` cases for `/cmd@botname` and stripping behavior.
+- [X] `BotOptsFileJSON` round-trip for `PollTimeout` (after M4).
+- [X] Uploader 4xx/429 surfaces `*tgapi.ResponseError` (after M3).
+- [X] `Bot.handle` panic → observer receives `ErrorEvent` (after panic-recovery fix).
+- [X] Webhook `/status` with wrong `SecretToken` returns 403 / `403`-equivalent (after M11), incl. a constant-time-compare smoke.
+- [X] Table-driven `parseCommand` cases for `/cmd@botname` and stripping behavior.
 
 ---
 

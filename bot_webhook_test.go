@@ -311,6 +311,9 @@ func TestStatusHandlerRequiresMatchingSecret(t *testing.T) {
 	}{
 		{name: "missing auth", wantStatus: http.StatusNotFound},
 		{name: "wrong auth", headerName: "Authorization", headerVal: "wrong", wantStatus: http.StatusNotFound},
+		{name: "matching length wrong content", headerName: "X-Telegram-Bot-Api-Secret-Token", headerVal: "secres", wantStatus: http.StatusNotFound},
+		{name: "shared prefix shorter", headerName: "X-Telegram-Bot-Api-Secret-Token", headerVal: "secre", wantStatus: http.StatusNotFound},
+		{name: "shared prefix longer", headerName: "X-Telegram-Bot-Api-Secret-Token", headerVal: "secretxx", wantStatus: http.StatusNotFound},
 		{name: "matching telegram header", headerName: "X-Telegram-Bot-Api-Secret-Token", headerVal: "secret", wantStatus: http.StatusOK},
 	}
 

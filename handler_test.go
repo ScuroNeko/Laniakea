@@ -1220,6 +1220,161 @@ func TestHandleCallbackObserverEmitsPayloadErrors(t *testing.T) {
 	}
 }
 
+func TestParseCommandTable(t *testing.T) {
+	bot := &Bot[NoData]{prefixes: []string{"/", "!"}}
+
+	tests := []struct {
+		name       string
+		text       string
+		wantPrefix string
+		wantCmd    string
+		wantArgs   string
+	}{
+		{name: "plain text", text: "hello", wantPrefix: "", wantCmd: "", wantArgs: ""},
+		{name: "command no args", text: "/start", wantPrefix: "/", wantCmd: "start", wantArgs: ""},
+		{name: "command with args", text: "/ban 42 reason", wantPrefix: "/", wantCmd: "ban", wantArgs: "42 reason"},
+		{name: "alternate prefix", text: "!ping", wantPrefix: "!", wantCmd: "ping", wantArgs: ""},
+		{name: "leading space after prefix", text: "/  start now", wantPrefix: "/", wantCmd: "start", wantArgs: "now"},
+		{name: "command with botname", text: "/start@mybot extra", wantPrefix: "/", wantCmd: "start@mybot", wantArgs: "extra"},
+		{name: "trailing whitespace", text: "/start   ", wantPrefix: "/", wantCmd: "start", wantArgs: ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			prefix, cmd, args := bot.parseCommand(tt.text)
+			if prefix != tt.wantPrefix {
+				t.Fatalf("unexpected prefix: got %q want %q", prefix, tt.wantPrefix)
+			}
+			if cmd != tt.wantCmd {
+				t.Fatalf("unexpected cmd: got %q want %q", cmd, tt.wantCmd)
+			}
+			if args != tt.wantArgs {
+				t.Fatalf("unexpected args: got %q want %q", args, tt.wantArgs)
+			}
+		})
+	}
+}
+
+func TestHandleMessageStripsBotUsernameSuffix(t *testing.T) {
+	tests := []struct {
+		name        string
+		botUsername string
+		text        string
+		wantCalled  bool
+	}{
+		{name: "matching botname", botUsername: "mybot", text: "/start@mybot hello", wantCalled: true},
+		{name: "matching botname no args", botUsername: "mybot", text: "/start@mybot", wantCalled: true},
+		{name: "other botname", botUsername: "mybot", text: "/start@otherbot hello", wantCalled: false},
+		{name: "no botname", botUsername: "mybot", text: "/start hello", wantCalled: true},
+		{name: "bot has no username", botUsername: "", text: "/start@mybot hello", wantCalled: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			called := false
+			plugin := NewPlugin[NoData]("test")
+			plugin.Command("start", func(ctx *MessageContext, db NoData) error {
+				called = true
+				return nil
+			})
+
+			bot := &Bot[NoData]{
+				logger:   sneklog.NewLogger(),
+				prefixes: []string{"/"},
+				username: tt.botUsername,
+				plugins:  []Plugin[NoData]{clonePlugin(plugin)},
+			}
+
+			bot.handle(context.Background(), &tgapi.Update{
+				UpdateID: 200,
+				Type:     tgapi.UpdateTypeMessage,
+				Message: &tgapi.Message{
+					MessageID: 1,
+					Text:      tt.text,
+					From:      &tgapi.User{ID: 1},
+					Chat:      &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate},
+				},
+			})
+
+			if called != tt.wantCalled {
+				t.Fatalf("unexpected handler invocation: got called=%v want %v", called, tt.wantCalled)
+			}
+		})
+	}
+}
+
+func TestHandlePanicEmitsErrorEvent(t *testing.T) {
+	tests := []struct {
+		name      string
+		panicWith any
+		matchErr  func(error) bool
+	}{
+		{
+			name:      "error value",
+			panicWith: errors.New("boom"),
+			matchErr: func(err error) bool {
+				return err != nil && err.Error() == "boom"
+			},
+		},
+		{
+			name:      "string value",
+			panicWith: "kaboom",
+			matchErr: func(err error) bool {
+				return err != nil && err.Error() == "kaboom"
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observer := &recordingObserver{}
+			plugin := NewPlugin[NoData]("test")
+			plugin.Command("boom", func(ctx *MessageContext, db NoData) error {
+				panic(tt.panicWith)
+			})
+
+			bot := &Bot[NoData]{
+				logger:   sneklog.NewLogger(),
+				prefixes: []string{"/"},
+				plugins:  []Plugin[NoData]{clonePlugin(plugin)},
+				observer: observer,
+			}
+
+			bot.handle(context.Background(), &tgapi.Update{
+				UpdateID: 100,
+				Type:     tgapi.UpdateTypeMessage,
+				Message: &tgapi.Message{
+					MessageID: 1,
+					Text:      "/boom",
+					From:      &tgapi.User{ID: 1},
+					Chat:      &tgapi.Chat{ID: 42, Type: tgapi.ChatTypePrivate},
+				},
+			})
+
+			panicEvent := (*ErrorEvent)(nil)
+			for i := range observer.errors {
+				ev := observer.errors[i]
+				if ev.Plugin == "" && ev.HandlerKind == "" && ev.UpdateID == 100 {
+					panicEvent = &ev
+					break
+				}
+			}
+			if panicEvent == nil {
+				t.Fatalf("expected ErrorEvent from panic recovery, got events: %#v", observer.errors)
+			}
+			if panicEvent.UpdateType != tgapi.UpdateTypeMessage {
+				t.Fatalf("unexpected UpdateType: %q", panicEvent.UpdateType)
+			}
+			if panicEvent.UserFacing {
+				t.Fatal("panic ErrorEvent must not be marked user-facing")
+			}
+			if !tt.matchErr(panicEvent.Err) {
+				t.Fatalf("unexpected panic Err: %v", panicEvent.Err)
+			}
+		})
+	}
+}
+
 func TestHandleCallbackObserverEmitsDecodeErrors(t *testing.T) {
 	observer := &recordingObserver{}
 	bot := &Bot[NoData]{

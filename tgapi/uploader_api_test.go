@@ -1,6 +1,7 @@
 package tgapi
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -101,6 +102,57 @@ func TestUploaderEncodesJSONFieldsAndLeavesAcceptEncodingToHTTPTransport(t *test
 	}
 	if string(gotFileData) != "img" {
 		t.Fatalf("unexpected file content: %q", string(gotFileData))
+	}
+}
+
+func TestUploaderSurfacesResponseErrorForTelegramFailure(t *testing.T) {
+	const responseBody = `{"ok":false,"error_code":400,"description":"Bad Request: chat not found"}`
+
+	client := &http.Client{
+		Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(strings.NewReader(responseBody)),
+			}, nil
+		}),
+	}
+
+	api := NewAPI(
+		NewAPIOpts("token").
+			SetAPIURL("https://example.test").
+			SetHTTPClient(client),
+	)
+	defer func() {
+		if err := api.Close(); err != nil {
+			t.Fatalf("Close returned error: %v", err)
+		}
+	}()
+
+	uploader := NewUploader(api)
+	defer func() {
+		if err := uploader.Close(); err != nil {
+			t.Fatalf("Close returned error: %v", err)
+		}
+	}()
+
+	_, err := uploader.SendPhoto(
+		UploadPhoto{ChatID: 42},
+		NewUploaderFile("photo.jpg", []byte("img")),
+	)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	var respErr *ResponseError
+	if !errors.As(err, &respErr) {
+		t.Fatalf("expected *ResponseError, got %T: %v", err, err)
+	}
+	if respErr.Code != 400 {
+		t.Fatalf("unexpected ResponseError.Code: got %d want 400", respErr.Code)
+	}
+	if !strings.Contains(respErr.Description, "chat not found") {
+		t.Fatalf("unexpected ResponseError.Description: %q", respErr.Description)
 	}
 }
 

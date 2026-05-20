@@ -24,6 +24,7 @@ func TestBotOptsFileJSONCodecRoundTrip(t *testing.T) {
 		UseTestServer:         true,
 		APIURL:                "https://api.example.invalid",
 		RateLimit:             42,
+		PollTimeout:           7,
 		DropRateLimitOverflow: true,
 		StrictPayloadType:     true,
 		MaxWorkers:            64,
