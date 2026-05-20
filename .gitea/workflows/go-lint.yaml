@@ -1,0 +1,28 @@
+name: Golang lint
+run-name: Linting code
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: go-latest
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v6
+
+      - name: Verify formatting
+        run: |
+          files="$(gofmt -l .)"
+          if [ -n "$files" ]; then
+            echo "These files are not gofmt-formatted:"
+            echo "$files"
+            exit 1
+          fi
+
+      - name: Run go test
+        run: go test ./...
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run golangci-lint
+        run: golangci-lint run

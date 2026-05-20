@@ -1,0 +1,420 @@
+# Changelog
+
+## v1.0.0
+
+### Breaking Changes
+- Renamed `MsgContext` to `MessageContext` across the public API, including handler signatures (`CommandExecutor`, `MiddlewareExecutor`, scene handler types), all reply/edit/scene helpers, embedded fields on `SceneContext`, and documentation.
+- Removed the `NewPayload(...)` constructor. `NewCommand(...)` builds the underlying `Command[T]` for both `/-`commands and callback payloads; registration via `Plugin.AddPayload`/`Plugin.Payload` decides routing.
+- `MessageContext.Error(...)` no longer sends unclassified errors to the user. Only errors marked with `AsUserError(...)` are surfaced through the centralized reply path; everything else stays internal-only and is logged.
+- `Plugin.Close()` no longer closes a logger supplied through `Plugin.SetLogger(...)`. Only loggers created by the bot during `AddPlugins` registration are owned and closed; caller-supplied loggers remain the caller's responsibility.
+- Renamed final public APIs to idiomatic names before the stable release: `RunWebhookWithContext(...)`, `RunWebhook(...)`, `CloseWebhook()`, `BotWebhookOpts`, `NewBotWebhookOpts()`, `SetWebhookLogger(...)`, and `GetWebhookLogger()`.
+- Renamed plugin builder helpers from `NewCommand(...)` and `NewScene(...)` to `Command(...)` and `Scene(...)`; the surviving `NewCommand(...)` takes the command string before the executor.
+- Renamed command argument value constants to `CommandValueString`, `CommandValueInt`, `CommandValueBool`, and `CommandValueAny`; `NewCommandArg(...)` now defaults to unvalidated `CommandValueAny`.
+- Renamed runner builders from `Onetime(...)` and `Timeout(...)` to `Every(...)` and `Async(...)`; `Runner.Once()` is removed. Use the default configuration (every=0, async=true) for a fire-and-forget goroutine, or `Async(false)` for a synchronous blocking one-shot.
+- Renamed remaining public acronym/casing outliers including `AnswerCallback...`, `ParseMarkdownV2`, `ParseMarkdown`, `GetChatMemberCount`, `DropRateLimitOverflow`, `SetDropRateLimitOverflow`, and inline keyboard builder APIs.
+- Renamed `Observer` event delivery methods `OnReceiveUpdate` → `OnUpdateReceived` and `OnHandledUpdate` → `OnUpdateHandled` to match the `UpdateReceivedEvent`/`UpdateHandledEvent` names and the `OnX` pattern of all other observer methods.
+- `Scene.PluginName` is now unexported; it is assigned by the framework during plugin registration and must not be set by callers.
+- `SceneSession.Data` is now unexported; use the `Set`/`Get`/`HasData`/`ClearData`/`BindData`/`SaveData` helpers instead.
+- `BotPayloadType*` sentinels are now `const` instead of `var`; code that assigned to them will no longer compile.
+
+### Bot API 10.0
+- Added full support for Telegram Bot API 10.0 types, methods, and update kinds.
+
+### Added
+- Added `MessageContext.IsCallback()` and `MessageContext.HasPhoto()` helpers for callback-aware handler code.
+- Added `MessageContext.UpsertKeyboard(...)` and `MessageContext.UpsertKeyboardMarkdown(...)` helpers that edit callback messages, replace photo callback messages with a fresh chat message, and send a new chat message outside callback flow.
+- Added `CommandGroup`, `NewCommandGroup(...)`, `Plugin.CommandGroup(...)`, and `Plugin.AddCommandGroup(...)` helpers for registering prefixed command groups with shared middleware.
+- Added the `tgfmt` package with typed MarkdownV2, HTML, legacy Markdown formatting helpers, and a message entity builder.
+- Added `InlineKeyboardButtonBuilder.SetPayloadType(...)`, `InlineKeyboardButtonBuilder.SetCallbackData(...)`, and `MessageContext.NewInlineKeyboardButton(...)` helpers for payload-aware button building.
+- Added compact callback payload encoding through `BotPayloadCompact`, `BotPayloadCompactBase64`, compact inline keyboard builders, and matching `CallbackData` helpers.
+- Added `BotOpts.PollTimeout`, `BotOpts.SetPollTimeout(...)`, and the `POLL_TIMEOUT` environment variable to configure the long-polling `getUpdates` timeout (default 30 seconds).
+- Added `RateLimiter.Cleanup(idleThreshold)` to evict per-chat limiter state and expired chat cooldowns; the limiter now tracks per-chat last-seen time so long-running bots can bound memory through a periodic runner.
+- Added cached bot identity (`Bot.userID`) populated at `NewBot` so chat-admin policies and similar lookups reuse it instead of issuing a fresh `GetMe` request.
+- Added `tgapi.ResponseError` so Telegram API error codes, descriptions, and response parameters remain inspectable through returned errors.
+- Added nine exported webhook error sentinels — `ErrSetWebhookFailed`, `ErrBotAPINil`, `ErrBotWebhookOptsEmptyPath`, `ErrBotWebhookOptsPathNoSlash`, `ErrBotWebhookOptsPathHasQueryOrFragment`, `ErrBotWebhookOptsPathCollidesStatus`, `ErrBotWebhookTLSFilesIncomplete`, `ErrBotWebhookTLSFilesTooMany`, and `ErrStatusPathSecretRequired` — replacing the previous inline `errors.New(...)` calls so callers can match webhook startup errors with `errors.Is`.
+- Added `ErrInvalidPayload` for compact payload decoding failures so callers can distinguish malformed payload bytes from other decode errors.
+- Panics inside `Bot.handle` and the polling goroutine now emit an `ErrorEvent` through the observer so instrumentation sees runtime panics in addition to normal handler errors.
+
+### Changed
+- Version metadata now reports the stable `v1.0.0` release instead of `v1.0.0-rc.16`.
+- Compact callback payload encoding now escapes `,`, `|`, and `\` in command and arg bytes so payloads containing those bytes round-trip without ambiguity. Note: the format coalesces "no args" with "single empty arg" — both encode as `cmd|` and decode to nil args.
+- `CallbackData.ToJSON()`, `ToBase64()`, `ToCompact()`, and `ToCompactBase64()` now all return an empty string on serialization failure; the previous `ToJSON()` fallback `{"cmd":""}` has been removed so encoder bugs surface visibly instead of routing to no handler.
+- Bot-level middleware blocks now emit a final `UpdateHandledEvent` with `Handled=false`, keeping observer update lifecycles balanced.
+- Plugin registration now warns when `AddCommand`, `AddPayload`, or `AddScene` overwrites an existing entry with the same name instead of silently replacing it.
+- `BotOpts`, `tgapi.APIOpts`, logger utilities, README, and wiki pages now document the final stable API names and configuration options consistently.
+- CI now checks formatting, tests, vet, and lint on both pushes and pull requests.
+
+### Fixed
+- Fixed the update worker pool returning before in-flight handlers completed. `startUpdateWorkers` now calls `pool.StopAndWait()` so the bot waits for already-submitted tasks before runtime exit.
+- Fixed `RateLimiter.getChatLimiter` upgrading a held read lock to a write lock, which could deadlock under contention. The lookup now releases the read lock before acquiring the write lock and re-checks the map.
+- Fixed `RateLimiter` per-chat limiter and lock maps growing unbounded for the lifetime of long-running bots that serve many distinct chats.
+- Fixed `Draft.Push` mutating `Message` before validating the candidate length, leaving the draft in a half-mutated state when the candidate would exceed Telegram's limit. The candidate is now validated first; on failure the draft remains unchanged.
+- Fixed background runners running one extra iteration after context cancellation when both `ctx.Done()` and the ticker were ready in the same `select`.
+- Fixed `Plugin.Close()` double-closing a logger supplied by the caller through `SetLogger(...)`.
+- Fixed compact callback payload corruption for arguments containing `,` or `|` bytes.
+- Fixed `LoadOptsFromEnv` calling `os.Getenv("MAX_WORKERS")` twice when parsing the worker count.
+- Fixed `sceneRuntime` interface carrying a delegating `buildSceneKey` method that just forwarded to a package-level helper; `MessageContext` scene helpers now call the helper directly.
+- Fixed webhook startup so empty-secret warnings are logged only after the webhook logger is initialized.
+- Fixed webhook startup so a logger configured through `SetWebhookLogger(...)` is preserved.
+- Fixed long-polling 429 handling so `getUpdates` retries use Telegram `retry_after` directly and do not inflate later transient-error backoff.
+- Fixed `BotOptsFileJSON` silently dropping `PollTimeout` on round-trip; the field is now encoded and decoded correctly.
+- Fixed the `tgapi.Uploader` returning an ad-hoc error string on Telegram API failures; it now returns `*tgapi.ResponseError` matching the JSON API client, so `errors.As(err, &respErr)` works consistently for both upload and JSON paths.
+- Fixed webhook secret validation to use `subtle.ConstantTimeCompare` instead of a plain string equality check, removing the timing side-channel.
+- Fixed the `/status` handler returning HTTP 403 for a wrong secret, which disclosed endpoint existence; it now returns 404 uniformly for any unauthenticated request.
+
+### Tests
+- Added regression coverage proving bot-level middleware blocks still complete the observer update lifecycle.
+- Added webhook runtime regression coverage for request enqueue through worker execution of a command handler.
+- Added regression coverage for inline callback keyboard upserts and callback target detection.
+- Added regression coverage for command group prefixing, middleware order, clone behavior, and plugin registration.
+- Added formatting coverage for escaping, composition, link destinations, HTML attributes, and legacy Markdown code blocks.
+- Added regression coverage for context-aware inline keyboard button payload encoding.
+- Added regression coverage for compact and Base64-encoded compact callback payload decoding.
+- Added regression coverage for long-polling `retry_after` handling on Telegram 429 responses.
+- Added regression coverage for compact callback payload round-tripping through `,`, `|`, and `\` separator bytes and a missing-separator decode error.
+- Added regression coverage for `Draft.Push` preserving the existing message when validation rejects the candidate.
+- Added regression coverage for `RateLimiter.Cleanup` evicting idle chat limiters and expired chat locks while leaving active state in place.
+- Updated `MessageContext.Error` tests so unclassified errors stay internal-only and only `AsUserError` reaches the user.
+- Added regression coverage for `BotOptsFileJSON` `PollTimeout` round-trip.
+- Added regression coverage proving the `tgapi.Uploader` surfaces `*tgapi.ResponseError` for Telegram 4xx responses.
+- Added regression coverage proving a panic inside `Bot.handle` emits an `ErrorEvent` through the observer.
+- Added regression coverage for the webhook `/status` endpoint rejecting wrong and same-length-but-different secrets with HTTP 404, and accepting the correct secret.
+- Added table-driven regression coverage for `parseCommand` with `/cmd@botname` stripping, bare commands, commands with arguments, and empty input.
+
+## v1.0.0-rc.16
+
+### Breaking Changes
+- Replaced `git.scuroneko.dev/scuroneko/slog` with `git.scuroneko.dev/scuroneko/sneklog/v2` across public logger APIs, including `AppDataLogger`, logger getters, and custom logger setters.
+- Renamed exported `Json`, `Url`, and `Id` identifiers to idiomatic `JSON`, `URL`, and `ID` spellings, including `BotOpts.APIURL`, `BotOpts.SetAPIURL(...)`, `tgapi.APIOpts.SetAPIURL(...)`, `BotOptsFileJSONCodec`, `BotPayloadJSON`, and related README examples.
+- Made the request logger field internal; use `Bot.SetRequestLogger(...)` and `Bot.GetRequestLogger()` instead of accessing `Bot.RequestLogger` directly.
+
+### Added
+- Added `Bot.UpdatesIter(...)` as an iterator wrapper around a single `Bot.Updates(...)` call, including error delivery through the iterator.
+- Added scene-local callback payload handlers through `Scene.OnPayload(...)`, including observer lifecycle events for scene payload execution.
+- Added configurable logger output through `BotOpts.LogFormat`, `BotOpts.SetLogFormat(...)`, `BotOpts.SetLogFormatter(...)`, `tgapi.APIOpts.SetLogFormat(...)`, and `tgapi.APIOpts.SetLogFormatter(...)`.
+- Added JSON BotOpts file format versioning through `ConfigVersion`, `ErrConfigVersionMismatch`, and `BotOpts.FileConfigVersion`.
+- Added `Bot.SetLogger(...)`, `Bot.SetRequestLogger(...)`, `Bot.SetWebHookLogger(...)`, `Bot.GetRequestLogger()`, and `Bot.GetWebHookLogger()` helpers for explicit logger customization.
+
+### Changed
+- Updated `pond/v2` to `v2.7.1`.
+- `Bot.RunWithContext(...)` now closes an explicitly set request logger when `UseRequestLogger` is false and closes webhook loggers before long-polling startup.
+- Bot loggers now apply the configured token replacer consistently across the main bot logger, request logger, internal API and uploader loggers, webhook logger, app-data logger writers, and auto-managed plugin loggers.
+- JSON `BotOpts` files now write `version`, reject newer unsupported config versions, keep older unversioned files loadable, and preserve the loaded file version in `BotOpts.FileConfigVersion`.
+- `Bot.RunWithContext(...)` treats `context.DeadlineExceeded` like `context.Canceled` and exits polling without retry logging.
+- README and README_RU now use the current `JSON`, `URL`, and `ID` public API names.
+
+### Fixed
+- Fixed the go-lint workflow file to end with a newline.
+
+### Tests
+- Added regression coverage for `Bot.UpdatesIter(...)` error delivery and early iterator stop behavior.
+- Added regression coverage proving `Bot.RunWithContext(...)` preserves polling retry attempts and backoff delays across repeated getUpdates failures.
+- Added regression coverage proving polling startup preserves an enabled request logger.
+- Updated file logger regression coverage for the current `sneklog` text prefix format.
+- Added regression coverage proving token masking still applies after `initLoggers(...)` switches loggers to file-backed writers and that auto-managed plugin loggers inherit token masking.
+- Added regression coverage for JSON config version handling and scene-local payload routing, including observer lifecycle events and callback fallthrough behavior.
+- Updated logger helper tests for the explicit log format and formatter parameters.
+
+## v1.0.0-rc.15
+
+### Changed
+- Added file-based `BotOpts` loading and saving through `LoadBotOptsFile(...)`, `SaveBotOptsFile(...)`, and the `BotOptsFileCodec` API, with built-in JSON support.
+- Added plugin-level message fallback handlers for text messages and channel posts that do not match commands.
+- Added godoc for the exported `BotOpts` file codec and load/save helpers.
+- README, README_RU, and bot-configuration wiki pages now document file-based `BotOpts` loading, built-in JSON support, env placeholder expansion, and custom codec usage including the TOML example.
+- Active scenes now let unmatched slash-commands continue into normal bot command routing instead of also executing the current scene step or scene message fallback.
+
+### Tests
+- Added regression coverage for JSON `BotOpts` file codecs, file load/save helpers, decode failures, and env placeholder expansion.
+- Added regression coverage for plugin message fallback routing, observer lifecycle events, command precedence, and middleware blocking.
+- Added regression coverage proving unmatched slash-commands do not trigger active scene step handlers before normal bot command routing.
+
+## v1.0.0-rc.14
+
+### Bot API 9.6
+
+#### Managed Bots
+- Added the field can_manage_bots to the class User.
+- Added the class KeyboardButtonRequestManagedBot and the field request_managed_bot to the class KeyboardButton.
+- Added the class ManagedBotCreated and the field managed_bot_created to the class Message.
+- Added updates about the creation of managed bots and the change of their token, represented by the class ManagedBotUpdated and the field managed_bot in the class Update.
+- Added the methods getManagedBotToken and replaceManagedBotToken.
+- Added the class PreparedKeyboardButton and the method savePreparedKeyboardButton, allowing bots to request users, chats and managed bots from Mini Apps.
+- Added the method requestChat to the class WebApp.
+- Added support for https://t.me/newbot/{manager_bot_username}/{suggested_bot_username}[?name={suggested_bot_name}] links, allowing bots to request the creation of a managed bot via a link.
+
+### Polls
+- Added support for quizzes with multiple correct answers.
+- Replaced the field correct_option_id with the field correct_option_ids in the class Poll.
+- Replaced the parameter correct_option_id with the parameter correct_option_ids in the method sendPoll.
+- Allowed to pass allows_multiple_answers for quizzes in the method sendPoll.
+- Increased the maximum time for automatic poll closure to 2628000 seconds.
+- Added the field allows_revoting to the class Poll.
+- Added the parameter allows_revoting to the method sendPoll.
+- Added the parameter shuffle_options to the method sendPoll.
+- Added the parameter allow_adding_options to the method sendPoll.
+- Added the parameter hide_results_until_closes to the method sendPoll.
+- Added the fields description and description_entities to the class Poll.
+- Added the parameters description, description_parse_mode, and description_entities to the method sendPoll.
+- Added the field persistent_id to the class PollOption, representing a persistent identifier for the option.
+- Added the field option_persistent_ids to the class PollAnswer.
+- Added the fields added_by_user and added_by_chat to the class PollOption, denoting the user and the chat which added the option.
+- Added the field addition_date to the class PollOption, describing the date when the option was added.
+- Added the class PollOptionAdded and the field poll_option_added to the class Message.
+- Added the class PollOptionDeleted and the field poll_option_deleted to the class Message.
+- Added the field poll_option_id to the class ReplyParameters, allowing bots to reply to a specific poll option.
+- Added the field reply_to_poll_option_id to the class Message.
+- Allowed “date_time” entities in checklist title, checklist task text, TextQuote, ReplyParameters quote, sendGift, and giftPremiumSubscription.
+
+**More info**: https://core.telegram.org/bots/api#april-3-2026
+
+### Breaking Changes
+- Exported `tgapi` request parameter structs were renamed from the `*P` suffix to their method names. Update code such as `tgapi.SendMessageP{...}` to `tgapi.SendMessage{...}`.
+
+### Changed
+- *Support for Bot API 9.6*
+- Added missing godoc for recently introduced Telegram Bot API managed-bot, prepared-button, chat-owner, and video-quality exported declarations.
+- Renamed exported `tgapi` request parameter structs from the `*P` suffix to their method names, for example `SendMessageP` -> `SendMessage` and `SetWebhookP` -> `SetWebhook`.
+- Added missing godoc for the exported observer `Event` marker interface.
+- Webhook execution now shares the bot's queued update-dispatch path with polling, including worker-pool delivery, runner startup, single-use run semantics, and default fallback to bot-level update type filters when webhook-specific filters are not set.
+- Webhook godoc and the English and Russian READMEs now describe the bot-level webhook runtime, its single-use lifecycle, and the main `RunWebHookWithContext(...)` entry points more explicitly.
+- `Bot.Close()` once again releases only local resources and no longer deletes remote webhook registrations implicitly; explicit remote webhook teardown remains opt-in through `CloseWebHook()`.
+- Polling and webhook docs now explicitly state that a deployment must delete its webhook before switching from webhook delivery to long polling.
+- Webhook startup now validates path shape and TLS file count before remote webhook setup, and the shared webhook mux now serves both HTTP and TLS runtime paths consistently.
+- Webhook-related `tgapi` request params now use `int8` for `max_connections`, matching Telegram's `1..100` range and the higher-level webhook options API.
+- Webhook startup now also requires a non-empty `SecretToken` when the optional `/status` endpoint is enabled, preventing anonymous exposure of webhook operational metadata.
+- Webhook debug logging now records update metadata instead of dumping raw request bodies.
+- Package docs, README guidance, and core wiki pages now align with the current public API and runtime model, including `NoData`, `SetAppData(...)`, `SetL10n(...)`, `AddAppDataLoggerWriter(...)`, shared runner startup semantics, and the webhook runtime entry points.
+
+### Tests
+- Added regression coverage for webhook queue delivery, webhook runtime single-use behavior, runner startup in webhook mode, and default webhook `allowed_updates` inheritance from bot-level update type configuration.
+- Added regression coverage proving `Bot.Close()` does not make remote webhook delete requests.
+- Added webhook regression coverage for path validation, TLS file-count validation, oversized-body rejection, status-endpoint secret checks, and invalid TLS startup arguments.
+- Added webhook regression coverage proving `/status` cannot be enabled without a non-empty `SecretToken`.
+- Added regression coverage for Bot API 9.6 poll decoding, `managed_bot` update decoding, and structured `setChatMenuButton(...)` request serialization.
+- Added regression coverage for `MaybeInaccessibleMessage` accessible and inaccessible JSON decoding.
+
+## v1.0.0-rc.13
+
+### Added
+- `AsUserError(...)`, `AsInternalError(...)`, `IsUserError(...)`, and `IsInternalError(...)` for explicitly marking centralized handler errors as user-visible or internal-only without breaking the existing default error flow.
+- `Policy[T]`, `RequirePolicy(...)`, and built-in chat and callback policy helpers for expressing reusable authorization rules through the existing middleware pipeline.
+- `Bot.UsePolicy(...)` and `Plugin.UsePolicy(...)` as shorthand for registering policies as middleware.
+- `AllPolicies(...)`, `AnyPolicy(...)`, and `NotPolicy(...)` for composing reusable authorization rules without introducing a second execution pipeline.
+
+### Changed
+- Bot configuration mutators now treat the bot as configuration-frozen after the first run begins and ignore late mutation attempts for bot-level config such as prefixes, payload defaults, plugins, middleware, runners, localization, scene session wiring, and database context injection.
+- `MsgContext` godoc and field comments now describe the normalized update contract more explicitly, including when `Msg`, `From`, callback target fields, `Text`, and `Args` are expected to be populated.
+- `MsgContext` normalization now also carries `Chat` and `ChatID` for more Telegram update kinds, allowing policy and update handlers to rely on normalized chat identity outside message-only flows.
+- `MsgContext.Error(...)` and returned handler errors now suppress the automatic user reply when the error is explicitly marked with `AsInternalError(...)`, while keeping the previous user-visible default for unclassified errors.
+- Godoc, README examples, and regression-test naming now consistently describe the shared generic dependency model as app data, including `NoData` and `SetAppData(...)`.
+- Observer configuration now treats `SetObserver(nil)` as clearing instrumentation instead of leaving the previous observer attached.
+- Observer lifecycle events now cover generic update handlers and scene command, step, and message-fallback handlers with logical handler names and durations.
+- `RequirePolicy(...)` now emits `PolicyCheckedEvent` for both passed and denied policy decisions.
+- Scene command, step, and message-fallback flows now emit observer `ErrorEvent`s with scene-specific handler kinds and logical handler names.
+- Scene transition observer events now use the same transition payload for scene command, step, and message-fallback flows.
+- Observer error emission now also covers generic update handlers, callback payload decode failures, runner failures, and polling retries, including dedicated runner and polling handler kinds in `ErrorEvent`.
+- `TODO.md` and the framework backlog pages now mark the observability model as completed for `v1.0.0-rc.13`.
+- `tgapi.Chat.Type` now uses the typed `tgapi.ChatType` enum in public DTOs and tests instead of raw string casts.
+
+### Tests
+- Added regression coverage for the bot configuration freeze model, including ignored post-run mutations for core bot configuration methods and late registration paths.
+- Added table-driven update-contract coverage for `prepareUpdateCtx(...)`, including message-backed, callback-backed, user-backed, and no-user update kinds.
+- Added regression tests for policy middleware blocking, built-in private-chat policy decisions, normalized chat identity, and admin checks that use normalized `ChatID` and `FromID`.
+- Added regression tests for policy composition semantics, including all-of, any-of, and deny inversion with preserved internal failures.
+- Added regression tests for `SetObserver(...)`, `GetObserver()`, and clearing the observer with `SetObserver(nil)`.
+- Added observer regression tests for generic update-handler errors, callback payload decode failures, runner failure events, and polling retry emission.
+- Added observer regression tests for update and scene handler lifecycle events and `PolicyCheckedEvent` emission.
+- Added regression tests proving that `edited_message` and `edited_channel_post` stay out of command routing and continue through generic update handlers.
+- Added callback-routing regression tests for both chat-message and inline-message callback targets, including `CallbackQueryId`, `CallbackMsgId`, `InlineMsgId`, and payload-argument guarantees.
+- Added regression tests for the new error-visibility model in both message and callback flows, including silent internal-only errors and explicit user-visible callback replies.
+
+## v1.0.0-rc.12
+
+### Added
+- `AnswerLong(...)`, `AnswerLongf(...)`, `KeyboardLong(...)`, and `SplitMessageText(...)` for explicit plain-text splitting of long replies without changing the semantics of existing single-message helpers.
+- Centralized library-level validation errors in `errors.go`, including `ErrEmptyMessage`, `ErrMessageTooLong`, `ErrCaptionTooLong`, and context/target validation sentinels.
+- `Bot.GetPayloadType()`, `InlineKeyboard.GetPayloadType()`, and optional strict payload decoding via `BotOpts.StrictPayloadType` / `Bot.SetStrictPayloadType(...)`.
+- `MsgContext.BindArgs(...)` for binding positional command arguments into exported struct fields.
+- Binding sentinels `ErrBindArgsTargetNotPointer`, `ErrBindArgsTargetNotStruct`, `ErrBindArgsUnsupportedFieldType`, and `ErrBindArgsConversion`.
+- Work-in-progress scene/session support, including plugin scene registration, scoped scene sessions, scene entry/exit APIs on `MsgContext`, default in-memory session storage, scene-local routing before normal command handling, and state helpers on `SceneContext`.
+
+### Changed
+- `CommandExecutor` now returns `error`, and command, payload, and non-command update handlers now use centralized bot error handling for returned errors.
+- README and README_RU examples now use the new handler signature and document the long-message helpers.
+- README and README_RU now link to the project wiki, and the wiki now includes a page-priority tracker while content is being filled in.
+- README and README_RU now document scenes, session scopes, scene state helpers, and `SceneActionPass` semantics.
+- `TODO.md` and the framework backlog pages now group the remaining framework work into explicit priority 1, 2, and 3 buckets.
+- Payload-type comments and docs now distinguish between the bot's default payload type and keyboard-local overrides.
+- Scene runtime sentinel errors now have explicit godoc comments.
+- Public scene structs now document their exported fields more explicitly.
+- `MsgContext.Context()` now safely falls back to `context.Background()` when no request-scoped context is attached.
+- `MsgContext` reply, edit, callback, delete, action, and draft-limiter paths now use the context accessor instead of reaching into raw internal state.
+- Version constants were bumped to `v1.0.0-rc.12`.
+
+### Fixed
+- Message and caption validation now runs before Telegram API calls, rejecting empty messages, oversized message text, and oversized captions with stable sentinel errors.
+- Draft flushing and draft updates now reject oversized messages before sending invalid requests.
+- Callback payload decoding now optionally enforces strict type matching, while the default tolerant mode logs Base64-to-JSON decoding in debug mode and still accepts keyboard-local payload overrides.
+- Positional argument binding now leaves missing trailing struct fields at zero values, joins the remaining arguments into the final string field, and returns clearer binding errors.
+- Request-scoped contexts are now created per update handler execution and safely reused through `MsgContext.Context()` even for manually constructed test contexts.
+- Command and payload handlers now have regression coverage for end-to-end typed argument binding through the normal routing path.
+
+### Breaking Changes
+- `CommandExecutor[T]` changed from `func(ctx *MsgContext, db T)` to `func(ctx *MsgContext, db T) error`.
+- `Plugin.NewCommand(...)`, `Plugin.NewPayload(...)`, and `Plugin.AddUpdateHandler(...)` now require handlers with the new error-returning signature.
+
+### Tests
+- Added regression tests for `MsgContext.BindArgs(...)`, including scalar conversion, tail-string binding, zero-value trailing fields, invalid targets, unsupported field types, and end-to-end command/payload binding.
+- Added scene regression tests for runtime guards, scene-local command handling, and `SceneActionPass` preserving session state.
+- Added scene regression tests for message fallback handling, user-scoped session lookup without `Msg`, and custom `SessionStore` error propagation.
+
+## v1.0.0-rc.11
+
+### Fixed
+- `chat_boost` update decoding now accepts string `boost_id` values, matching the current Telegram Bot API schema and preventing polling failures on boosted-chat updates.
+
+## v1.0.0-rc.10
+
+### Added
+- `Plugin.AddUpdateHandler` for routing non-command Telegram updates by `tgapi.UpdateType`.
+- Derived `tgapi.Update.Type` assignment during JSON decoding, plus `tgapi.UpdateTypeUnknown` for unmatched payloads.
+- `tgapi.API.OpenFileByLink(...)` and `OpenFileByLinkWithContext(...)` for streaming downloads from Telegram's file server.
+- Regression tests for update dispatch, keyboard builders, localization fallback, runners, rate limiting, parse mode encoding, streaming downloads, and context isolation.
+- Regression tests for bot single-run enforcement, nil plugin registration, `L10n` concurrent access, `API.Close()` idle-connection cleanup, and `tgapi` worker-pool edge cases.
+- `SEMVER.md` documenting versioning expectations for the project.
+
+### Changed
+- `NewBot` now returns `(*Bot[T], error)` instead of terminating the host process on configuration or startup failures.
+- `Run` and `RunWithContext` now return errors; `RunWithContext` returns `ErrNoPrefixes` and `ErrNoPlugins` for invalid bot configuration.
+- Polling retries now use exponential backoff instead of busy-looping on repeated `getUpdates` failures.
+- `Bot` is now explicitly single-use; repeated `Run()` or `RunWithContext(...)` calls return `ErrBotAlreadyRun`.
+- Database context wiring now uses `T` consistently instead of forcing `*T`; shared dependencies should typically use pointer types such as `*sql.DB`.
+- `DatabaseContext`, `GetDBContext`, and `DbLogger` were updated to the new `T`-based dependency model.
+- `DatabaseContext(...)` now warns once when `T` is a value type, to highlight likely unintended copying of shared dependencies.
+- `AddDatabaseLoggerWriter(...)` now skips unset and nil database contexts instead of calling the writer with invalid values.
+- `L10n` is now safe for concurrent use and copies added dictionary entries to avoid external mutation after registration.
+- Plugin registration now snapshots commands, payloads, middlewares, and update handlers so later mutations of the original `*Plugin` do not leak into the bot.
+- `AddPlugins(...)` now skips nil plugin pointers instead of panicking.
+- `GetUpdateTypes()` now returns a copy instead of exposing internal slice state.
+- Update handling now normalizes `MsgContext` for more Telegram update kinds and routes plugin-level update handlers with isolated context copies.
+- `message`, `channel_post`, and `callback_query` remain on the command/payload flow; non-command updates can be handled through plugin update handlers.
+- Command auto-generation now validates Telegram command names with the correct character set and `1..32` length limit, and emits commands in deterministic sorted order.
+- Builder-style APIs were normalized to value returns for `NewCommandArg`, `NewMiddleware`, `NewRunner`, and `NewCallbackData`.
+- `MenuButton` replaced `BaseMenuButton`, and `GetChatMenuButton(...)` now returns the renamed type.
+- Several Telegram DTOs were tightened for optionality and serialization correctness, including `InputPaidMedia`, `MenuButton`, optional gift fields, and message entity slices.
+- `tgapi.NewRequest(...)`, `NewRequestWithChatID(...)`, `NewUploaderRequest(...)`, and `NewUploaderRequestWithChatID(...)` are now documented as low-level unsafe escape hatches rather than internal helpers.
+- `tgapi.API.Close()` now closes idle HTTP connections before releasing logger resources.
+- Multipart form encoding now writes scalar field bytes directly instead of converting through temporary strings.
+- README, README_RU, package docs, and exported godoc were updated to match the current APIs and concurrency/lifecycle model.
+- Version constants were bumped to `v1.0.0-rc.10`.
+
+### Fixed
+- Required command arguments are now enforced by declared argument index, not only by total required count.
+- `ParseNone` now omits `parse_mode` from JSON requests instead of serializing `"None"`.
+- Upload file type detection is now case-insensitive for file extensions.
+- Draft creation no longer panics when no limiter is configured, and draft flushing now rejects zero chat IDs before sending invalid requests.
+- Channel posts with `SenderChat` no longer panic in the command path and now preserve the expected `MsgContext` fields.
+- File logger initialization now falls back to stdout loggers instead of terminating the process on logger setup failures.
+- `GetChatMenuButton` and `SetChatMenuButton` now serialize `chat_id` correctly when omitted.
+- Update decoding tests now match the canonical `deleted_business_messages` model and no longer rely on the removed singular alias.
+
+### Breaking Changes
+- `NewBot[T](opts)` now returns `(*Bot[T], error)`.
+- `Run()` now returns `error`.
+- `RunWithContext(ctx)` now returns `error`.
+- `Run()` and `RunWithContext(ctx)` are now single-use per bot instance; create a new `Bot` after they return.
+- Database context handlers now receive `T` instead of `*T`. For shared dependencies, instantiate the bot with a pointer type, for example `Bot[*sql.DB]`.
+- `DatabaseContext(...)` now takes `T` instead of `*T`.
+- `GetDBContext()` now returns `T` instead of `*T`.
+- `DbLogger[T]` now receives `T` instead of `*T`.
+- `NewCommandArg(...)`, `NewMiddleware(...)`, `NewRunner(...)`, and `NewCallbackData(...)` now return values instead of pointers.
+- `BaseMenuButton` was renamed to `MenuButton`, and `GetChatMenuButton(...)` now returns `MenuButton`.
+- `tgapi.Update` no longer exposes the deprecated `DeletedBusinessMessage` alias; use `DeletedBusinessMessages`.
+
+### Tests
+- Added coverage for polling backoff helpers, command sorting, database logger safety checks, update handler routing, update-context isolation, channel posts with `SenderChat`, parse mode encoding, streaming downloads, and rate limiter behavior.
+
+## v1.0.0-rc.7
+
+### Added
+- Package-level logger helpers: `utils.CreateLogger(prefix, level)` and `utils.CreateFileLogger(prefix, level, filePath)`.
+- `MsgContext.Logger`, populated from the matched plugin and falling back to the bot logger.
+- Plugin lifecycle/configuration APIs: `SetLogger`, `RemoveLogger`, `SetOnClose`, and `Close`.
+- `Bot.CloseRemote(ctx)` as the explicit wrapper for Telegram Bot API close.
+
+### Changed
+- Logger initialization is now unified across `Bot`, `tgapi.API`, and `tgapi.Uploader`.
+- `Bot.Close()` now performs local resource teardown only and invokes `Plugin.Close()` for registered plugins.
+- Local `tgapi.API` shutdown was renamed to `Close()`.
+- Telegram Bot API close wrappers in `tgapi.API` were renamed to `CloseRemote()` and `CloseRemoteWithContext()`.
+- `Bot.Debug()` now updates log levels for the bot logger, request logger, and already registered plugin loggers.
+- `Bot.AddPlugins()` now creates a default plugin logger automatically when one is not provided.
+- `Bot.AddDatabaseLoggerWriter()` now also attaches the writer to already registered plugin loggers.
+- GoDoc was expanded for the new shutdown and logging APIs, and plugin registration is now documented as a configuration commit point.
+
+### Breaking Changes
+- `(*Bot).Close(ctx context.Context)` was replaced with `(*Bot).Close()`.
+- `(*tgapi.API).CloseApi()` was renamed to `(*tgapi.API).Close()`.
+- `(*tgapi.API).Close()` was renamed to `(*tgapi.API).CloseRemote()`.
+- `(*tgapi.API).CloseWithContext()` was renamed to `(*tgapi.API).CloseRemoteWithContext(ctx)`.
+
+### Migration
+- Replace `bot.Close(ctx)` with `bot.Close()`.
+- If you need Telegram Bot API close, use `bot.CloseRemote(ctx)`.
+- Replace `api.CloseApi()` with `api.Close()`.
+- Replace `api.Close()` with `api.CloseRemote()`.
+- Replace `api.CloseWithContext(ctx)` with `api.CloseRemoteWithContext(ctx)`.
+- Configure plugin loggers and `OnClose` hooks before calling `bot.AddPlugins(...)`.
+
+### Tests
+- Updated tests for the new shutdown and logging behavior.
+
+### Notes
+- Registering a plugin via `AddPlugins(...)` is a configuration commit point; the plugin should not be mutated through the original `*Plugin` afterward.
+- If plugin loggers must receive a database writer, call `AddDatabaseLoggerWriter(...)` after registering plugins.
+
+## v1.0.0-rc.4
+
+### Added
+- `WithContext` variants across `tgapi` API and uploader methods so callers can pass cancellation and deadline contexts consistently.
+- `UploaderCertificateType`, `UploadSetWebhookP`, `Uploader.SetWebhook(...)`, and `Uploader.SetWebhookWithContext(...)` for multipart webhook certificate uploads.
+- Missing media thumbnail fields where applicable.
+
+### Changed
+- GoDoc for context-aware methods was improved, and `See` references now point to method-specific Telegram Bot API anchors.
+- `EditMessageTextP` now includes `entities` and `link_preview_options`.
+- `EditMessageCaptionP` now includes `caption_entities` and `show_caption_above_media`.
+- `StopPollP` now uses `reply_markup` and no longer carries `inline_message_id`.
+- `SendStickerP` now includes reply and suggested-post related fields.
+- `SendDocumentP` now includes `disable_content_type_detection`.
+- `SendInvoiceP` no longer includes unsupported `business_connection_id`.
+- `SetWebhookP` no longer carries `certificate`; GoDoc now points to uploader-based certificate upload.
+- Existing non-context methods remain available, and the `Do(...)` call style is preserved.
+
+### Breaking Changes
+- Users sending webhook certificates through JSON `SetWebhookP.Certificate` must migrate to `Uploader.SetWebhook(...)`.
+
+## v1.0.0-rc.3
+
+### Fixed
+- The update polling loop no longer logs or retries after `context.Canceled` during shutdown.
+- Extra retry delay was removed from canceled polling requests so `RunWithContext` can exit immediately while stopping.
+
+### Changed
+- Shutdown behavior remains explicit: callers are still responsible for invoking `Close()` after `RunWithContext` returns.
+
+## v1.0.0-rc.2
+
+### Fixed
+- Fixed a shutdown crash caused by `DatabaseWriter` calling `Close()` through an uninitialized embedded logger writer.
+- Fixed bot shutdown hanging during Telegram long polling by making update polling use a cancelable context.
+- Reduced the chance of container termination with exit code `137` during shutdown by allowing `getUpdates` to stop promptly on cancellation.
+
+### Changed
+- Switched the project to use the local `laniakea` replacement for the shutdown fix.
+- Documentation now clarifies that `RunWithContext` does not close resources automatically and callers must invoke `Close()` explicitly.
+- `Updates` documentation now describes context-driven cancellation behavior.
+
+### Tests
+- Added regression tests for database logger writer shutdown behavior.

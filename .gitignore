@@ -1,2 +1,8 @@
 .idea/
+.wiki/
+.vscode/
 test/
+.codex/
+.codex
+.agents/
+.claude/

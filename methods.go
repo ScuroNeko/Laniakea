@@ -1,161 +1,94 @@
 package laniakea
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
+	"iter"
+
+	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
 
-var NoParams = make(map[string]any)
-
-func (b *Bot) Updates() ([]*Update, error) {
-	params := make(map[string]any)
-	params["offset"] = b.updateOffset
-	params["timeout"] = 30
-	params["allowed_updates"] = b.updateTypes
-
-	data, err := b.request("getUpdates", params)
-	if err != nil {
-		return nil, err
+// Updates fetches new updates from Telegram API using long polling.
+// It respects the bot's current update offset and automatically advances it
+// after successful retrieval. The method supports selective update types
+// through AllowedUpdates and includes optional request logging.
+//
+// Parameters:
+//   - ctx: request context used to cancel the in-flight long polling request
+//
+// Returns:
+//   - []tgapi.Update: slice of received updates (empty if none available)
+//   - error: any error encountered during the API call
+//
+// Behavior:
+//  1. Uses the bot's current update offset (via GetUpdateOffset)
+//  2. Requests updates with the timeout configured via PollTimeout
+//  3. Filters updates by types specified in bot.GetUpdateTypes()
+//  4. Logs raw update JSON if RequestLogger is configured
+//  5. Automatically updates the offset to the last received update ID + 1
+//  6. Returns all received updates (empty slice if none)
+//
+// Note: This is a blocking call that waits up to the configured PollTimeout
+// for new updates, unless ctx is canceled earlier. For non-blocking behavior,
+// consider using webhooks instead.
+//
+// Example:
+//
+//	updates, err := bot.Updates(ctx)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	for _, update := range updates {
+//	    // process update
+//	}
+func (bot *Bot[T]) Updates(ctx context.Context) ([]tgapi.Update, error) {
+	offset := bot.GetUpdateOffset()
+	timeout := bot.pollTimeout
+	params := tgapi.UpdateParams{
+		Offset:         new(offset),
+		Timeout:        new(timeout),
+		AllowedUpdates: bot.GetUpdateTypes(),
 	}
-	res := make([]*Update, 0)
-	err = AnyToStruct(data["data"], &res)
-	if err != nil {
-		return res, err
-	}
-	
-	for _, u := range res {
-		b.updateOffset = u.UpdateID + 1
-		err = b.updateQueue.Enqueue(u)
-		if err != nil {
-			return res, err
-		}
-		res = append(res, u)
 
-		if b.debug && b.requestLogger != nil {
+	zero := make([]tgapi.Update, 0)
+	updates, err := bot.api.GetUpdatesWithContext(ctx, params)
+	if err != nil {
+		return zero, err
+	}
+
+	if bot.requestLogger != nil {
+		for _, u := range updates {
 			j, err := json.Marshal(u)
 			if err != nil {
-				b.logger.Error(err)
+				bot.GetLogger().Error(err)
 			}
-			b.requestLogger.Debugln(fmt.Sprintf("UPDATE %s", j))
+			bot.requestLogger.Debugf("UPDATE %s\n", j)
 		}
 	}
-	return res, err
-}
-
-func (b *Bot) GetMe() (*User, error) {
-	data, err := b.request("getMe", NoParams)
-	if err != nil {
-		return nil, err
+	if len(updates) > 0 {
+		bot.SetUpdateOffset(updates[len(updates)-1].UpdateID + 1)
 	}
-	user := new(User)
-	err = MapToStruct(data, user)
-	return user, err
-}
-
-type SendMessageP struct {
-	BusinessConnectionID string               `json:"business_connection_id,omitempty"`
-	ChatID               int                  `json:"chat_id"`
-	MessageThreadID      int                  `json:"message_thread_id,omitempty"`
-	ParseMode            ParseMode            `json:"parse_mode,omitempty"`
-	Text                 string               `json:"text"`
-	Entities             []*MessageEntity     `json:"entities,omitempty"`
-	LinkPreviewOptions   *LinkPreviewOptions  `json:"link_preview_options,omitempty"`
-	DisableNotifications bool                 `json:"disable_notifications,omitempty"`
-	ProtectContent       bool                 `json:"protect_content,omitempty"`
-	AllowPaidBroadcast   bool                 `json:"allow_paid_broadcast,omitempty"`
-	MessageEffectID      string               `json:"message_effect_id,omitempty"`
-	ReplyParameters      *ReplyParameters     `json:"reply_parameters,omitempty"`
-	ReplyMarkup          InlineKeyboardMarkup `json:"reply_markup,omitempty"`
-}
-
-func (b *Bot) SendMessage(params *SendMessageP) (*Message, error) {
-	data, err := b.request("sendMessage", params)
-	if err != nil {
-		return nil, err
+	if updates == nil {
+		return zero, nil
 	}
-	message := new(Message)
-	err = MapToStruct(data, message)
-	return message, err
+	return updates, nil
 }
 
-type SendPhotoP struct {
-	BusinessConnectionID  string               `json:"business_connection_id,omitempty"`
-	ChatID                int                  `json:"chat_id"`
-	MessageThreadID       int                  `json:"message_thread_id,omitempty"`
-	ParseMode             ParseMode            `json:"parse_mode,omitempty"`
-	Photo                 string               `json:"photo"`
-	Caption               string               `json:"caption,omitempty"`
-	CaptionEntities       []*MessageEntity     `json:"caption_entities,omitempty"`
-	ShowCaptionAboveMedia bool                 `json:"show_caption_above_media"`
-	HasSpoiler            bool                 `json:"has_spoiler"`
-	DisableNotifications  bool                 `json:"disable_notifications,omitempty"`
-	ProtectContent        bool                 `json:"protect_content,omitempty"`
-	AllowPaidBroadcast    bool                 `json:"allow_paid_broadcast,omitempty"`
-	MessageEffectID       string               `json:"message_effect_id,omitempty"`
-	ReplyMarkup           InlineKeyboardMarkup `json:"reply_markup,omitempty"`
-}
-
-func (b *Bot) SendPhoto(params *SendPhotoP) (*Message, error) {
-	data, err := b.request("sendPhoto", params)
-	if err != nil {
-		return nil, err
+// UpdatesIter fetches updates once and yields each update in order.
+//
+// If fetching updates fails, the iterator yields the error once with a zero
+// update and then stops.
+func (bot *Bot[T]) UpdatesIter(ctx context.Context) iter.Seq2[tgapi.Update, error] {
+	return func(yield func(tgapi.Update, error) bool) {
+		updates, err := bot.Updates(ctx)
+		if err != nil {
+			yield(tgapi.Update{}, err)
+			return
+		}
+		for _, u := range updates {
+			if !yield(u, nil) {
+				return
+			}
+		}
 	}
-	message := new(Message)
-	err = MapToStruct(data, message)
-	return message, err
-}
-
-type EditMessageTextP struct {
-	BusinessConnectionID string               `json:"business_connection_id,omitempty"`
-	ChatID               int                  `json:"chat_id,omitempty"`
-	MessageID            int                  `json:"message_id,omitempty"`
-	InlineMessageID      string               `json:"inline_message_id,omitempty"`
-	Text                 string               `json:"text"`
-	ParseMode            ParseMode            `json:"parse_mode,omitempty"`
-	ReplyMarkup          InlineKeyboardMarkup `json:"reply_markup,omitempty"`
-}
-
-func (b *Bot) EditMessageText(params *EditMessageTextP) (*Message, error) {
-	data, err := b.request("editMessageText", params)
-	if err != nil {
-		return nil, err
-	}
-	message := new(Message)
-	err = MapToStruct(data, message)
-	return message, err
-}
-
-type EditMessageCaptionP struct {
-	BusinessConnectionID string               `json:"business_connection_id,omitempty"`
-	ChatID               int                  `json:"chat_id,omitempty"`
-	MessageID            int                  `json:"message_id,omitempty"`
-	InlineMessageID      string               `json:"inline_message_id,omitempty"`
-	Caption              string               `json:"caption"`
-	ParseMode            ParseMode            `json:"parse_mode,omitempty"`
-	ReplyMarkup          InlineKeyboardMarkup `json:"reply_markup,omitempty"`
-}
-
-func (b *Bot) EditMessageCaption(params *EditMessageCaptionP) (*Message, error) {
-	data, err := b.request("editMessageCaption", params)
-	if err != nil {
-		return nil, err
-	}
-	message := new(Message)
-	err = MapToStruct(data, message)
-	return message, err
-}
-
-type DeleteMessageP struct {
-	ChatID    int `json:"chat_id"`
-	MessageID int `json:"message_id"`
-}
-
-func (b *Bot) DeleteMessage(params *DeleteMessageP) (*Message, error) {
-	data, err := b.request("deleteMessage", params)
-	if err != nil {
-		return nil, err
-	}
-	message := new(Message)
-	err = MapToStruct(data, message)
-	return message, err
 }
