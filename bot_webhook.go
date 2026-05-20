@@ -2,6 +2,7 @@ package laniakea
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -128,7 +129,7 @@ func (opts *BotWebhookOpts) SetSecretToken(secretToken string) *BotWebhookOpts {
 // argument order.
 func (bot *Bot[T]) RunWebhookWithContext(ctx context.Context, opts *BotWebhookOpts, tlsFiles ...string) error {
 	if opts == nil {
-		return errors.New("nil BotWebhookOpts")
+		return ErrNilBotWebhookOpts
 	}
 	if len(bot.prefixes) == 0 {
 		return ErrNoPrefixes
@@ -137,28 +138,28 @@ func (bot *Bot[T]) RunWebhookWithContext(ctx context.Context, opts *BotWebhookOp
 		return ErrNoPlugins
 	}
 	if opts.URL == "" {
-		return errors.New("empty BotWebhookOpts.URL")
+		return ErrNoBotWebhookOptsURL
 	}
 	if opts.MaxConnections > 100 || opts.MaxConnections <= 0 {
-		return errors.New("BotWebhookOpts.MaxConnections must between 1 and 100")
+		return ErrBotWebhookOptsMaxConnectionsRange
 	}
 	if err := validateWebhookPath(opts.Path, opts.UseStatusPath); err != nil {
 		return err
 	}
 	if opts.UseStatusPath && opts.SecretToken == "" {
-		return errors.New("BotWebhookOpts.SecretToken required when status path is enabled")
+		return ErrStatusPathSecretRequired
 	}
 	if err := validateWebhookTLSFiles(tlsFiles); err != nil {
 		return err
 	}
 
 	if opts.Certificate != nil && bot.uploader == nil {
-		return errors.New("bot uploader nil, but certificate set")
+		return ErrBotUploaderWhenCertificate
 	}
 
 	return bot.runWebhookRuntime(ctx, func(runCtx context.Context) error {
 		if opts.SecretToken == "" {
-			bot.webhookLogger.Warnln("Bot webhook secret token empty. It's VERY recommended to set secret.")
+			bot.webhookLogger.Warnln("Using webhook without secret is very dangerous. Anyone can simulate Telegram requests.")
 		}
 
 		i, err := bot.api.GetWebhookInfoWithContext(runCtx)
@@ -284,7 +285,7 @@ func (bot *Bot[T]) runWebhookRuntime(ctx context.Context, run func(context.Conte
 	return runErr
 }
 
-func updateHandler[T any](ctx context.Context, bot *Bot[T], secret string) http.HandlerFunc {
+func updateHandler[T any](ctx context.Context, bot *Bot[T], secret []byte) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			_ = r.Body.Close()
@@ -293,7 +294,9 @@ func updateHandler[T any](ctx context.Context, bot *Bot[T], secret string) http.
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-		if secret != "" && r.Header.Get("X-Telegram-Bot-Api-Secret-Token") != secret {
+		provided := []byte(r.Header.Get("X-Telegram-Bot-Api-Secret-Token"))
+
+		if len(secret) > 0 && subtle.ConstantTimeCompare(secret, provided) != 1 {
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
@@ -330,7 +333,7 @@ func updateHandler[T any](ctx context.Context, bot *Bot[T], secret string) http.
 	}
 }
 
-func statusHandler[T any](bot *Bot[T], opts *BotWebhookOpts) http.HandlerFunc {
+func statusHandler[T any](bot *Bot[T], secret []byte) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		auth := ""
 		if r.Header.Get("Authorization") != "" {
@@ -338,7 +341,7 @@ func statusHandler[T any](bot *Bot[T], opts *BotWebhookOpts) http.HandlerFunc {
 		} else if r.Header.Get("X-Telegram-Bot-Api-Secret-Token") != "" {
 			auth = r.Header.Get("X-Telegram-Bot-Api-Secret-Token")
 		}
-		if auth != opts.SecretToken {
+		if len(secret) > 0 && subtle.ConstantTimeCompare(secret, []byte(auth)) != 1 {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -363,11 +366,12 @@ func statusHandler[T any](bot *Bot[T], opts *BotWebhookOpts) http.HandlerFunc {
 }
 
 func (bot *Bot[T]) newWebhookMux(ctx context.Context, opts *BotWebhookOpts) *http.ServeMux {
+	token := []byte(opts.SecretToken)
 	r := http.NewServeMux()
 	if opts.UseStatusPath {
-		r.HandleFunc("/status", statusHandler(bot, opts))
+		r.HandleFunc("/status", statusHandler(bot, token))
 	}
-	r.HandleFunc(opts.Path, updateHandler(ctx, bot, opts.SecretToken))
+	r.HandleFunc(opts.Path, updateHandler(ctx, bot, token))
 	return r
 }
 func (bot *Bot[T]) baseRunWebhook(ctx context.Context, opts *BotWebhookOpts, runFunc func(*http.Server, chan error)) error {

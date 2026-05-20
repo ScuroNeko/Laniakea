@@ -25,15 +25,16 @@ func (bot *Bot[T]) handleMessage(update *tgapi.Update, ctx *MessageContext) bool
 			cmd = cmd[:len(cmd)-len("@"+botUsername)] // remove @botname
 		}
 	}
-	// Ищем команду по точному совпадению
+
 	for _, plugin := range bot.plugins {
 		if _, exists := plugin.commands[cmd]; exists {
 
 			ctx.Text = args
 			ctx.Args = strings.Fields(args)
+			ctx.Logger = plugin.logger
 
-			if plugin.logger != nil {
-				ctx.Logger = plugin.logger
+			if ctx.Logger == nil {
+				ctx.Logger = bot.logger
 			}
 			if !plugin.executeMiddlewares(ctx, bot.appData) {
 				return false

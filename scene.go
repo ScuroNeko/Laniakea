@@ -11,14 +11,10 @@ type SceneHandler[T any] func(ctx *SceneContext, db T) (SceneResult, error)
 
 // Scene defines a multi-step conversational flow.
 type Scene[T any] struct {
-	// Name identifies the scene in plugin registration and session state.
-	Name string
-	// Scope controls how active scene sessions are keyed and shared.
-	Scope SceneScope
-	// Entry names the first step used by MessageContext.EnterScene.
-	Entry string
-	// PluginName stores the owning plugin name for scene resolution.
-	PluginName string
+	name       string
+	scope      SceneScope
+	entry      string
+	pluginName string
 
 	steps    map[string]SceneHandler[T]
 	commands map[string]SceneHandler[T]
@@ -29,9 +25,9 @@ type Scene[T any] struct {
 // NewScene creates a new scene with user-chat scope by default.
 func NewScene[T any](name string) *Scene[T] {
 	return &Scene[T]{
-		Name:     name,
-		Scope:    SceneScopeUserChat,
-		Entry:    "",
+		name:     name,
+		scope:    SceneScopeUserChat,
+		entry:    "",
 		steps:    make(map[string]SceneHandler[T]),
 		commands: make(map[string]SceneHandler[T]),
 		payloads: make(map[string]SceneHandler[T]),
@@ -41,18 +37,18 @@ func NewScene[T any](name string) *Scene[T] {
 
 // SetScope changes how scene sessions are keyed and shared.
 func (s *Scene[T]) SetScope(scope SceneScope) *Scene[T] {
-	s.Scope = scope
+	s.scope = scope
 	return s
 }
 
 // SetEntry sets the initial step entered by MessageContext.EnterScene.
 func (s *Scene[T]) SetEntry(step string) *Scene[T] {
-	s.Entry = step
+	s.entry = step
 	return s
 }
 
 func (s *Scene[T]) setPluginName(name string) *Scene[T] {
-	s.PluginName = name
+	s.pluginName = name
 	return s
 }
 
@@ -135,36 +131,36 @@ type SceneSession struct {
 	Scene string
 	// Step is the current step name inside the active scene.
 	Step string
-	// Data stores opaque session payload bytes, typically JSON.
-	Data []byte
+	// data stores opaque session payload bytes, typically JSON.
+	data []byte
 }
 
 // SetData stores arbitrary opaque session data.
 func (s *SceneSession) SetData(data []byte) {
-	s.Data = data
+	s.data = data
 }
 
 // GetData returns the raw session data payload.
 func (s *SceneSession) GetData() []byte {
-	return s.Data
+	return s.data
 }
 
 // HasData reports whether the session has a non-empty data payload.
 func (s *SceneSession) HasData() bool {
-	return len(s.Data) > 0
+	return len(s.data) > 0
 }
 
 // ClearData removes any stored session data.
 func (s *SceneSession) ClearData() {
-	s.Data = nil
+	s.data = nil
 }
 
 // BindData unmarshals the stored JSON payload into v.
 func (s *SceneSession) BindData(v any) error {
-	if len(s.Data) == 0 {
+	if len(s.data) == 0 {
 		return nil
 	}
-	return json.Unmarshal(s.Data, v)
+	return json.Unmarshal(s.data, v)
 }
 
 // SaveData marshals v as JSON and stores it in the session.
@@ -173,7 +169,7 @@ func (s *SceneSession) SaveData(v any) error {
 	if err != nil {
 		return err
 	}
-	s.Data = data
+	s.data = data
 	return nil
 }
 

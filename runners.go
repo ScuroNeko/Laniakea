@@ -16,20 +16,19 @@ type RunnerFn[T AppData] func(*Bot[T]) error
 // Once Execute() is called, the Runner should not be modified.
 //
 // Execution semantics:
-//   - once=true, async=false: Run once synchronously (blocks).
-//   - once=true, async=true:  Run once in a goroutine (non-blocking).
-//   - once=false, async=true: Run repeatedly in a goroutine with timeout.
-//   - once=false, async=false: Invalid configuration — ignored with warning.
+//   - every=0, async=false: Run once synchronously (blocks).
+//   - every=0, async=true:  Run once in a goroutine (non-blocking).
+//   - every>0, async=true:  Run repeatedly in a goroutine with timeout.
+//   - every>0, async=false: Invalid configuration — ignored with warning.
 type Runner[T AppData] struct {
 	name  string        // Human-readable name for logging
-	once  bool          // If true, runs once; if false, runs periodically
 	async bool          // If true, runs in a goroutine; else, runs synchronously
 	every time.Duration // Duration to wait between periodic executions (ignored if once=true)
 	fn    RunnerFn[T]   // The function to execute
 }
 
 // NewRunner creates a new Runner with the given name and function.
-// By default, the Runner is configured as async=true (non-blocking).
+// By default, the Runner is configured as async=true (non-blocking), once=true/mo
 //
 // Builder methods (Once, Async, Every) can be chained to customize behavior.
 // DO NOT call builder methods concurrently or after Execute().
@@ -38,16 +37,8 @@ func NewRunner[T AppData](name string, fn RunnerFn[T]) Runner[T] {
 		name:  name,
 		fn:    fn,
 		async: true, // Default: run asynchronously
-		every: 0,    // Default: no timeout (ignored if once=true)
+		every: 0,    // Default: 0 - one time
 	}
-}
-
-// Once sets whether the runner executes once or repeatedly.
-// If true, the runner runs only once.
-// If false, the runner runs in a loop with the configured timeout.
-func (r Runner[T]) Once(once bool) Runner[T] {
-	r.once = once
-	return r
 }
 
 // Async sets whether the runner executes synchronously or asynchronously.
@@ -94,16 +85,16 @@ func (bot *Bot[T]) ExecRunners(ctx context.Context) {
 	bot.logger.Infoln("Executing runners...")
 	for _, runner := range bot.runners {
 		// Validate configuration
-		if !runner.once && !runner.async {
+		if runner.every > 0 && !runner.async {
 			bot.logger.Warnf("Runner %s not once, but sync — skipping\n", runner.name)
 			continue
 		}
-		if !runner.once && runner.async && runner.every == 0 {
+		if runner.every > 0 && runner.async && runner.every == 0 {
 			bot.logger.Warnf("Background runner \"%s\" has no timeout — skipping\n", runner.name)
 			continue
 		}
 
-		if runner.once && runner.async {
+		if runner.every == 0 && runner.async {
 			// One-time async: fire and forget
 			bot.runnerOnceWG.Add(1)
 			go func(r Runner[T]) {
@@ -126,7 +117,7 @@ func (bot *Bot[T]) ExecRunners(ctx context.Context) {
 					bot.logger.Warnf("Runner %s failed: %s\n", r.name, err)
 				}
 			}(runner)
-		} else if runner.once && !runner.async {
+		} else if runner.every == 0 && !runner.async {
 			// One-time sync: block until done
 			t := time.Now()
 			err := runner.fn(bot)
@@ -149,7 +140,7 @@ func (bot *Bot[T]) ExecRunners(ctx context.Context) {
 			if elapsed > time.Second*2 {
 				bot.logger.Warnf("Runner %s too slow. Elapsed time %v >= 2s\n", runner.name, elapsed)
 			}
-		} else if !runner.once && runner.async {
+		} else if runner.every > 0 && runner.async {
 			// Background loop: periodic execution with graceful shutdown
 			bot.runnerBgWG.Add(1)
 			go func(r Runner[T]) {

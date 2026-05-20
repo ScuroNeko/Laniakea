@@ -37,8 +37,8 @@ func (o *pollingRetryObserver) OnPollingRetry(ctx context.Context, ev PollingRet
 
 type testObserver struct{}
 
-func (testObserver) OnReceiveUpdate(context.Context, UpdateReceivedEvent)  {}
-func (testObserver) OnHandledUpdate(context.Context, UpdateHandledEvent)   {}
+func (testObserver) OnUpdateReceived(context.Context, UpdateReceivedEvent) {}
+func (testObserver) OnUpdateHandled(context.Context, UpdateHandledEvent)   {}
 func (testObserver) OnHandlerStarted(context.Context, HandlerStartedEvent) {}
 func (testObserver) OnHandlerFinished(context.Context, HandlerFinishedEvent) {
 }

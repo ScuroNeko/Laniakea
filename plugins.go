@@ -46,7 +46,6 @@ func NewPlugin[T AppData](name string) *Plugin[T] {
 }
 
 // AddCommand registers a command in the plugin.
-// The command's .command field is used as the key.
 func (p *Plugin[T]) AddCommand(command *Command[T]) *Plugin[T] {
 	if command == nil {
 		if p.logger != nil {
@@ -55,7 +54,7 @@ func (p *Plugin[T]) AddCommand(command *Command[T]) *Plugin[T] {
 		return p
 	}
 	if _, exists := p.commands[command.command]; exists && p.logger != nil {
-		p.logger.Warnf("command '%s' is already registered in plugin '%s'; overwriting", command.command, p.name)
+		p.logger.Warnf("command '%s' already registered in plugin '%s'; overwriting", command.command, p.name)
 	}
 	p.commands[command.command] = command
 	return p
@@ -106,12 +105,12 @@ func (p *Plugin[T]) AddScene(scene *Scene[T]) *Plugin[T] {
 	if scene == nil {
 		return p
 	}
-	scene.PluginName = p.name
+	scene.pluginName = p.name
 	scene.setPluginName(p.name)
-	if _, exists := p.scenes[scene.Name]; exists && p.logger != nil {
-		p.logger.Warnf("scene '%s' is already registered in plugin '%s'; overwriting", scene.Name, p.name)
+	if _, exists := p.scenes[scene.name]; exists && p.logger != nil {
+		p.logger.Warnf("scene '%s' is already registered in plugin '%s'; overwriting", scene.name, p.name)
 	}
-	p.scenes[scene.Name] = scene
+	p.scenes[scene.name] = scene
 	return p
 }
 
@@ -238,7 +237,6 @@ func (p *Plugin[T]) Close() error {
 	return errors.Join(e...)
 }
 
-// Internal helper that validates and executes a command handler.
 func (p *Plugin[T]) executeCmd(cmd string, ctx *MessageContext, db T) error {
 	command, exists := p.commands[cmd]
 	if !exists {
@@ -260,7 +258,6 @@ func (p *Plugin[T]) executeCmd(cmd string, ctx *MessageContext, db T) error {
 	return command.exec(ctx, db)
 }
 
-// Internal helper that validates and executes a payload handler.
 func (p *Plugin[T]) executePayload(payload string, ctx *MessageContext, db T) error {
 	command, exists := p.payloads[payload]
 	if !exists {
@@ -282,7 +279,6 @@ func (p *Plugin[T]) executePayload(payload string, ctx *MessageContext, db T) er
 	return command.exec(ctx, db)
 }
 
-// Internal helper that runs plugin middlewares in order.
 func (p *Plugin[T]) executeMiddlewares(ctx *MessageContext, db T) bool {
 	for _, m := range p.middlewares {
 		if !m.Execute(ctx, db) {

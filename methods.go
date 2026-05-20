@@ -22,15 +22,15 @@ import (
 //
 // Behavior:
 //  1. Uses the bot's current update offset (via GetUpdateOffset)
-//  2. Requests updates with 30-second timeout
+//  2. Requests updates with the timeout configured via PollTimeout
 //  3. Filters updates by types specified in bot.GetUpdateTypes()
 //  4. Logs raw update JSON if RequestLogger is configured
 //  5. Automatically updates the offset to the last received update ID + 1
 //  6. Returns all received updates (empty slice if none)
 //
-// Note: This is a blocking call that waits up to 30 seconds for new updates,
-// unless ctx is canceled earlier. For non-blocking behavior, consider using
-// webhooks instead.
+// Note: This is a blocking call that waits up to the configured PollTimeout
+// for new updates, unless ctx is canceled earlier. For non-blocking behavior,
+// consider using webhooks instead.
 //
 // Example:
 //
@@ -50,9 +50,10 @@ func (bot *Bot[T]) Updates(ctx context.Context) ([]tgapi.Update, error) {
 		AllowedUpdates: bot.GetUpdateTypes(),
 	}
 
+	zero := make([]tgapi.Update, 0)
 	updates, err := bot.api.GetUpdatesWithContext(ctx, params)
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
 
 	if bot.requestLogger != nil {
@@ -67,7 +68,10 @@ func (bot *Bot[T]) Updates(ctx context.Context) ([]tgapi.Update, error) {
 	if len(updates) > 0 {
 		bot.SetUpdateOffset(updates[len(updates)-1].UpdateID + 1)
 	}
-	return updates, err
+	if updates == nil {
+		return zero, nil
+	}
+	return updates, nil
 }
 
 // UpdatesIter fetches updates once and yields each update in order.

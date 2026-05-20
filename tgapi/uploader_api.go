@@ -177,10 +177,14 @@ func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, 
 				case <-ctx.Done():
 					return zero, ctx.Err()
 				case <-time.After(time.Duration(after) * time.Second):
-					continue // Повторяем запрос
+					continue
 				}
 			}
-			return zero, fmt.Errorf("[%d] %s", response.ErrorCode, response.Description)
+			return zero, &ResponseError{
+				Code:        response.ErrorCode,
+				Description: response.Description,
+				Parameters:  response.Parameters,
+			}
 		}
 		return response.Result, nil
 	}
@@ -218,7 +222,6 @@ func (r UploaderRequest[R, P]) Do(up *Uploader) (R, error) {
 	return r.DoWithContext(context.Background(), up)
 }
 
-// Internal helper that builds a finalized multipart body from files and params.
 func prepareMultipart[P any](files []UploaderFile, params P) (*bytes.Buffer, string, error) {
 	buf := bytes.NewBuffer(nil)
 	w := multipart.NewWriter(buf)
@@ -251,7 +254,6 @@ func prepareMultipart[P any](files []UploaderFile, params P) (*bytes.Buffer, str
 	return buf, w.FormDataContentType(), nil
 }
 
-// Internal helper that infers an upload field name from a file extension.
 func uploaderTypeByExt(filename string) UploaderFileType {
 	ext := strings.ToLower(filepath.Ext(filename))
 	switch ext {

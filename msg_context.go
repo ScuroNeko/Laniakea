@@ -95,7 +95,6 @@ type AnswerMessage struct {
 	ctx       *MessageContext // internal back-reference
 }
 
-// Internal helper for text edits with optional keyboard and parse mode.
 func (ctx *MessageContext) edit(messageID int, text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if err := validateMessageText(text); err != nil {
 		ctx.Logger.Errorln(err)
@@ -146,7 +145,6 @@ func (m *AnswerMessage) EditMarkdown(text string) *AnswerMessage {
 	return m.ctx.edit(m.MessageID, text, nil, tgapi.ParseMarkdownV2)
 }
 
-// Internal helper for editing callback-linked messages.
 func (ctx *MessageContext) editCallback(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if ctx.CallbackMsgID == 0 && ctx.InlineMsgID == "" {
 		ctx.Logger.Errorln(ErrCallbackMessageMissing)
@@ -179,7 +177,6 @@ func (ctx *MessageContext) EditCallbackfMarkdown(format string, keyboard *Inline
 	return ctx.editCallback(fmt.Sprintf(format, args...), keyboard, tgapi.ParseMarkdownV2)
 }
 
-// Internal helper for media-caption edits.
 func (ctx *MessageContext) editPhotoText(messageID int, text string, kb *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if err := validateCaptionText(text); err != nil {
 		ctx.Logger.Errorln(err)
@@ -241,7 +238,6 @@ func (m *AnswerMessage) EditCaptionKeyboardMarkdown(text string, kb *InlineKeybo
 	return m.ctx.editPhotoText(m.MessageID, text, kb, tgapi.ParseMarkdownV2)
 }
 
-// Internal helper for message replies with optional keyboard and parse mode.
 func (ctx *MessageContext) answer(text string, keyboard *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if ctx.Msg == nil {
 		ctx.Logger.Errorln(ErrMessageContextNil)
@@ -371,7 +367,6 @@ func (ctx *MessageContext) answerLong(text string, keyboard *InlineKeyboard, par
 	return messages
 }
 
-// Internal helper for photo replies with optional caption and keyboard.
 func (ctx *MessageContext) answerPhoto(photoID, text string, kb *InlineKeyboard, parseMode tgapi.ParseMode) *AnswerMessage {
 	if ctx.Msg == nil {
 		ctx.Logger.Errorln(ErrMessageContextNil)
@@ -443,7 +438,6 @@ func (ctx *MessageContext) AnswerPhotofMarkdown(photoID, template string, args .
 	return ctx.answerPhoto(photoID, fmt.Sprintf(template, args...), nil, tgapi.ParseMarkdownV2)
 }
 
-// Internal helper that deletes a message by ID.
 func (ctx *MessageContext) delete(messageID int) {
 	if messageID == 0 {
 		ctx.Logger.Errorln(ErrMessageIDZero)
@@ -474,7 +468,6 @@ func (ctx *MessageContext) CallbackDelete() {
 	ctx.delete(ctx.CallbackMsgID)
 }
 
-// Internal helper that answers a callback query with optional text, alert, or URL.
 func (ctx *MessageContext) answerCallbackQuery(url, text string, showAlert bool) {
 	if len(ctx.CallbackQueryID) == 0 {
 		return
@@ -518,7 +511,6 @@ func (ctx *MessageContext) SendAction(action tgapi.ChatActionType) {
 	}
 }
 
-// Internal helper that formats, sends, and logs an error.
 func (ctx *MessageContext) error(err error) {
 	if err == nil {
 		return
@@ -536,7 +528,7 @@ func (ctx *MessageContext) error(err error) {
 	}
 }
 
-// Error is an alias for error().
+// Error routes err through the centralized handler error path…
 func (ctx *MessageContext) Error(err error) { ctx.error(err) }
 
 func (ctx *MessageContext) newDraft(parseMode tgapi.ParseMode) *Draft {

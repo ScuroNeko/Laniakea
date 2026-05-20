@@ -38,6 +38,8 @@ var (
 	ErrAPIIsNil = errors.New("api is nil")
 	// ErrMessageIDZero reports that an operation requires a non-zero message ID.
 	ErrMessageIDZero = errors.New("message ID is zero")
+)
+var (
 	// ErrBindArgsTargetNotPointer reports that BindArgs received a nil or non-pointer destination.
 	ErrBindArgsTargetNotPointer = errors.New("bind args: dst must be a non-nil pointer")
 	// ErrBindArgsTargetNotStruct reports that BindArgs received a pointer to a non-struct value.
@@ -58,6 +60,19 @@ var (
 	ErrSceneEntryNotSet = errors.New("scene entry step not set")
 	// ErrSceneRuntimeNil reports that scene APIs were used without an attached runtime.
 	ErrSceneRuntimeNil = errors.New("scene runtime is nil")
+)
+
+var (
+	// ErrNilBotWebhookOpts reports that a nil BotWebhookOpts was passed.
+	ErrNilBotWebhookOpts = errors.New("nil BotWebhookOpts")
+	// ErrNoBotWebhookOptsURL reports that BotWebhookOpts.URL is empty.
+	ErrNoBotWebhookOptsURL = errors.New("empty BotWebhookOpts.URL")
+	// ErrBotWebhookOptsMaxConnectionsRange reports that BotWebhookOpts.MaxConnections is out of range.
+	ErrBotWebhookOptsMaxConnectionsRange = errors.New("BotWebhookOpts.MaxConnections must be between 1 and 100")
+	// ErrBotUploaderWhenCertificate reports that a certificate was set without an uploader.
+	ErrBotUploaderWhenCertificate = errors.New("bot uploader nil, but certificate set")
+	// ErrStatusPathSecretRequired reports that UseStatusPath requires SecretToken to be set.
+	ErrStatusPathSecretRequired = errors.New("SecretToken required when UseStatusPath is enabled")
 )
 
 func validateMessageText(text string) error {

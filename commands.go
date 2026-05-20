@@ -66,9 +66,6 @@ func (c CommandArg) SetValueType(t CommandValueType) CommandArg {
 		regex = CommandRegexBool
 	case CommandValueString:
 		regex = CommandRegexString
-	case CommandValueAny:
-	default:
-		regex = nil // Skip validation
 	}
 	c.valueType = t
 	c.regex = regex
@@ -133,7 +130,6 @@ func (c *Command[T]) SkipCommandAutoGen() *Command[T] {
 	return c
 }
 
-// Internal helper that validates provided command arguments.
 func (c *Command[T]) validateArgs(args []string) error {
 	for i := range c.args.Len() {
 		if i >= len(args) && c.args.Get(i).required {

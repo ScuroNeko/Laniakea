@@ -58,6 +58,7 @@ const (
 	// UpdateTypeRemovedChatBoost is a removed chat boost update.
 	UpdateTypeRemovedChatBoost UpdateType = "removed_chat_boost"
 
+	// UpdateTypeManagedBot is a managed bot update.
 	UpdateTypeManagedBot UpdateType = "managed_bot"
 
 	// UpdateTypeGuestMessage is a guest message update.

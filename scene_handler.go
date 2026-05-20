@@ -24,7 +24,7 @@ func (bot *Bot[T]) tryHandleScene(ctx *MessageContext) (bool, error) {
 		if !ok {
 			continue
 		}
-		if scene.PluginName != "" && scene.PluginName != plugin.name {
+		if scene.pluginName != "" && scene.pluginName != plugin.name {
 			continue
 		}
 		if !plugin.executeMiddlewares(ctx, bot.appData) {
@@ -176,7 +176,7 @@ func (bot *Bot[T]) emitSceneStarted(ctx *SceneContext, scene *Scene[T], kind Han
 	bot.safeEmitEvent(ctx.Context(), HandlerStartedEvent{
 		UpdateID:    ctx.Update.UpdateID,
 		UpdateType:  ctx.Update.Type,
-		Plugin:      scene.PluginName,
+		Plugin:      scene.pluginName,
 		HandlerKind: kind,
 		HandlerName: name,
 		FromID:      ctx.FromID,
@@ -188,7 +188,7 @@ func (bot *Bot[T]) emitSceneFinished(ctx *SceneContext, scene *Scene[T], kind Ha
 	bot.safeEmitEvent(ctx.Context(), HandlerFinishedEvent{
 		UpdateID:    ctx.Update.UpdateID,
 		UpdateType:  ctx.Update.Type,
-		Plugin:      scene.PluginName,
+		Plugin:      scene.pluginName,
 		HandlerKind: kind,
 		HandlerName: name,
 		FromID:      ctx.FromID,
@@ -203,7 +203,7 @@ func (bot *Bot[T]) emitSceneError(ctx *SceneContext, scene *Scene[T], kind Handl
 	bot.safeEmitEvent(ctx.Context(), ErrorEvent{
 		UpdateID:    ctx.Update.UpdateID,
 		UpdateType:  ctx.Update.Type,
-		Plugin:      scene.PluginName,
+		Plugin:      scene.pluginName,
 		HandlerKind: kind,
 		HandlerName: name,
 		FromID:      ctx.FromID,
@@ -229,8 +229,8 @@ func (bot *Bot[T]) emitSceneTransition(ctx *SceneContext, scene *Scene[T], from 
 	}
 
 	bot.safeEmitEvent(ctx.Context(), SceneTransitionEvent{
-		Plugin: scene.PluginName,
-		Scene:  scene.Name,
+		Plugin: scene.pluginName,
+		Scene:  scene.name,
 		From:   from,
 		To:     to,
 		Action: result.Action,

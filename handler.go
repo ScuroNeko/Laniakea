@@ -19,6 +19,18 @@ func (bot *Bot[T]) handle(parentCtx context.Context, u *tgapi.Update) {
 	defer func() {
 		if r := recover(); r != nil {
 			bot.logger.Errorln(fmt.Sprintf("panic in handle: %v", r))
+
+			var err error
+			var ok bool
+			if err, ok = r.(error); !ok {
+				err = fmt.Errorf("%v", r)
+			}
+			bot.safeEmitEvent(parentCtx, ErrorEvent{
+				UpdateID:   u.UpdateID,
+				UpdateType: u.Type,
+				Err:        err,
+				UserFacing: false,
+			})
 		}
 	}()
 	startTime := time.Now()

@@ -121,7 +121,6 @@ func (b InlineKeyboardButtonBuilder) SetCallbackData(cmd string, args ...any) In
 	return b
 }
 
-// Internal helper that converts the builder state into a Telegram button.
 func (b InlineKeyboardButtonBuilder) build() tgapi.InlineKeyboardButton {
 	return tgapi.InlineKeyboardButton{
 		Text:              b.text,
@@ -203,9 +202,9 @@ func (in *InlineKeyboard) SetMaxRow(maxRow int) *InlineKeyboard {
 	return in
 }
 
+// GetMaxRow returns the maximum number of buttons per row.
 func (in *InlineKeyboard) GetMaxRow() int { return in.maxRow }
 
-// Internal helper that appends a button and auto-flushes a full row.
 func (in *InlineKeyboard) append(button tgapi.InlineKeyboardButton) *InlineKeyboard {
 	if in.CurrentLine.Len() == in.maxRow {
 		in.AddLine()

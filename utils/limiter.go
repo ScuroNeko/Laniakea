@@ -134,7 +134,6 @@ func (rl *RateLimiter) Wait(ctx context.Context, chatID int64) error {
 	return chatLimiter.Wait(ctx)
 }
 
-// Internal helper that returns the global limiter under read lock.
 func (rl *RateLimiter) getGlobalLimiter() *rate.Limiter {
 	rl.globalMu.RLock()
 	defer rl.globalMu.RUnlock()
@@ -222,7 +221,6 @@ func (rl *RateLimiter) Check(ctx context.Context, dropOverflow bool, chatID int6
 	return nil
 }
 
-// Internal helper that waits for the global cooldown to expire.
 func (rl *RateLimiter) waitForGlobalUnlock(ctx context.Context) error {
 	rl.globalMu.RLock()
 	until := rl.globalLockUntil
@@ -240,7 +238,6 @@ func (rl *RateLimiter) waitForGlobalUnlock(ctx context.Context) error {
 	}
 }
 
-// Internal helper that waits for a chat-specific cooldown to expire.
 func (rl *RateLimiter) waitForChatUnlock(ctx context.Context, chatID int64) error {
 	rl.chatMu.RLock()
 	until, ok := rl.chatLocks[chatID]
@@ -258,7 +255,6 @@ func (rl *RateLimiter) waitForChatUnlock(ctx context.Context, chatID int64) erro
 	}
 }
 
-// Internal helper that returns or creates a per-chat limiter.
 // Updates chatLastSeen so Cleanup can evict idle entries.
 func (rl *RateLimiter) getChatLimiter(chatID int64) *rate.Limiter {
 	now := time.Now()

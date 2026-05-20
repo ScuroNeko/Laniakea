@@ -28,6 +28,7 @@ type botOptsFileJSONAPI struct {
 	UseTestServer  bool   `json:"use_test_server"`
 	APIURL         string `json:"url"`
 	RateLimit      int    `json:"rate_limit"`
+	PollTimeout    int    `json:"poll_timeout"`
 	DropRLOverflow bool   `json:"drop_overflow"`
 }
 
@@ -73,6 +74,7 @@ func (codec BotOptsFileJSONCodec) FromBytes(data []byte) (*BotOpts, error) {
 		UseTestServer:         fileOpts.API.UseTestServer,
 		APIURL:                fileOpts.API.APIURL,
 		RateLimit:             fileOpts.API.RateLimit,
+		PollTimeout:           fileOpts.API.PollTimeout,
 		DropRateLimitOverflow: fileOpts.API.DropRLOverflow,
 
 		StrictPayloadType: fileOpts.StrictPayloadType,
@@ -102,6 +104,7 @@ func (codec BotOptsFileJSONCodec) ToBytes(opts *BotOpts) ([]byte, error) {
 			UseTestServer:  opts.UseTestServer,
 			APIURL:         opts.APIURL,
 			RateLimit:      opts.RateLimit,
+			PollTimeout:    opts.PollTimeout,
 			DropRLOverflow: opts.DropRateLimitOverflow,
 		},
 		StrictPayloadType: opts.StrictPayloadType,

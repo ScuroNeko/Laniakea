@@ -20,10 +20,10 @@ type recordingObserver struct {
 	retries  []PollingRetryEvent
 }
 
-func (o *recordingObserver) OnReceiveUpdate(_ context.Context, ev UpdateReceivedEvent) {
+func (o *recordingObserver) OnUpdateReceived(_ context.Context, ev UpdateReceivedEvent) {
 	o.received = append(o.received, ev)
 }
-func (o *recordingObserver) OnHandledUpdate(_ context.Context, ev UpdateHandledEvent) {
+func (o *recordingObserver) OnUpdateHandled(_ context.Context, ev UpdateHandledEvent) {
 	o.handled = append(o.handled, ev)
 }
 func (o *recordingObserver) OnHandlerStarted(_ context.Context, ev HandlerStartedEvent) {

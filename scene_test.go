@@ -36,8 +36,8 @@ func TestPluginAddSceneRegistersScene(t *testing.T) {
 	if got, ok := plugin.scenes["signup"]; !ok || got != scene {
 		t.Fatalf("scene was not registered in plugin: ok=%v got=%p want=%p", ok, got, scene)
 	}
-	if scene.PluginName != "wizard" {
-		t.Fatalf("unexpected plugin name on scene: got %q want %q", scene.PluginName, "wizard")
+	if scene.pluginName != "wizard" {
+		t.Fatalf("unexpected plugin name on scene: got %q want %q", scene.pluginName, "wizard")
 	}
 }
 
@@ -401,7 +401,7 @@ func TestSceneMessageObserverEmitsLifecycleEvents(t *testing.T) {
 	if !ok {
 		t.Fatal("expected scene key to be built")
 	}
-	if err := bot.sessionStore.Set(key, SceneSession{Scene: scene.Name}); err != nil {
+	if err := bot.sessionStore.Set(key, SceneSession{Scene: scene.name}); err != nil {
 		t.Fatalf("failed to seed scene session: %v", err)
 	}
 

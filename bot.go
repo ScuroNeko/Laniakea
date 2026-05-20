@@ -47,7 +47,7 @@ type AppDataLogger[T AppData] func(data T) sneklog.LoggerWriter
 // BotPayloadType defines the serialization format for callback data payloads.
 type BotPayloadType string
 
-var (
+const (
 	// BotPayloadBase64 encodes callback data as a Base64 string.
 	BotPayloadBase64 BotPayloadType = "base64"
 	// BotPayloadJSON encodes callback data as a JSON string.
@@ -275,8 +275,10 @@ func (bot *Bot[T]) SetWebhookLogger(l *sneklog.Logger) *Bot[T] {
 	return bot
 }
 
+// GetAPI returns the underlying Telegram Bot API client.
 func (bot *Bot[T]) GetAPI() *tgapi.API { return bot.api }
 
+// GetUploader returns the underlying file uploader client.
 func (bot *Bot[T]) GetUploader() *tgapi.Uploader { return bot.uploader }
 
 // Close gracefully shuts down bot-owned resources.
@@ -385,7 +387,7 @@ func (bot *Bot[T]) GetLoggerLevel() sneklog.LogLevel {
 }
 
 // L10n translates a key in the given language.
-// Returns empty string if translation not found.
+// Returns key if translation not found.
 func (bot *Bot[T]) L10n(lang, key string) string {
 	return bot.l10n.Translate(lang, key)
 }

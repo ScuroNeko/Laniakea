@@ -46,7 +46,7 @@ func TestUpdateHandlerEnqueuesUpdate(t *testing.T) {
 	req.Header.Set("X-Telegram-Bot-Api-Secret-Token", "secret")
 	rec := httptest.NewRecorder()
 
-	updateHandler(context.Background(), bot, "secret").ServeHTTP(rec, req)
+	updateHandler(context.Background(), bot, []byte("secret")).ServeHTTP(rec, req)
 
 	if rec.Result().StatusCode != http.StatusOK {
 		t.Fatalf("unexpected status: got %d want %d", rec.Result().StatusCode, http.StatusOK)
@@ -94,7 +94,7 @@ func TestRunWebhookRuntimeExecutesRunners(t *testing.T) {
 			NewRunner("runner", func(bot *Bot[NoData]) error {
 				calls.Add(1)
 				return nil
-			}).Once(true).Async(false),
+			}).Async(false),
 		},
 	}
 	t.Cleanup(func() {
@@ -157,7 +157,7 @@ func TestRunWebhookRuntimeProcessesEnqueuedUpdate(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"update_id":9,"message":{"message_id":1,"date":1,"chat":{"id":1,"type":"private"},"from":{"id":2,"is_bot":false,"first_name":"Test"},"text":"/start"}}`))
 		rec := httptest.NewRecorder()
 
-		updateHandler(ctx, bot, "").ServeHTTP(rec, req)
+		updateHandler(ctx, bot, []byte("")).ServeHTTP(rec, req)
 		if rec.Result().StatusCode != http.StatusOK {
 			t.Fatalf("unexpected status: got %d want %d", rec.Result().StatusCode, http.StatusOK)
 		}
@@ -267,7 +267,7 @@ func TestUpdateHandlerRejectsOversizedBody(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(strings.Repeat("a", (256<<10)+1)))
 	rec := httptest.NewRecorder()
 
-	updateHandler(context.Background(), bot, "").ServeHTTP(rec, req)
+	updateHandler(context.Background(), bot, []byte("")).ServeHTTP(rec, req)
 
 	if rec.Result().StatusCode != http.StatusRequestEntityTooLarge {
 		t.Fatalf("unexpected status: got %d want %d", rec.Result().StatusCode, http.StatusRequestEntityTooLarge)
@@ -301,7 +301,7 @@ func TestStatusHandlerRequiresMatchingSecret(t *testing.T) {
 		_ = bot.webhookLogger.Close()
 	})
 
-	handler := statusHandler(bot, &BotWebhookOpts{SecretToken: "secret"})
+	handler := statusHandler(bot, []byte("secret"))
 
 	tests := []struct {
 		name       string

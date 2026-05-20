@@ -24,9 +24,9 @@ func (bot *Bot[T]) findScene(name string) (*sceneMeta, bool) {
 		}
 
 		return &sceneMeta{
-			Name:  scene.Name,
-			Scope: scene.Scope,
-			Entry: scene.Entry,
+			Name:  scene.name,
+			Scope: scene.scope,
+			Entry: scene.entry,
 			Steps: steps,
 		}, true
 	}

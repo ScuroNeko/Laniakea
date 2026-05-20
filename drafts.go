@@ -49,7 +49,7 @@ type DraftProvider struct {
 
 // NewRandomDraftProvider creates a new DraftProvider using random draft IDs.
 //
-// The provider will use cryptographically secure random numbers for draft IDs.
+// The provider will use random numbers for draft IDs.
 // All drafts created via this provider will have unpredictable, unique IDs.
 func NewRandomDraftProvider(api *tgapi.API) *DraftProvider {
 	return &DraftProvider{
@@ -189,8 +189,7 @@ func (d *Draft) Clear() {
 
 // Delete removes the draft from its provider and clears its content.
 //
-// This is an internal method used by Flush(). You may call it manually if you
-// want to cancel a draft without sending it.
+// You may call it manually if you want to cancel a draft without sending it.
 func (d *Draft) Delete() {
 	if d.provider != nil {
 		d.provider.mu.Lock()
@@ -241,8 +240,6 @@ func (d *Draft) Flush() error {
 	return err
 }
 
-// Internal helper for Push that updates the server-side draft.
-//
 // The candidate Message (current content + new text) is validated before any
 // mutation, so a validation failure leaves the draft unchanged. After the
 // validation passes, Message is committed locally regardless of whether the

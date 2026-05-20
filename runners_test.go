@@ -22,7 +22,7 @@ func TestExecRunnersRunsOnceSyncRunner(t *testing.T) {
 			NewRunner("sync-once", func(*Bot[NoData]) error {
 				calls.Add(1)
 				return nil
-			}).Once(true).Async(false),
+			}).Async(false),
 		},
 	}
 
@@ -76,7 +76,7 @@ func TestExecRunnersEmitObserverEvents(t *testing.T) {
 		runners: []Runner[NoData]{
 			NewRunner("sync-once", func(*Bot[NoData]) error {
 				return wantErr
-			}).Once(true).Async(false),
+			}).Async(false),
 		},
 	}
 

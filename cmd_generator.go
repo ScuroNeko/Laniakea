@@ -21,7 +21,6 @@ var cmdRegexp = regexp.MustCompile("^[_a-z0-9]{1,32}$")
 // bot initialization.
 var ErrTooManyCommands = errors.New("too many commands. max 100")
 
-// Internal helper to build a BotCommand description with generated usage text.
 func generateBotCommand[T any](cmd *Command[T]) tgapi.BotCommand {
 	desc := ""
 	if len(cmd.description) > 0 {
@@ -45,10 +44,8 @@ func generateBotCommand[T any](cmd *Command[T]) tgapi.BotCommand {
 	return tgapi.BotCommand{Command: cmd.command, Description: usage}
 }
 
-// Internal helper to validate Telegram command names.
 func checkCmdRegex(cmd string) bool { return cmdRegexp.MatchString(cmd) }
 
-// Internal helper to collect non-skipped, valid commands from one plugin.
 func gatherCommandsForPlugin[T any](pl Plugin[T]) []tgapi.BotCommand {
 	commands := make([]tgapi.BotCommand, 0)
 	names := make([]string, 0, len(pl.commands))
@@ -70,7 +67,6 @@ func gatherCommandsForPlugin[T any](pl Plugin[T]) []tgapi.BotCommand {
 	return commands
 }
 
-// Internal helper to collect all auto-generated commands from registered plugins.
 func gatherCommands[T any](bot *Bot[T]) []tgapi.BotCommand {
 	commands := make([]tgapi.BotCommand, 0)
 	for _, pl := range bot.plugins {

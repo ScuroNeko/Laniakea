@@ -145,8 +145,8 @@ func (ErrorEvent) isEvent()           {}
 
 // Observer receives best-effort runtime instrumentation events.
 type Observer interface {
-	OnReceiveUpdate(ctx context.Context, event UpdateReceivedEvent)
-	OnHandledUpdate(ctx context.Context, event UpdateHandledEvent)
+	OnUpdateReceived(ctx context.Context, event UpdateReceivedEvent)
+	OnUpdateHandled(ctx context.Context, event UpdateHandledEvent)
 	OnHandlerStarted(ctx context.Context, event HandlerStartedEvent)
 	OnHandlerFinished(ctx context.Context, event HandlerFinishedEvent)
 	OnSceneTransition(ctx context.Context, event SceneTransitionEvent)
@@ -167,9 +167,9 @@ func (bot *Bot[T]) safeEmitEvent(ctx context.Context, event Event) {
 	}()
 	switch e := event.(type) {
 	case UpdateReceivedEvent:
-		bot.observer.OnReceiveUpdate(ctx, e)
+		bot.observer.OnUpdateReceived(ctx, e)
 	case UpdateHandledEvent:
-		bot.observer.OnHandledUpdate(ctx, e)
+		bot.observer.OnUpdateHandled(ctx, e)
 	case HandlerStartedEvent:
 		bot.observer.OnHandlerStarted(ctx, e)
 	case HandlerFinishedEvent:

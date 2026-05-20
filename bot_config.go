@@ -125,7 +125,7 @@ func (bot *Bot[T]) GetAppData() T { return bot.appData }
 // SetUpdateTypes sets the list of update types the bot will request from Telegram.
 // Overwrites any previously set types.
 func (bot *Bot[T]) SetUpdateTypes(t ...tgapi.UpdateType) *Bot[T] {
-	if !bot.configMutable("UpdateTypes") {
+	if !bot.configMutable("SetUpdateTypes") {
 		return bot
 	}
 	bot.updateTypes = make([]tgapi.UpdateType, 0)
@@ -177,7 +177,7 @@ func (bot *Bot[T]) SetStrictPayloadType(strict bool) *Bot[T] {
 // Use "%s" to insert the error message.
 // Example: "❌ Error: %s" → "❌ Error: Command not found".
 func (bot *Bot[T]) SetErrorTemplate(s string) *Bot[T] {
-	if !bot.configMutable("ErrorTemplate") {
+	if !bot.configMutable("SetErrorTemplate") {
 		return bot
 	}
 	bot.errorTemplate = s
@@ -186,6 +186,9 @@ func (bot *Bot[T]) SetErrorTemplate(s string) *Bot[T] {
 
 // SetDebug enables or disables debug logging.
 func (bot *Bot[T]) SetDebug(debug bool) *Bot[T] {
+	if !bot.configMutable("SetDebug") {
+		return bot
+	}
 	bot.debug = debug
 	level := sneklog.FATAL
 	if debug {

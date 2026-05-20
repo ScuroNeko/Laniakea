@@ -328,13 +328,11 @@ func (r TelegramRequest[R, P]) Do(api *API) (R, error) {
 	return r.DoWithContext(context.Background(), api)
 }
 
-// Internal helper that reads and caps a Telegram response body.
 func readBody(body io.ReadCloser) ([]byte, error) {
 	reader := io.LimitReader(body, 10<<20) // 10 MB
 	return io.ReadAll(reader)
 }
 
-// Internal helper that parses a typed Telegram API response body.
 func parseBody[R any](data []byte) (TelegramResponse[R], error) {
 	var resp TelegramResponse[R]
 	err := json.Unmarshal(data, &resp)
