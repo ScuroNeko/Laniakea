@@ -56,7 +56,7 @@ import (
 // Она получает два параметра:
 //   - ctx: контекст сообщения (содержит информацию о сообщении, отправителе, чате и т.д.)
 //   - data: ваши общие данные приложения (здесь мы используем NoData — заглушку без общих зависимостей)
-func echo(ctx *laniakea.MsgContext, data laniakea.NoData) error {
+func echo(ctx *laniakea.MessageContext, data laniakea.NoData) error {
 	// Отвечаем пользователю текстом, который он прислал, без префикса команды.
 	// ctx.Text содержит сообщение пользователя, из которого удалена часть с командой.
 	ctx.Answer(ctx.Text) // Ввод пользователя БЕЗ команды
@@ -86,7 +86,7 @@ func main() {
 
 	// 5. Добавляем ещё одну команду, используя анонимную функцию (замыкание).
 	//    Эта команда просто отвечает "Pong", когда пользователь отправляет "/ping".
-	p.Command("ping", func(ctx *laniakea.MsgContext, data laniakea.NoData) error {
+	p.Command("ping", func(ctx *laniakea.MessageContext, data laniakea.NoData) error {
 		ctx.Answer("Pong")
 		return nil
 	})
@@ -113,8 +113,8 @@ func main() {
 1. `BotOpts`: Содержит конфигурацию, например, токен API.
 2. `NewBot[T]`: Создаёт экземпляр бота. Параметр типа T позволяет передать общие данные приложения (например, *sql.DB или контейнер сервисов), которые будут доступны во всех обработчиках. Используйте laniakea.NoData, если они не нужны.
 3. `NewPlugin`: Создаёт логическую группу для команд и Middleware.
-4. `Command`: Создаёт и регистрирует команду. Первый аргумент — имя команды без слеша, второй — функция-обработчик (`func(*MsgContext, T) error`).
-5. **Функции-обработчики**: Получают *MsgContext (детали сообщения, методы типа Answer) и ваши данные приложения типа T, а ошибку возвращают для централизованной обработки.
+4. `Command`: Создаёт и регистрирует команду. Первый аргумент — имя команды без слеша, второй — функция-обработчик (`func(*MessageContext, T) error`).
+5. **Функции-обработчики**: Получают *MessageContext (детали сообщения, методы типа Answer) и ваши данные приложения типа T, а ошибку возвращают для централизованной обработки.
 6. `SetErrorTemplate`: Устанавливает шаблон для сообщений об ошибках. Плейсхолдер %s заменяется на текст ошибки.
 7. `AutoGenerateCommands`: Регистрирует команды из плагинов в Telegram для поддерживаемых scope.
 8. `Run()`: Запускает цикл опроса обновлений бота и возвращает ошибку, если старт или polling завершился неуспешно.
@@ -182,14 +182,14 @@ bot.AddPlugins(plugin)
 Команда — это функция, которая обрабатывает конкретную команду бота (например, /start).
 
 ```go
-func myHandler(ctx *laniakea.MsgContext, db *MyDB) error {
+func myHandler(ctx *laniakea.MessageContext, db *MyDB) error {
     // Доступ к аргументам команды через ctx.Args ([]string)
     // Ответ пользователю: ctx.Answer("какой-то текст")
     return nil
 }
 ```
 
-### Контекст сообщения (MsgContext)
+### Контекст сообщения (MessageContext)
 Предоставляет доступ к входящему сообщению и полезные методы для ответа:
 
 - `Answer(text string)`: Отправляет сообщение с parse_mode none.
@@ -200,8 +200,8 @@ func myHandler(ctx *laniakea.MsgContext, db *MyDB) error {
 - `KeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage`: Отправляет сообщение, отформатированное MarkdownV2 (экранирование на вашей стороне), и Inline клавиатурой.
 - `AnswerPhoto(photoID, text string) *AnswerMessage`: Отправляет фотографию с подписью и parse_mode none.
 - `AnswerPhotoMarkdown(photoID, text string) *AnswerMessage`: Отправляет фотографию с подписью, отформатированной MarkdownV2 (экранирование на вашей стороне).
-- `EditCallback(text string)`: Редактирует сообщение с `parse_mode` none после нажатия inline-кнопки.
-- `EditCallbackMarkdown(text string)`: Редактирует сообщение в формате MarkdownV2 (экранирование на вашей стороне) после нажатия inline-кнопки.
+- `EditCallback(text string, keyboard *InlineKeyboard) *AnswerMessage`: Редактирует сообщение с `parse_mode` none после нажатия inline-кнопки.
+- `EditCallbackMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage`: Редактирует сообщение в формате MarkdownV2 (экранирование на вашей стороне) после нажатия inline-кнопки.
 - `SendAction(action tgapi.ChatActionType)`: Отправляет действие "печатает", "загружает фото" и т.д.
 - Поля: `Text`, `Args`, `From`, `FromID`, `Msg`, `InlineMsgID`, `CallbackQueryID` и другие.
 - И много других методов и полей!
@@ -256,6 +256,39 @@ plugin.Scene("signup").
 - Для JSON-состояния сцены используйте `SceneContext.SaveData(...)` и `SceneContext.BindData(...)`.
 - Выбирайте `SceneScopeUser`, `SceneScopeChat` или `SceneScopeUserChat` в зависимости от того, насколько широко должен разделяться диалог.
 
+## ⏱️ Раннеры (Runners)
+
+Раннеры — фоновые задачи, которые выполняются вместе с bot runtime. Они регистрируются до запуска бота и автоматически запускаются при старте.
+
+```go
+import "time"
+
+// Одноразовый раннер — запускается один раз в горутине при старте (по умолчанию).
+bot.AddRunner(
+    laniakea.NewRunner("seed-cache", func(b *laniakea.Bot[*MyDB]) error {
+        return b.GetAppData().SeedCache()
+    }),
+)
+
+// Периодический раннер — запускается каждые 10 минут в горутине.
+bot.AddRunner(
+    laniakea.NewRunner("refresh-stats", func(b *laniakea.Bot[*MyDB]) error {
+        return b.GetAppData().RefreshStats()
+    }).Every(10 * time.Minute),
+)
+
+// Синхронный одноразовый — блокирует запуск runtime до завершения.
+bot.AddRunner(
+    laniakea.NewRunner("migrate", func(b *laniakea.Bot[*MyDB]) error {
+        return b.GetAppData().Migrate()
+    }).Async(false),
+)
+```
+
+Методы builder:
+- `Async(bool) *Runner[T]` — если `true` (по умолчанию), запускается в горутине; если `false`, блокирует запуск runtime.
+- `Every(time.Duration) *Runner[T]` — задаёт интервал повторного запуска. Ноль (по умолчанию) означает одноразовый запуск; положительное значение — периодический. Периодические раннеры требуют `Async(true)`.
+
 ### tgapi: API и Uploader
 
 В `tgapi` есть два клиента:
@@ -272,7 +305,7 @@ Middleware — это функции, которые выполняются пе
 Функция middleware имеет ту же сигнатуру, что и обработчик команды, но должна возвращать bool:
 
 ```go
-func(ctx *MsgContext, db T) bool
+func(ctx *MessageContext, db T) bool
 ```
 
 - Если возвращается true, выполняется следующий middleware (или сама команда).
@@ -292,7 +325,7 @@ plugin.Command("ban", banUser)
 
 1. Логирующий middleware – логирует каждое выполнение команды.
 ```go
-func loggingMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
+func loggingMiddleware(ctx *laniakea.MessageContext, db *MyDB) bool {
     log.Printf("Пользователь %d выполнил команду: %s", ctx.FromID, ctx.Msg.Text)
     return true // продолжаем к следующему middleware/команде
 }
@@ -300,7 +333,7 @@ func loggingMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 
 2. Middleware только для администраторов – ограничивает доступ пользователям с определённой ролью.
 ```go
-func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
+func adminOnlyMiddleware(ctx *laniakea.MessageContext, db *MyDB) bool {
     if !db.IsAdmin(ctx.FromID) { // предполагается, что db имеет метод IsAdmin
         ctx.Answer("⛔ Доступ запрещён. Только для администраторов.")
         return false // останавливаем выполнение
@@ -310,7 +343,7 @@ func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 ```
 
 ### Важные замечания
-- Middleware может изменять MsgContext (например, добавлять пользовательские поля) перед запуском команды.
+- Middleware может изменять MessageContext (например, добавлять пользовательские поля) перед запуском команды.
 
 ## ⚙️ Расширенная настройка
 - **Инлайн-клавиатуры**: Создавайте клавиатуры с помощью `laniakea.NewInlineKeyboardJSON`, `laniakea.NewInlineKeyboardBase64` или `laniakea.NewInlineKeyboard`. `Bot.SetPayloadType(...)` задаёт payload format по умолчанию, а `InlineKeyboard.SetPayloadType(...)` переопределяет его для конкретной клавиатуры.

@@ -55,7 +55,7 @@ import (
 // It receives two parameters:
 //   - ctx: the message context (contains info about the message, sender, chat, etc.)
 //   - data: your shared application data (here we use NoData, a placeholder for no shared data)
-func echo(ctx *laniakea.MsgContext, data laniakea.NoData) error {
+func echo(ctx *laniakea.MessageContext, data laniakea.NoData) error {
 	// Answer the user with the text they sent, without any command prefix.
 	// ctx.Text contains the user's message with the command part stripped off.
 	ctx.Answer(ctx.Text) // User input WITHOUT command
@@ -85,7 +85,7 @@ func main() {
 
 	// 5. Add another command using an anonymous function (closure).
 	//    This command simply replies "Pong" when the user sends "/ping".
-	p.Command("ping", func(ctx *laniakea.MsgContext, data laniakea.NoData) error {
+	p.Command("ping", func(ctx *laniakea.MessageContext, data laniakea.NoData) error {
 		ctx.Answer("Pong")
 		return nil
 	})
@@ -112,8 +112,8 @@ func main() {
 1. `BotOpts`: Holds configuration like the API token.
 2. `NewBot[T]`: Creates a bot instance. The type parameter T allows you to pass custom shared application data (for example, *sql.DB or a service container) that will be available in all handlers. Use laniakea.NoData if you don't need it.
 3. `NewPlugin`: Creates a logical group for commands and middlewares.
-4. `Command`: Creates and registers a command. The first argument is the command name without the slash, the second is the handler function (`func(*MsgContext, T) error`).
-5. **Handler Functions**: Receive *MsgContext (message details, methods like Answer) and your custom application data T, and return an error for centralized error handling.
+4. `Command`: Creates and registers a command. The first argument is the command name without the slash, the second is the handler function (`func(*MessageContext, T) error`).
+5. **Handler Functions**: Receive *MessageContext (message details, methods like Answer) and your custom application data T, and return an error for centralized error handling.
 6. `SetErrorTemplate`: Sets a template for error messages. The %s placeholder is replaced by the actual error.
 7. `AutoGenerateCommands`: Registers plugin-defined commands with Telegram across the supported scopes.
 8. `Run()`: Starts the bot's update polling loop and returns an error if startup or polling fails.
@@ -181,14 +181,14 @@ bot.AddPlugins(plugin)
 
 A command is a function that handles a specific bot command (e.g., /start).
 ```go
-func myHandler(ctx *laniakea.MsgContext, db *MyDB) error {
+func myHandler(ctx *laniakea.MessageContext, db *MyDB) error {
     // Access command arguments via ctx.Args ([]string)
     // Reply to the user: ctx.Answer("some text")
     return nil
 }
 ```
 
-### MsgContext
+### MessageContext
 
 Provides access to the incoming message and useful reply methods:
 
@@ -200,8 +200,8 @@ Provides access to the incoming message and useful reply methods:
 - `KeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage`: Sends a message formatted with MarkdownV2 (you handle escaping) and inline keyboard.
 - `AnswerPhoto(photoID, text string) *AnswerMessage`: Sends a message with photo with parse_mode none.
 - `AnswerPhotoMarkdown(photoID, text string) *AnswerMessage`: Sends a photo with MarkdownV2 caption (you handle escaping).
-- `EditCallback(text string)`: Edits message with parse_mode none after clicking inline button.
-- `EditCallbackMarkdown(text string)`: Edits a message formatted with MarkdownV2 (you handle escaping) after clicking inline button.
+- `EditCallback(text string, keyboard *InlineKeyboard) *AnswerMessage`: Edits message with parse_mode none after clicking inline button.
+- `EditCallbackMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage`: Edits a message formatted with MarkdownV2 (you handle escaping) after clicking inline button.
 - `SendAction(action tgapi.ChatActionType)`: Sends a “typing”, “uploading photo”, etc., action.
 - Fields: `Text`, `Args`, `From`, `FromID`, `Msg`, `InlineMsgID`, `CallbackQueryID`, etc.
 - And more methods and fields!
@@ -268,6 +268,39 @@ plugin.Scene("signup").
 - Use `SceneContext.SaveData(...)` and `SceneContext.BindData(...)` for JSON session state.
 - Use `SceneScopeUser`, `SceneScopeChat`, or `SceneScopeUserChat` depending on how widely a conversation should be shared.
 
+## ⏱️ Runners
+
+Runners are background tasks that execute alongside the bot runtime. They are registered before the bot starts and launched automatically when the bot starts.
+
+```go
+import "time"
+
+// One-shot runner — fires once in a goroutine when the bot starts (default).
+bot.AddRunner(
+    laniakea.NewRunner("seed-cache", func(b *laniakea.Bot[*MyDB]) error {
+        return b.GetAppData().SeedCache()
+    }),
+)
+
+// Periodic runner — fires every 10 minutes in a goroutine.
+bot.AddRunner(
+    laniakea.NewRunner("refresh-stats", func(b *laniakea.Bot[*MyDB]) error {
+        return b.GetAppData().RefreshStats()
+    }).Every(10 * time.Minute),
+)
+
+// Synchronous one-shot — blocks runtime startup until it completes.
+bot.AddRunner(
+    laniakea.NewRunner("migrate", func(b *laniakea.Bot[*MyDB]) error {
+        return b.GetAppData().Migrate()
+    }).Async(false),
+)
+```
+
+Builder methods:
+- `Async(bool) *Runner[T]` — if `true` (default), runs in a goroutine; if `false`, blocks runtime startup.
+- `Every(time.Duration) *Runner[T]` — sets the repeat interval. Zero (default) means run once; positive value repeats. Periodic runners require `Async(true)`.
+
 ## 🧩 Middleware
 Middleware are functions that run before a command handler. They are perfect for cross-cutting concerns like logging, access control, rate limiting, or modifying the context.
 
@@ -275,7 +308,7 @@ Middleware are functions that run before a command handler. They are perfect for
 A middleware function has the same signature as a command handler, but it must return a bool:
 
 ```go
-func(ctx *MsgContext, db T) bool
+func(ctx *MessageContext, db T) bool
 ```
 
 - If it returns true, the next middleware (or the command) will be executed.
@@ -295,7 +328,7 @@ plugin.Command("ban", banUser)
 
 1. Logging Middleware – logs every command execution.
 ```go
-func loggingMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
+func loggingMiddleware(ctx *laniakea.MessageContext, db *MyDB) bool {
     log.Printf("User %d executed command: %s", ctx.FromID, ctx.Msg.Text)
     return true // continue to next middleware/command
 }
@@ -303,7 +336,7 @@ func loggingMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 
 2. Admin-Only Middleware – restricts access to users with a specific role.
 ```go
-func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
+func adminOnlyMiddleware(ctx *laniakea.MessageContext, db *MyDB) bool {
     if !db.IsAdmin(ctx.FromID) { // assume db has IsAdmin method
         ctx.Answer("⛔ Access denied. Admins only.")
         return false // stop execution
@@ -313,7 +346,7 @@ func adminOnlyMiddleware(ctx *laniakea.MsgContext, db *MyDB) bool {
 ```
 
 ### Important Notes
-- Middleware can modify the MsgContext (e.g., add custom fields) before the command runs.
+- Middleware can modify the MessageContext (e.g., add custom fields) before the command runs.
 
 ## ⚙️ Advanced Configuration
 - **Inline Keyboards**: Build keyboards using `laniakea.NewInlineKeyboardJSON`, `laniakea.NewInlineKeyboardBase64`, or `laniakea.NewInlineKeyboard`. `Bot.SetPayloadType(...)` defines the default payload format, and `InlineKeyboard.SetPayloadType(...)` overrides it for one keyboard.

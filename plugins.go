@@ -107,7 +107,7 @@ func (p *Plugin[T]) AddScene(scene *Scene[T]) *Plugin[T] {
 	}
 	scene.pluginName = p.name
 	if _, exists := p.scenes[scene.name]; exists && p.logger != nil {
-		p.logger.Warnf("scene '%s'да already registered in plugin '%s'; overwriting", scene.name, p.name)
+		p.logger.Warnf("scene '%s' already registered in plugin '%s'; overwriting", scene.name, p.name)
 	}
 	p.scenes[scene.name] = scene
 	return p

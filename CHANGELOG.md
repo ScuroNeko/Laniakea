@@ -10,8 +10,15 @@
 - Renamed final public APIs to idiomatic names before the stable release: `RunWebhookWithContext(...)`, `RunWebhook(...)`, `CloseWebhook()`, `BotWebhookOpts`, `NewBotWebhookOpts()`, `SetWebhookLogger(...)`, and `GetWebhookLogger()`.
 - Renamed plugin builder helpers from `NewCommand(...)` and `NewScene(...)` to `Command(...)` and `Scene(...)`; the surviving `NewCommand(...)` takes the command string before the executor.
 - Renamed command argument value constants to `CommandValueString`, `CommandValueInt`, `CommandValueBool`, and `CommandValueAny`; `NewCommandArg(...)` now defaults to unvalidated `CommandValueAny`.
-- Renamed runner builders from `Onetime(...)` and `Timeout(...)` to `Once(...)` and `Every(...)`.
+- Renamed runner builders from `Onetime(...)` and `Timeout(...)` to `Every(...)` and `Async(...)`; `Runner.Once()` is removed. Use the default configuration (every=0, async=true) for a fire-and-forget goroutine, or `Async(false)` for a synchronous blocking one-shot.
 - Renamed remaining public acronym/casing outliers including `AnswerCallback...`, `ParseMarkdownV2`, `ParseMarkdown`, `GetChatMemberCount`, `DropRateLimitOverflow`, `SetDropRateLimitOverflow`, and inline keyboard builder APIs.
+- Renamed `Observer` event delivery methods `OnReceiveUpdate` → `OnUpdateReceived` and `OnHandledUpdate` → `OnUpdateHandled` to match the `UpdateReceivedEvent`/`UpdateHandledEvent` names and the `OnX` pattern of all other observer methods.
+- `Scene.PluginName` is now unexported; it is assigned by the framework during plugin registration and must not be set by callers.
+- `SceneSession.Data` is now unexported; use the `Set`/`Get`/`HasData`/`ClearData`/`BindData`/`SaveData` helpers instead.
+- `BotPayloadType*` sentinels are now `const` instead of `var`; code that assigned to them will no longer compile.
+
+### Bot API 10.0
+- Added full support for Telegram Bot API 10.0 types, methods, and update kinds.
 
 ### Added
 - Added `MessageContext.IsCallback()` and `MessageContext.HasPhoto()` helpers for callback-aware handler code.
@@ -24,6 +31,9 @@
 - Added `RateLimiter.Cleanup(idleThreshold)` to evict per-chat limiter state and expired chat cooldowns; the limiter now tracks per-chat last-seen time so long-running bots can bound memory through a periodic runner.
 - Added cached bot identity (`Bot.userID`) populated at `NewBot` so chat-admin policies and similar lookups reuse it instead of issuing a fresh `GetMe` request.
 - Added `tgapi.ResponseError` so Telegram API error codes, descriptions, and response parameters remain inspectable through returned errors.
+- Added nine exported webhook error sentinels — `ErrSetWebhookFailed`, `ErrBotAPINil`, `ErrBotWebhookOptsEmptyPath`, `ErrBotWebhookOptsPathNoSlash`, `ErrBotWebhookOptsPathHasQueryOrFragment`, `ErrBotWebhookOptsPathCollidesStatus`, `ErrBotWebhookTLSFilesIncomplete`, `ErrBotWebhookTLSFilesTooMany`, and `ErrStatusPathSecretRequired` — replacing the previous inline `errors.New(...)` calls so callers can match webhook startup errors with `errors.Is`.
+- Added `ErrInvalidPayload` for compact payload decoding failures so callers can distinguish malformed payload bytes from other decode errors.
+- Panics inside `Bot.handle` and the polling goroutine now emit an `ErrorEvent` through the observer so instrumentation sees runtime panics in addition to normal handler errors.
 
 ### Changed
 - Version metadata now reports the stable `v1.0.0` release instead of `v1.0.0-rc.16`.
@@ -47,6 +57,10 @@
 - Fixed webhook startup so empty-secret warnings are logged only after the webhook logger is initialized.
 - Fixed webhook startup so a logger configured through `SetWebhookLogger(...)` is preserved.
 - Fixed long-polling 429 handling so `getUpdates` retries use Telegram `retry_after` directly and do not inflate later transient-error backoff.
+- Fixed `BotOptsFileJSON` silently dropping `PollTimeout` on round-trip; the field is now encoded and decoded correctly.
+- Fixed the `tgapi.Uploader` returning an ad-hoc error string on Telegram API failures; it now returns `*tgapi.ResponseError` matching the JSON API client, so `errors.As(err, &respErr)` works consistently for both upload and JSON paths.
+- Fixed webhook secret validation to use `subtle.ConstantTimeCompare` instead of a plain string equality check, removing the timing side-channel.
+- Fixed the `/status` handler returning HTTP 403 for a wrong secret, which disclosed endpoint existence; it now returns 404 uniformly for any unauthenticated request.
 
 ### Tests
 - Added regression coverage proving bot-level middleware blocks still complete the observer update lifecycle.
@@ -61,6 +75,11 @@
 - Added regression coverage for `Draft.Push` preserving the existing message when validation rejects the candidate.
 - Added regression coverage for `RateLimiter.Cleanup` evicting idle chat limiters and expired chat locks while leaving active state in place.
 - Updated `MessageContext.Error` tests so unclassified errors stay internal-only and only `AsUserError` reaches the user.
+- Added regression coverage for `BotOptsFileJSON` `PollTimeout` round-trip.
+- Added regression coverage proving the `tgapi.Uploader` surfaces `*tgapi.ResponseError` for Telegram 4xx responses.
+- Added regression coverage proving a panic inside `Bot.handle` emits an `ErrorEvent` through the observer.
+- Added regression coverage for the webhook `/status` endpoint rejecting wrong and same-length-but-different secrets with HTTP 404, and accepting the correct secret.
+- Added table-driven regression coverage for `parseCommand` with `/cmd@botname` stripping, bare commands, commands with arguments, and empty input.
 
 ## v1.0.0-rc.16
 
