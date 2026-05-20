@@ -449,6 +449,17 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 		defer func() {
 			if r := recover(); r != nil {
 				bot.logger.Errorln(fmt.Sprintf("panic in update polling: %v", r))
+				err, ok := r.(error)
+				if !ok {
+					err = fmt.Errorf("%v", r)
+				}
+				bot.safeEmitEvent(ctx, ErrorEvent{
+					Plugin:      "bot",
+					HandlerKind: HandlerPollingKind,
+					HandlerName: "getUpdates",
+					Err:         err,
+					UserFacing:  false,
+				})
 			}
 			close(bot.updateQueue)
 		}()

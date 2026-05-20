@@ -15,14 +15,19 @@ import (
 // ErrInvalidPayloadType is returned when callback payload encoding type is unknown.
 var ErrInvalidPayloadType = errors.New("invalid payload type")
 
+// ErrInvalidPayload reports that a callback payload could not be decoded under the
+// expected encoding (e.g. the compact format separator is missing).
+var ErrInvalidPayload = errors.New("invalid payload")
+
 func (bot *Bot[T]) handle(parentCtx context.Context, u *tgapi.Update) {
 	defer func() {
 		if r := recover(); r != nil {
-			bot.logger.Errorln(fmt.Sprintf("panic in handle: %v", r))
+			if bot.logger != nil {
+				bot.logger.Errorln(fmt.Sprintf("panic in handle: %v", r))
+			}
 
-			var err error
-			var ok bool
-			if err, ok = r.(error); !ok {
+			err, ok := r.(error)
+			if !ok {
 				err = fmt.Errorf("%v", r)
 			}
 			bot.safeEmitEvent(parentCtx, ErrorEvent{
@@ -232,7 +237,7 @@ func decodeCompactPayload(s string) (CallbackData, error) {
 		}
 	}
 	if sepIdx == -1 {
-		return CallbackData{}, errors.New("invalid payload")
+		return CallbackData{}, ErrInvalidPayload
 	}
 	cmd := decodeCompactPart(s[:sepIdx])
 	argsRaw := s[sepIdx+1:]

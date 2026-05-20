@@ -496,7 +496,7 @@ func (ctx *MessageContext) AnswerCallbackURL(u string) { ctx.answerCallbackQuery
 // SendAction sends a chat action (typing, uploading_photo, etc.) to indicate bot activity.
 func (ctx *MessageContext) SendAction(action tgapi.ChatActionType) {
 	if ctx.Msg == nil {
-		ctx.Logger.Errorln("Can't send action without chat message context")
+		ctx.Logger.Errorln(ErrMessageContextNil)
 		return
 	}
 	params := tgapi.SendChatAction{
@@ -528,7 +528,12 @@ func (ctx *MessageContext) error(err error) {
 	}
 }
 
-// Error routes err through the centralized handler error path…
+// Error routes err through the centralized handler error path.
+//
+// The error is logged via ctx.Logger. When IsUserError(err) is true, the
+// formatted error template is delivered to the user — through an answer
+// to the active callback query when one exists, otherwise as a chat reply.
+// Internal errors are logged but not surfaced to the user.
 func (ctx *MessageContext) Error(err error) { ctx.error(err) }
 
 func (ctx *MessageContext) newDraft(parseMode tgapi.ParseMode) *Draft {

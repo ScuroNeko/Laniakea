@@ -8,9 +8,7 @@ import (
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
 
-// Interface for generating unique draft IDs.
 type draftIDGenerator interface {
-	// Next returns the next unique draft ID.
 	Next() uint64
 }
 

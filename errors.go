@@ -73,6 +73,22 @@ var (
 	ErrBotUploaderWhenCertificate = errors.New("bot uploader nil, but certificate set")
 	// ErrStatusPathSecretRequired reports that UseStatusPath requires SecretToken to be set.
 	ErrStatusPathSecretRequired = errors.New("SecretToken required when UseStatusPath is enabled")
+	// ErrSetWebhookFailed reports that Telegram rejected the setWebhook request.
+	ErrSetWebhookFailed = errors.New("failed to set webhook")
+	// ErrBotAPINil reports that an operation requires an API client but none is set.
+	ErrBotAPINil = errors.New("bot api is nil")
+	// ErrBotWebhookOptsEmptyPath reports that BotWebhookOpts.Path is empty.
+	ErrBotWebhookOptsEmptyPath = errors.New("empty BotWebhookOpts.Path")
+	// ErrBotWebhookOptsPathNoSlash reports that BotWebhookOpts.Path does not start with '/'.
+	ErrBotWebhookOptsPathNoSlash = errors.New("BotWebhookOpts.Path must start with '/'")
+	// ErrBotWebhookOptsPathHasQueryOrFragment reports that BotWebhookOpts.Path contains a query or fragment.
+	ErrBotWebhookOptsPathHasQueryOrFragment = errors.New("BotWebhookOpts.Path must not contain query or fragment")
+	// ErrBotWebhookOptsPathCollidesStatus reports that BotWebhookOpts.Path collides with the reserved /status endpoint.
+	ErrBotWebhookOptsPathCollidesStatus = errors.New("BotWebhookOpts.Path must not be '/status' when status path is enabled")
+	// ErrBotWebhookTLSFilesIncomplete reports that only one of the two TLS files was provided.
+	ErrBotWebhookTLSFilesIncomplete = errors.New("you must specify both private and public keys")
+	// ErrBotWebhookTLSFilesTooMany reports that more than two TLS files were provided.
+	ErrBotWebhookTLSFilesTooMany = errors.New("too many files; you must specify only private and public keys")
 )
 
 func validateMessageText(text string) error {

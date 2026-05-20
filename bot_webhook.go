@@ -202,7 +202,7 @@ func (bot *Bot[T]) RunWebhookWithContext(ctx context.Context, opts *BotWebhookOp
 			return err
 		}
 		if !ok {
-			return errors.New("failed to set webhook")
+			return ErrSetWebhookFailed
 		}
 
 		if len(tlsFiles) == 2 {
@@ -227,7 +227,7 @@ func (bot *Bot[T]) RunWebhook(opts *BotWebhookOpts, tlsFiles ...string) error {
 func (bot *Bot[T]) CloseWebhook() error {
 	var e []error
 	if bot.api == nil {
-		e = append(e, errors.New("bot api nil"))
+		e = append(e, ErrBotAPINil)
 	} else {
 		if _, err := bot.api.DeleteWebhook(tgapi.DeleteWebhook{}); err != nil {
 			if bot.webhookLogger != nil {
@@ -423,16 +423,16 @@ func (bot *Bot[T]) runWebhookTLS(ctx context.Context, opts *BotWebhookOpts, key,
 }
 func validateWebhookPath(path string, useStatusPath bool) error {
 	if path == "" {
-		return errors.New("empty BotWebhookOpts.Path")
+		return ErrBotWebhookOptsEmptyPath
 	}
 	if !strings.HasPrefix(path, "/") {
-		return errors.New("BotWebhookOpts.Path must start with '/'")
+		return ErrBotWebhookOptsPathNoSlash
 	}
 	if strings.Contains(path, "?") || strings.Contains(path, "#") {
-		return errors.New("BotWebhookOpts.Path must not contain query or fragment")
+		return ErrBotWebhookOptsPathHasQueryOrFragment
 	}
 	if useStatusPath && path == "/status" {
-		return errors.New("BotWebhookOpts.Path must not be '/status' when status path is enabled")
+		return ErrBotWebhookOptsPathCollidesStatus
 	}
 	return nil
 }
@@ -442,8 +442,8 @@ func validateWebhookTLSFiles(tlsFiles []string) error {
 	case 0, 2:
 		return nil
 	case 1:
-		return errors.New("you must specify both private and public keys")
+		return ErrBotWebhookTLSFilesIncomplete
 	default:
-		return errors.New("too many files; you must specify only private and public keys")
+		return ErrBotWebhookTLSFilesTooMany
 	}
 }

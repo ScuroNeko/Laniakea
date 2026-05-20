@@ -229,7 +229,7 @@ func prepareMultipart[P any](files []UploaderFile, params P) (*bytes.Buffer, str
 	for _, file := range files {
 		fw, err := w.CreateFormFile(string(file.field), file.filename)
 		if err != nil {
-			_ = w.Close() // Закрываем, чтобы не было утечки
+			_ = w.Close()
 			return nil, "", err
 		}
 
@@ -240,13 +240,13 @@ func prepareMultipart[P any](files []UploaderFile, params P) (*bytes.Buffer, str
 		}
 	}
 
-	err := utils.Encode(w, params) // Предполагается, что это записывает в w
+	err := utils.Encode(w, params)
 	if err != nil {
 		_ = w.Close()
 		return nil, "", err
 	}
 
-	err = w.Close() // ✅ ОБЯЗАТЕЛЬНО вызвать в конце — иначе запрос битый!
+	err = w.Close()
 	if err != nil {
 		return nil, "", err
 	}

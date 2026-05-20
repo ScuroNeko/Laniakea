@@ -12,32 +12,33 @@ type RunnerFn[T AppData] func(*Bot[T]) error
 // Runner represents a configurable background or one-time task to be
 // executed by a Bot.
 //
-// Runners are configured using builder methods: Once(), Async(), Every().
-// Once Execute() is called, the Runner should not be modified.
+// Runners are configured using builder methods Async and Every. Once the
+// bot's runtime has started executing the runner, it should not be modified.
 //
 // Execution semantics:
-//   - every=0, async=false: Run once synchronously (blocks).
-//   - every=0, async=true:  Run once in a goroutine (non-blocking).
-//   - every>0, async=true:  Run repeatedly in a goroutine with timeout.
-//   - every>0, async=false: Invalid configuration — ignored with warning.
+//   - every=0, async=true:  Run once in a goroutine (non-blocking, default).
+//   - every=0, async=false: Run once synchronously (blocks runtime startup).
+//   - every>0, async=true:  Run repeatedly in a goroutine with the given interval.
+//   - every>0, async=false: Invalid configuration — skipped with a warning.
 type Runner[T AppData] struct {
 	name  string        // Human-readable name for logging
 	async bool          // If true, runs in a goroutine; else, runs synchronously
-	every time.Duration // Duration to wait between periodic executions (ignored if once=true)
+	every time.Duration // Interval between periodic executions; zero means one-shot
 	fn    RunnerFn[T]   // The function to execute
 }
 
 // NewRunner creates a new Runner with the given name and function.
-// By default, the Runner is configured as async=true (non-blocking), once=true/mo
 //
-// Builder methods (Once, Async, Every) can be chained to customize behavior.
-// DO NOT call builder methods concurrently or after Execute().
+// The default configuration is async=true and every=0, i.e. a one-shot
+// goroutine that fires once when the bot runtime starts. Use Async and Every
+// to customize this. Do not call builder methods concurrently or after the
+// bot runtime has begun executing runners.
 func NewRunner[T AppData](name string, fn RunnerFn[T]) Runner[T] {
 	return Runner[T]{
 		name:  name,
 		fn:    fn,
-		async: true, // Default: run asynchronously
-		every: 0,    // Default: 0 - one time
+		async: true,
+		every: 0,
 	}
 }
 
@@ -45,21 +46,18 @@ func NewRunner[T AppData](name string, fn RunnerFn[T]) Runner[T] {
 // If true, the runner runs in a goroutine (non-blocking).
 // If false, the runner blocks the caller during execution.
 //
-// Note: If once=false and async=false, the runner will be skipped with a warning.
+// Note: periodic runners (Every > 0) require async=true and are skipped with
+// a warning when async=false.
 func (r Runner[T]) Async(async bool) Runner[T] {
 	r.async = async
 	return r
 }
 
-// Every sets the duration to wait between repeated executions for
-// non-once runners.
+// Every sets the interval between repeated executions of a periodic runner.
 //
-// If once=true, this value is ignored.
-// If once=false and async=true, this timeout determines the sleep interval
-// between loop iterations.
-//
-// A zero value (time.Duration(0)) is allowed but may trigger a warning
-// if used with a background (non-once) async runner.
+// A zero value (the default) keeps the runner one-shot. A positive value
+// schedules the runner to fire repeatedly with the given interval and
+// requires async=true; periodic sync runners are skipped with a warning.
 func (r Runner[T]) Every(timeout time.Duration) Runner[T] {
 	r.every = timeout
 	return r
@@ -67,15 +65,11 @@ func (r Runner[T]) Every(timeout time.Duration) Runner[T] {
 
 // ExecRunners executes all runners registered on the Bot with context-based lifecycle management.
 //
-// It logs warnings for misconfigured runners:
-//   - Sync, non-once runners are skipped (invalid configuration).
-//   - Background (non-once, async) runners without a timeout trigger a warning.
-//
-// Execution logic:
-//   - once + async: Runs once in a goroutine.
-//   - once + sync:  Runs once synchronously; warns if slower than 2 seconds.
-//   - !once + async: Runs in a loop with timeout between iterations until ctx.Done().
-//   - !once + sync: Skipped with warning.
+// Execution semantics by configuration:
+//   - every=0, async=true:  Runs once in a goroutine (fire and forget).
+//   - every=0, async=false: Runs once synchronously; warns if slower than 2 seconds.
+//   - every>0, async=true:  Runs in a loop with the configured interval until ctx.Done().
+//   - every>0, async=false: Skipped with a warning (invalid configuration).
 //
 // Background runners listen for ctx.Done() and gracefully shut down when the context is canceled.
 //
@@ -84,13 +78,8 @@ func (r Runner[T]) Every(timeout time.Duration) Runner[T] {
 func (bot *Bot[T]) ExecRunners(ctx context.Context) {
 	bot.logger.Infoln("Executing runners...")
 	for _, runner := range bot.runners {
-		// Validate configuration
 		if runner.every > 0 && !runner.async {
-			bot.logger.Warnf("Runner %s not once, but sync — skipping\n", runner.name)
-			continue
-		}
-		if runner.every > 0 && runner.async && runner.every == 0 {
-			bot.logger.Warnf("Background runner \"%s\" has no timeout — skipping\n", runner.name)
+			bot.logger.Warnf("Runner %q is periodic but sync; skipping (use Async(true))\n", runner.name)
 			continue
 		}
 
@@ -180,6 +169,5 @@ func (bot *Bot[T]) ExecRunners(ctx context.Context) {
 				}
 			}(runner)
 		}
-		// Note: !once && !async is already skipped above
 	}
 }
