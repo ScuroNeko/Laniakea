@@ -79,6 +79,7 @@ func NewUploader(api *API) *Uploader {
 		"UPLOADER", utils.GetLoggerLevel(),
 		api.logFormat, api.logFormatter,
 	)
+	logger.AddReplacer(api.token, "<TOKEN>")
 	return &Uploader{api, logger}
 }
 
@@ -143,7 +144,7 @@ func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, 
 		req.Header.Set("User-Agent", fmt.Sprintf("Laniakea/%s", utils.VersionString))
 		req.ContentLength = int64(buf.Len())
 
-		up.logger.Debugln("UPLOADER REQ", r.method)
+		up.logger.Debugln("UPLOADER REQ", url)
 		resp, err := up.api.client.Do(req)
 		if err != nil {
 			return zero, err
@@ -154,7 +155,7 @@ func (r UploaderRequest[R, P]) doRequest(ctx context.Context, up *Uploader) (R, 
 		if err != nil {
 			return zero, err
 		}
-		up.logger.Debugln("UPLOADER RES", r.method, string(body))
+		up.logger.Debugln("UPLOADER RES", url, string(body))
 
 		response, err := parseBody[R](body)
 		if err != nil {

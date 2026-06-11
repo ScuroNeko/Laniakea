@@ -137,6 +137,15 @@ func (bot *Bot[T]) RunWebhookWithContext(ctx context.Context, opts *BotWebhookOp
 	if len(bot.plugins) == 0 {
 		return ErrNoPlugins
 	}
+	autoSecret := ""
+	if opts.SecretToken == "" {
+		rndSecret, err := generateToken(32)
+		if err != nil {
+			return err
+		}
+		opts.SecretToken = rndSecret
+		autoSecret = rndSecret
+	}
 	if opts.URL == "" {
 		return ErrNoBotWebhookOptsURL
 	}
@@ -145,9 +154,6 @@ func (bot *Bot[T]) RunWebhookWithContext(ctx context.Context, opts *BotWebhookOp
 	}
 	if err := validateWebhookPath(opts.Path, opts.UseStatusPath); err != nil {
 		return err
-	}
-	if opts.UseStatusPath && opts.SecretToken == "" {
-		return ErrStatusPathSecretRequired
 	}
 	if err := validateWebhookTLSFiles(tlsFiles); err != nil {
 		return err
@@ -158,10 +164,9 @@ func (bot *Bot[T]) RunWebhookWithContext(ctx context.Context, opts *BotWebhookOp
 	}
 
 	return bot.runWebhookRuntime(ctx, func(runCtx context.Context) error {
-		if opts.SecretToken == "" {
-			bot.webhookLogger.Warnln("Using webhook without secret is very dangerous. Anyone can simulate Telegram requests.")
+		if autoSecret != "" {
+			bot.webhookLogger.Warnln("Using webhook without secret is very dangerous. Using random 32 bytes token:", autoSecret)
 		}
-
 		i, err := bot.api.GetWebhookInfoWithContext(runCtx)
 		if err != nil {
 			return err

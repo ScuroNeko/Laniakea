@@ -1,6 +1,9 @@
 package laniakea
 
 import (
+	"crypto/rand"
+	"encoding/base64"
+
 	"git.scuroneko.dev/scuroneko/laniakea/utils"
 )
 
@@ -27,3 +30,11 @@ const (
 	// VersionBeta re-exports the module prerelease counter.
 	VersionBeta = utils.VersionBeta
 )
+
+func generateToken(b int) (string, error) {
+	bytes := make([]byte, b)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(bytes), nil
+}
