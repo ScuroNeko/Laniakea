@@ -350,20 +350,20 @@ func TestRunWebhookWithContextRejectsInvalidTLSFilesBeforeRemoteSetup(t *testing
 	}
 }
 
-func TestRunWebhookWithContextRequiresSecretWhenStatusPathEnabled(t *testing.T) {
+func TestRunWebhookWithContextAutoGeneratesSecretWhenEmpty(t *testing.T) {
 	bot := &Bot[NoData]{
 		prefixes: []string{"/"},
 		plugins:  []Plugin[NoData]{{name: "demo"}},
 	}
-	opts := NewBotWebhookOpts().
-		SetURL("https://bot.example.com").
-		SetUseStatusPath(true)
+	// No SecretToken, no URL — function should auto-generate the token
+	// and then fail with ErrNoBotWebhookOptsURL before any network call.
+	opts := NewBotWebhookOpts().SetUseStatusPath(true)
 
 	err := bot.RunWebhookWithContext(context.Background(), opts)
-	if err == nil {
-		t.Fatal("expected status-path secret validation error, got nil")
+	if !errors.Is(err, ErrNoBotWebhookOptsURL) {
+		t.Fatalf("expected ErrNoBotWebhookOptsURL after auto-generation, got: %v", err)
 	}
-	if !strings.Contains(err.Error(), "SecretToken required") {
-		t.Fatalf("unexpected error: %v", err)
+	if opts.SecretToken == "" {
+		t.Fatal("expected SecretToken to be auto-generated, got empty string")
 	}
 }

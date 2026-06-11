@@ -122,6 +122,7 @@ func NewAPI(opts *APIOpts) *API {
 		"API", utils.GetLoggerLevel(),
 		opts.logFormat, opts.logFormatter,
 	)
+	logger.AddReplacer(opts.token, "<TOKEN>")
 
 	client := opts.client
 	if client == nil {

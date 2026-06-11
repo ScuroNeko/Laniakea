@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.1
+
+### Fixed
+- Fixed webhook always accepting unauthenticated requests when `SecretToken` is not configured. A cryptographically random 32-byte token is now generated automatically when `SecretToken` is empty, so the webhook endpoint is always authenticated. The generated token is logged as a warning so the operator can record it.
+- Fixed `tgapi.NewAPI` and `tgapi.NewUploader` not installing token redaction on their managed loggers. The bot token is now masked as `<TOKEN>` in debug output even when the `tgapi` package is used standalone without the `laniakea.Bot` wrapper.
+
 ## v1.0.0
 
 ### Breaking Changes
