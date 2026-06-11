@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -166,21 +167,6 @@ func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
 	limiter := utils.NewRateLimiter()
 	limiter.SetGlobalRate(opts.RateLimit)
 
-	apiOpts := tgapi.NewAPIOpts(opts.Token).
-		SetAPIURL(opts.APIURL).
-		UseTestServer(opts.UseTestServer).
-		SetLimiter(limiter).
-		SetDropRateLimitOverflow(opts.DropRateLimitOverflow).
-		SetLogFormat(opts.LogFormat).
-		SetLogFormatter(opts.LogFormatter)
-	api := tgapi.NewAPI(apiOpts)
-	uploader := tgapi.NewUploader(api)
-
-	prefixes := opts.Prefixes
-	if len(prefixes) == 0 {
-		prefixes = []string{"/"}
-	}
-
 	workers := 32
 	if opts.MaxWorkers > 0 {
 		workers = opts.MaxWorkers
@@ -189,6 +175,25 @@ func NewBot[T any](opts *BotOpts) (*Bot[T], error) {
 	pollTimeout := 30
 	if opts.PollTimeout > 0 {
 		pollTimeout = opts.PollTimeout
+	}
+
+	// HTTP client timeout must exceed pollTimeout to avoid spurious deadline
+	// errors that the polling loop would misinterpret as context cancellation.
+	httpTimeout := time.Duration(pollTimeout)*time.Second + 60*time.Second
+	apiOpts := tgapi.NewAPIOpts(opts.Token).
+		SetAPIURL(opts.APIURL).
+		UseTestServer(opts.UseTestServer).
+		SetLimiter(limiter).
+		SetDropRateLimitOverflow(opts.DropRateLimitOverflow).
+		SetLogFormat(opts.LogFormat).
+		SetLogFormatter(opts.LogFormatter).
+		SetHTTPClient(&http.Client{Timeout: httpTimeout})
+	api := tgapi.NewAPI(apiOpts)
+	uploader := tgapi.NewUploader(api)
+
+	prefixes := opts.Prefixes
+	if len(prefixes) == 0 {
+		prefixes = []string{"/"}
 	}
 
 	bot := &Bot[T]{
@@ -472,7 +477,7 @@ func (bot *Bot[T]) RunWithContext(ctx context.Context) error {
 			default:
 				updates, err := bot.Updates(ctx)
 				if err != nil {
-					if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+					if ctx.Err() != nil {
 						return
 					}
 					retryDelay, ok := pollRetryAfterDelay(err)

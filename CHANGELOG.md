@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.2
+
+### Fixed
+- Fixed long-polling stopping permanently when the HTTP client's internal timeout fired. The polling loop was checking `errors.Is(err, context.DeadlineExceeded)`, which matched HTTP client timeout errors (`*url.Error` wraps `context.DeadlineExceeded`), causing the goroutine to exit as if the bot context was canceled. The check is now `ctx.Err() != nil` so only a real context cancellation stops polling.
+- Fixed the HTTP client timeout (45 s) being too close to the long-poll `getUpdates` timeout (30 s default), leaving insufficient margin for connection setup and response transfer. The client timeout is now derived from the configured `PollTimeout` plus a 60-second buffer.
+
 ## v1.0.1
 
 ### Fixed
