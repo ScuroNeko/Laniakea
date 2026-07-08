@@ -166,11 +166,13 @@ type PollOption struct {
 }
 
 // InputPollOptionMedia describes the media to attach to a poll option.
+// For type "link" set URL instead of Media.
 // Since: Bot API 10.0
 // See https://core.telegram.org/bots/api#inputpolloptionmedia
 type InputPollOptionMedia struct {
 	Type  string `json:"type"`
-	Media string `json:"media"`
+	Media string `json:"media,omitempty"`
+	URL   string `json:"url,omitempty"` // Since: Bot API 10.1; for type "link"
 }
 
 // InputPollOption contains information about one answer option in a poll to be sent.
@@ -258,12 +260,20 @@ type Poll struct {
 	Media                 *PollMedia      `json:"media,omitempty"`                   // Since: Bot API 10.0
 }
 
+// Link represents an HTTP link.
+// Since: Bot API 10.1
+// See https://core.telegram.org/bots/api#link
+type Link struct {
+	URL string `json:"url"`
+}
+
 // PollMedia represents media attached to a poll.
 // Since: Bot API 10.0
 type PollMedia struct {
 	Animation *Animation  `json:"animation,omitempty"`
 	Audio     *Audio      `json:"audio,omitempty"`
 	Document  *Document   `json:"document,omitempty"`
+	Link      *Link       `json:"link,omitempty"` // Since: Bot API 10.1
 	LivePhoto *LivePhoto  `json:"live_photo,omitempty"`
 	Location  *Location   `json:"location,omitempty"`
 	Photo     []PhotoSize `json:"photo,omitempty"`

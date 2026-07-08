@@ -1,78 +1,76 @@
-package richtext
+package tgapi
 
 import (
 	"encoding/json"
 	"fmt"
-
-	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
 )
 
-// RichText — узел дерева форматированного текста: строка, массив или
-// один из типизированных объектов ниже.
+// Rich messages (Bot API 10.1), receive side: the RichText*/RichBlock* types
+// mirror what the server sends in Message.rich_message, plus their parsers.
+// These types intentionally have no constructors: sending goes only through
+// InputRichMessage (html/markdown), and HTML generation lives in tgfmt
+// (rich.go). Names follow the API objects; the exception is
+// RichBlockQuotation (officially RichBlockBlockQuotation, the double Block
+// is dropped).
+
+// RichText is a node of the rich formatted text tree: a plain string, an
+// array, or one of the typed objects below.
 type RichText interface {
 	isRichText()
 }
 
 // ---------------------------------------------------------------------------
-// Базовые формы: строка и массив
+// Base forms: string and array
 // ---------------------------------------------------------------------------
 
-type String string
+// RichTextPlain is a plain text leaf.
+type RichTextPlain string
 
-func (String) isRichText() {}
+func (RichTextPlain) isRichText() {}
 
-type Array []RichText
+// RichTextArray is a concatenation of rich text nodes.
+type RichTextArray []RichText
 
-func (Array) isRichText() {}
+func (RichTextArray) isRichText() {}
 
 // ---------------------------------------------------------------------------
-// Узлы только с полем text. Их 9; различает только тег.
+// Nodes with only a text field. There are 9; only the tag differs.
 // bold italic underline strikethrough spoiler subscript superscript marked code
 // ---------------------------------------------------------------------------
 
-// Wrap покрывает все «чистые» оборачивающие узлы одним типом.
-type Wrap struct {
+// RichTextWrap covers all "pure" wrapper nodes with a single type.
+type RichTextWrap struct {
 	Tag  string // "bold", "italic", ...
 	Text RichText
 }
 
-func (Wrap) isRichText() {}
+func (RichTextWrap) isRichText() {}
 
-func (w Wrap) MarshalJSON() ([]byte, error) {
+func (w RichTextWrap) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type string   `json:"type"`
 		Text RichText `json:"text"`
 	}{w.Tag, w.Text})
 }
 
-var wrapTags = map[string]bool{
+var richTextWrapTags = map[string]bool{
 	"bold": true, "italic": true, "underline": true,
 	"strikethrough": true, "spoiler": true, "subscript": true,
 	"superscript": true, "marked": true, "code": true,
 }
 
-// Удобные конструкторы для wrap-узлов.
-func Bold(t RichText) Wrap          { return Wrap{"bold", t} }
-func Italic(t RichText) Wrap        { return Wrap{"italic", t} }
-func Underline(t RichText) Wrap     { return Wrap{"underline", t} }
-func Strikethrough(t RichText) Wrap { return Wrap{"strikethrough", t} }
-func Spoiler(t RichText) Wrap       { return Wrap{"spoiler", t} }
-func Subscript(t RichText) Wrap     { return Wrap{"subscript", t} }
-func Superscript(t RichText) Wrap   { return Wrap{"superscript", t} }
-func Marked(t RichText) Wrap        { return Wrap{"marked", t} }
-func Code(t RichText) Wrap          { return Wrap{"code", t} }
-
 // ---------------------------------------------------------------------------
-// Узлы с text + одно строковое доп. поле.
+// Nodes with text + one extra string field.
 // ---------------------------------------------------------------------------
 
-type URL struct {
+// RichTextURL is rich text linking to a URL.
+type RichTextURL struct {
 	Text RichText
 	URL  string
 }
 
-func (URL) isRichText() {}
-func (v URL) MarshalJSON() ([]byte, error) {
+func (RichTextURL) isRichText() {}
+func (v RichTextURL) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type string   `json:"type"`
 		Text RichText `json:"text"`
@@ -80,13 +78,14 @@ func (v URL) MarshalJSON() ([]byte, error) {
 	}{"url", v.Text, v.URL})
 }
 
-type EmailAddress struct {
+// RichTextEmailAddress is rich text linking to an email address.
+type RichTextEmailAddress struct {
 	Text         RichText
 	EmailAddress string
 }
 
-func (EmailAddress) isRichText() {}
-func (v EmailAddress) MarshalJSON() ([]byte, error) {
+func (RichTextEmailAddress) isRichText() {}
+func (v RichTextEmailAddress) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type         string   `json:"type"`
 		Text         RichText `json:"text"`
@@ -94,13 +93,14 @@ func (v EmailAddress) MarshalJSON() ([]byte, error) {
 	}{"email_address", v.Text, v.EmailAddress})
 }
 
-type PhoneNumber struct {
+// RichTextPhoneNumber is rich text linking to a phone number.
+type RichTextPhoneNumber struct {
 	Text        RichText
 	PhoneNumber string
 }
 
-func (PhoneNumber) isRichText() {}
-func (v PhoneNumber) MarshalJSON() ([]byte, error) {
+func (RichTextPhoneNumber) isRichText() {}
+func (v RichTextPhoneNumber) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type        string   `json:"type"`
 		Text        RichText `json:"text"`
@@ -108,13 +108,14 @@ func (v PhoneNumber) MarshalJSON() ([]byte, error) {
 	}{"phone_number", v.Text, v.PhoneNumber})
 }
 
-type BankCardNumber struct {
+// RichTextBankCardNumber is rich text marked as a bank card number.
+type RichTextBankCardNumber struct {
 	Text           RichText
 	BankCardNumber string
 }
 
-func (BankCardNumber) isRichText() {}
-func (v BankCardNumber) MarshalJSON() ([]byte, error) {
+func (RichTextBankCardNumber) isRichText() {}
+func (v RichTextBankCardNumber) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type           string   `json:"type"`
 		Text           RichText `json:"text"`
@@ -122,13 +123,14 @@ func (v BankCardNumber) MarshalJSON() ([]byte, error) {
 	}{"bank_card_number", v.Text, v.BankCardNumber})
 }
 
-type Mention struct {
+// RichTextMention is rich text mentioning a user by username.
+type RichTextMention struct {
 	Text     RichText
 	Username string
 }
 
-func (Mention) isRichText() {}
-func (v Mention) MarshalJSON() ([]byte, error) {
+func (RichTextMention) isRichText() {}
+func (v RichTextMention) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type     string   `json:"type"`
 		Text     RichText `json:"text"`
@@ -136,13 +138,14 @@ func (v Mention) MarshalJSON() ([]byte, error) {
 	}{"mention", v.Text, v.Username})
 }
 
-type Hashtag struct {
+// RichTextHashtag is rich text marked as a hashtag.
+type RichTextHashtag struct {
 	Text    RichText
 	Hashtag string
 }
 
-func (Hashtag) isRichText() {}
-func (v Hashtag) MarshalJSON() ([]byte, error) {
+func (RichTextHashtag) isRichText() {}
+func (v RichTextHashtag) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type    string   `json:"type"`
 		Text    RichText `json:"text"`
@@ -150,13 +153,14 @@ func (v Hashtag) MarshalJSON() ([]byte, error) {
 	}{"hashtag", v.Text, v.Hashtag})
 }
 
-type Cashtag struct {
+// RichTextCashtag is rich text marked as a cashtag.
+type RichTextCashtag struct {
 	Text    RichText
 	Cashtag string
 }
 
-func (Cashtag) isRichText() {}
-func (v Cashtag) MarshalJSON() ([]byte, error) {
+func (RichTextCashtag) isRichText() {}
+func (v RichTextCashtag) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type    string   `json:"type"`
 		Text    RichText `json:"text"`
@@ -164,13 +168,14 @@ func (v Cashtag) MarshalJSON() ([]byte, error) {
 	}{"cashtag", v.Text, v.Cashtag})
 }
 
-type BotCommand struct {
+// RichTextBotCommand is rich text marked as a bot command.
+type RichTextBotCommand struct {
 	Text       RichText
 	BotCommand string
 }
 
-func (BotCommand) isRichText() {}
-func (v BotCommand) MarshalJSON() ([]byte, error) {
+func (RichTextBotCommand) isRichText() {}
+func (v RichTextBotCommand) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type       string   `json:"type"`
 		Text       RichText `json:"text"`
@@ -178,13 +183,14 @@ func (v BotCommand) MarshalJSON() ([]byte, error) {
 	}{"bot_command", v.Text, v.BotCommand})
 }
 
-type AnchorLink struct {
+// RichTextAnchorLink is rich text linking to a named anchor in the same message.
+type RichTextAnchorLink struct {
 	Text       RichText
 	AnchorName string
 }
 
-func (AnchorLink) isRichText() {}
-func (v AnchorLink) MarshalJSON() ([]byte, error) {
+func (RichTextAnchorLink) isRichText() {}
+func (v RichTextAnchorLink) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type       string   `json:"type"`
 		Text       RichText `json:"text"`
@@ -192,13 +198,14 @@ func (v AnchorLink) MarshalJSON() ([]byte, error) {
 	}{"anchor_link", v.Text, v.AnchorName})
 }
 
-type Reference struct {
+// RichTextReference is rich text marked as a named reference target.
+type RichTextReference struct {
 	Text RichText
 	Name string
 }
 
-func (Reference) isRichText() {}
-func (v Reference) MarshalJSON() ([]byte, error) {
+func (RichTextReference) isRichText() {}
+func (v RichTextReference) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type string   `json:"type"`
 		Text RichText `json:"text"`
@@ -206,13 +213,14 @@ func (v Reference) MarshalJSON() ([]byte, error) {
 	}{"reference", v.Text, v.Name})
 }
 
-type ReferenceLink struct {
+// RichTextReferenceLink is rich text linking to a named reference.
+type RichTextReferenceLink struct {
 	Text          RichText
 	ReferenceName string
 }
 
-func (ReferenceLink) isRichText() {}
-func (v ReferenceLink) MarshalJSON() ([]byte, error) {
+func (RichTextReferenceLink) isRichText() {}
+func (v RichTextReferenceLink) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type          string   `json:"type"`
 		Text          RichText `json:"text"`
@@ -221,17 +229,18 @@ func (v ReferenceLink) MarshalJSON() ([]byte, error) {
 }
 
 // ---------------------------------------------------------------------------
-// Узлы с text + несколько/нестроковых полей.
+// Nodes with text + multiple/non-string fields.
 // ---------------------------------------------------------------------------
 
-type DateTime struct {
+// RichTextDateTime is rich text bound to a point in time with a display format.
+type RichTextDateTime struct {
 	Text           RichText
 	UnixTime       int64
 	DateTimeFormat string
 }
 
-func (DateTime) isRichText() {}
-func (v DateTime) MarshalJSON() ([]byte, error) {
+func (RichTextDateTime) isRichText() {}
+func (v RichTextDateTime) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type           string   `json:"type"`
 		Text           RichText `json:"text"`
@@ -240,31 +249,33 @@ func (v DateTime) MarshalJSON() ([]byte, error) {
 	}{"date_time", v.Text, v.UnixTime, v.DateTimeFormat})
 }
 
-type TextMention struct {
+// RichTextTextMention is rich text mentioning a user without a username.
+type RichTextTextMention struct {
 	Text RichText
-	User tgapi.User
+	User User
 }
 
-func (TextMention) isRichText() {}
-func (v TextMention) MarshalJSON() ([]byte, error) {
+func (RichTextTextMention) isRichText() {}
+func (v RichTextTextMention) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Type string     `json:"type"`
-		Text RichText   `json:"text"`
-		User tgapi.User `json:"user"`
+		Type string   `json:"type"`
+		Text RichText `json:"text"`
+		User User     `json:"user"`
 	}{"text_mention", v.Text, v.User})
 }
 
 // ---------------------------------------------------------------------------
-// ЛИСТЬЯ: без поля text.
+// LEAVES: no text field.
 // ---------------------------------------------------------------------------
 
-type CustomEmoji struct {
+// RichTextCustomEmoji is a custom emoji leaf with alternative text.
+type RichTextCustomEmoji struct {
 	CustomEmojiID   string
 	AlternativeText string
 }
 
-func (CustomEmoji) isRichText() {}
-func (v CustomEmoji) MarshalJSON() ([]byte, error) {
+func (RichTextCustomEmoji) isRichText() {}
+func (v RichTextCustomEmoji) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type            string `json:"type"`
 		CustomEmojiID   string `json:"custom_emoji_id"`
@@ -272,24 +283,26 @@ func (v CustomEmoji) MarshalJSON() ([]byte, error) {
 	}{"custom_emoji", v.CustomEmojiID, v.AlternativeText})
 }
 
-type MathematicalExpression struct {
+// RichTextMathematicalExpression is an inline mathematical expression leaf.
+type RichTextMathematicalExpression struct {
 	Expression string
 }
 
-func (MathematicalExpression) isRichText() {}
-func (v MathematicalExpression) MarshalJSON() ([]byte, error) {
+func (RichTextMathematicalExpression) isRichText() {}
+func (v RichTextMathematicalExpression) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type       string `json:"type"`
 		Expression string `json:"expression"`
 	}{"mathematical_expression", v.Expression})
 }
 
-type Anchor struct {
+// RichTextAnchor is a named anchor leaf that anchor links can point to.
+type RichTextAnchor struct {
 	Name string
 }
 
-func (Anchor) isRichText() {}
-func (v Anchor) MarshalJSON() ([]byte, error) {
+func (RichTextAnchor) isRichText() {}
+func (v RichTextAnchor) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type string `json:"type"`
 		Name string `json:"name"`
@@ -297,21 +310,24 @@ func (v Anchor) MarshalJSON() ([]byte, error) {
 }
 
 // ---------------------------------------------------------------------------
-// Разбор JSON -> RichText
+// JSON -> RichText parsing
 // ---------------------------------------------------------------------------
 
-func Unmarshal(data []byte) (RichText, error) {
-	// 1. строка
+// UnmarshalRichText parses a RichText tree from JSON: a string, an array, or
+// a typed object. Unknown object types that carry a text field are preserved
+// as RichTextWrap for forward compatibility.
+func UnmarshalRichText(data []byte) (RichText, error) {
+	// 1. string
 	var s string
 	if err := json.Unmarshal(data, &s); err == nil {
-		return String(s), nil
+		return RichTextPlain(s), nil
 	}
-	// 2. массив
+	// 2. array
 	var raw []json.RawMessage
 	if err := json.Unmarshal(data, &raw); err == nil {
-		arr := make(Array, len(raw))
+		arr := make(RichTextArray, len(raw))
 		for i, it := range raw {
-			rt, err := Unmarshal(it)
+			rt, err := UnmarshalRichText(it)
 			if err != nil {
 				return nil, err
 			}
@@ -319,7 +335,7 @@ func Unmarshal(data []byte) (RichText, error) {
 		}
 		return arr, nil
 	}
-	// 3. объект -> смотрим type, попутно вытаскиваем сырой text
+	// 3. object -> dispatch on type, grabbing the raw text along the way
 	var head struct {
 		Type string          `json:"type"`
 		Text json.RawMessage `json:"text"`
@@ -328,17 +344,17 @@ func Unmarshal(data []byte) (RichText, error) {
 		return nil, fmt.Errorf("richtext: not a string, array or object: %w", err)
 	}
 
-	// Рекурсивно разбираем вложенный text, если он есть.
+	// Recursively parse the nested text, if any.
 	var inner RichText
 	if len(head.Text) > 0 {
 		var err error
-		if inner, err = Unmarshal(head.Text); err != nil {
+		if inner, err = UnmarshalRichText(head.Text); err != nil {
 			return nil, fmt.Errorf("richtext %q: bad text: %w", head.Type, err)
 		}
 	}
 
-	if wrapTags[head.Type] {
-		return Wrap{Tag: head.Type, Text: inner}, nil
+	if richTextWrapTags[head.Type] {
+		return RichTextWrap{Tag: head.Type, Text: inner}, nil
 	}
 
 	switch head.Type {
@@ -349,107 +365,107 @@ func Unmarshal(data []byte) (RichText, error) {
 		if err := json.Unmarshal(data, &v); err != nil {
 			return nil, err
 		}
-		return URL{inner, v.URL}, nil
+		return RichTextURL{inner, v.URL}, nil
 	case "email_address":
 		var v struct {
 			V string `json:"email_address"`
 		}
 		_ = json.Unmarshal(data, &v)
-		return EmailAddress{inner, v.V}, nil
+		return RichTextEmailAddress{inner, v.V}, nil
 	case "phone_number":
 		var v struct {
 			V string `json:"phone_number"`
 		}
 		_ = json.Unmarshal(data, &v)
-		return PhoneNumber{inner, v.V}, nil
+		return RichTextPhoneNumber{inner, v.V}, nil
 	case "bank_card_number":
 		var v struct {
 			V string `json:"bank_card_number"`
 		}
 		_ = json.Unmarshal(data, &v)
-		return BankCardNumber{inner, v.V}, nil
+		return RichTextBankCardNumber{inner, v.V}, nil
 	case "mention":
 		var v struct {
 			V string `json:"username"`
 		}
 		_ = json.Unmarshal(data, &v)
-		return Mention{inner, v.V}, nil
+		return RichTextMention{inner, v.V}, nil
 	case "hashtag":
 		var v struct {
 			V string `json:"hashtag"`
 		}
 		_ = json.Unmarshal(data, &v)
-		return Hashtag{inner, v.V}, nil
+		return RichTextHashtag{inner, v.V}, nil
 	case "cashtag":
 		var v struct {
 			V string `json:"cashtag"`
 		}
 		_ = json.Unmarshal(data, &v)
-		return Cashtag{inner, v.V}, nil
+		return RichTextCashtag{inner, v.V}, nil
 	case "bot_command":
 		var v struct {
 			V string `json:"bot_command"`
 		}
 		_ = json.Unmarshal(data, &v)
-		return BotCommand{inner, v.V}, nil
+		return RichTextBotCommand{inner, v.V}, nil
 	case "anchor_link":
 		var v struct {
 			V string `json:"anchor_name"`
 		}
 		_ = json.Unmarshal(data, &v)
-		return AnchorLink{inner, v.V}, nil
+		return RichTextAnchorLink{inner, v.V}, nil
 	case "reference":
 		var v struct {
 			V string `json:"name"`
 		}
 		_ = json.Unmarshal(data, &v)
-		return Reference{inner, v.V}, nil
+		return RichTextReference{inner, v.V}, nil
 	case "reference_link":
 		var v struct {
 			V string `json:"reference_name"`
 		}
 		_ = json.Unmarshal(data, &v)
-		return ReferenceLink{inner, v.V}, nil
+		return RichTextReferenceLink{inner, v.V}, nil
 	case "date_time":
 		var v struct {
 			UnixTime       int64  `json:"unix_time"`
 			DateTimeFormat string `json:"date_time_format"`
 		}
 		_ = json.Unmarshal(data, &v)
-		return DateTime{inner, v.UnixTime, v.DateTimeFormat}, nil
+		return RichTextDateTime{inner, v.UnixTime, v.DateTimeFormat}, nil
 	case "text_mention":
 		var v struct {
-			User tgapi.User `json:"user"`
+			User User `json:"user"`
 		}
 		_ = json.Unmarshal(data, &v)
-		return TextMention{inner, v.User}, nil
+		return RichTextTextMention{inner, v.User}, nil
 
-	// --- листья без text ---
+	// --- leaves without text ---
 	case "custom_emoji":
 		var v struct {
 			ID  string `json:"custom_emoji_id"`
 			Alt string `json:"alternative_text"`
 		}
 		_ = json.Unmarshal(data, &v)
-		return CustomEmoji{v.ID, v.Alt}, nil
+		return RichTextCustomEmoji{v.ID, v.Alt}, nil
 	case "mathematical_expression":
 		var v struct {
 			Expression string `json:"expression"`
 		}
 		_ = json.Unmarshal(data, &v)
-		return MathematicalExpression{v.Expression}, nil
+		return RichTextMathematicalExpression{v.Expression}, nil
 	case "anchor":
 		var v struct {
 			Name string `json:"name"`
 		}
 		_ = json.Unmarshal(data, &v)
-		return Anchor{v.Name}, nil
+		return RichTextAnchor{v.Name}, nil
 
 	default:
-		// forward-compat: неизвестный тег с полем text сохраняем как Wrap,
-		// без text — как ошибку (нельзя угадать форму).
+		// forward-compat: keep an unknown tag with a text field as
+		// RichTextWrap; without text it is an error (the shape cannot be guessed).
 		if inner != nil {
-			return Wrap{Tag: head.Type, Text: inner}, nil
+			return RichTextWrap{Tag: head.Type, Text: inner}, nil
 		}
 		return nil, fmt.Errorf("richtext: unknown type %q", head.Type)
 	}

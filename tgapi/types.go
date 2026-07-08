@@ -255,6 +255,11 @@ type ChatJoinRequest struct {
 	Date       int64           `json:"date"`
 	Bio        *string         `json:"bio,omitempty"`
 	InviteLink *ChatInviteLink `json:"invite_link,omitempty"`
+
+	// QueryID identifies the join request query; present only for bots
+	// assigned to process join requests. When set, the bot must call
+	// SendChatJoinRequestWebApp or AnswerChatJoinRequestQuery within 10 seconds.
+	QueryID *string `json:"query_id,omitempty"` // Since: Bot API 10.1
 }
 
 // Location represents a point on the map.

@@ -151,7 +151,8 @@ type Message struct {
 	SuggestedPostInfo  *SuggestedPostInfo  `json:"suggested_post_info,omitempty"` // Since: Bot API 9.1
 	EffectID           string              `json:"effect_id,omitempty"`           // Since: Bot API 7.4
 
-	Animation             *Animation               `json:"animation,omitempty"` // Since: Bot API 4.0
+	RichMessage           *RichMessage             `json:"rich_message,omitempty"` // Since: Bot API 10.1
+	Animation             *Animation               `json:"animation,omitempty"`    // Since: Bot API 4.0
 	Audio                 *Audio                   `json:"audio,omitempty"`
 	Document              *Document                `json:"document,omitempty"`
 	PaidMedia             *PaidMediaInfo           `json:"paid_media,omitempty"` // Since: Bot API 7.6
@@ -747,4 +748,20 @@ type VideoChatParticipantsInvited struct {
 // Since: Bot API 10.0
 type SentGuestMessage struct {
 	InlineMessageID string `json:"inline_message_id"`
+}
+
+// RichMessage Rich formatted message.
+// Since: Bot API 10.1
+type RichMessage struct {
+	Blocks []RichBlock `json:"blocks"`
+	IsRTL  bool        `json:"is_rtl,omitempty"`
+}
+
+// InputRichMessage Describes a rich message to be sent. Exactly one of the fields html or markdown must be used.
+// Since: Bot API 10.1
+type InputRichMessage struct {
+	HTML                string `json:"html,omitempty"`
+	Markdown            string `json:"markdown,omitempty"`
+	IsRTL               bool   `json:"is_rtl,omitempty"`
+	SkipEntityDetection bool   `json:"skip_entity_detection,omitempty"`
 }

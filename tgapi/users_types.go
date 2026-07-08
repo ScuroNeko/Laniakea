@@ -22,6 +22,10 @@ type User struct {
 	AllowsUsersToCreateTopics *bool   `json:"allows_users_to_create_topics,omitempty"` // Since: Bot API 9.4
 	CanManageBots             *bool   `json:"can_manage_bots,omitempty"`               // Since: Bot API 9.6
 	SupportsGuestQueries      *bool   `json:"supports_guest_queries,omitempty"`        // Since: Bot API 10.0
+
+	// SupportsJoinRequestQueries reports that the bot supports join request
+	// queries and can be assigned to process them. Returned only in getMe.
+	SupportsJoinRequestQueries *bool `json:"supports_join_request_queries,omitempty"` // Since: Bot API 10.1
 }
 
 // UserProfilePhotos represents a user's profile photos.

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"git.scuroneko.dev/scuroneko/laniakea/tgapi"
+	"git.scuroneko.dev/scuroneko/laniakea/tgfmt"
 	"git.scuroneko.dev/scuroneko/sneklog/v2"
 )
 
@@ -820,4 +821,45 @@ func (ctx *MessageContext) UpsertKeyboard(text string, keyboard *InlineKeyboard)
 // UpsertKeyboardMarkdown edits a callback message or sends a new MarkdownV2 message with a keyboard.
 func (ctx *MessageContext) UpsertKeyboardMarkdown(text string, keyboard *InlineKeyboard) *AnswerMessage {
 	return ctx.upsertKeyboard(text, keyboard, tgapi.ParseMarkdownV2)
+}
+
+func (ctx *MessageContext) richAnswer(rich tgapi.InputRichMessage, keyboard *InlineKeyboard) *AnswerMessage {
+	if ctx.Msg == nil {
+		ctx.Logger.Errorln(ErrMessageContextNil)
+		return nil
+	}
+	params := tgapi.SendRichMessage{
+		ChatID:      ctx.Msg.Chat.ID,
+		RichMessage: rich,
+	}
+	if keyboard != nil {
+		params.ReplyMarkup = keyboard.Get()
+	}
+	if ctx.Msg.MessageThreadID > 0 {
+		params.MessageThreadID = int64(ctx.Msg.MessageThreadID)
+	}
+	if ctx.Msg.DirectMessageTopic != nil {
+		params.DirectMessagesTopicID = ctx.Msg.DirectMessageTopic.TopicID
+	}
+
+	msg, err := ctx.API.SendRichMessageWithContext(ctx.Context(), params)
+	if err != nil {
+		ctx.Logger.Errorln(err)
+		return nil
+	}
+	return &AnswerMessage{
+		MessageID: msg.MessageID, ctx: ctx, Text: rich.HTML, IsMedia: false,
+	}
+}
+
+// RichAnswer sends a rich message (Bot API 10.1) built from tgfmt fragments.
+// Both inline (tgfmt.Rich) and block (tgfmt.RichBlock) fragments are accepted
+// at the top level: Telegram merges adjacent inline content into paragraphs.
+func (ctx *MessageContext) RichAnswer(items ...tgfmt.RichItem) *AnswerMessage {
+	return ctx.richAnswer(tgfmt.RichMessage(items...), nil)
+}
+
+// RichAnswerKeyboard sends a rich message with an inline keyboard.
+func (ctx *MessageContext) RichAnswerKeyboard(keyboard *InlineKeyboard, items ...tgfmt.RichItem) *AnswerMessage {
+	return ctx.richAnswer(tgfmt.RichMessage(items...), keyboard)
 }

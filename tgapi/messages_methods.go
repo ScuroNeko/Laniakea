@@ -547,10 +547,11 @@ type EditMessageText struct {
 	ChatID               int64               `json:"chat_id,omitempty"`
 	MessageID            int                 `json:"message_id,omitempty"`
 	InlineMessageID      string              `json:"inline_message_id,omitempty"`
-	Text                 string              `json:"text"`
+	Text                 string              `json:"text,omitempty"` // required unless RichMessage is set
 	ParseMode            ParseMode           `json:"parse_mode,omitempty"`
 	Entities             []MessageEntity     `json:"entities,omitempty"`
 	LinkPreviewOptions   *LinkPreviewOptions `json:"link_preview_options,omitempty"`
+	RichMessage          *InputRichMessage   `json:"rich_message,omitempty"` // Since: Bot API 10.1; required if Text is not specified
 	ReplyMarkup          *ReplyMarkup        `json:"reply_markup,omitempty"`
 }
 
@@ -1087,5 +1088,73 @@ func (api *API) DeleteMessageReaction(params DeleteMessageReaction) (bool, error
 // See https://core.telegram.org/bots/api#deletemessagereaction
 func (api *API) DeleteMessageReactionWithContext(ctx context.Context, params DeleteMessageReaction) (bool, error) {
 	req := NewRequest[bool]("deleteMessageReaction", params)
+	return req.DoWithContext(ctx, api)
+}
+
+// SendRichMessage holds parameters for the sendRichMessage method.
+// Since: Bot API 10.1
+// See https://core.telegram.org/bots/api#sendrichmessage
+type SendRichMessage struct {
+	BusinessConnectionID  string `json:"business_connection_id,omitempty"`
+	ChatID                int64  `json:"chat_id"`
+	MessageThreadID       int64  `json:"message_thread_id,omitempty"`
+	DirectMessagesTopicID int64  `json:"direct_messages_topic_id,omitempty"`
+
+	RichMessage             InputRichMessage         `json:"rich_message"`
+	DisableNotification     bool                     `json:"disable_notification,omitempty"`
+	ProtectContent          bool                     `json:"protect_content,omitempty"`
+	AllowPaidBroadcast      bool                     `json:"allow_paid_broadcast,omitempty"`
+	MessageEffectID         string                   `json:"message_effect_id,omitempty"`
+	SuggestedPostParameters *SuggestedPostParameters `json:"suggested_post_parameters,omitempty"`
+	ReplyParameters         *ReplyParameters         `json:"reply_parameters,omitempty"`
+	ReplyMarkup             *ReplyMarkup             `json:"reply_markup,omitempty"`
+}
+
+// SendRichMessage sends a rich formatted message.
+// Since: Bot API 10.1
+// See https://core.telegram.org/bots/api#sendrichmessage
+func (api *API) SendRichMessage(params SendRichMessage) (Message, error) {
+	req := NewRequestWithChatID[Message]("sendRichMessage", params, params.ChatID)
+	return req.Do(api)
+}
+
+// SendRichMessageWithContext is the context-aware variant of SendRichMessage.
+// Since: Bot API 10.1
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#sendrichmessage
+func (api *API) SendRichMessageWithContext(ctx context.Context, params SendRichMessage) (Message, error) {
+	req := NewRequestWithChatID[Message]("sendRichMessage", params, params.ChatID)
+	return req.DoWithContext(ctx, api)
+}
+
+// SendRichMessageDraft holds parameters for the sendRichMessageDraft method.
+// Since: Bot API 10.1
+// See https://core.telegram.org/bots/api#sendrichmessagedraft
+type SendRichMessageDraft struct {
+	ChatID          int64 `json:"chat_id"`
+	MessageThreadID int64 `json:"message_thread_id,omitempty"`
+
+	// DraftID must be non-zero; changes to drafts with the same identifier are animated.
+	DraftID     int64            `json:"draft_id"`
+	RichMessage InputRichMessage `json:"rich_message"`
+}
+
+// SendRichMessageDraft streams a partial rich message to a private chat while
+// the message is being generated. The draft is an ephemeral ~30-second
+// preview; call SendRichMessage with the complete message to persist it.
+// Since: Bot API 10.1
+// Returns True on success.
+// See https://core.telegram.org/bots/api#sendrichmessagedraft
+func (api *API) SendRichMessageDraft(params SendRichMessageDraft) (bool, error) {
+	req := NewRequestWithChatID[bool]("sendRichMessageDraft", params, params.ChatID)
+	return req.Do(api)
+}
+
+// SendRichMessageDraftWithContext is the context-aware variant of SendRichMessageDraft.
+// Since: Bot API 10.1
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#sendrichmessagedraft
+func (api *API) SendRichMessageDraftWithContext(ctx context.Context, params SendRichMessageDraft) (bool, error) {
+	req := NewRequestWithChatID[bool]("sendRichMessageDraft", params, params.ChatID)
 	return req.DoWithContext(ctx, api)
 }

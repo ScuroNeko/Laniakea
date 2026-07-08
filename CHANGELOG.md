@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.1.0
+
+### Bot API 10.1
+- Added rich message receiving support: `tgapi.RichMessage` on `Message.RichMessage` (`rich_message`), the full set of `RichText*`/`RichBlock*` wire types with official API names, and `UnmarshalRichText`/`UnmarshalRichBlock`/`UnmarshalRichMessage` parsers with forward-compatible handling of unknown types.
+- Added rich message sending support: `tgapi.InputRichMessage`, `tgapi.SendRichMessage` params, and `API.SendRichMessage`/`API.SendRichMessageWithContext`.
+- Added rich message draft streaming: `API.SendRichMessageDraft`/`API.SendRichMessageDraftWithContext` for ephemeral ~30-second previews of partially generated messages.
+- Added rich message editing: `EditMessageText.RichMessage` (`InputRichMessage`); `Text` is now omitted from the request when empty so rich-only edits are valid.
+- Added `tgapi.InputRichMessageContent` for rich content in inline query results.
+- Added join request query support: `User.SupportsJoinRequestQueries`, `ChatFullInfo.GuardBot`, `ChatJoinRequest.QueryID`, `API.AnswerChatJoinRequestQuery` with `ChatJoinRequestQueryResult` constants (`JoinRequestApprove`/`JoinRequestDecline`/`JoinRequestQueue`), and `API.SendChatJoinRequestWebApp` (plus `WithContext` variants).
+- Added poll link media: the `tgapi.Link` type, `PollMedia.Link`, and the "link" type with `URL` on `InputPollOptionMedia`.
+
+### Added
+- Added the `tgfmt` rich HTML DSL: typed `Rich` (inline) and `RichBlock` (block) fragments whose constructor signatures make invalid nesting uncompilable, inline helpers (`NewRich`, `Bold`, `Link`, `Mention`, `Emoji`, `Time`, `Math`, ...), block constructors (`H1`–`H6`, `P`, `Pre`/`PreCode`, `Footer`, `Hr`, `Ul`/`Ol`/`Li`/`LiCheckbox`, `Blockquote`/`Aside`, `Photo`/`Video`/`Audio` media with captions and spoilers, `Map`, `Collage`/`Slideshow`, `Table`/`Row`/`Cell`, `Details`, `MathBlock`, anchors), and the top-level `RichItem`/`RichHTML`/`RichMessage` assembly into `tgapi.InputRichMessage` (with `skip_entity_detection` enabled by default).
+- Added `MessageContext.RichAnswer(...)` and `MessageContext.RichAnswerKeyboard(...)` for sending rich messages built from `tgfmt` fragments.
+
 ## v1.0.2
 
 ### Fixed

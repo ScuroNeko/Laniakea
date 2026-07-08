@@ -481,6 +481,73 @@ func (api *API) DeclineChatJoinRequestWithContext(ctx context.Context, params De
 	return req.DoWithContext(ctx, api)
 }
 
+// ChatJoinRequestQueryResult is the verdict passed to answerChatJoinRequestQuery.
+// Since: Bot API 10.1
+type ChatJoinRequestQueryResult string
+
+const (
+	// JoinRequestApprove allows the user to join the chat.
+	JoinRequestApprove ChatJoinRequestQueryResult = "approve"
+	// JoinRequestDecline disallows the user to join the chat.
+	JoinRequestDecline ChatJoinRequestQueryResult = "decline"
+	// JoinRequestQueue leaves the decision to other administrators.
+	JoinRequestQueue ChatJoinRequestQueryResult = "queue"
+)
+
+// AnswerChatJoinRequestQuery holds parameters for the answerChatJoinRequestQuery method.
+// Since: Bot API 10.1
+// See https://core.telegram.org/bots/api#answerchatjoinrequestquery
+type AnswerChatJoinRequestQuery struct {
+	ChatJoinRequestQueryID string                     `json:"chat_join_request_query_id"`
+	Result                 ChatJoinRequestQueryResult `json:"result"`
+}
+
+// AnswerChatJoinRequestQuery processes a received chat join request query.
+// Since: Bot API 10.1
+// Returns True on success.
+// See https://core.telegram.org/bots/api#answerchatjoinrequestquery
+func (api *API) AnswerChatJoinRequestQuery(params AnswerChatJoinRequestQuery) (bool, error) {
+	req := NewRequest[bool]("answerChatJoinRequestQuery", params)
+	return req.Do(api)
+}
+
+// AnswerChatJoinRequestQueryWithContext is the context-aware variant of AnswerChatJoinRequestQuery.
+// Since: Bot API 10.1
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#answerchatjoinrequestquery
+func (api *API) AnswerChatJoinRequestQueryWithContext(ctx context.Context, params AnswerChatJoinRequestQuery) (bool, error) {
+	req := NewRequest[bool]("answerChatJoinRequestQuery", params)
+	return req.DoWithContext(ctx, api)
+}
+
+// SendChatJoinRequestWebApp holds parameters for the sendChatJoinRequestWebApp method.
+// Since: Bot API 10.1
+// See https://core.telegram.org/bots/api#sendchatjoinrequestwebapp
+type SendChatJoinRequestWebApp struct {
+	ChatJoinRequestQueryID string `json:"chat_join_request_query_id"`
+	WebAppURL              string `json:"web_app_url"`
+}
+
+// SendChatJoinRequestWebApp shows a Mini App to the user before deciding a
+// join request query; resolve the query with AnswerChatJoinRequestQuery based
+// on the Mini App interaction.
+// Since: Bot API 10.1
+// Returns True on success.
+// See https://core.telegram.org/bots/api#sendchatjoinrequestwebapp
+func (api *API) SendChatJoinRequestWebApp(params SendChatJoinRequestWebApp) (bool, error) {
+	req := NewRequest[bool]("sendChatJoinRequestWebApp", params)
+	return req.Do(api)
+}
+
+// SendChatJoinRequestWebAppWithContext is the context-aware variant of SendChatJoinRequestWebApp.
+// Since: Bot API 10.1
+// It executes the same request but uses ctx for cancellation and deadlines.
+// See https://core.telegram.org/bots/api#sendchatjoinrequestwebapp
+func (api *API) SendChatJoinRequestWebAppWithContext(ctx context.Context, params SendChatJoinRequestWebApp) (bool, error) {
+	req := NewRequest[bool]("sendChatJoinRequestWebApp", params)
+	return req.DoWithContext(ctx, api)
+}
+
 // SetChatPhoto holds parameters for the setChatPhoto method.
 // Since: Bot API 3.1
 // See https://core.telegram.org/bots/api#setchatphoto

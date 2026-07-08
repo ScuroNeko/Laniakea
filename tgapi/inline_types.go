@@ -14,6 +14,15 @@ type InlineQueryResultsButton struct {
 	StartParameter string      `json:"start_parameter,omitempty"`
 }
 
+// InputRichMessageContent represents the content of a rich message to be
+// sent as the result of an inline query. Use it as the input_message_content
+// value of an InlineQueryResult.
+// Since: Bot API 10.1
+// See https://core.telegram.org/bots/api#inputrichmessagecontent
+type InputRichMessageContent struct {
+	RichMessage InputRichMessage `json:"rich_message"`
+}
+
 // SentWebAppMessage describes an inline message sent by a Web App on behalf of a user.
 // Since: Bot API 8.0
 // See https://core.telegram.org/bots/api#sentwebappmessage

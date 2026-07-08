@@ -52,6 +52,7 @@ type ChatFullInfo struct {
 
 	PersonalChat *Chat `json:"personal_chat,omitempty"`
 	ParentChat   *Chat `json:"parent_chat,omitempty"` // Since: Bot API 9.2
+	GuardBot     *User `json:"guard_bot,omitempty"`   // Since: Bot API 10.1; visible to chat administrators only
 
 	AvailableReaction []ReactionType `json:"available_reaction,omitempty"`
 
